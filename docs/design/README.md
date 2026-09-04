@@ -28,3 +28,4 @@
 - CV結果から「best条件」を事後選択しない。
 - 全体学習後はraw SNV、PCA、標準MAE、提案Aug-MAEの4条件を解釈・可視化する。
 - A0はChemoMAE v0.2.1の全領域再構成lossを使用する。
+- リポジトリ内の可視化にはfigure titleおよびaxes titleを付けず、説明はcaptionまたはファイル名で管理する。
