@@ -1,11 +1,13 @@
 # 実験実施 ToDo
 
-更新日: 2026-09-05
+更新日: 2026-09-06
 
 第1段階のfixtureテストと入力照合はユーザー実行ログで成功を確認済み。
 第2段階は20テストと本番manifestの生成・再読込成功をユーザー実行ログで確認済み。
 第3段階のloader・B0/PCAはユーザー実行で検証済み（本番PCAはfold 1）。
-現在はChemoMAEの共通部品・全可視抽出を実装し、新規CPUテストの結果待ち。
+ChemoMAEの共通部品・全可視抽出は、ユーザー共有ログでCPUテスト29件の成功を確認済み。
+Trainer継承部分はCPUテスト16件とA0/M11のGPU動作確認で成功を確認済み。
+現在はCosine-KMeans・元座標へのラベル復元を追加し、新規CPUテスト待ち。
 第1段階の残る品質表・空間図確認は、本学習前までに完了する。
 この文書は確定済み設計を実行へ移すための作業順序であり、詳細仕様は以下の設計文書を正とする。
 チェックは実装しただけでなく、各項目に必要な確認結果が得られてから付ける。
@@ -218,29 +220,34 @@ manifests/complete.json                完了記録・成果物hash・fold件数
 
 - [ ] 必要な画素をchunkで読むloaderを実装し、SNVを入力・clean targetとして扱う。
   ニューラルネット学習・PCA fit・KMeans fitに同じtrain抽出集合を渡す。
-  `data.py` の共通loaderとPCAへの接続を検証済み。NN・KMeansへの接続と実行確認は未完了。
+  `data.py` の共通loaderとPCA・NNへの接続を検証済み。
+  KMeans用train表現の収集を追加し、新規テスト待ち。
 - [x] B0とPCAのfit/transform・正規化・保存/再読込を実装する。
   PCAのfit対象をtrainに限定し、実solverと乱数管理を記録する。
   ユーザーが新規テスト・fold 1の本番fit・checkの成功を報告。保存記録も確認した。
-- [ ] ChemoMAEの共通構成と条件別Aug・mask・lossを実装する。
+- [x] ChemoMAEの共通構成と条件別Aug・mask・lossを実装する。
   A0は `n_mask=0` と `loss_region="all"`、MAEは `loss_region="masked"`。
   mask率25/50/75%の `n_mask` は4/8/12とする。
-  `neural.py` に共通モデル・Aug・可視mask・clean targetのMSEを追加済み。CPUテスト待ち。
-- [ ] 実験プロトコル第4.2節の学習recipeを実装する。
+  `neural.py` の共通モデル・Aug・可視mask・clean targetのMSEをCPUテストで確認済み。
+- [x] 実験プロトコル第4.2節の学習recipeを実装する。
   ChemoMAEの既定Trainer・optimizer・schedulerとの次の差を解消する。
   - `amp_dtype="fp16"`、`grad_clip=None`、`use_ema=False`を明示する。
   - weight decayは0.05、bias・正規化層のみ0とし、既定helperによるCLS・位置埋め込みの除外をそのまま使わない。
   - 初回lr=0から、batch処理前に公式recipeのlr列を設定する。
   - 独立runは `resume_from=None`。再開は同じrunのcheckpointを明示する。
+  CPUテスト16件と、A0/M11の短いGPU runで学習・保存・再開を確認済み。800 epochは未実行。
 - [ ] 800 epochの最終raw weightsと、再開に必要な学習状態を保存する。
   test指標によるearly stopping・checkpoint選択を入れない。
-- [ ] 全可視16次元抽出を実装する。`ExtractorConfig(amp=False)` または全可視maskを明示したencoderを使う。
+  epoch境界のcheckpointと最終raw weights保存を追加済み。800 epochの実行は未実施。
+- [x] 全可視16次元抽出を実装する。`ExtractorConfig(amp=False)` または全可視maskを明示したencoderを使う。
   `eval()`だけを指定した通常の `forward()` でランダムmaskを残さない。
-  `extract_full_visible` を追加済み。正規化前の潜在診断を含むCPUテスト待ち。
+  CPUテストとA0/M11のGPU上のtrain 8画素probeを確認済み。全test抽出は未実施。
 - [ ] trainだけでCosine-KMeansをfitし、中心を固定してtestをpredictする。
   同じ学習済み表現を全Kで再利用し、中心・seed・停止状況を保存する。
+  `clustering.py` にtrain表現収集・参照KMeans fit/predict・中心保存/再読込を追加。CPUテスト待ち。
 - [ ] 元座標へ予測を戻し、背景0・クラスタ1からKのラベル規約を検証する。
   非有限値・ゼロnorm・単位norm誤差の記録を実装し、条件別に画素を無言で落とさない。
+  `LabelMap` にchunk追加・重複/背景への誤代入検出・有効画素の全件coverage確認を追加。CPUテスト待ち。
 
 完了条件: 小規模入力でfitから保存・再読込・全可視推論・元座標への対応まで確認できる。
 
@@ -301,7 +308,7 @@ scikit-learn 1.9.0・NumPy 2.4.4、PCA再読込後のprobe最大絶対誤差
 別途ユーザーから `check --fold 1` もエラーなく終了したと報告を受けた。
 このprobe成功を全test推論・クラスタリングの成功とは扱わない。
 
-### 第3段階のChemoMAE共通部品の実装記録（検証待ち）
+### 第3段階のChemoMAE共通部品の実装・確認記録
 
 - `src/wood_degradation_map/experiments/neural.py`:
   固定configからCPU FP32モデルを構築し、同じfold・反復の初期化を条件間で共有する。
@@ -313,7 +320,8 @@ scikit-learn 1.9.0・NumPy 2.4.4、PCA再読込後のprobe最大絶対誤差
   epochごとにshuffleし、固定batch size=1024で末尾をdropする。画素集合の再抽出は行わない。
 - AdamWのgroup分けとbatch処理前に使うlr計算を追加した。
   bias・LayerNormのみweight decay=0、CLS・位置埋め込みには0.05を適用する。
-  800 epochの実行loop、CUDA FP16 AMP + GradScaler、checkpoint保存・再開との接続は未実装。
+  800 epochの実行loop、CUDA FP16 AMP + GradScaler、checkpoint保存・再開との接続は、
+  下記のTrainer継承部分へ追加し、A0/M11の短いGPU runで動作確認済み。
 - 全可視抽出は `model.eval()` と全要素Trueのmaskを指定してencoderだけを呼ぶ。
   FP32・autocast無効・TF32無効とし、終了/例外時にmode・精度設定を復元する。
   `to_latent` の正規化前出力を一時hookで検査し、参照版のeps=1e-12にclampされる
@@ -324,15 +332,149 @@ scikit-learn 1.9.0・NumPy 2.4.4、PCA再読込後のprobe最大絶対誤差
   forward/backwardと抽出のfixtureだけTransformer幅・層数を縮小し、CPUで検証する。
   本番モデル構築は固定サイズで検査する。実データ・GPU・800 epoch学習・ファイル出力は使わない。
 
-次の確認コマンド（Codexでは未実行）:
+ユーザー実行済みの確認コマンド（2026-09-06共有ログ。Codexでの再実行はしていない）:
 
 ```powershell
 uv run pytest tests/experiments/test_neural.py
 ```
 
-共通部品を確認した後、train loaderとの接続・実学習loop・checkpoint・KMeansを実装する。
-本番batch size=1024のGPUメモリ適合性とCUDA乱数の再開再現性は未検証。
+`29 passed, 8 warnings in 10.56s` を確認した。
+警告は参照版の `norm_first=True` によりNested Tensorの最適化が無効になる通知。
+固定モデル設定の変更や警告の抑制は行わない。
+train loaderとの接続・実学習loop・checkpointは下記へ追加した。
+本番batch size=1024のGPUメモリ適合性とCUDA乱数の再開はA0/M11の短いrunで確認した。
 保存済みconfig・manifest・PCA係数は変更していない。
+
+### 第3段階のTrainer継承・保存・再開の実装・確認記録
+
+- `src/wood_degradation_map/experiments/training.py`:
+  ユーザーと合意したとおり、`ExperimentTrainer` はChemoMAE 0.2.1の `Trainer` を継承する。
+  `Trainer.fit()` のepoch管理、AMP/GradScalerの初期化、loss計算、atomicなtorch保存を再利用する。
+  `train_one_epoch()` では、検証済みのAdamW group・batch処理前のlr・用途別乱数を接続する。
+  FP16 AMP、FP32 weights、clippingなし、EMAなし、追加schedulerなしとする。
+  `TrainingData.from_fold()` は共通loaderのtrain抽出行列だけをCPUに保持する。
+  GPUへ転送するのは各batchの1024行であり、test spectraは学習時に読まない。
+- epoch境界でmodel・optimizer・GradScaler・pixel order/mask/AugとCPU/CUDAのtorch RNGを保存する。
+  最初にepoch 0のcheckpointも保存する。中断したepochの途中状態は保存せず、最後に保存できた
+  epoch境界からやり直す。checkpoint内の履歴を正とし、先行した外部履歴は再開後の保存で置き換える。
+  独立runの出力先が既にある場合は停止し、自動resumeしない。
+  再開には同じrunのcheckpointを明示し、条件・fold・反復・config・manifest・実装hash・
+  library/GPU/演算設定を照合する。GradScalerの復元エラーは握りつぶさない。
+  実装や実行環境が変わったcheckpointの移行は、この再開処理の対象外。
+- optimizerのstep hookで実更新回数を数え、予定回数・実更新・AMP skip・非ゼロlrでの更新を区別する。
+  epoch別loss/lr/scale/時間、入力・seed・環境・checkpoint/最終重みhashを数値記録へ保存する。
+  初回lr=0のoptimizer呼び出しも実stepに数え、非ゼロlrでの更新数は別に記録する。
+- `scripts/experiments/train_neural.py`:
+  `train` は単一CUDA GPUで800 epochに固定する。epoch数・batch size・accumulationの変更引数は設けない。
+  `smoke` は別の出力先で短縮epochを2回実行し、epoch 1のcheckpointからepoch 2を再実行する。
+  既定では1短縮epochあたり2batchなので、再実行を含め合計6batch。
+  lrの分母には本番の312/320 batchを使うが、短縮epochの結果は本学習結果として扱わない。
+  画素順序・Aug入力・mask・lr・scaler・更新判断の一致、raw weightsの保存/再読込、
+  再開後の重みと全可視表現の誤差、GPUメモリを記録する。probeはtrainの8画素。
+  重み/潜在の再開比較には最大絶対誤差1e-6を動作確認の許容値として使い、画素除外には使わない。
+  `checks_passed` には非ゼロlrでの実更新が1回以上あることも必要。全AMP skipを成功扱いしない。
+- `tests/experiments/test_training.py`:
+  A0/M11の継承fit、連続実行と再開の一致、clean target保持、更新/skip計数、
+  既存出力の保護、途中epochの保存拒否、条件/反復/manifest/code不一致、
+  不正なcheckpoint・GradScaler復元失敗をCPUの小規模fixtureで検証する。
+  このfixtureだけbatch sizeとTransformer幅・層数を縮小する。実データやGPUは使わない。
+
+ユーザー実行済みのCPUテスト（Codexでの再実行はしていない）:
+
+```powershell
+uv run pytest tests/experiments/test_training.py
+```
+
+ユーザー実行済みのA0とM11のGPU動作確認:
+本番サイズのモデルとbatch size=1024を使用し、それぞれ既定6batchを処理する。
+train入力行列はfold 1で312 MiBのCPUメモリを使い、HDF5読み取り・モデル/optimizer・
+checkpoint再読込・再開比較用の領域が別途必要。今回の実測値は下表のとおり。
+OOMが発生してもbatch sizeなどを自動変更しない。エラーと保存できた実行記録を確認する。
+
+```powershell
+uv run python scripts/experiments/train_neural.py smoke --condition A0 --fold 1
+uv run python scripts/experiments/train_neural.py smoke --condition M11 --fold 1
+```
+
+出力rootは既存の `outputs/experiments/cv_200hz_snr10_linear256_v1/`。
+
+| 用途 | root以下の配置 |
+| --- | --- |
+| 本学習の数値記録 | `results/neural/<condition>/fold_<f>/repeat_<r>/` |
+| 本学習の重み | `checkpoints/neural/<condition>/fold_<f>/repeat_<r>/` |
+| 動作確認の数値記録 | `results/neural_smoke/<UTC実行ID>/<condition>/fold_<f>/repeat_<r>/` |
+| 動作確認の重み | `checkpoints/neural_smoke/<UTC実行ID>/<condition>/fold_<f>/repeat_<r>/` |
+
+数値記録は `run.json`、`training_history.json`、`checkpoint.json`、`completion.json`、
+`attempt_<UTC>.json`。動作確認は追加で `smoke.json` を保存する。
+重みディレクトリ内は参照Trainerの構造に合わせ、再開状態が `checkpoints/last.pt`、
+最終raw weightsが `last_model.pt`。動作確認は `smoke_model.pt` と再開確認用 `checkpoints/epoch_1.pt`。
+数値記録はGit対象、重みディレクトリ以下は既存ignoreで除外される。
+動作確認は実行ごとに新しいUTC実行IDを付け、前の結果を上書きしない。
+
+確認点は終了code 0、`checks_passed=true`、再開入力/lr/scaler/更新判断の一致、
+raw weightsの保存/再読込一致、重み/潜在の最大絶対誤差、実更新・AMP skip数、GPUメモリ。
+この段階ではKMeans・全test推論・評価指標は未接続。
+
+2026-09-06ユーザー共有ログで、CPUテスト `16 passed, 16 warnings in 5.56s` を確認した。
+警告は既知の `norm_first=True` によるNested Tensor最適化の無効化通知。
+保存済み `run.json` のGPUはNVIDIA GeForce RTX 4070 Ti SUPER、PyTorchは2.13.0+cu130。
+
+| 条件 | smoke ID（UTC） | 実行全体秒 | 最大GPU allocated | 最大GPU reserved |
+| --- | --- | ---: | ---: | ---: |
+| A0 | `20260905T154032_240426Z` | 16.20 | 約1.49 GiB | 約1.78 GiB |
+| M11 | `20260905T154054_126680Z` | 15.67 | 約0.90 GiB | 約1.09 GiB |
+
+両条件で `checks_passed=true`、本体4回のoptimizer step・うち非ゼロlrで3回・AMP skip 0。
+再開確認を含めた実処理は各6batch。画素順序・Aug入力・mask・lr・scaler・更新判断は一致した。
+raw weightsの保存/再読込は一致し、再開後の重み・潜在の最大絶対誤差は両条件とも0。
+全可視8画素probeの数値異常は0、単位norm最大誤差はA0が `1.1920928955078125e-7`、
+M11が `5.960464477539063e-8`。同じ検証を再実行する必要はない。
+短縮epochの結果から800 epochの所要時間・安定性・モデル性能を断定しない。
+
+本学習用CLIも実装したが、第1段階の残作業と第5段階の確認を終えるまで本学習へ進まない。
+以下は将来の実行・再開方法の記録であり、本学習の実行結果ではない。
+
+```powershell
+uv run python scripts/experiments/train_neural.py train --condition M11 --fold 1 --repeat 1
+uv run python scripts/experiments/train_neural.py train --condition M11 --fold 1 --repeat 1 --resume outputs/experiments/cv_200hz_snr10_linear256_v1/checkpoints/neural/M11/fold_1/repeat_1/checkpoints/last.pt
+```
+
+### 第3段階のCosine-KMeans・ラベル復元の実装記録（検証待ち）
+
+- `src/wood_degradation_map/experiments/clustering.py`:
+  `collect_train_features()` は共通loaderのtrain抽出行だけを読み、各行の表現を一度収集する。
+  NN学習のような末尾dropは行わない。fit時には全Kで同じ `TrainFeatures` を再利用できる。
+  PCAのfold・train試料集合・画素数・反復再利用条件を照合し、transform中にfitは行わない。
+  非有限値・ゼロnorm・参照epsilonにclampされる微小normは診断付きで停止し、画素を除外しない。
+- K・seed・max_iter=500・tol=1e-4を固定し、ChemoMAEの `CosineKMeans.fit()` を1回呼ぶ。
+  参照版既定の全体をdeviceへ転送するfitを使い、streaming方式やrestartへ変更しない。
+  fit/predictはFP32・autocast/TF32無効。test predictでは固定中心を使う。
+  train占有数、表現/中心の単位norm誤差、実行時間、version、deviceを記録する。
+- 参照版は実反復数・停止理由を公開しないため、`iterations=None`、
+  `stop_reason="not_exposed_by_ChemoMAE_0.2.1"` として保存する。収束したとは推測しない。
+  参照版の `inertia_` は最後の中心更新前のE-stepに対応するため、最終保存中心に対する
+  目的値を別途計算し、`reference_inertia` と `final_center_inertia` を区別する。
+- 中心の保存/再読込は数値NPZ（pickleなし、既存ファイルへの上書きなし）。
+  参照版のsave/load helperは中心を再正規化するため、値を変えずに保存し、
+  読込時は参照moduleのbufferへ直接復元する。条件・fold・反復・K・seed・versionを照合する。
+  この中心ファイルは、後続CLIで既存の `checkpoints/` 以下へ配置する。
+- `LabelMap` は0..K-1の予測を元座標へ1..Kとして追加し、背景を0に保つ。
+  chunk内/間の重複座標、範囲外座標、背景への誤代入、無効ラベルを拒否する。
+  完了時にvalid maskの全有効画素が予測済みか確認し、未予測画素を背景扱いで隠さない。
+- `tests/experiments/test_clustering.py`:
+  B0/PCAのtrain限定収集と末尾保持、参照fit/predictとの一致、中心の保存/再読込、
+  test入力で中心を変更しないこと、無効表現、全test行の座標復元とcoverageをCPU fixtureで検証する。
+
+次の確認コマンド（Codexでは未実行）:
+
+```powershell
+uv run pytest tests/experiments/test_clustering.py
+```
+
+今回は共通部品とfixtureを追加した段階。本番CLI・NN checkpointの読込と表現抽出への接続、
+GPU上のKMeans確認、本番test全画素のマップ保存、評価指標は未完了。
+実反復数と停止理由の取得は、参照版のAPI制約として残っている。
 
 ## 4. 評価・集計の実装
 
@@ -361,9 +503,11 @@ uv run pytest tests/experiments/test_neural.py
 - [ ] 対象実装の最小テストと関連チェックのコマンドを用意し、結果を確認する。
 - [ ] 少数batchの学習から全可視抽出・クラスタリング・評価・保存まで通す。
   動作確認runを本実験の結果と分け、短縮学習の値で条件選択をしない。
-- [ ] batch size=1024で、全可視A0を含めGPUメモリ・入出力負荷を確認する。
+- [x] batch size=1024で、全可視A0を含めGPUメモリ・入出力負荷を確認する。
   収まらない場合は状況を報告し、batch size・accumulationを暗黙に変更しない。
-- [ ] lr列、weight decay対象、FP16学習とFP32評価の切替、更新回数、再開動作を確認する。
+  A0/M11の各6batchとtrain行列読込で確認済み。長時間の本学習は未実行。
+- [x] lr列、weight decay対象、FP16学習とFP32評価の切替、更新回数、再開動作を確認する。
+  CPUテストとA0/M11のGPU再開確認で検証済み。
 - [ ] GPU・library version・演算設定、実行時間・保存容量の見積りを記録する。
   同一モデルのclean/摂動後表現をK間で再利用できることも確認する。
 - [ ] 本文用の代表試料の選択基準・IDを、結果を見る前にユーザーと固定する。
@@ -427,7 +571,8 @@ PCA・KMeans fitや評価計算は上表のニューラルネット学習数に�
 - [ ] config・manifest・結果の保存先と、次回最初に行う作業を記録する。
 - [ ] 設定変更が必要になった場合はユーザーの決定を設計文書へ反映し、旧条件のrunと混合しない。
 
-次回の開始位置: **3. loader・B0/PCAの新規テストとfold 1のfit/再読込結果確認**。
-その確認後、**3. NNの学習・全可視抽出・KMeansの実装**へ進む。
+次回の開始位置: **3. Cosine-KMeans・ラベル復元の新規CPUテスト結果を確認する**。
+loader・B0/PCA（本番fitはfold 1）と、ChemoMAE共通部品のCPUテストは確認済み。
+Trainer継承部分とA0/M11のGPU動作確認も成功。KMeansのGPU確認・本番CLI・全test推論・評価は未完了。
 第1段階の品質表・空間図確認は残っており、本学習前までに完了する。
 49試料の採用とKYOw単位の分割は確認済み。原材関係の再確認は新情報がある場合に限る。

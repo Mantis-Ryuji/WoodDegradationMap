@@ -1,0 +1,86 @@
+{
+  "status": "smoke_and_resume_probe_completed",
+  "condition": "A0",
+  "scope": "Two truncated train-only epochs and replay of epoch 2; no CV metrics",
+  "smoke_id": "20260905T154032_240426Z",
+  "batch_size": 1024,
+  "batches_per_smoke_epoch": 2,
+  "executed_batches_including_replay": 6,
+  "reference_completion": {
+    "status": "smoke_fit_completed",
+    "completed_epochs": 2,
+    "attempted_updates": 4,
+    "optimizer_updates": 4,
+    "nonzero_lr_updates": 3,
+    "amp_skips": 0,
+    "training_seconds": 1.1506860256195068,
+    "weights_file": "C:\\Users\\PC_User\\Python\\WoodDegradationMap\\outputs\\experiments\\cv_200hz_snr10_linear256_v1\\checkpoints\\neural_smoke\\20260905T154032_240426Z\\A0\\fold_1\\repeat_1\\smoke_model.pt",
+    "weights_sha256": "f08be925e29bd918bb07b060f873f865cdf3435e06076220a3b6d25bf1f11ee1",
+    "checkpoint_file": "C:\\Users\\PC_User\\Python\\WoodDegradationMap\\outputs\\experiments\\cv_200hz_snr10_linear256_v1\\checkpoints\\neural_smoke\\20260905T154032_240426Z\\A0\\fold_1\\repeat_1\\checkpoints\\last.pt"
+  },
+  "resume_inputs_lr_scaler_and_step_decisions_exact": true,
+  "raw_weights_save_load_exact": true,
+  "resume_weight_absolute_error_max": 0.0,
+  "resume_latent_absolute_error_max": 0.0,
+  "reference_epoch_2": [
+    {
+      "epoch": 2,
+      "batch": 0,
+      "lr": 1.4999999999999999e-05,
+      "loss": 1.011366367340088,
+      "optimizer_step": true,
+      "amp_scale": 65536.0,
+      "train_rows_sha256": "59ca9ff68861abc9cf89e41542f9ed18887d30236b85182e0118630a4da36e65",
+      "augmented_sha256": "7392a3deb31baf4cc2058131e8534d6f0f070802635c8facaaf23ea594316a19",
+      "visible_mask_sha256": "f317dd9d6ba01c465d82e4c4d55d01d270dda69db4a01a64c587a5593ac6084d"
+    },
+    {
+      "epoch": 2,
+      "batch": 1,
+      "lr": 1.5048076923076921e-05,
+      "loss": 0.9953184127807617,
+      "optimizer_step": true,
+      "amp_scale": 65536.0,
+      "train_rows_sha256": "f8bac24a9b2ee95d6d4cb4dc3b11e6290118b4bde5b476e14995bf5f0cd069ec",
+      "augmented_sha256": "ede1650eb4c25d1e9ab2c555a6eaaa69f53ee68cc71968fcf420256d7c083455",
+      "visible_mask_sha256": "f317dd9d6ba01c465d82e4c4d55d01d270dda69db4a01a64c587a5593ac6084d"
+    }
+  ],
+  "resumed_epoch_2": [
+    {
+      "epoch": 2,
+      "batch": 0,
+      "lr": 1.4999999999999999e-05,
+      "loss": 1.011366367340088,
+      "optimizer_step": true,
+      "amp_scale": 65536.0,
+      "train_rows_sha256": "59ca9ff68861abc9cf89e41542f9ed18887d30236b85182e0118630a4da36e65",
+      "augmented_sha256": "7392a3deb31baf4cc2058131e8534d6f0f070802635c8facaaf23ea594316a19",
+      "visible_mask_sha256": "f317dd9d6ba01c465d82e4c4d55d01d270dda69db4a01a64c587a5593ac6084d"
+    },
+    {
+      "epoch": 2,
+      "batch": 1,
+      "lr": 1.5048076923076921e-05,
+      "loss": 0.9953184127807617,
+      "optimizer_step": true,
+      "amp_scale": 65536.0,
+      "train_rows_sha256": "f8bac24a9b2ee95d6d4cb4dc3b11e6290118b4bde5b476e14995bf5f0cd069ec",
+      "augmented_sha256": "ede1650eb4c25d1e9ab2c555a6eaaa69f53ee68cc71968fcf420256d7c083455",
+      "visible_mask_sha256": "f317dd9d6ba01c465d82e4c4d55d01d270dda69db4a01a64c587a5593ac6084d"
+    }
+  ],
+  "full_visible_probe": {
+    "row_count": 8,
+    "dimension": 16,
+    "nonfinite_rows": [],
+    "nonfinite_norm_rows": [],
+    "zero_norm_rows": [],
+    "epsilon_clamped_rows": [],
+    "unit_norm_absolute_error_max": 1.1920928955078125e-07
+  },
+  "wall_seconds_including_io_and_replay": 16.196247199997742,
+  "peak_gpu_allocated_bytes": 1598409216,
+  "peak_gpu_reserved_bytes": 1908408320,
+  "checks_passed": true
+}
