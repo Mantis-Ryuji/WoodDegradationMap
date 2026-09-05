@@ -15,8 +15,14 @@ LFR用の共通摂動生成・反転率計算はCPUテスト27件で確認済み
 cosine-silhouetteと3反復間ARIはCPUテスト33件で確認済み。
 試料macro・SD・paired差はCPUテスト34件、評価接続と既存LFRは計52件で確認済み。
 OOF・ARI・計画比較の接続もユーザーから31テスト全件成功の報告を受けた。
-現在は本学習前に残る品質表・全試料空間図の確認用レポートを追加し、CPUテスト待ち。
-第1段階の残る品質表・空間図確認は、本学習前までに完了する。
+品質確認レポートはCPUテスト10件と生成成功をユーザー共有ログで確認済み。
+保存済み品質表と全49試料の空間図を確認した。
+ユーザー決定により負の補間反射率画素をtrain・test共通で背景化する実装を追加した。
+新版前処理のテスト全件成功・再生成はユーザー報告と保存記録で確認済み。
+実験の入力IDを `production_v1`、動作確認用rootを `preflight_v1` に更新した。変更後の実験テスト・再生成待ち。
+本番用rootは `production_v1` とし、動作確認とは分離する。
+ユーザー指定によりデータ階層を `data/processed/production_v1/` へ簡略化した。
+旧階層での生成確認と区別し、短いパスでの前処理再生成・preflight再構築を次に実行する。
 この文書は確定済み設計を実行へ移すための作業順序であり、詳細仕様は以下の設計文書を正とする。
 チェックは実装しただけでなく、各項目に必要な確認結果が得られてから付ける。
 
@@ -87,7 +93,7 @@ uv run python scripts/preprocess/check_sampling_pixels.py --q 8192
   新たな依存関係が判明した場合は、split作成前にユーザーと扱いを決める。
   2026-09-05ユーザー決定: 現存49試料で進める。異なるKYOw間の原材関係は不明。
   KYOw単位で分割し、同一KYOwがtrain/testをまたがないことを必ず検証する。
-- [ ] 既存の前処理診断図と品質記録を確認する。保存済み本番データの再生成を前提にしない。
+- [x] 既存の前処理診断図と品質記録を確認する。保存済み本番データの再生成を前提にしない。
 - [x] HDF5の `snv`、`reflectance`、`pixel_row_col`、`valid_spectrum_mask`、`wavelength_nm` の
   対応を、小規模な読み取りで確認できる検証処理を用意する。schemaやraw dataを変更しない。
   ユーザー実行ログでテスト26件成功、49試料・計392行のprobe成功を確認した。
@@ -119,7 +125,7 @@ uv run python scripts/preprocess/check_sampling_pixels.py --q 8192
   試料数49、全有効画素数3,902,746、未検証HDF5試料0。
   49試料×8行のSNV再計算最大絶対誤差は `1.66173969695649e-7`。
 - 既存のcutoff図とSNV異常候補図を目視した。上位候補にはspikeが見られるが、
-  順位図から発生率や採用可否を判断しない。全試料の空間図・品質表の確認は未完了。
+  順位図から発生率や採用可否を判断しない。全試料の空間図・品質表の後続確認は下記に記録する。
 - 配置:
 
   | 用途 | 配置 |
@@ -154,7 +160,7 @@ fixtureテストは `26 passed in 4.49s`。同じ入力での再実行は不要�
 完了条件: 採用データと座標の契約、分割上の確認状況、実装・保存先を説明できる。
 49試料の採用確定と、画素数確認に49試料が載っていたことを区別する。
 
-### 本学習前の品質確認資料（生成処理のCPU検証待ち）
+### 本学習前の品質確認資料（2026-09-06確認済み）
 
 - `input_review.py` と `scripts/experiments/prepare_input_review.py` を追加。
   既存のmanifest、sample_quality、mask_quality、reference_band_quality、output_band_summaryを読み、
@@ -172,22 +178,136 @@ fixtureテストは `26 passed in 4.49s`。同じ入力での再実行は不要�
 - テスト10件を追加。全列/数値/リンクの保持、HTML escape、欠落画像の明示、出典不一致、上書き拒否を確認する。
   既存の品質基準・49試料の採用決定・splitは変更していない。
 
-今回ユーザーが実行するコマンド（Codexでは未実行）:
+ユーザー実行ログで成功を確認したコマンド（Codexでは再実行していない）:
 
 ```powershell
 uv run pytest tests/experiments/test_input_review.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
 ```
 
-テスト成功後に資料を生成する。既存の小規模表を読むCPU処理で、GPU・HDF5全件走査・前処理再生成は行わない。
+テストは `10 passed in 1.63s`。続く資料生成も成功した。
+既存の小規模表を読むCPU処理で、GPU・HDF5全件走査・前処理再生成は行わない。
 
 ```powershell
 uv run python scripts/experiments/prepare_input_review.py
 ```
 
-出力の `html` を開く。確認点は49試料・3,902,746画素・`missing_images=[]`。
-続いて品質表の除外/範囲外反射率/SNV指標と全49試料の空間図を目視する。
-現時点では資料生成も全49図の目視確認も未完了。追加除外や本文代表試料を自動で決めない。
+保存先は `results/input_review/20260905T184525_158100Z/`。
+ユーザーから49試料・3,902,746画素・画像欠落0件で問題ないとの確認を受けた。
+Codexは生成済みCSVと既存PNGを読み取り、次を確認した（HDF5全件再検証ではない）。
+
+- 保持帯域反射率の非有限値、SNV入力標準偏差不正、最終除外画素はいずれも0。
+  全49行でmask画素数と保存画素数・除外画素数の収支が一致する。
+- 全元帯域でのSNV不正は1,390画素（KYOw02708: 519、KYOw02771: 50、KYOw02784: 821）。
+  cutoff前の全帯域診断であり、保持帯域・補間後の最終除外画素数とは区別する。
+- 負の補間反射率を1帯域以上含む画素は21試料の計496画素（全保存画素の約0.0127%）。
+  1超の反射率を含む画素は0。現行実装は非クリッピング・負値だけでは除外しない仕様。
+  後続のユーザー決定により、補間後・SNV前の負値画素をtrain・test共通で背景化する新版を用意した。
+- reference表は256帯域中222帯域を保持し、保持帯域のlow_snrは0件。
+  output表は反射率・SNV各256帯域、各行49試料、最大非有限値率0。
+- SNV二次差分最大値の上位にはKYOw02769、KYOw02771、KYOw02715などがある。
+  事前の除外閾値はなく、上位候補という理由で試料や画素を除外しない。
+- 全49試料の反射率L2 norm画像を目視した。分離した材片（例: KYOw02702、KYOw16702）、
+  穴や亀裂状の空白、局所的に明るい領域（例: KYOw02775中央の文字状領域）が見られる。
+  原画像とのoverlay照合は行っておらず、空白の原因・maskの正確さ・明るい領域の材質や劣化との対応は確定しない。
+  画像は既存の全試料共通scaleで確認し、色scaleや画素集合を変更していない。
+
+品質記録・空間図の確認工程を完了とする。全画素の科学的妥当性の保証や劣化ラベルの承認とは扱わない。
+49試料の採用決定は維持する。旧データ・画素manifestは保存し、新版で有効画素数を再確認する。
+現行CLIは動作確認と本番で同じexperiment rootを既定値にし、配下の枝だけを分けている。
+本番は動作確認済みrootとは別の新規rootを使う方向で、入力方針の確定後に設定・コマンドを整備する。
 本文代表試料の基準・IDはユーザーと結果を見る前に固定する工程として残っている。
+
+### 負の反射率画素の背景化（2026-09-06、実装済み・ユーザー検証待ち）
+
+- ユーザー決定: 補間後256帯域のSNV前反射率に1つでも負値がある画素を、train・test共通で背景にする。
+  `valid_spectrum_mask=0`、後段のラベル0とし、学習抽出候補・評価対象から外す。
+  元の形態学的maskは保持し、除外座標と理由code 3を保存する。SNV後の負値は除外理由にしない。
+- 既存理由1・2を優先し、理由3の除外数をsample_qualityとsummaryに追加する。
+  保存反射率の負値画素数は0になる。値のclip、閾値緩和、試料除外は行わない。
+- 新版の前処理IDは `production_v1`。条件はconfigへ記録し、ディレクトリ名に列挙しない。
+  新規の前処理データ・図を生成後、ユーザーが旧前処理データ・図のディレクトリを削除した。
+  旧実験rootの成果物は旧入力に依存する記録であり、新版で再利用しない。
+- 前処理テストに、厳密な負値判定、0のband・1超の値の保持、既存理由の優先順位と、
+  小規模ENVI fixtureからHDF5のmask・座標・SNV・品質集計までの接続を追加した。
+  接続fixtureはmaskを固定し描画を省略する。実データ・GPU・全49試料の代わりにはしない。
+  Codexではプロジェクトコード・テストを実行していない。
+
+ユーザーが実行済みのコマンド（再実行不要）:
+
+```powershell
+uv run pytest tests/preprocessing/test_production_preprocessing.py tests/experiments/test_input_validation.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
+uv run python scripts/preprocess/run_production_preprocessing.py
+```
+
+前処理は49試料のrawを再走査するCPU処理。新しいHDF5一式と診断図を保存するため、
+旧HDF5計約5.2 GiBと同程度の追加容量に加え図・表の余裕が必要。所要時間は未計測。
+再生成後のsummaryを確認した: 49試料、mask画素3,902,746、保存画素3,902,250、除外496（全件理由3）。
+HDF5計5,574,878,801 bytes、各試料HDF5と空間図は各49件。保持222帯域・除外34帯域のcutoffは同じ。
+configには補間後・SNV前の負値をtrain/test共通で背景化する規則が記録されている。
+旧前処理データ・図のディレクトリ不存在を確認した。旧レビューの画像リンクは参照先削除により使えない。
+この確認はJSON・ファイル一覧の読み取りであり、新版HDF5の全画素再検証や新版49図の目視とは区別する。
+
+実験configの入力IDを `production_v1` に更新した。各CLIの既定入力も新版へ揃えた。
+動作確認rootは `outputs/experiments/preflight_v1/`、本番rootは `outputs/experiments/production_v1/`。
+CLIの既定実験rootはpreflightとし、本番は `--experiment-dir`（manifest生成は `--experiment-id`）で明示する。
+同じ49 KYOw・split seedでfold割当を維持し、背景を除いた新しい行番号で共有train画素manifestを新規生成・照合する。
+旧入力に依存したPCA・学習重み・クラスタ中心・マップ・評価値は新版へ流用しない。
+
+### production_v1入力でのpreflight再構築（今回の実行手順）
+
+データ保存先を `data/processed/production_v1/` に簡略化し、前処理の保存先検証、
+各CLIの既定入力、テストfixture、前処理文書を更新した。診断図は `outputs/preprocessing/production_v1/`、
+動作確認は `outputs/experiments/preflight_v1/`、本番実験は `outputs/experiments/production_v1/`。
+今回の短いパスでの再生成はまだ実行していない。過去の生成結果を今回の実行済み結果とは扱わない。
+
+入力検証にproduction_v1の背景化config照合と、HDF5 probe行の反射率非負チェックを追加した。
+対応する5テストを追加し、manifest fixtureの入力IDも更新した。以下の変更後テストはCodexでは未実行。
+各コマンドを1つずつ実行し、失敗したら後続へ進まない。
+
+```powershell
+uv run pytest tests/preprocessing/test_production_preprocessing.py tests/experiments/test_input_validation.py tests/experiments/test_manifests.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
+uv run python scripts/preprocess/run_production_preprocessing.py
+uv run python scripts/preprocess/check_sampling_pixels.py --q 8192
+uv run python scripts/experiments/check_inputs.py
+uv run python scripts/experiments/prepare_manifests.py create
+uv run python scripts/experiments/prepare_manifests.py check
+uv run python scripts/experiments/prepare_input_review.py
+```
+
+確認点: 前処理49試料・保存3,902,250画素・理由3の除外496画素、全49試料でq=8192可能、
+入力probe成功、manifest生成・再読込成功。
+qと試料数が同じならtrain画素はfold 1–4で319,488、fold 5で327,680のまま、採用行・元座標は新版へ更新される。
+`prepare_input_review.py`はmanifest作成後に実行する。先に実行すると実験rootが作られ、
+既存ディレクトリを保護するmanifestのcreateが停止するため、この順序を守る。
+新レビューの品質表で保存反射率の負値画素数0・理由3の合計496を確認する。
+旧実験ディレクトリを移動・改名・コピーする必要はない。
+
+続いてfold 1・repeat 1のPCAと、A0/M11の短縮学習・再開確認を新規実行する。
+PCAは約32万train画素を使うCPU fit、ニューラルsmokeはGPU上で各6batch（再開probeを含む）。
+どちらも新版入力を読み直す。これは本番800 epochやCV指標計算ではない。
+
+```powershell
+uv run python scripts/experiments/fit_baselines.py fit --fold 1
+uv run python scripts/experiments/fit_baselines.py check --fold 1
+uv run python scripts/experiments/train_neural.py smoke --condition A0 --fold 1
+uv run python scripts/experiments/train_neural.py smoke --condition M11 --fold 1
+uv run python scripts/experiments/cluster_representations.py smoke --condition B0 --fold 1
+uv run python scripts/experiments/cluster_representations.py smoke --condition B1 --fold 1
+```
+
+PCAはfit・check成功、各smokeは `checks_passed=true` を確認する。
+最後に、今回のニューラルsmoke出力にある `smoke_id` をそれぞれ入力する。旧IDを使用しない。
+
+```powershell
+$a0SmokeId = Read-Host '今回のA0学習smokeのsmoke_id'
+$m11SmokeId = Read-Host '今回のM11学習smokeのsmoke_id'
+uv run python scripts/experiments/cluster_representations.py smoke --condition A0 --fold 1 --neural-smoke-id $a0SmokeId
+uv run python scripts/experiments/cluster_representations.py smoke --condition M11 --fold 1 --neural-smoke-id $m11SmokeId
+```
+
+成功後も、GPU評価を含む動作確認・負荷確認と本文代表試料の事前指定は残る。
+本番開始時はproduction_v1にmanifestを新規作成し、同じ入力・split・抽出集合を照合して本番fitを実行する。
+preflightの成果物を本番結果としてコピーしない。本番開始のコマンドは残る確認が完了した時点で案内する。
 
 ## 2. 共通config・seed・manifestの実装
 
@@ -879,7 +999,8 @@ uv run pytest tests/experiments/test_oof_pipeline.py -vv -s --durations=10 -o fa
 
 ユーザーから31テスト全件成功の報告を受けた。所要時間の共有はなく、時間値は記録しない。
 小規模CPUクラスタリングと評価も含む接続テストであり、実データ・GPU・本学習は使っていない。
-本番GPU評価と品質表・空間図、代表試料の事前固定、本学習前の負荷確認は引き続き未完了。
+本番GPU評価、代表試料の事前固定、本学習前の負荷確認は引き続き未完了。
+品質表・空間図の後続確認は第1段階の記録を参照する。
 
 以下は指定条件の本番評価が全5fold・3反復で揃った後の使用例であり、今回の即時実行対象ではない。
 
@@ -961,12 +1082,15 @@ PCA・KMeans fitや評価計算は上表のニューラルネット学習数に�
 - [ ] config・manifest・結果の保存先と、次回最初に行う作業を記録する。
 - [ ] 設定変更が必要になった場合はユーザーの決定を設計文書へ反映し、旧条件のrunと混合しない。
 
-次回の開始位置: **1. 品質確認資料のCPUテスト・生成結果を確認し、品質表と全試料空間図を確認する**。
+次回の開始位置: **上記「production_v1入力でのpreflight再構築」の実行結果を確認する**。
+旧階層での新版前処理のテスト成功・再生成と旧前処理ディレクトリのユーザー削除は確認済み。
+`data/processed/production_v1/`への保存先簡略化後は、前処理再生成から順に実行する。
+続いて本文代表例の事前指定、GPU評価を含む動作確認と負荷確認へ進む。
 OOF・ARI・計画比較の接続31テストはユーザーから全件成功の報告あり。
 評価パイプライン接続と既存LFRの計52テストはユーザーから全件成功の報告あり。
 試料macro・SD・paired差のCPUテスト34件は成功済み。
 loader・B0/PCA（本番fitはfold 1）と、ChemoMAE共通部品のCPUテストは確認済み。
 Trainer継承部分とA0/M11のGPU動作確認、KMeans共通部品のCPUテスト15件は成功。
 接続テスト20件とB0/B1/A0/M11のGPU train 64画素probeも成功。本番全test推論・評価は未確認。
-第1段階の品質表・空間図確認は残っており、本学習前までに完了する。
+第1段階の品質レポートは10テスト成功・生成済み。保存済み品質表と全49試料の空間図を確認済み。
 49試料の採用とKYOw単位の分割は確認済み。原材関係の再確認は新情報がある場合に限る。

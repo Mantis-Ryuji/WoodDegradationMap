@@ -29,9 +29,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--silhouette-chunk-pixels", type=int, default=1_000_000,
                         help="Bounds N x K workspace only; full-fold feature arrays remain required")
     parser.add_argument("--experiment-dir", type=Path,
-                        default=root / "outputs/experiments/cv_200hz_snr10_linear256_v1")
+                        default=root / "outputs/experiments/preflight_v1")
     parser.add_argument("--processed-dir", type=Path,
-                        default=root / "data/processed/preprocessing/200hz_snr10_linear256")
+                        default=root / "data/processed/production_v1")
     parser.add_argument("--metadata", type=Path, default=root / "data/metadata/古材メタデータ.csv")
     args = parser.parse_args()
     if args.chunk_pixels < 1 or args.silhouette_chunk_pixels < 1:

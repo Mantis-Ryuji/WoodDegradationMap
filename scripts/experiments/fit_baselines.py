@@ -24,9 +24,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fold", type=int, choices=range(1, 6), required=True)
     parser.add_argument("--repeat", type=int, choices=range(1, 4), default=1)
     parser.add_argument("--experiment-dir", type=Path,
-                        default=root / "outputs/experiments/cv_200hz_snr10_linear256_v1")
+                        default=root / "outputs/experiments/preflight_v1")
     parser.add_argument("--processed-dir", type=Path,
-                        default=root / "data/processed/preprocessing/200hz_snr10_linear256")
+                        default=root / "data/processed/production_v1")
     parser.add_argument("--metadata", type=Path, default=root / "data/metadata/古材メタデータ.csv")
     return parser.parse_args()
 

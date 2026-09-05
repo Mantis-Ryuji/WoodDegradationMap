@@ -22,13 +22,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("data/processed/preprocessing/200hz_snr10_linear256"),
+        default=Path("data/processed/production_v1"),
         help="New or empty directory for processed data.",
     )
     parser.add_argument(
         "--report-dir",
         type=Path,
-        default=Path("outputs/preprocessing/200hz_snr10_linear256"),
+        default=Path("outputs/preprocessing/production_v1"),
         help="New or empty directory for preprocessing figures.",
     )
     parser.add_argument(

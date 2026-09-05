@@ -126,6 +126,14 @@ def load_input_inventory(processed_dir: Path, metadata_path: Path) -> InputInven
         },
         "storage": {"format": "HDF5", "dtype": "float32"},
     }, "config")
+    if root.name == "production_v1":
+        _check_config(config, {"spectral": {"negative_reflectance_policy": {
+            "stage": "interpolated reflectance before SNV",
+            "criterion": "any band < 0",
+            "action": "background in valid_spectrum_mask; exclude from train and test",
+            "reason_code": 3,
+            "reason_priority": [1, 2, 3],
+        }}}, "config")
     endpoints = [config.get(key) for key in (
         "target_wavelength_start_nm", "target_wavelength_end_nm",
     )]
@@ -249,6 +257,8 @@ def probe_sample(
         snv = handle["snv"][rows].astype(np.float64)
     require(np.isfinite(reflectance).all() and np.isfinite(snv).all(),
             "sampled spectra contain non-finite values")
+    if preprocessing_id == "production_v1":
+        require((reflectance >= 0.0).all(), "sampled production_v1 reflectance is negative")
     std = reflectance.std(axis=1, ddof=1)
     require((std > 0).all(), "sampled reflectance has nonpositive standard deviation")
     reconstructed = (reflectance - reflectance.mean(axis=1, keepdims=True)) / std[:, None]

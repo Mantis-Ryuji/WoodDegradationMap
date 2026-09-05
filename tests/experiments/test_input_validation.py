@@ -79,6 +79,49 @@ def test_tables_and_snv_coordinate_correspondence(saved_input: tuple[Path, Path]
     assert report.snv_reconstruction_absolute_error_max < 1e-6
 
 
+@pytest.fixture
+def production_input(saved_input: tuple[Path, Path]) -> tuple[Path, Path]:
+    old, metadata = saved_input
+    root = old.with_name("production_v1")
+    old.rename(root)
+    manifest_path = root / "manifest.parquet"
+    manifest = pd.read_parquet(manifest_path)
+    manifest["preprocessing_id"] = root.name
+    manifest.to_parquet(manifest_path, index=False)
+    with h5py.File(root / "samples/KYOw02702.h5", "r+") as handle:
+        handle.attrs["preprocessing_id"] = root.name
+    return root, metadata
+
+
+def test_production_policy_and_nonnegative_reflectance(production_input: tuple[Path, Path]) -> None:
+    assert _probe(load_input_inventory(*production_input)).checked_hdf5_rows == (0, 1, 2, 3)
+
+
+@pytest.mark.parametrize("change", ["missing", "criterion", "action"])
+def test_production_rejects_missing_or_different_background_policy(
+    production_input: tuple[Path, Path], change: str,
+) -> None:
+    path = production_input[0] / "config.json"
+    config = json.loads(path.read_text(encoding="utf-8"))
+    if change == "missing":
+        del config["spectral"]["negative_reflectance_policy"]
+    else:
+        config["spectral"]["negative_reflectance_policy"][change] = "changed"
+    path.write_text(json.dumps(config), encoding="utf-8")
+    with pytest.raises(ValueError, match="negative_reflectance_policy"):
+        load_input_inventory(*production_input)
+
+
+def test_production_probe_rejects_negative_reflectance(production_input: tuple[Path, Path]) -> None:
+    with h5py.File(production_input[0] / "samples/KYOw02702.h5", "r+") as handle:
+        handle["reflectance"][0, 10] = -0.01
+        values = handle["reflectance"][:].astype(np.float64)
+        handle["snv"][:] = ((values - values.mean(axis=1, keepdims=True))
+                            / values.std(axis=1, ddof=1, keepdims=True)).astype(np.float32)
+    with pytest.raises(ValueError, match="reflectance is negative"):
+        _probe(load_input_inventory(*production_input))
+
+
 @pytest.mark.parametrize("content", ["2702\n02702", "2782", "", "2702\nunknown"])
 def test_invalid_metadata_fails(saved_input: tuple[Path, Path], content: str) -> None:
     root, metadata = saved_input
