@@ -137,16 +137,24 @@ class LFRAccumulator:
                          _occupancy(self._clean_counts, self.pixel_count), draws, means)
 
 
+@dataclass(frozen=True)
+class LFRBlockPrediction:
+    values: np.ndarray
+    clean: dict[int, PixelLabels]
+
+
 def accumulate_lfr_block(
     block: SharedPerturbationBlock, representation: Representation,
     clusters: Mapping[int, FittedClusters], accumulators: Mapping[int, LFRAccumulator],
-) -> None:
+) -> LFRBlockPrediction:
     """Transform clean/15 perturbed inputs once each, reusing each across all supplied K.
 
     No fit method is called. NeuralRepresentation retains eval/all-visible FP32
     inference while the independent generation augmenter uses training mode.
     Use the SAME block for other conditions and training repeats. Inputs passed
     to transform are private copies so one consumer cannot corrupt shared data.
+    Return the clean features/labels for map verification and pooled silhouette,
+    avoiding a second clean extraction in the evaluation pipeline.
     """
     if not clusters or set(clusters) != set(accumulators):
         raise ValueError("Matching nonempty cluster and accumulator K sets are required")
@@ -171,17 +179,20 @@ def accumulate_lfr_block(
                 or not np.array_equal(item.batch.pixel_row_col, block.clean.pixel_row_col)):
             raise ValueError("Shared perturbation coordinates/rows differ from clean input")
 
-    def predict(batch: SpectrumBatch) -> dict[int, PixelLabels]:
+    def predict(batch: SpectrumBatch) -> LFRBlockPrediction:
         private = SpectrumBatch(batch.sample_id, batch.hdf5_rows, batch.pixel_row_col, batch.snv.copy())
         features = _transform_batch(representation, private, condition).values
-        return {k: PixelLabels(batch.sample_id, batch.hdf5_rows, batch.pixel_row_col,
-                               cluster.predict(features) + 1) for k, cluster in clusters.items()}
+        return LFRBlockPrediction(features, {
+            k: PixelLabels(batch.sample_id, batch.hdf5_rows, batch.pixel_row_col,
+                           cluster.predict(features) + 1) for k, cluster in clusters.items()
+        })
 
     clean = predict(block.clean)
     draws: dict[int, list[PerturbedLabels]] = {k: [] for k in clusters}
     for item in block.perturbed:
         predictions = predict(item.batch)
         for k in clusters:
-            draws[k].append(PerturbedLabels(item.kind, item.draw, predictions[k]))
+            draws[k].append(PerturbedLabels(item.kind, item.draw, predictions.clean[k]))
     for k in clusters:
-        accumulators[k].add(clean[k], tuple(draws[k]))
+        accumulators[k].add(clean.clean[k], tuple(draws[k]))
+    return clean
