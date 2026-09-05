@@ -10,7 +10,9 @@ Trainer継承部分はCPUテスト16件とA0/M11のGPU動作確認で成功を�
 Cosine-KMeans・元座標へのラベル復元はCPUテスト15件の成功を確認済み。
 重み読込・全Kのクラスタリング・clean testマップ保存の接続はCPUテスト20件で確認済み。
 B0/B1/A0/M11のGPU上のtrain 64画素probeも成功。
-第4段階のLLA-3/5/9と補正LLAを追加し、新規CPUテストの確認待ち。
+第4段階のLLA・補正LLAはCPUテスト33件で確認済み。
+LFR用の共通摂動生成・反転率計算はCPUテスト27件で確認済み。
+現在はcosine-silhouetteと3反復間ARIの計算部を追加し、新規CPUテストの確認待ち。
 第1段階の残る品質表・空間図確認は、本学習前までに完了する。
 この文書は確定済み設計を実行へ移すための作業順序であり、詳細仕様は以下の設計文書を正とする。
 チェックは実装しただけでなく、各項目に必要な確認結果が得られてから付ける。
@@ -564,18 +566,22 @@ uv run python scripts/experiments/cluster_representations.py check --condition B
 
 ## 4. 評価・集計の実装
 
-- [ ] 評価文書の式に従いLLA-3/5/9と補正LLAを実装する。
+- [x] 評価文書の式に従いLLA-3/5/9と補正LLAを実装する。
   有効近傍対の計数、背景・中心画素の除外、coverage、単一クラスタ時の未定義を確認する。
-  `spatial_metrics.py` に計算部を追加。手計算・全画素対の列挙との照合テストはユーザー実行待ち。
+  `spatial_metrics.py` の計算部はユーザー共有ログで33テスト成功（0.17秒）を確認済み。
 - [ ] LFR用に、SNV入力へnoise・shift・両方を各5回適用する。
   同一画素の15入力を全条件・全K・全学習反復で共有できる生成・再利用処理を実装する。
   評価Augは明示的にtraining mode、encoderは推論mode・全可視とする。
   摂動後にPCAや中心をfitし直さず、各5回のLFRと平均を保存する。
+  `perturbations.py` と `lfr.py` の生成・共有・固定中心予測・試料内集計はCPUテスト27件で成功。
+  本番評価CLIと数値結果のファイル保存は後続の接続工程で行う。
 - [ ] `silhouette_samples_cosine_gpu` でfoldの全test画素のscoreを計算し、試料ごとに平均する。
   FP32、singleton、使用クラスタ数1、ゼロ距離などの規約を確認する。
+  `diagnostic_metrics.py` に参照関数の呼出と試料境界による集計を追加。CPUテスト待ち。
 - [ ] train fit・clean test・摂動後のoccupancy、使用クラスタ数、最大占有率を保存する。
   試料別とfold全体を区別し、未整列クラスタ番号をfold間で平均しない。
 - [ ] 同一試料の3反復間ARIを3対計算し、退化flagとともに保存する。Hungarian matchingは使用しない。
+  `diagnostic_metrics.py` に画素照合・整数contingency・3対と試料内平均を追加。CPUテスト待ち。
 - [ ] 試料・fold・条件・K・反復・摂動種別を追跡できる数値出力とrun台帳を実装する。
   未定義理由、利用可能数、失敗・中断・完了状態を記録する。
 - [ ] 試料macro、試料間SD、3反復間SD、共通対象でのpaired contrastを実装する。
@@ -585,7 +591,7 @@ uv run python scripts/experiments/cluster_representations.py check --condition B
 
 完了条件: 小規模の一連の処理から、期待する指標と集約表が得られ、同一画素対応と評価の固定性を確認できる。
 
-### 第4段階のLLA・補正LLAの実装記録（検証待ち）
+### 第4段階のLLA・補正LLAの実装・確認記録
 
 - `src/wood_degradation_map/experiments/spatial_metrics.py`:
   `local_label_agreement(labels, valid_mask, k=...)` は1試料のラベルマップと本番有効maskを受け取る。
@@ -612,14 +618,98 @@ uv run python scripts/experiments/cluster_representations.py check --condition B
   入力・乱数状態は変更せず、GPU・スペクトル読込・fit・ファイル保存はしない。
   この段階では保存マップとの一括接続、LFR、silhouette、ARI、試料間集計を追加していない。
 
-ユーザーが実行する最小テスト（Codexでは未実行）:
+ユーザー実行済みの最小テスト（Codexでは再実行していない）:
 
 ```powershell
 uv run pytest tests/experiments/test_spatial_metrics.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
 ```
 
 確認点は全件成功と、未定義が0/1で補完されず理由付きで保持されること。
-実データ・GPU・学習を使わない。成功結果を確認後、次のLFR用共通摂動へ進む。
+実データ・GPU・学習を使わない。ユーザー共有ログで `33 passed in 0.17s` を確認済み。
+同じテストの再実行は不要。
+
+### 第4段階のLFR共通摂動・反転率の実装・確認記録
+
+- `src/wood_degradation_map/experiments/perturbations.py`:
+  `SharedPerturbations` は1試料の全保存行をHDF5行順で受け取り、noise・shift・bothを各5回生成する。
+  seedは既存の試料ID・種類・drawの計画をそのまま使用し、条件・K・学習反復を含めない。
+  `SpectraAugmenter` を明示的にtraining modeにし、対象操作の確率1・それ以外0で呼ぶ。
+  強度・batch内の操作順ランダム化・各操作後の再中心化/再正規化は固定済み設定を維持する。
+- 参照実装ではbatch境界が乱数割当に影響するため、生成幅を1024行に固定し、試料先頭から区切る。
+  これは学習batch sizeとは別の生成処理の規約。末尾の部分batchも処理する。
+  loaderの読み取りchunkをbufferで組み直し、変えても同じ生成batchにする。
+  種類/drawごとに独立した連続RNG streamを持ち、全条件の共通入力としてchunkごとに再利用する。
+  途中欠落・重複・逆順・試料混入は拒否し、非有限/ゼロ/epsilon-clamp対象は元HDF5行付きで停止する。
+- 生成結果はcleanと15摂動のFP32 CPU配列を持つread-only block。全試料分をlistや永続cacheにしない。
+  1 blockのスペクトル配列は最大16 MiB程度で、生成時のGPU・copy・計算一時領域は別途必要。
+  同じblockを全条件・全K・全学習反復へ渡してから解放する。
+  recordは生成幅・試料・行順・設定・15seed・device/library versionを持つ。
+  同じ入力・生成幅・device・softwareでの再生を対象とし、CPUとCUDAのビット一致は保証しない。
+  RNG/FP32 scopeを抜けてからyieldし、呼出側の処理へ乱数状態や演算設定を持ち越さない。
+- `src/wood_degradation_map/experiments/lfr.py`:
+  `LFRAccumulator` は1試料・条件・K・学習反復に対応する。全15drawのラベルとcleanを
+  試料ID・HDF5行・元座標で照合し、画素別の反転件数を整数で合計してからFP32で割る。
+  chunkごとの率を平均しない。種類ごとに各5回の値とFP32平均、clean/各drawのoccupancyを返す。
+  未完了試料、draw欠落/重複、座標不一致・重複、背景0の混入を成功結果として返さない。
+  単一画素・単一クラスタのLFRは定義されるため、占有率を併記してそのまま計算する。
+  番号matchingをせず、固定中心からのラベル変化を測る。
+- `accumulate_lfr_block()` はcleanと15摂動をそれぞれ一度だけtransformし、全Kで共有する。
+  `NeuralRepresentation` のeval・全可視・FP32抽出を再利用し、PCA/encoder/中心をfitし直さない。
+  各consumerにはスペクトルのprivate copyを渡し、他条件と共有する入力の上書きを防ぐ。
+- `tests/experiments/test_lfr.py`:
+  小規模CPU人工データで参照augmenterとの一致、読み取りchunkを変えた再生、RNG復元、
+  元入力保持、全15drawの対応、手計算のLFRと5回平均、欠落/重複の拒否、K間の表現再利用、
+  NNの全可視・FP32・decoder非使用を検証する。
+  複数生成batchのfixtureだけ生成幅を7へ縮小する。本番の1024という定数も別テストで照合する。
+  本番規模の性能・GPUでの生成・評価CLI・結果ファイル保存はまだ未確認/未接続。
+
+ユーザー実行済みの最小テスト（Codexでは再実行していない）:
+
+```powershell
+uv run pytest tests/experiments/test_lfr.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
+```
+
+ユーザー共有ログで `27 passed, 1 warning in 2.93s` を確認済み。
+警告は既知の `norm_first=True` によるNested Tensor最適化の無効化通知。
+同じテストの再実行は不要。GPUでの摂動生成と本番評価への接続は未確認。
+
+### 第4段階のcosine-silhouette・3反復間ARI（検証待ち）
+
+- `src/wood_degradation_map/experiments/diagnostic_metrics.py`:
+  `fold_silhouette()` は、検証済みfold/inventoryから得るtest試料ID・画素数を別途受け取り、
+  全試料・全保存行が揃っていることを確認する。expectedの件数を入力表現から推測しない。
+  表現と予測ラベルは同じSpectrumBatchの行・元座標に基づいて呼出側で対応付ける。
+  ソートした試料順で全test表現をpoolし、ChemoMAE 0.2.1の参照関数を1回だけ呼ぶ。
+  FP32・autocast/TF32無効・eps=1e-12を明示し、別の正規化や距離定義へ置き換えない。
+- 戻り値はpoolした画素scoreと各試料のoffset・画素数・平均・占有数・singleton画素数、
+  試料macro平均と利用可能試料数。singletonは試料内ではなくfold全体のクラスタ占有数で判断する。
+  fold全体の使用クラスタ数1または全画素singletonは全試料のscoreを理由付きNoneとする。
+  不正な入力表現は、指標の定義域外とは分けて元HDF5行付きの入力失敗にする。
+  参照関数の出力が非有限または[-1,1]外の場合は元画素を示して停止し、clipや無言の除外をしない。
+- 参照関数はN×N距離行列を作らないが、全N×D表現と複数のN×D作業配列をdeviceへ置く。
+  `chunk_pixels`（既定1,000,000）は主にN×Kの比較tileを制限し、全体のGPUメモリを上限化しない。
+  CPU fixture以外のGPU負荷は未計測で、暗黙のdevice fallbackはしない。
+- `repeat_ari()` は1試料・条件・fold・Kについて、反復1/2/3の全画素ラベルを受け取る。
+  呼出側のrun読込で条件・fold・Kを検証し、ここでは試料ID・全HDF5行・元座標の一致を照合する。
+  3対のcontingencyと組合せ件数を整数で保持し、積のint64 overflowを避けて最後の除算をFP32で行う。
+  ラベル番号の整列やHungarian matchingは行わない。
+  N<2は未定義、両分割が単一クラスタまたは全画素singletonの完全一致は1とし、
+  各反復の単一クラスタ/all-singleton flagと使用クラスタ数を併記する。
+  3対の値と試料内平均を返し、反復対のSDを独立反復の不確実性として追加しない。
+- `tests/experiments/test_diagnostic_metrics.py`:
+  pooled計算1回と試料macro、sklearnの小規模cosine-silhouette/ARIとの一致、
+  chunk変更・singleton・厳密なゼロ距離・未定義・非有限/範囲外値・画素欠落/不一致、
+  ARIの手計算の負値・番号置換・退化・整数積を検証する。
+  整数積のテストだけ各100,000要素の整数ラベルを使い、スペクトル大配列やGPUは使わない。
+  本番データの抽出・評価CLI・結果ファイル保存・OOF集計はこの段階では未接続。
+
+ユーザーが実行する最小テスト（Codexでは未実行）:
+
+```powershell
+uv run pytest tests/experiments/test_diagnostic_metrics.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
+```
+
+全件成功と、未定義/退化を補完や除外で隠さないことを確認する。実データ・GPU・学習は使わない。
 
 ## 5. 本学習前の動作確認
 
@@ -694,7 +784,7 @@ PCA・KMeans fitや評価計算は上表のニューラルネット学習数に�
 - [ ] config・manifest・結果の保存先と、次回最初に行う作業を記録する。
 - [ ] 設定変更が必要になった場合はユーザーの決定を設計文書へ反映し、旧条件のrunと混合しない。
 
-次回の開始位置: **4. LLA-3/5/9・補正LLAの新規CPUテスト結果を確認する**。
+次回の開始位置: **4. cosine-silhouette・3反復間ARIの新規CPUテスト結果を確認する**。
 loader・B0/PCA（本番fitはfold 1）と、ChemoMAE共通部品のCPUテストは確認済み。
 Trainer継承部分とA0/M11のGPU動作確認、KMeans共通部品のCPUテスト15件は成功。
 接続テスト20件とB0/B1/A0/M11のGPU train 64画素probeも成功。本番全test推論・評価は未確認。
