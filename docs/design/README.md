@@ -14,9 +14,9 @@
 | 文書 | 状態 | 内容 |
 | --- | --- | --- |
 | [preprocessing.md](preprocessing.md) | Fixed | 200 Hz本番前処理、mask、自動cutoff、256点補間、SNV |
-| [experiment_protocol.md](experiment_protocol.md) | Fixed / 実行前確認あり | 主比較、5-fold・3反復、均等画素抽出、事前固定K、補助実験 |
+| [experiment_protocol.md](experiment_protocol.md) | Fixed | 主比較、5-fold・3反復、均等画素抽出、事前固定K、補助実験 |
 | [evaluation_metrics.md](evaluation_metrics.md) | Fixed / 任意診断Open | 主評価LLA・LFR、silhouette・補正LLA・ARI・occupancy、pairedな報告 |
-| [visualization_and_interpretation.md](visualization_and_interpretation.md) | Fixed / 表示設定Open | 全体学習後の4条件比較、Hungarian matching、探索的解釈 |
+| [visualization_and_interpretation.md](visualization_and_interpretation.md) | Fixed | 全体学習後の4条件比較、Hungarian matching、本文代表例、探索的解釈 |
 
 ## 設計の要約
 
@@ -59,13 +59,13 @@
 CVは合計105学習、全体解釈まで含めると107学習となる。PCAとKMeansのfit、表現抽出、評価摂動の計算は
 この回数に含めない。Kごとに表現を再学習しない。
 
-## 残るOpen事項と実行記録
+## 残るOpen事項
 
 各試料の抽出画素数$q=8192$と一様ランダム・非復元抽出をFixedとし、これまでOpenとしていた
 主実験の条件選択は解消した。ユーザーが共有した確認結果では、現行49試料すべてで抽出可能だった。
 確認結果と確定状況は[experiment_protocol.md](experiment_protocol.md)第3.4節・第11.1節を参照する。
-用途別seedの事前固定、manifest、試料の対応・採取関係の確認、GPU・library情報などは同文書第11.2節の
-実行前の確認・記録事項へ整理した。
+用途別seed、manifest、試料の対応・採取関係、GPU・library情報などは同文書第11.2節の
+実行記録事項として整理した。
 optimizer・学習率・800 epochのschedule・batch size・学習精度は同文書第4.2節でFixedとした。
 共通K集合と代表表示値は同文書第6節でFixedとした。
 16次元出力・L2正規化・全可視抽出は同文書第4.1.1節でFixedとした。
@@ -74,5 +74,12 @@ PCAの既定設定とAug強度・操作設定は同文書第4.1.1節・第4.1.3�
 Cosine-KMeansは既定の初期化1回・`max_iter=500`・`tol=1e-4`を採用し、Kと反復用seedだけを実験計画に合わせる。
 抽出・評価FP32とlibrary既定epsilonは第4.1.4節、LFRの$R=5$は評価文書第5.3節でFixedとした。
 同文書第4.1.3節・第4.2節にv0.2.1の実装確認と、MAE学習recipeに合わせる際の差を記録した。
-本文用の可視化例の基準と試料ID、任意の形状診断の実行定義もOpenとする。
-これらを既定値や結果から暗黙に決定しない。
+本文用の可視化例は、各樹種の保存有効画素数が最大の7試料として事前固定済みである。
+残るOpen事項は、評価文書第7.1節に示した任意の孤立label・連結成分shape診断の実行定義だけである。
+採用する場合は結果を見る前に定義し、採用しない場合は主評価へ追加しない。
+
+## 実行文書
+
+設計から実行を分離し、本番CLIと再開・完了判定は[../experiment_runbook.md](../experiment_runbook.md)、
+テストとpreflightの要約は[../verification_history.md](../verification_history.md)、現在の進捗は
+[../../ToDo.md](../../ToDo.md)で管理する。
