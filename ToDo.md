@@ -2,7 +2,11 @@
 
 更新日: 2026-09-05
 
-次のセッションでは「1. データと実装単位の確認」から着手する。
+第1段階のfixtureテストと入力照合はユーザー実行ログで成功を確認済み。
+第2段階は20テストと本番manifestの生成・再読込成功をユーザー実行ログで確認済み。
+第3段階のloader・B0/PCAはユーザー実行で検証済み（本番PCAはfold 1）。
+現在はChemoMAEの共通部品・全可視抽出を実装し、新規CPUテストの結果待ち。
+第1段階の残る品質表・空間図確認は、本学習前までに完了する。
 この文書は確定済み設計を実行へ移すための作業順序であり、詳細仕様は以下の設計文書を正とする。
 チェックは実装しただけでなく、各項目に必要な確認結果が得られてから付ける。
 
@@ -34,7 +38,7 @@ Codexへの明示的な実行依頼がある場合はAGENTS.mdの実行規約に
 同じデータでこの確認を繰り返す必要はない。試料集合や前処理が変わった場合の再確認コマンドは次のとおり。
 
 ```powershell
-.\.venv\Scripts\python.exe scripts/preprocess/check_sampling_pixels.py --q 8192
+uv run python scripts/preprocess/check_sampling_pixels.py --q 8192
 ```
 
 ## 確定済み条件の早見表
@@ -65,48 +69,163 @@ Codexへの明示的な実行依頼がある場合はAGENTS.mdの実行規約に
 
 ## 1. データと実装単位の確認
 
-- [ ] `git status` と対象階層のAGENTS.mdを確認し、既存差分を保持する。
-- [ ] 本番入力 `data/processed/preprocessing/200hz_snr10_linear256/` の
+- [x] `git status` と対象階層のAGENTS.mdを確認し、既存差分を保持する。
+- [x] 本番入力 `data/processed/preprocessing/200hz_snr10_linear256/` の
   `manifest.parquet`、`sample_quality.parquet`、`config.json` とmetadataの対応を確認する。
   metadataは `data/metadata/古材メタデータ.csv`。採用試料ID・件数を明示する。
-- [ ] 同一原材など上位の採取関係を確認し、確認できた内容と不明点を記録する。
+- [x] 同一原材など上位の採取関係を確認し、確認できた内容と不明点を記録する。
   新たな依存関係が判明した場合は、split作成前にユーザーと扱いを決める。
+  2026-09-05ユーザー決定: 現存49試料で進める。異なるKYOw間の原材関係は不明。
+  KYOw単位で分割し、同一KYOwがtrain/testをまたがないことを必ず検証する。
 - [ ] 既存の前処理診断図と品質記録を確認する。保存済み本番データの再生成を前提にしない。
-- [ ] HDF5の `snv`、`reflectance`、`pixel_row_col`、`valid_spectrum_mask`、`wavelength_nm` の
+- [x] HDF5の `snv`、`reflectance`、`pixel_row_col`、`valid_spectrum_mask`、`wavelength_nm` の
   対応を、小規模な読み取りで確認できる検証処理を用意する。schemaやraw dataを変更しない。
-- [ ] 既存構成に沿って、実験用コード・config・manifest・checkpoint・数値結果・図の配置を整理する。
+  ユーザー実行ログでテスト26件成功、49試料・計392行のprobe成功を確認した。
+- [x] 既存構成に沿って、実験用コード・config・manifest・checkpoint・数値結果・図の配置を整理する。
   新規配置は実装前に明示し、既存の保存規約・ignore規則と整合させる。
   数値データと図を分け、本番前処理を上書きしない。
+
+### 第1段階の実装・確認記録（2026-09-05）
+
+- 作業開始時のGit差分なし。依存関係・前処理データ・Git indexは変更していない。
+- metadataの52件とHDF5のファイル名49件を照合した。49件すべてにmetadataが対応する。
+  metadataだけにあるのは `KYOw02782`、`KYOw16743`、`KYOw16746`。
+  metadataの数値KYOwを5桁ゼロ埋めし、`KYOw` prefixを付けて照合する。
+- 採用対象の49 ID（ユーザー共有の入力検証CLIログでmanifestとの照合成功を確認済み）:
+
+  ```text
+  KYOw02702 KYOw02707 KYOw02708 KYOw02709 KYOw02715 KYOw02716 KYOw02717
+  KYOw02719 KYOw02720 KYOw02751 KYOw02752 KYOw02754 KYOw02756 KYOw02758
+  KYOw02759 KYOw02760 KYOw02762 KYOw02763 KYOw02764 KYOw02766 KYOw02767
+  KYOw02768 KYOw02769 KYOw02770 KYOw02771 KYOw02772 KYOw02773 KYOw02774
+  KYOw02775 KYOw02776 KYOw02777 KYOw02780 KYOw02783 KYOw02784 KYOw02787
+  KYOw02788 KYOw02789 KYOw02790 KYOw16662 KYOw16666 KYOw16700 KYOw16702
+  KYOw16711 KYOw16714 KYOw16716 KYOw16719 KYOw16737 KYOw16744 KYOw16750
+  ```
+
+- 保存済み `config.json` は200 Hz・schema 2・256点線形補間・SNV ddof=1。
+  `preprocessing_summary.json` は49試料・3,902,746画素・除外0を記録している。
+  ユーザー共有ログではCLIのstatusは `passed_table_and_sampled_row_checks`、
+  試料数49、全有効画素数3,902,746、未検証HDF5試料0。
+  49試料×8行のSNV再計算最大絶対誤差は `1.66173969695649e-7`。
+- 既存のcutoff図とSNV異常候補図を目視した。上位候補にはspikeが見られるが、
+  順位図から発生率や採用可否を判断しない。全試料の空間図・品質表の確認は未完了。
+- 配置:
+
+  | 用途 | 配置 |
+  | --- | --- |
+  | 実験実装・CLI・テスト | `src/wood_degradation_map/experiments/`、`scripts/experiments/`、`tests/experiments/` |
+  | 実験config・seed計画 | `outputs/experiments/<experiment_id>/config/` |
+  | fold・抽出manifest | `outputs/experiments/<experiment_id>/manifests/` |
+  | 数値結果・run台帳 | `outputs/experiments/<experiment_id>/results/` |
+  | 図 | `outputs/experiments/<experiment_id>/figures/` |
+  | 重み・optimizer等の再開状態 | `outputs/experiments/<experiment_id>/checkpoints/` |
+
+  実験出力ディレクトリは各工程の実装時に作成する。`outputs/`の一括ignoreを解除し、
+  `checkpoints/`・`weights/`と既存の重み拡張子はignoreする。commitやLFS設定は行っていない。
+  `git check-ignore`でcheckpoint内の任意拡張子・重み拡張子の除外と、図・CSVが除外されないことを確認した。
+  追跡済みファイルの差分は `git diff --check` で問題なし。
+
+ユーザーが実行済みの検証（2026-09-05共有ログ。Codexでの再実行はしていない）:
+
+```powershell
+uv run pytest tests/experiments/test_input_validation.py
+uv run python scripts/experiments/check_inputs.py
+```
+
+CLIは既存のconfig、manifest、sample_quality、metadataと、各HDF5の既定8行を読む。
+スペクトル全件走査・GPU処理・入力変更・出力ファイル生成は行わない。
+圧縮HDF5では指定行の読み取りにも該当chunkの展開が必要となる。
+確認点は終了code 0、`candidate_sample_count=49`、上記49 IDとmetadata-only 3 ID、
+全49試料の `probes`、座標・mask・波長・SNVの検証成功。
+このprobeは全画素でのmask網羅性や座標重複の不存在を保証しない。
+fixtureテストは `26 passed in 4.49s`。同じ入力での再実行は不要。
 
 完了条件: 採用データと座標の契約、分割上の確認状況、実装・保存先を説明できる。
 49試料の採用確定と、画素数確認に49試料が載っていたことを区別する。
 
 ## 2. 共通config・seed・manifestの実装
 
-- [ ] 固定条件を共通configへ転記し、条件別の差分を明示する。
+- [x] 固定条件を共通configへ転記し、条件別の差分を明示する。
   B0、B1、A0、M00、M10、M01、M11とM11のmask率25%・75%を識別できるようにする。
-- [ ] split、画素抽出、モデル構築、画素順序、mask、学習Aug、PCA、KMeans、評価摂動の
+- [x] split、画素抽出、モデル構築、画素順序、mask、学習Aug、PCA、KMeans、評価摂動の
   用途別seedと3反復IDの対応を事前固定・保存する。乱数消費順への依存で共通入力が変わらないようにする。
-- [ ] 試料単位5-foldの生成・読み込みと、試料内8,192画素の抽出・読み込みを実装する。
+- [x] 試料単位5-foldの生成・読み込みと、試料内8,192画素の抽出・読み込みを実装する。
   同じfoldの抽出座標は全条件・全K・全反復へ共有し、epochごとには再抽出しない。
-- [ ] fold割当、試料ID、抽出seed、HDF5行との対応・元座標をmanifestへ保存する。
+- [x] fold割当、試料ID、抽出seed、HDF5行との対応・元座標をmanifestへ保存する。
   既存manifestを暗黙に作り直さず、再開時にも同じ集合を利用する。
-- [ ] 小規模fixtureで、train/testの試料重複なし、各試料が一度だけtestになること、
+- [x] 小規模fixtureで、train/testの試料重複なし、各試料が一度だけtestになること、
   抽出数・非復元・有効座標・共有集合・再現性を検証する。
-- [ ] 確認済み実装で本番split・抽出manifestを生成し、全foldの件数を確認する。
+- [x] 確認済み実装で本番split・抽出manifestを生成し、全foldの件数を確認する。
   現行49試料ならtrainは39または40試料、319,488または327,680画素となる。
 
 完了条件: configとmanifestから全runの入力・乱数設定を追跡できる。
+
+### 第2段階の実装・確認記録
+
+- `src/wood_degradation_map/experiments/config.py`:
+  採用済み49 ID、主実験7条件・mask率補助2条件、固定recipe、用途別seed導出を実装。
+  本番生成時に試料集合がこの49 IDと異なる場合は停止し、試料を暗黙に追加・除外しない。
+  基準seedは `20260905`。数値は結果を見る前に固定し、探索による選び直しを行わない。
+- `src/wood_degradation_map/experiments/manifests.py`:
+  KYOw単位5-fold、非復元抽出、保存・再読込・検証を実装。
+  生成は既存出力ディレクトリがある場合に停止する。再読込は既存のfold・画素集合を使う。
+- `tests/experiments/test_manifests.py`:
+  KYOwリーク、試料/画素の欠落・重複、無効座標、入力順序や他用途の乱数からの独立性、
+  保存/再読込、既存出力の保護、入力・manifest変更の検出を対象とする。
+  ユーザー共有ログで `20 passed in 3.70s` を確認した。
+- 評価摂動seedは試料・摂動種類・摂動反復に対応し、条件・K・学習反復に依存しない。
+  seed計画だけで摂動入力の一致を確認済みとは扱わない。実際の共通入力生成・再利用は第4段階で検証する。
+- ソースHDF5の全件hashやスペクトル全件走査は行わない。
+  生成・確認CLIは1試料ずつ座標とmaskを読み、抽出画素について対応を検証する。
+  入力追跡には小規模なconfig/manifest/品質表/metadataのSHA-256とHDF5の容量・mtimeを使う。
+  HDF5の容量・mtimeだけでスペクトル内容の完全な同一性を保証しない。
+
+次のコマンドはユーザー実行済みで、テスト成功後の本番manifest生成・再読込に成功した。
+CLIはGPU・学習を使用せず、`create`が新規のconfigとmanifestを保存し、`check`は読み取りだけを行う。
+
+```powershell
+uv run pytest tests/experiments/test_manifests.py
+uv run python scripts/experiments/prepare_manifests.py create
+uv run python scripts/experiments/prepare_manifests.py check
+```
+
+保存先は `outputs/experiments/cv_200hz_snr10_linear256_v1/`。
+
+```text
+config/experiment.json                 固定条件
+config/seeds.json                      用途別seedの数値一覧
+manifests/inputs.json                  入力の識別記録
+manifests/folds.parquet                各KYOwのtest fold（各試料1行）
+manifests/train_pixels/fold_<1..5>.parquet
+                                      train試料・抽出seed・HDF5行・元座標
+manifests/complete.json                完了記録・成果物hash・fold件数・library version
+```
+
+確認点は `create` のstatus `created`、`check` のstatus `validated_existing_manifest`、
+試料数49、test試料数9または10、train試料数39または40、train画素数319,488または327,680。
+同一KYOwは1つのtest foldにだけ割り当て、当該foldのtrain画素manifestには存在しない。
+ユーザー共有ログで `created` と `validated_existing_manifest` を確認した。
+
+| fold | train試料 | test試料 | train画素 | batch/epoch | 予定更新/run |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1–4（各fold） | 39 | 10 | 319,488 | 312 | 249,600 |
+| 5 | 40 | 9 | 327,680 | 320 | 256,000 |
+
+このmanifestを再生成しない。予定更新数は学習完了回数ではない。
 
 ## 3. 学習・表現抽出・クラスタリングの実装
 
 - [ ] 必要な画素をchunkで読むloaderを実装し、SNVを入力・clean targetとして扱う。
   ニューラルネット学習・PCA fit・KMeans fitに同じtrain抽出集合を渡す。
-- [ ] B0とPCAのfit/transform・正規化・保存/再読込を実装する。
+  `data.py` の共通loaderとPCAへの接続を検証済み。NN・KMeansへの接続と実行確認は未完了。
+- [x] B0とPCAのfit/transform・正規化・保存/再読込を実装する。
   PCAのfit対象をtrainに限定し、実solverと乱数管理を記録する。
+  ユーザーが新規テスト・fold 1の本番fit・checkの成功を報告。保存記録も確認した。
 - [ ] ChemoMAEの共通構成と条件別Aug・mask・lossを実装する。
   A0は `n_mask=0` と `loss_region="all"`、MAEは `loss_region="masked"`。
   mask率25/50/75%の `n_mask` は4/8/12とする。
+  `neural.py` に共通モデル・Aug・可視mask・clean targetのMSEを追加済み。CPUテスト待ち。
 - [ ] 実験プロトコル第4.2節の学習recipeを実装する。
   ChemoMAEの既定Trainer・optimizer・schedulerとの次の差を解消する。
   - `amp_dtype="fp16"`、`grad_clip=None`、`use_ema=False`を明示する。
@@ -117,12 +236,103 @@ Codexへの明示的な実行依頼がある場合はAGENTS.mdの実行規約に
   test指標によるearly stopping・checkpoint選択を入れない。
 - [ ] 全可視16次元抽出を実装する。`ExtractorConfig(amp=False)` または全可視maskを明示したencoderを使う。
   `eval()`だけを指定した通常の `forward()` でランダムmaskを残さない。
+  `extract_full_visible` を追加済み。正規化前の潜在診断を含むCPUテスト待ち。
 - [ ] trainだけでCosine-KMeansをfitし、中心を固定してtestをpredictする。
   同じ学習済み表現を全Kで再利用し、中心・seed・停止状況を保存する。
 - [ ] 元座標へ予測を戻し、背景0・クラスタ1からKのラベル規約を検証する。
   非有限値・ゼロnorm・単位norm誤差の記録を実装し、条件別に画素を無言で落とさない。
 
 完了条件: 小規模入力でfitから保存・再読込・全可視推論・元座標への対応まで確認できる。
+
+### 第3段階のloader・B0/PCAの実装・確認記録
+
+- `src/wood_degradation_map/experiments/data.py`:
+  `FoldData`がmanifestの選択行をコピーして保持し、train抽出行とtest全行を区別して読む。
+  `SpectrumBatch`は試料ID・HDF5行・元座標・clean SNVを持つ。augmentationは別のcopyへ適用する。
+  SNVはFP32のまま、既定2,048行以下のsource windowで読む。trainで未選択の行は返さない。
+  testの末尾chunkも除外しない。非有限値・ゼロSNV・座標/mask不一致は行情報付きで停止する。
+- `src/wood_degradation_map/experiments/baselines.py`:
+  B0の256次元とPCA後の16次元をChemoMAEの既存helper（eps=1e-6）でL2正規化する。
+  非有限表現・非有限norm・ゼロnorm・epsilonにclampされる微小normは診断付きエラーとする。
+  正常行の単位norm誤差は診断値として返し、経験的な新しい除外閾値は設けない。
+  PCAはtrain行列だけで `PCA(n_components=16)` をfitし、実solverと用途別seedを記録する。
+  `random_state=None`を維持し、同期的なfit中だけNumPy乱数を設定して終了/例外時に復元する。
+  NumPyのglobal RNGを消費する他threadとの同時fitは行わない。
+  transformでは追加fitを行わず、FP32の射影後に正規化する。
+  `full`・`covariance_eigh`は反復間の再利用が可能な状態として記録する。
+  確率的solverのcheckpointを別反復へ読み込もうとした場合は停止する。
+- `tests/experiments/test_baselines.py`:
+  共通train集合、test全行、chunk上限、test/未抽出train行がfitに入らないこと、
+  RNG復元、B0/PCAの次元・正規化・保存/再読込、無効値の扱いを小規模fixtureで検証する。
+  ユーザーからテスト成功の報告を受けた。件数・所要時間のログは未共有。
+
+ユーザー実行済みのテスト（同じ内容での再実行は不要）:
+
+```powershell
+uv run pytest tests/experiments/test_baselines.py
+```
+
+ユーザー実行済みのfold 1のB0/PCA保存・再読込:
+`fit`はCPUでtrain全抽出行を使った本番PCA fitを行い、train/testの先頭source windowの
+最大8行ずつでtransformと保存/再読込を確認する。全test評価やクラスタリングは行わない。
+PCA入力行列だけでfold 1–4は312 MiB、fold 5は320 MiBを必要とし、内部作業領域が別途必要。
+圧縮HDF5では抽出行を含むchunkの展開が必要なので、実I/O量は返す画素数より大きくなる。
+実行時間・最大メモリ使用量は未計測。
+
+```powershell
+uv run python scripts/experiments/fit_baselines.py fit --fold 1
+uv run python scripts/experiments/fit_baselines.py check --fold 1
+```
+
+既存の実験root `outputs/experiments/cv_200hz_snr10_linear256_v1/` の下へ保存する。
+
+| 保存先 | 内容 | Git |
+| --- | --- | --- |
+| `results/baselines/fold_1/repeat_1/b0.json` | B0の変換契約（学習パラメータなし） | 対象 |
+| `results/baselines/fold_1/repeat_1/fit.json` | train ID・画素数・seed・実solver・version・probe診断・manifest/係数hash | 対象 |
+| `checkpoints/baselines/fold_1/repeat_1/pca.npz` | PCA平均・基底など。pickleなしで保存/再読込 | 除外 |
+
+確認点は `fitted_and_roundtrip_checked` / `validated_existing_baselines`、
+train 39試料・319,488行、B0 256次元・B1 16次元、数値異常の各件数0。
+保存済みmanifestと共通configは変更しない。既存baseline出力への上書きも行わない。
+保存済み `fit.json` で、train 39試料・319,488行、実solver `covariance_eigh`、
+scikit-learn 1.9.0・NumPy 2.4.4、PCA再読込後のprobe最大絶対誤差
+`1.6391277313232422e-7`、数値異常の各件数0を確認した。
+別途ユーザーから `check --fold 1` もエラーなく終了したと報告を受けた。
+このprobe成功を全test推論・クラスタリングの成功とは扱わない。
+
+### 第3段階のChemoMAE共通部品の実装記録（検証待ち）
+
+- `src/wood_degradation_map/experiments/neural.py`:
+  固定configからCPU FP32モデルを構築し、同じfold・反復の初期化を条件間で共有する。
+  参照版の初期化を変更せず、モデル構築後に外部のCPU乱数状態を復元する。
+  Augは既存 `SpectraAugmenter` を使用し、clean targetのcopyへFP32で適用する。
+  参照版のpatch mask生成によりTrue=可視のmaskを作り、条件別mask数とloss領域を検証する。
+  mask・Augのglobal RNGを用途別状態へ一時切替し、画素順序は別のCPU Generatorで管理する。
+  例外時にも外部の乱数状態を復元する。同じprocess内で競合するthreadから同時使用しない。
+  epochごとにshuffleし、固定batch size=1024で末尾をdropする。画素集合の再抽出は行わない。
+- AdamWのgroup分けとbatch処理前に使うlr計算を追加した。
+  bias・LayerNormのみweight decay=0、CLS・位置埋め込みには0.05を適用する。
+  800 epochの実行loop、CUDA FP16 AMP + GradScaler、checkpoint保存・再開との接続は未実装。
+- 全可視抽出は `model.eval()` と全要素Trueのmaskを指定してencoderだけを呼ぶ。
+  FP32・autocast無効・TF32無効とし、終了/例外時にmode・精度設定を復元する。
+  `to_latent` の正規化前出力を一時hookで検査し、参照版のeps=1e-12にclampされる
+  微小norm・ゼロnorm・非有限値を行番号付き診断で停止する。抽出後の単位norm誤差も返す。
+- `tests/experiments/test_neural.py`:
+  固定モデルの構成・初期値共有・parameter数、条件別mask/loss、clean target保持、
+  乱数分離・状態再生・例外時復元、weight decay区分、lr境界、全可視FP32抽出を対象とする。
+  forward/backwardと抽出のfixtureだけTransformer幅・層数を縮小し、CPUで検証する。
+  本番モデル構築は固定サイズで検査する。実データ・GPU・800 epoch学習・ファイル出力は使わない。
+
+次の確認コマンド（Codexでは未実行）:
+
+```powershell
+uv run pytest tests/experiments/test_neural.py
+```
+
+共通部品を確認した後、train loaderとの接続・実学習loop・checkpoint・KMeansを実装する。
+本番batch size=1024のGPUメモリ適合性とCUDA乱数の再開再現性は未検証。
+保存済みconfig・manifest・PCA係数は変更していない。
 
 ## 4. 評価・集計の実装
 
@@ -217,5 +427,7 @@ PCA・KMeans fitや評価計算は上表のニューラルネット学習数に�
 - [ ] config・manifest・結果の保存先と、次回最初に行う作業を記録する。
 - [ ] 設定変更が必要になった場合はユーザーの決定を設計文書へ反映し、旧条件のrunと混合しない。
 
-次回の開始位置: **1. データと実装単位の確認**。
-その確認後、**2. 共通config・seed・manifestの実装**へ進む。
+次回の開始位置: **3. loader・B0/PCAの新規テストとfold 1のfit/再読込結果確認**。
+その確認後、**3. NNの学習・全可視抽出・KMeansの実装**へ進む。
+第1段階の品質表・空間図確認は残っており、本学習前までに完了する。
+49試料の採用とKYOw単位の分割は確認済み。原材関係の再確認は新情報がある場合に限る。

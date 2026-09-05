@@ -47,8 +47,10 @@ dist/
 # Experiment outputs
 # =============================================================================
 
-outputs/*
-!outputs/.gitkeep
+# Figures, numerical results, configs, and manifests under outputs are tracked.
+# Keep all checkpoint/weight payloads out, regardless of their file extension.
+/outputs/**/checkpoints/
+/outputs/**/weights/
 
 runs/
 wandb/
