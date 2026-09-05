@@ -1,0 +1,82 @@
+{
+  "status": "evaluation_smoke_completed",
+  "scope": "synthetic engineering probe; no real test evaluation, CV metrics or condition selection",
+  "checks_passed": true,
+  "synthetic_rows": 1025,
+  "generation_block_sizes": [
+    1024,
+    1
+  ],
+  "cluster_counts": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14
+  ],
+  "source": {
+    "clustering_smoke_id": "20260905T194946_230032Z",
+    "clustering_completion_sha256": "a635064b101660b491c14b2e001463394448460ee5978e2b65c069279b2e5c03",
+    "clustering_run_sha256": "2ffe74e2effe21f82f3acabc2317ed8c88e9bd3027c67cdccdfc01145180595a",
+    "clustering_fits_sha256": "5b9902ef8138ca9de2ceb951e5f0f9c268a31bdc90ae1bbe85649554e60b074b",
+    "centers_sha256": {
+      "2": "ee02a21edc253b92ca07be16e922401616cba7f2ab5ca03ea43787861c14fe18",
+      "4": "fc1bdf01558425b4fd94253d9ce2ee2257dd478ea4638fb9e1975ed3aeea2a85",
+      "6": "11856606e6a543b50d0c4d452209ff07f0425ec6131cab4169dca05b5d78f300",
+      "8": "3c858c05a328440a591bfbc3060a6630a75f7392b9e3fcf3b227cdba732987f2",
+      "10": "826d6e4bceb08c3a50b30d3623b43768b539fff9eb6d1499a1e929633ebbea3f",
+      "12": "d26d5f685ff360dc9ad2bd464c69dcb6273962271a562974486b0beec1902dd2",
+      "14": "3f02a4fbb428490dc3db52bc8fbda9e221de986387bf9395638b2f47e42db32a"
+    },
+    "representation": {
+      "kind": "B1",
+      "source_repeat": 1,
+      "weights_sha256": "801d778dea1e249b45e82dab7d4de60f32584a71083f03fa3dca308c3b14a079",
+      "fit_record_sha256": "c5e7fb4bae59b5e7cdd36c96d07c4535930461d43385078edcd316df0e92db97"
+    },
+    "neural_smoke_id": null,
+    "manifest_artifact_sha256": {
+      "config/experiment.json": "dfbf072d9bc8b8c32a878bcccdaab1cd7ef02216e3729adbb637996469ccc8ae",
+      "config/seeds.json": "367ef557504c53f416addd4bd88b0afdb596faacd9dbd73c0e616ecf38e8eb4a",
+      "manifests/inputs.json": "87370c47ff3fe6423f35be9011f255779a025b864c3bc17760c64ddb1b4f4fcd",
+      "manifests/folds.parquet": "0d1029cfb5f94245da1bdb6d7c26eb64b85241dfeb135eb66be612cc01c100d5",
+      "manifests/train_pixels/fold_1.parquet": "5984c5210b8f5c83d36a5eee8879e2ab3b3b49ee4f01dd4c6d0ad6da272b199c",
+      "manifests/train_pixels/fold_2.parquet": "0127c589a7aaa9c50f6a95b7725e531140bc26cc9b52e728fce606c00374b9d7",
+      "manifests/train_pixels/fold_3.parquet": "b9ad713c2f9254a4cb9b63732391276c681e2bed5d83a41c9d6b3f98f02359bb",
+      "manifests/train_pixels/fold_4.parquet": "77d8219004e6d291db8ebf87a74c519a0f8f57169a8d0355b390db946ed6bd65",
+      "manifests/train_pixels/fold_5.parquet": "c146d1a95a4282af1a1ac0d18e856e908204c8b92d9969403ea2d46c220dd972"
+    }
+  },
+  "arrays_and_metrics_save_load_exact": true,
+  "fixed_centers_unchanged": true,
+  "saved_clean_labels_reproduced": true,
+  "silhouette_kernel_probe": {
+    "expected_scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "actual_scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "device": "cuda:0",
+    "absolute_tolerance": 1e-06,
+    "checks_passed": true
+  },
+  "artifact_sha256": {
+    "run.json": "fa490db2097a0a588c65f652659711b70752d140130a5bd85ed2d427a0fb636a",
+    "metrics.json": "608034b00b9abe343483e746a9d05ea38d23c127fa7b2c4799f01da480018c55",
+    "probe.npz": "f63fa450fac7921130266f0e560abd157b7d2190e3bb81e0e51e1f00db2baf23"
+  },
+  "wall_seconds": 0.9859269000007771,
+  "timing_scope": "source load through synthetic evaluation and save/reload; excludes initial manifest validation",
+  "output_bytes_before_completion": 1158998,
+  "peak_gpu_allocated_bytes": 20995072,
+  "peak_gpu_reserved_bytes": 39845888
+}

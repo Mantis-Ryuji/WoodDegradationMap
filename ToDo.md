@@ -296,16 +296,21 @@ uv run python scripts/experiments/cluster_representations.py smoke --condition B
 ```
 
 PCAはfit・check成功、各smokeは `checks_passed=true` を確認する。
-最後に、今回のニューラルsmoke出力にある `smoke_id` をそれぞれ入力する。旧IDを使用しない。
+最後に、今回のニューラルsmoke出力にある `smoke_id` を文字列として代入する。旧IDを使用しない。
+以下の値は今回の実行で生成されたID。再実行する場合はその出力のIDへ置き換える。
 
 ```powershell
-$a0SmokeId = Read-Host '今回のA0学習smokeのsmoke_id'
-$m11SmokeId = Read-Host '今回のM11学習smokeのsmoke_id'
+$a0SmokeId = '20260905T194725_418246Z'
+$m11SmokeId = '20260905T194855_710691Z'
 uv run python scripts/experiments/cluster_representations.py smoke --condition A0 --fold 1 --neural-smoke-id $a0SmokeId
 uv run python scripts/experiments/cluster_representations.py smoke --condition M11 --fold 1 --neural-smoke-id $m11SmokeId
 ```
 
-成功後も、GPU評価を含む動作確認・負荷確認と本文代表試料の事前指定は残る。
+ユーザーから全コマンド実行・`checks_passed=true`の報告を受けた。
+新版入力でのB0/B1/A0/M11クラスタリングsmoke完了記録も確認した。
+クラスタリングsmoke IDは順に `20260905T194937_420573Z`、`20260905T194946_230032Z`、
+`20260905T195218_899327Z`、`20260905T195232_653899Z`。
+GPU評価を含む動作確認・負荷確認と本文代表試料の事前指定は残る。
 本番開始時はproduction_v1にmanifestを新規作成し、同じ入力・split・抽出集合を照合して本番fitを実行する。
 preflightの成果物を本番結果としてコピーしない。本番開始のコマンドは残る確認が完了した時点で案内する。
 
@@ -1027,6 +1032,40 @@ uv run python scripts/experiments/aggregate_oof.py check --snapshot main_oof_v1
 完了条件: 固定configとmanifestで本実験を開始でき、実行コマンド・出力先・所要時間の見通しがある。
 本実験開始時には実行対象と負荷をユーザーへ提示する。
 
+### 合成入力によるGPU評価smoke（今回の実装・実行手順）
+
+`evaluation_smoke.py`と専用CLIを追加した。保存済みクラスタリングsmokeのrun・manifest・
+config・code hash・fit記録・中心hashを照合し、そのrunが使ったPCA/ニューラル重みを読む。
+学習・PCA/KMeansの再fitはしない。既存の学習・クラスタリング・本番評価モジュールは変更していない。
+
+固定seedの合成SNV 1,025画素（41×25）で、LFRの15摂動・全7個のK、LLA、silhouetteを計算する。
+1,024画素batchと末尾1画素を通し、clean/摂動表現をK間で共有する。
+保存した配列・指標の再読込一致、固定中心の不変性、保存clean表現からのラベル再現を確認する。
+単一クラスタのsilhouetteは未定義のまま保存し、別の既知4点でsilhouette kernelの正解値を確認する。
+合成入力の座標・行番号は実HDF5を指さず、各値はCV指標や条件比較に使用しない。
+CLI開始時の通常manifest検証は実HDF5の座標・maskを読むが、評価smokeは実試料のSNVを読まない。
+
+出力先は `outputs/experiments/preflight_v1/results/evaluation_smoke/<ID>/...`。
+本番用score schema・completion statusと分離し、既存ディレクトリを上書きしない。
+GPU・library・演算設定、時間、最大GPUメモリ、出力容量も保存するが、
+この合成probeを本番全foldの負荷見積りや科学的な入力確認の代わりにしない。
+
+新規CPUテストでB0/PCAと小型ニューラルfixtureの保存接続、出典違い、全K共有・末尾、
+単一クラスタ、中断、保存破損、上書き拒否を検証する。Codexではテスト・GPUとも未実行。
+まず次を実行し、成功後にGPUの4コマンドを順番に実行する。
+
+```powershell
+uv run pytest tests/experiments/test_evaluation_smoke.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
+
+uv run python scripts/experiments/smoke_evaluation.py --condition B0 --fold 1 --clustering-smoke-id 20260905T194937_420573Z
+uv run python scripts/experiments/smoke_evaluation.py --condition B1 --fold 1 --clustering-smoke-id 20260905T194946_230032Z
+uv run python scripts/experiments/smoke_evaluation.py --condition A0 --fold 1 --clustering-smoke-id 20260905T195218_899327Z
+uv run python scripts/experiments/smoke_evaluation.py --condition M11 --fold 1 --clustering-smoke-id 20260905T195232_653899Z
+```
+
+確認点は全件passと、各GPU出力の `status=evaluation_smoke_completed`、`checks_passed=true`、
+`generation_block_sizes=[1024, 1]`。時間・最大メモリを実行後に確認する。全test評価とOOF集約は開始しない。
+
 ## 6. 主実験・補助実験の実行
 
 | 工程 | 条件 | ニューラルネット学習数 |
@@ -1082,10 +1121,9 @@ PCA・KMeans fitや評価計算は上表のニューラルネット学習数に�
 - [ ] config・manifest・結果の保存先と、次回最初に行う作業を記録する。
 - [ ] 設定変更が必要になった場合はユーザーの決定を設計文書へ反映し、旧条件のrunと混合しない。
 
-次回の開始位置: **上記「production_v1入力でのpreflight再構築」の実行結果を確認する**。
-旧階層での新版前処理のテスト成功・再生成と旧前処理ディレクトリのユーザー削除は確認済み。
-`data/processed/production_v1/`への保存先簡略化後は、前処理再生成から順に実行する。
-続いて本文代表例の事前指定、GPU評価を含む動作確認と負荷確認へ進む。
+次回の開始位置: **上記「合成入力によるGPU評価smoke」のテスト・GPU出力を確認する**。
+`data/processed/production_v1/`への保存先簡略化後の再生成・preflight再構築はユーザーから全件成功の報告あり。
+続いて本文代表例の事前指定と本番全量の負荷確認へ進む。代表例の基準・IDは未決定のまま保持する。
 OOF・ARI・計画比較の接続31テストはユーザーから全件成功の報告あり。
 評価パイプライン接続と既存LFRの計52テストはユーザーから全件成功の報告あり。
 試料macro・SD・paired差のCPUテスト34件は成功済み。

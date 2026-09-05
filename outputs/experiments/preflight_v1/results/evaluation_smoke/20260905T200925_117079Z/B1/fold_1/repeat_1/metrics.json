@@ -1,0 +1,4230 @@
+{
+  "scope": "synthetic engineering probe; no real test evaluation, CV metrics or condition selection",
+  "scores": {
+    "2": {
+      "lfr": {
+        "sample_id": "synthetic-evaluation-probe",
+        "k": 2,
+        "valid_pixels": 1025,
+        "clean_occupancy": {
+          "counts": [
+            0,
+            1025
+          ],
+          "fractions": [
+            0.0,
+            1.0
+          ],
+          "used_clusters": 1,
+          "maximum_fraction": 1.0
+        },
+        "draws": [
+          {
+            "kind": "noise",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 1,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                1,
+                1024
+              ],
+              "fractions": [
+                0.0009756097570061684,
+                0.9990243911743164
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 2,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                1,
+                1024
+              ],
+              "fractions": [
+                0.0009756097570061684,
+                0.9990243911743164
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          }
+        ],
+        "mean_by_kind": {
+          "noise": 0.0,
+          "shift": 0.0,
+          "both": 0.00039024389116093516
+        }
+      },
+      "silhouette": {
+        "condition_id": "B1",
+        "fold": 1,
+        "repeat": 1,
+        "k": 2,
+        "valid_pixels": 1025,
+        "used_clusters": 1,
+        "cluster_counts": [
+          0,
+          1025
+        ],
+        "unit_norm_absolute_error_max": 1.7881393432617188e-07,
+        "samples": [
+          {
+            "sample_id": "synthetic-evaluation-probe",
+            "valid_pixels": 1025,
+            "offset": 0,
+            "mean": null,
+            "undefined_reason": "single_cluster",
+            "cluster_counts": [
+              0,
+              1025
+            ],
+            "singleton_pixels": 0
+          }
+        ],
+        "macro_mean": null,
+        "defined_samples": 0,
+        "undefined_reason": "single_cluster",
+        "device": "cuda:0",
+        "chunk_pixels": 1024,
+        "torch_version": "2.13.0+cu130",
+        "chemomae_version": "0.2.1"
+      },
+      "spatial": {
+        "k": 2,
+        "valid_pixels": 1025,
+        "cluster_counts": [
+          0,
+          1025
+        ],
+        "occupancy": [
+          0.0,
+          1.0
+        ],
+        "used_clusters": 1,
+        "maximum_occupancy": 1.0,
+        "expected_agreement": 1.0,
+        "windows": [
+          {
+            "window": 3,
+            "matching_pairs": 7808,
+            "valid_pairs": 7808,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 5,
+            "matching_pairs": 22656,
+            "valid_pairs": 22656,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 9,
+            "matching_pairs": 70520,
+            "valid_pairs": 70520,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          }
+        ]
+      }
+    },
+    "4": {
+      "lfr": {
+        "sample_id": "synthetic-evaluation-probe",
+        "k": 4,
+        "valid_pixels": 1025,
+        "clean_occupancy": {
+          "counts": [
+            0,
+            0,
+            0,
+            1025
+          ],
+          "fractions": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "used_clusters": 1,
+          "maximum_fraction": 1.0
+        },
+        "draws": [
+          {
+            "kind": "noise",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          }
+        ],
+        "mean_by_kind": {
+          "noise": 0.0,
+          "shift": 0.0,
+          "both": 0.0
+        }
+      },
+      "silhouette": {
+        "condition_id": "B1",
+        "fold": 1,
+        "repeat": 1,
+        "k": 4,
+        "valid_pixels": 1025,
+        "used_clusters": 1,
+        "cluster_counts": [
+          0,
+          0,
+          0,
+          1025
+        ],
+        "unit_norm_absolute_error_max": 1.7881393432617188e-07,
+        "samples": [
+          {
+            "sample_id": "synthetic-evaluation-probe",
+            "valid_pixels": 1025,
+            "offset": 0,
+            "mean": null,
+            "undefined_reason": "single_cluster",
+            "cluster_counts": [
+              0,
+              0,
+              0,
+              1025
+            ],
+            "singleton_pixels": 0
+          }
+        ],
+        "macro_mean": null,
+        "defined_samples": 0,
+        "undefined_reason": "single_cluster",
+        "device": "cuda:0",
+        "chunk_pixels": 1024,
+        "torch_version": "2.13.0+cu130",
+        "chemomae_version": "0.2.1"
+      },
+      "spatial": {
+        "k": 4,
+        "valid_pixels": 1025,
+        "cluster_counts": [
+          0,
+          0,
+          0,
+          1025
+        ],
+        "occupancy": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "used_clusters": 1,
+        "maximum_occupancy": 1.0,
+        "expected_agreement": 1.0,
+        "windows": [
+          {
+            "window": 3,
+            "matching_pairs": 7808,
+            "valid_pairs": 7808,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 5,
+            "matching_pairs": 22656,
+            "valid_pairs": 22656,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 9,
+            "matching_pairs": 70520,
+            "valid_pairs": 70520,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          }
+        ]
+      }
+    },
+    "6": {
+      "lfr": {
+        "sample_id": "synthetic-evaluation-probe",
+        "k": 6,
+        "valid_pixels": 1025,
+        "clean_occupancy": {
+          "counts": [
+            0,
+            0,
+            1025,
+            0,
+            0,
+            0
+          ],
+          "fractions": [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "used_clusters": 1,
+          "maximum_fraction": 1.0
+        },
+        "draws": [
+          {
+            "kind": "noise",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          }
+        ],
+        "mean_by_kind": {
+          "noise": 0.0,
+          "shift": 0.0,
+          "both": 0.0
+        }
+      },
+      "silhouette": {
+        "condition_id": "B1",
+        "fold": 1,
+        "repeat": 1,
+        "k": 6,
+        "valid_pixels": 1025,
+        "used_clusters": 1,
+        "cluster_counts": [
+          0,
+          0,
+          1025,
+          0,
+          0,
+          0
+        ],
+        "unit_norm_absolute_error_max": 1.7881393432617188e-07,
+        "samples": [
+          {
+            "sample_id": "synthetic-evaluation-probe",
+            "valid_pixels": 1025,
+            "offset": 0,
+            "mean": null,
+            "undefined_reason": "single_cluster",
+            "cluster_counts": [
+              0,
+              0,
+              1025,
+              0,
+              0,
+              0
+            ],
+            "singleton_pixels": 0
+          }
+        ],
+        "macro_mean": null,
+        "defined_samples": 0,
+        "undefined_reason": "single_cluster",
+        "device": "cuda:0",
+        "chunk_pixels": 1024,
+        "torch_version": "2.13.0+cu130",
+        "chemomae_version": "0.2.1"
+      },
+      "spatial": {
+        "k": 6,
+        "valid_pixels": 1025,
+        "cluster_counts": [
+          0,
+          0,
+          1025,
+          0,
+          0,
+          0
+        ],
+        "occupancy": [
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "used_clusters": 1,
+        "maximum_occupancy": 1.0,
+        "expected_agreement": 1.0,
+        "windows": [
+          {
+            "window": 3,
+            "matching_pairs": 7808,
+            "valid_pairs": 7808,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 5,
+            "matching_pairs": 22656,
+            "valid_pairs": 22656,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 9,
+            "matching_pairs": 70520,
+            "valid_pairs": 70520,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          }
+        ]
+      }
+    },
+    "8": {
+      "lfr": {
+        "sample_id": "synthetic-evaluation-probe",
+        "k": 8,
+        "valid_pixels": 1025,
+        "clean_occupancy": {
+          "counts": [
+            0,
+            0,
+            0,
+            1025,
+            0,
+            0,
+            0,
+            0
+          ],
+          "fractions": [
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "used_clusters": 1,
+          "maximum_fraction": 1.0
+        },
+        "draws": [
+          {
+            "kind": "noise",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 1,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                1
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 2,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                1
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 3,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                1
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 4,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                1
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 1,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                1
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 2,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                1
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 3,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                1
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 4,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                1
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          }
+        ],
+        "mean_by_kind": {
+          "noise": 0.0,
+          "shift": 0.0007804877823218703,
+          "both": 0.0007804877823218703
+        }
+      },
+      "silhouette": {
+        "condition_id": "B1",
+        "fold": 1,
+        "repeat": 1,
+        "k": 8,
+        "valid_pixels": 1025,
+        "used_clusters": 1,
+        "cluster_counts": [
+          0,
+          0,
+          0,
+          1025,
+          0,
+          0,
+          0,
+          0
+        ],
+        "unit_norm_absolute_error_max": 1.7881393432617188e-07,
+        "samples": [
+          {
+            "sample_id": "synthetic-evaluation-probe",
+            "valid_pixels": 1025,
+            "offset": 0,
+            "mean": null,
+            "undefined_reason": "single_cluster",
+            "cluster_counts": [
+              0,
+              0,
+              0,
+              1025,
+              0,
+              0,
+              0,
+              0
+            ],
+            "singleton_pixels": 0
+          }
+        ],
+        "macro_mean": null,
+        "defined_samples": 0,
+        "undefined_reason": "single_cluster",
+        "device": "cuda:0",
+        "chunk_pixels": 1024,
+        "torch_version": "2.13.0+cu130",
+        "chemomae_version": "0.2.1"
+      },
+      "spatial": {
+        "k": 8,
+        "valid_pixels": 1025,
+        "cluster_counts": [
+          0,
+          0,
+          0,
+          1025,
+          0,
+          0,
+          0,
+          0
+        ],
+        "occupancy": [
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "used_clusters": 1,
+        "maximum_occupancy": 1.0,
+        "expected_agreement": 1.0,
+        "windows": [
+          {
+            "window": 3,
+            "matching_pairs": 7808,
+            "valid_pairs": 7808,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 5,
+            "matching_pairs": 22656,
+            "valid_pairs": 22656,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 9,
+            "matching_pairs": 70520,
+            "valid_pairs": 70520,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          }
+        ]
+      }
+    },
+    "10": {
+      "lfr": {
+        "sample_id": "synthetic-evaluation-probe",
+        "k": 10,
+        "valid_pixels": 1025,
+        "clean_occupancy": {
+          "counts": [
+            0,
+            1025,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "fractions": [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "used_clusters": 1,
+          "maximum_fraction": 1.0
+        },
+        "draws": [
+          {
+            "kind": "noise",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          }
+        ],
+        "mean_by_kind": {
+          "noise": 0.0,
+          "shift": 0.0,
+          "both": 0.0
+        }
+      },
+      "silhouette": {
+        "condition_id": "B1",
+        "fold": 1,
+        "repeat": 1,
+        "k": 10,
+        "valid_pixels": 1025,
+        "used_clusters": 1,
+        "cluster_counts": [
+          0,
+          1025,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "unit_norm_absolute_error_max": 1.7881393432617188e-07,
+        "samples": [
+          {
+            "sample_id": "synthetic-evaluation-probe",
+            "valid_pixels": 1025,
+            "offset": 0,
+            "mean": null,
+            "undefined_reason": "single_cluster",
+            "cluster_counts": [
+              0,
+              1025,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "singleton_pixels": 0
+          }
+        ],
+        "macro_mean": null,
+        "defined_samples": 0,
+        "undefined_reason": "single_cluster",
+        "device": "cuda:0",
+        "chunk_pixels": 1024,
+        "torch_version": "2.13.0+cu130",
+        "chemomae_version": "0.2.1"
+      },
+      "spatial": {
+        "k": 10,
+        "valid_pixels": 1025,
+        "cluster_counts": [
+          0,
+          1025,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "occupancy": [
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "used_clusters": 1,
+        "maximum_occupancy": 1.0,
+        "expected_agreement": 1.0,
+        "windows": [
+          {
+            "window": 3,
+            "matching_pairs": 7808,
+            "valid_pairs": 7808,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 5,
+            "matching_pairs": 22656,
+            "valid_pairs": 22656,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 9,
+            "matching_pairs": 70520,
+            "valid_pairs": 70520,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          }
+        ]
+      }
+    },
+    "12": {
+      "lfr": {
+        "sample_id": "synthetic-evaluation-probe",
+        "k": 12,
+        "valid_pixels": 1025,
+        "clean_occupancy": {
+          "counts": [
+            0,
+            0,
+            0,
+            1025,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "fractions": [
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "used_clusters": 1,
+          "maximum_fraction": 1.0
+        },
+        "draws": [
+          {
+            "kind": "noise",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 5,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          }
+        ],
+        "mean_by_kind": {
+          "noise": 0.0,
+          "shift": 0.0,
+          "both": 0.0
+        }
+      },
+      "silhouette": {
+        "condition_id": "B1",
+        "fold": 1,
+        "repeat": 1,
+        "k": 12,
+        "valid_pixels": 1025,
+        "used_clusters": 1,
+        "cluster_counts": [
+          0,
+          0,
+          0,
+          1025,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "unit_norm_absolute_error_max": 1.7881393432617188e-07,
+        "samples": [
+          {
+            "sample_id": "synthetic-evaluation-probe",
+            "valid_pixels": 1025,
+            "offset": 0,
+            "mean": null,
+            "undefined_reason": "single_cluster",
+            "cluster_counts": [
+              0,
+              0,
+              0,
+              1025,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "singleton_pixels": 0
+          }
+        ],
+        "macro_mean": null,
+        "defined_samples": 0,
+        "undefined_reason": "single_cluster",
+        "device": "cuda:0",
+        "chunk_pixels": 1024,
+        "torch_version": "2.13.0+cu130",
+        "chemomae_version": "0.2.1"
+      },
+      "spatial": {
+        "k": 12,
+        "valid_pixels": 1025,
+        "cluster_counts": [
+          0,
+          0,
+          0,
+          1025,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "occupancy": [
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "used_clusters": 1,
+        "maximum_occupancy": 1.0,
+        "expected_agreement": 1.0,
+        "windows": [
+          {
+            "window": 3,
+            "matching_pairs": 7808,
+            "valid_pairs": 7808,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 5,
+            "matching_pairs": 22656,
+            "valid_pairs": 22656,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          },
+          {
+            "window": 9,
+            "matching_pairs": 70520,
+            "valid_pairs": 70520,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 1.0,
+            "lla_undefined_reason": null,
+            "adjusted_lla": null,
+            "adjusted_undefined_reasons": [
+              "single_cluster"
+            ]
+          }
+        ]
+      }
+    },
+    "14": {
+      "lfr": {
+        "sample_id": "synthetic-evaluation-probe",
+        "k": 14,
+        "valid_pixels": 1025,
+        "clean_occupancy": {
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            1024,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          "fractions": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.9990243911743164,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0009756097570061684,
+            0.0
+          ],
+          "used_clusters": 2,
+          "maximum_fraction": 0.9990243911743164
+        },
+        "draws": [
+          {
+            "kind": "noise",
+            "draw": 1,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 2,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 3,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "noise",
+            "draw": 5,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1025,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "used_clusters": 1,
+              "maximum_fraction": 1.0
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 1,
+            "flipped_pixels": 3,
+            "rate": 0.002926829271018505,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1021,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                4,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9960975646972656,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0039024390280246735,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9960975646972656
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 2,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1023,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                2,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9980487823486328,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0019512195140123367,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9980487823486328
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 3,
+            "flipped_pixels": 2,
+            "rate": 0.0019512195140123367,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1022,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                3,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9970731735229492,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.002926829271018505,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9970731735229492
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 4,
+            "flipped_pixels": 3,
+            "rate": 0.002926829271018505,
+            "occupancy": {
+              "counts": [
+                0,
+                1,
+                0,
+                0,
+                1021,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                3,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0009756097570061684,
+                0.0,
+                0.0,
+                0.9960975646972656,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.002926829271018505,
+                0.0
+              ],
+              "used_clusters": 3,
+              "maximum_fraction": 0.9960975646972656
+            }
+          },
+          {
+            "kind": "shift",
+            "draw": 5,
+            "flipped_pixels": 2,
+            "rate": 0.0019512195140123367,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1022,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                3,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9970731735229492,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.002926829271018505,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9970731735229492
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 1,
+            "flipped_pixels": 2,
+            "rate": 0.0019512195140123367,
+            "occupancy": {
+              "counts": [
+                0,
+                1,
+                0,
+                0,
+                1022,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                2,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0009756097570061684,
+                0.0,
+                0.0,
+                0.9970731735229492,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0019512195140123367,
+                0.0
+              ],
+              "used_clusters": 3,
+              "maximum_fraction": 0.9970731735229492
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 2,
+            "flipped_pixels": 3,
+            "rate": 0.002926829271018505,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1021,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                4,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9960975646972656,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0039024390280246735,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9960975646972656
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 3,
+            "flipped_pixels": 2,
+            "rate": 0.0019512195140123367,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1022,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                3,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9970731735229492,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.002926829271018505,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9970731735229492
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 4,
+            "flipped_pixels": 0,
+            "rate": 0.0,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1024,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9990243911743164,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0009756097570061684,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9990243911743164
+            }
+          },
+          {
+            "kind": "both",
+            "draw": 5,
+            "flipped_pixels": 1,
+            "rate": 0.0009756097570061684,
+            "occupancy": {
+              "counts": [
+                0,
+                0,
+                0,
+                0,
+                1023,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                2,
+                0
+              ],
+              "fractions": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.9980487823486328,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0019512195140123367,
+                0.0
+              ],
+              "used_clusters": 2,
+              "maximum_fraction": 0.9980487823486328
+            }
+          }
+        ],
+        "mean_by_kind": {
+          "noise": 0.00019512194558046758,
+          "shift": 0.002146341372281313,
+          "both": 0.0015609755646437407
+        }
+      },
+      "silhouette": {
+        "condition_id": "B1",
+        "fold": 1,
+        "repeat": 1,
+        "k": 14,
+        "valid_pixels": 1025,
+        "used_clusters": 2,
+        "cluster_counts": [
+          0,
+          0,
+          0,
+          0,
+          1024,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "unit_norm_absolute_error_max": 1.7881393432617188e-07,
+        "samples": [
+          {
+            "sample_id": "synthetic-evaluation-probe",
+            "valid_pixels": 1025,
+            "offset": 0,
+            "mean": 0.26195842027664185,
+            "undefined_reason": null,
+            "cluster_counts": [
+              0,
+              0,
+              0,
+              0,
+              1024,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0
+            ],
+            "singleton_pixels": 1
+          }
+        ],
+        "macro_mean": 0.26195842027664185,
+        "defined_samples": 1,
+        "undefined_reason": null,
+        "device": "cuda:0",
+        "chunk_pixels": 1024,
+        "torch_version": "2.13.0+cu130",
+        "chemomae_version": "0.2.1"
+      },
+      "spatial": {
+        "k": 14,
+        "valid_pixels": 1025,
+        "cluster_counts": [
+          0,
+          0,
+          0,
+          0,
+          1024,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "occupancy": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.9990243911743164,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0009756097570061684,
+          0.0
+        ],
+        "used_clusters": 2,
+        "maximum_occupancy": 0.9990243911743164,
+        "expected_agreement": 0.9980487823486328,
+        "windows": [
+          {
+            "window": 3,
+            "matching_pairs": 7792,
+            "valid_pairs": 7808,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 0.9979507923126221,
+            "lla_undefined_reason": null,
+            "adjusted_lla": -0.050204917788505554,
+            "adjusted_undefined_reasons": []
+          },
+          {
+            "window": 5,
+            "matching_pairs": 22608,
+            "valid_pairs": 22656,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 0.9978813529014587,
+            "lla_undefined_reason": null,
+            "adjusted_lla": -0.08580508828163147,
+            "adjusted_undefined_reasons": []
+          },
+          {
+            "window": 9,
+            "matching_pairs": 70360,
+            "valid_pairs": 70520,
+            "pixels_with_neighbors": 1025,
+            "neighbor_pixel_fraction": 1.0,
+            "lla": 0.9977311491966248,
+            "lla_undefined_reason": null,
+            "adjusted_lla": -0.1627907007932663,
+            "adjusted_undefined_reasons": []
+          }
+        ]
+      }
+    }
+  },
+  "silhouette_kernel_probe": {
+    "expected_scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "actual_scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "device": "cuda:0",
+    "absolute_tolerance": 1e-06,
+    "checks_passed": true
+  }
+}

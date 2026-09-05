@@ -1,0 +1,108 @@
+{
+  "status": "evaluation_smoke_completed",
+  "scope": "synthetic engineering probe; no real test evaluation, CV metrics or condition selection",
+  "checks_passed": true,
+  "synthetic_rows": 1025,
+  "generation_block_sizes": [
+    1024,
+    1
+  ],
+  "cluster_counts": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14
+  ],
+  "source": {
+    "clustering_smoke_id": "20260905T195232_653899Z",
+    "clustering_completion_sha256": "76b05845127f10e7970795f03ffdaec6865eeedb2a11958a6cc180cc9aad95e3",
+    "clustering_run_sha256": "868c0ef86528ddacfa49dc5906f9092d89ca7a37226670bd6eefd89032181372",
+    "clustering_fits_sha256": "c0ffe4ca5f01fd90cfe5c1cfec84538da90688f33af0a25d931727670b7aca28",
+    "centers_sha256": {
+      "2": "de16922b2dab1fd273e867a821cd70743cc1f310e34b51b0f5ea93d106e2647e",
+      "4": "5018a74013883d256eec7bb848a8295947350dc72692cb95b9b50d8d261c4a47",
+      "6": "c233cda380ef7f708e444833a9b61ce323530decfd66c08a5a81fe62c294c8c3",
+      "8": "6bc9130dc757acbca633e21c6b9d625a418e24ae3815255cca85ac38320de3a9",
+      "10": "541a39d2f0c5444e1cdde7651c8874d25c4547cc4b5fb2fe05e91062912bcde7",
+      "12": "693e779fbe430226b9b5c74e0b86cac36d6056a356ad1e7fcabe20cf587ba871",
+      "14": "ac1e845cc8493078adbf94777f4dfc989a1d6b5b7c025329679f2fb2307a6dcd"
+    },
+    "representation": {
+      "kind": "neural",
+      "mode": "smoke",
+      "smoke_id": "20260905T194855_710691Z",
+      "weights_sha256": "99ecfabfbbd6ac78b45cd1afe00a6fe9c2585bfb48b94c349cef49028af60ad5",
+      "run_sha256": "b524d0ab52e73c930bada0c31649b4cdc8480a6915731ee9ff5158a9d10581d4",
+      "completion_sha256": "8ef15be4bff933afb201f9543d088790627bdf7d9da2d3475c83c1b0e17cebb4",
+      "training_runtime": {
+        "python": "3.11.15",
+        "platform": "Windows",
+        "torch": "2.13.0+cu130",
+        "chemomae": "0.2.1",
+        "numpy": "2.4.4",
+        "h5py": "3.16.0",
+        "cuda_runtime": "13.0",
+        "device": "cuda:0",
+        "deterministic_algorithms": false,
+        "deterministic_warn_only": false,
+        "cudnn_benchmark": false,
+        "cudnn_deterministic": false,
+        "matmul_fp32_precision": "none",
+        "cudnn_fp32_precision": "none",
+        "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+        "gpu_memory_bytes": 17170956288,
+        "gpu_capability": [
+          8,
+          9
+        ],
+        "cudnn_version": 92000
+      },
+      "completed_epochs": 2
+    },
+    "neural_smoke_id": "20260905T194855_710691Z",
+    "manifest_artifact_sha256": {
+      "config/experiment.json": "dfbf072d9bc8b8c32a878bcccdaab1cd7ef02216e3729adbb637996469ccc8ae",
+      "config/seeds.json": "367ef557504c53f416addd4bd88b0afdb596faacd9dbd73c0e616ecf38e8eb4a",
+      "manifests/inputs.json": "87370c47ff3fe6423f35be9011f255779a025b864c3bc17760c64ddb1b4f4fcd",
+      "manifests/folds.parquet": "0d1029cfb5f94245da1bdb6d7c26eb64b85241dfeb135eb66be612cc01c100d5",
+      "manifests/train_pixels/fold_1.parquet": "5984c5210b8f5c83d36a5eee8879e2ab3b3b49ee4f01dd4c6d0ad6da272b199c",
+      "manifests/train_pixels/fold_2.parquet": "0127c589a7aaa9c50f6a95b7725e531140bc26cc9b52e728fce606c00374b9d7",
+      "manifests/train_pixels/fold_3.parquet": "b9ad713c2f9254a4cb9b63732391276c681e2bed5d83a41c9d6b3f98f02359bb",
+      "manifests/train_pixels/fold_4.parquet": "77d8219004e6d291db8ebf87a74c519a0f8f57169a8d0355b390db946ed6bd65",
+      "manifests/train_pixels/fold_5.parquet": "c146d1a95a4282af1a1ac0d18e856e908204c8b92d9969403ea2d46c220dd972"
+    }
+  },
+  "arrays_and_metrics_save_load_exact": true,
+  "fixed_centers_unchanged": true,
+  "saved_clean_labels_reproduced": true,
+  "silhouette_kernel_probe": {
+    "expected_scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "actual_scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "device": "cuda:0",
+    "absolute_tolerance": 1e-06,
+    "checks_passed": true
+  },
+  "artifact_sha256": {
+    "run.json": "f1d8ad310a540c72d0638fac1d3417affb5cde1d1460959153cfc3f3e2c34f22",
+    "metrics.json": "89fe3e8db22db0f069105442ad8011ba61a7cba0b01093f451546743d02c18cd",
+    "probe.npz": "24936314437f1307847288f35c742d78b835fc7fb1ee6006fa18024be8afdc59"
+  },
+  "wall_seconds": 1.1501458999991883,
+  "timing_scope": "source load through synthetic evaluation and save/reload; excludes initial manifest validation",
+  "output_bytes_before_completion": 1206478,
+  "peak_gpu_allocated_bytes": 269286400,
+  "peak_gpu_reserved_bytes": 356515840
+}

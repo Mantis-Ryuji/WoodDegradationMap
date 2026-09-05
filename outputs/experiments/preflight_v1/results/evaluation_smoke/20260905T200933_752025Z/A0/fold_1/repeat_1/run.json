@@ -1,0 +1,590 @@
+{
+  "schema_version": 1,
+  "mode": "synthetic_evaluation_smoke",
+  "scope": "synthetic engineering probe; no real test evaluation, CV metrics or condition selection",
+  "condition": "A0",
+  "fold": 1,
+  "repeat": 1,
+  "source": {
+    "clustering_smoke_id": "20260905T195218_899327Z",
+    "clustering_completion_sha256": "f495dffdcfc7eb0d144e02c02ee7316fa565b831a0bbaee19d10ef01543d3a72",
+    "clustering_run_sha256": "e1d3d28fd687e1541b00d4a921d5c1e744de8af48e30803cd96a9385d3d368b5",
+    "clustering_fits_sha256": "7278ef4a349668257f079033ed1d8471c0fad73727d980811e535a1d25d146cc",
+    "centers_sha256": {
+      "2": "04e00ef4b8d48e0cb9a0c80ba506498af446ad6e139aca70f71abbca5d1dbffa",
+      "4": "745c6813216e44a414b0ef0ad60cbc329bc24c1f0ae3bdfa248c544d33734181",
+      "6": "43e81aa270784a7d8921b2e7b5ac511c2d0ee651acbdd9bc0279d01b565dd25a",
+      "8": "4bb829efdbfa3529a24f6995f4e4a50fa57c6aa06924f928df5e8a0c8bdb9d75",
+      "10": "647cccfdb505a83ac4764eebccdb193dc22e46d47118c65760bb9884ed59874d",
+      "12": "3befe0b2fa56d09be93c0e2a80f2650dddf78d0ce75a15e8bc85b85cfde80833",
+      "14": "acbf3377da5ed795ffbaea9a772a9ed764c4b3b29b81fac9a3d111d5b3125b96"
+    },
+    "representation": {
+      "kind": "neural",
+      "mode": "smoke",
+      "smoke_id": "20260905T194725_418246Z",
+      "weights_sha256": "6f08273759d7af97998c5def6e73f8c0d162f8920f296b7361c227f97a431497",
+      "run_sha256": "68f18e45ae738345ec93a44da7f71c998000d2159959d4a963fb07e869c85dcb",
+      "completion_sha256": "43c899e3d675a8561884a6680f32ab6058ef70f76a28d07121d9ab134e0d0006",
+      "training_runtime": {
+        "python": "3.11.15",
+        "platform": "Windows",
+        "torch": "2.13.0+cu130",
+        "chemomae": "0.2.1",
+        "numpy": "2.4.4",
+        "h5py": "3.16.0",
+        "cuda_runtime": "13.0",
+        "device": "cuda:0",
+        "deterministic_algorithms": false,
+        "deterministic_warn_only": false,
+        "cudnn_benchmark": false,
+        "cudnn_deterministic": false,
+        "matmul_fp32_precision": "none",
+        "cudnn_fp32_precision": "none",
+        "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+        "gpu_memory_bytes": 17170956288,
+        "gpu_capability": [
+          8,
+          9
+        ],
+        "cudnn_version": 92000
+      },
+      "completed_epochs": 2
+    },
+    "neural_smoke_id": "20260905T194725_418246Z",
+    "manifest_artifact_sha256": {
+      "config/experiment.json": "dfbf072d9bc8b8c32a878bcccdaab1cd7ef02216e3729adbb637996469ccc8ae",
+      "config/seeds.json": "367ef557504c53f416addd4bd88b0afdb596faacd9dbd73c0e616ecf38e8eb4a",
+      "manifests/inputs.json": "87370c47ff3fe6423f35be9011f255779a025b864c3bc17760c64ddb1b4f4fcd",
+      "manifests/folds.parquet": "0d1029cfb5f94245da1bdb6d7c26eb64b85241dfeb135eb66be612cc01c100d5",
+      "manifests/train_pixels/fold_1.parquet": "5984c5210b8f5c83d36a5eee8879e2ab3b3b49ee4f01dd4c6d0ad6da272b199c",
+      "manifests/train_pixels/fold_2.parquet": "0127c589a7aaa9c50f6a95b7725e531140bc26cc9b52e728fce606c00374b9d7",
+      "manifests/train_pixels/fold_3.parquet": "b9ad713c2f9254a4cb9b63732391276c681e2bed5d83a41c9d6b3f98f02359bb",
+      "manifests/train_pixels/fold_4.parquet": "77d8219004e6d291db8ebf87a74c519a0f8f57169a8d0355b390db946ed6bd65",
+      "manifests/train_pixels/fold_5.parquet": "c146d1a95a4282af1a1ac0d18e856e908204c8b92d9969403ea2d46c220dd972"
+    }
+  },
+  "config": {
+    "schema_version": 1,
+    "protocol": "docs/design/experiment_protocol.md",
+    "preprocessing_id": "production_v1",
+    "input": {
+      "dataset": "snv",
+      "bands": 256,
+      "dtype": "float32"
+    },
+    "split": {
+      "unit": "KYOw",
+      "n_folds": 5,
+      "stratification": null,
+      "algorithm": "sorted IDs, NumPy PCG64 permutation, array_split",
+      "fold_ids": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "repeat_ids": [
+        1,
+        2,
+        3
+      ],
+      "adopted_sample_ids": [
+        "KYOw02702",
+        "KYOw02707",
+        "KYOw02708",
+        "KYOw02709",
+        "KYOw02715",
+        "KYOw02716",
+        "KYOw02717",
+        "KYOw02719",
+        "KYOw02720",
+        "KYOw02751",
+        "KYOw02752",
+        "KYOw02754",
+        "KYOw02756",
+        "KYOw02758",
+        "KYOw02759",
+        "KYOw02760",
+        "KYOw02762",
+        "KYOw02763",
+        "KYOw02764",
+        "KYOw02766",
+        "KYOw02767",
+        "KYOw02768",
+        "KYOw02769",
+        "KYOw02770",
+        "KYOw02771",
+        "KYOw02772",
+        "KYOw02773",
+        "KYOw02774",
+        "KYOw02775",
+        "KYOw02776",
+        "KYOw02777",
+        "KYOw02780",
+        "KYOw02783",
+        "KYOw02784",
+        "KYOw02787",
+        "KYOw02788",
+        "KYOw02789",
+        "KYOw02790",
+        "KYOw16662",
+        "KYOw16666",
+        "KYOw16700",
+        "KYOw16702",
+        "KYOw16711",
+        "KYOw16714",
+        "KYOw16716",
+        "KYOw16719",
+        "KYOw16737",
+        "KYOw16744",
+        "KYOw16750"
+      ],
+      "cross_KYOw_source_relationship": "unknown; KYOw-only split approved 2026-09-05"
+    },
+    "sampling": {
+      "q": 8192,
+      "replace": false,
+      "distribution": "uniform",
+      "algorithm": "NumPy PCG64 choice; HDF5 rows sorted after selection",
+      "shared_across": [
+        "condition",
+        "K",
+        "training_repeat",
+        "epoch"
+      ],
+      "test": "all valid saved rows"
+    },
+    "seeds": {
+      "root_seed": 20260905,
+      "algorithm": "sha256-json-v1-first-32-bits"
+    },
+    "conditions": [
+      {
+        "condition_id": "B0",
+        "representation": "snv",
+        "output_dim": 256,
+        "n_mask": null,
+        "loss_region": null,
+        "noise_prob": 0.0,
+        "shift_prob": 0.0,
+        "experiment": "main"
+      },
+      {
+        "condition_id": "B1",
+        "representation": "pca",
+        "output_dim": 16,
+        "n_mask": null,
+        "loss_region": null,
+        "noise_prob": 0.0,
+        "shift_prob": 0.0,
+        "experiment": "main"
+      },
+      {
+        "condition_id": "A0",
+        "representation": "chemomae",
+        "output_dim": 16,
+        "n_mask": 0,
+        "loss_region": "all",
+        "noise_prob": 0.0,
+        "shift_prob": 0.0,
+        "experiment": "main"
+      },
+      {
+        "condition_id": "M00",
+        "representation": "chemomae",
+        "output_dim": 16,
+        "n_mask": 8,
+        "loss_region": "masked",
+        "noise_prob": 0.0,
+        "shift_prob": 0.0,
+        "experiment": "main"
+      },
+      {
+        "condition_id": "M10",
+        "representation": "chemomae",
+        "output_dim": 16,
+        "n_mask": 8,
+        "loss_region": "masked",
+        "noise_prob": 0.5,
+        "shift_prob": 0.0,
+        "experiment": "main"
+      },
+      {
+        "condition_id": "M01",
+        "representation": "chemomae",
+        "output_dim": 16,
+        "n_mask": 8,
+        "loss_region": "masked",
+        "noise_prob": 0.0,
+        "shift_prob": 0.5,
+        "experiment": "main"
+      },
+      {
+        "condition_id": "M11",
+        "representation": "chemomae",
+        "output_dim": 16,
+        "n_mask": 8,
+        "loss_region": "masked",
+        "noise_prob": 0.5,
+        "shift_prob": 0.5,
+        "experiment": "main"
+      },
+      {
+        "condition_id": "M11-25",
+        "representation": "chemomae",
+        "output_dim": 16,
+        "n_mask": 4,
+        "loss_region": "masked",
+        "noise_prob": 0.5,
+        "shift_prob": 0.5,
+        "experiment": "mask_sensitivity"
+      },
+      {
+        "condition_id": "M11-75",
+        "representation": "chemomae",
+        "output_dim": 16,
+        "n_mask": 12,
+        "loss_region": "masked",
+        "noise_prob": 0.5,
+        "shift_prob": 0.5,
+        "experiment": "mask_sensitivity"
+      }
+    ],
+    "representation": {
+      "l2_normalize_rows": true,
+      "b0_pca_normalization_eps": 1e-06
+    },
+    "pca": {
+      "n_components": 16,
+      "copy": true,
+      "whiten": false,
+      "svd_solver": "auto",
+      "tol": 0.0,
+      "iterated_power": "auto",
+      "n_oversamples": 10,
+      "power_iteration_normalizer": "auto",
+      "random_state": null,
+      "rng_policy": "isolated NumPy random state set to the recorded PCA seed",
+      "fit_scope": "shared train pixels",
+      "additional_autoscaling": false
+    },
+    "chemomae": {
+      "version": "0.2.1",
+      "seq_len": 256,
+      "d_model": 256,
+      "nhead": 8,
+      "num_layers": 8,
+      "dim_feedforward": 1024,
+      "dropout": 0.0,
+      "n_patches": 16,
+      "latent_dim": 16,
+      "latent_normalize": true,
+      "decoder_num_layers": 1,
+      "initialization": "ChemoMAE 0.2.1 defaults"
+    },
+    "training": {
+      "epochs": 800,
+      "batch_size": 1024,
+      "world_size": 1,
+      "accum_iter": 1,
+      "optimizer": "AdamW",
+      "betas": [
+        0.9,
+        0.95
+      ],
+      "eps": 1e-08,
+      "amsgrad": false,
+      "weight_decay": 0.05,
+      "zero_weight_decay": [
+        "bias",
+        "normalization_parameters"
+      ],
+      "base_lr": 0.00015,
+      "peak_lr": 0.0006,
+      "min_lr": 0.0,
+      "warmup_epochs": 40,
+      "scheduler": "linear warmup then half-cycle cosine; epoch + batch/steps_per_epoch",
+      "lr_update": "before batch",
+      "amp_dtype": "fp16",
+      "grad_scaler": true,
+      "weight_dtype": "float32",
+      "grad_clip": null,
+      "drop_path": 0.0,
+      "shuffle": true,
+      "drop_last": true,
+      "use_ema": false,
+      "checkpoint": "last_model.pt; final raw weights at epoch 800",
+      "independent_run_resume_from": null,
+      "early_stopping": false,
+      "target": "clean SNV",
+      "patch_target_normalization": false
+    },
+    "augmentation": {
+      "noise_angle_deg_range": [
+        0.0,
+        2.5
+      ],
+      "shift_delta_range": [
+        -2.0,
+        2.0
+      ],
+      "shuffle_order_per_batch": true,
+      "recenter_after_each_op": true,
+      "renorm_to_input_norm": true,
+      "eps": 1e-08
+    },
+    "extraction": {
+      "visible_mask": "all",
+      "model_mode": "eval",
+      "amp": false,
+      "dtype": "float32",
+      "tf32": false,
+      "augmenter": null
+    },
+    "clustering": {
+      "K": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14
+      ],
+      "K0": 8,
+      "max_iter": 500,
+      "tol": 0.0001,
+      "initializations_per_fit": 1,
+      "dtype": "float32",
+      "device": "cuda",
+      "normalization_eps": 1e-06,
+      "other_settings": "ChemoMAE 0.2.1 defaults",
+      "fit_scope": "shared train pixels",
+      "test_centers": "fixed"
+    },
+    "evaluation": {
+      "dtype": "float32",
+      "tf32": false,
+      "lla_windows": [
+        3,
+        5,
+        9
+      ],
+      "perturbations": [
+        "noise",
+        "shift",
+        "both"
+      ],
+      "perturbation_repeats": 5,
+      "perturbation_active_operation_prob": 1.0,
+      "perturbation_shared_across": [
+        "condition",
+        "K",
+        "training_repeat"
+      ],
+      "silhouette_eps": 1e-12,
+      "latent_normalization_eps": 1e-12,
+      "aggregation": "sample macro; sample SD separate from training-repeat SD",
+      "ari_pairs": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "background_label": 0,
+      "cluster_labels": "1..K"
+    }
+  },
+  "code_sha256": {
+    "training.py": "67ecc18d56fec6205f910eb976cb7fcfea3ed94b319d75a6936fc5dcf8fe2cca",
+    "neural.py": "9d7f7cec189633c1f23dc9dda9dc04e87b3b1d02b629b46849b852689d1cb819",
+    "config.py": "2e2d8146803d84494a2c7755111a38469b88b0153fb48df7b463460beea1c412",
+    "data.py": "2c22e1e08e522c384ae6f0d323f7473a3e296e712643ee1c6e25e00c181668ad",
+    "input_validation.py": "7aec04fd753625cd7f4432f6f70ef6288a6be79ae3ee28822cbe68dd0777e961",
+    "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",
+    "baselines.py": "6dcd53ab68fef2c3486d8f9b41ce02be79161a7e868027266f683f93df7d9cba",
+    "clustering.py": "d5b938d411b2828ef6d5efe216eb883eb71414fe0a7a865bea48ad2a9d4d991d",
+    "cluster_pipeline.py": "02d86cd25ecb433a48562238d12926227d514a8ff41408b4c8722e3c0080e5b1",
+    "evaluation_smoke.py": "094e958dcded3eef4eea75984e6bff46dca414efc3bbc7b1dd3556c4d55bf8bb",
+    "perturbations.py": "fa391c8f9d3206e208cc274a81e1bb3bc034c5c053edec660df4b405d4ae82a7",
+    "lfr.py": "958aa18cc5d8fcbf82130682d8810a33b0ca68b53f9bc35560c466991a7446bd",
+    "spatial_metrics.py": "3487fec112e8487f7908c3cc5ea1836eb952880be59125a31c393415083fca32",
+    "diagnostic_metrics.py": "e72bd3e4691fca10fef90c0511c3a6cb94fc39033579ec73fec01ca7fed8f0f5"
+  },
+  "runtime": {
+    "python": "3.11.15",
+    "platform": "Windows",
+    "torch": "2.13.0+cu130",
+    "chemomae": "0.2.1",
+    "numpy": "2.4.4",
+    "h5py": "3.16.0",
+    "cuda_runtime": "13.0",
+    "device": "cuda:0",
+    "deterministic_algorithms": false,
+    "deterministic_warn_only": false,
+    "cudnn_benchmark": false,
+    "cudnn_deterministic": false,
+    "matmul_fp32_precision": "ieee",
+    "cudnn_fp32_precision": "ieee",
+    "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+    "gpu_memory_bytes": 17170956288,
+    "gpu_capability": [
+      8,
+      9
+    ],
+    "cudnn_version": 92000
+  },
+  "fixture": {
+    "id": "synthetic-evaluation-probe",
+    "seed": 20260906,
+    "shape": [
+      41,
+      25
+    ],
+    "rows": 1025,
+    "spectrum": "Gaussian FP32, row-centered, ddof=1 SNV"
+  },
+  "perturbations": {
+    "sample_id": "synthetic-evaluation-probe",
+    "pixels": 1025,
+    "generation_batch_pixels": 1024,
+    "row_order": "synthetic fixture indices 0..1024; not real HDF5 rows",
+    "device": "cuda:0",
+    "torch": "2.13.0+cu130",
+    "chemomae": "0.2.1",
+    "cuda_runtime": "13.0",
+    "dtype": "float32",
+    "tf32": false,
+    "augmentation": {
+      "noise_angle_deg_range": [
+        0.0,
+        2.5
+      ],
+      "shift_delta_range": [
+        -2.0,
+        2.0
+      ],
+      "shuffle_order_per_batch": true,
+      "recenter_after_each_op": true,
+      "renorm_to_input_norm": true,
+      "eps": 1e-08
+    },
+    "draws": [
+      {
+        "kind": "noise",
+        "draw": 1,
+        "seed": 3338388393,
+        "noise_prob": 1,
+        "shift_prob": 0
+      },
+      {
+        "kind": "noise",
+        "draw": 2,
+        "seed": 2571056085,
+        "noise_prob": 1,
+        "shift_prob": 0
+      },
+      {
+        "kind": "noise",
+        "draw": 3,
+        "seed": 3094997625,
+        "noise_prob": 1,
+        "shift_prob": 0
+      },
+      {
+        "kind": "noise",
+        "draw": 4,
+        "seed": 905944581,
+        "noise_prob": 1,
+        "shift_prob": 0
+      },
+      {
+        "kind": "noise",
+        "draw": 5,
+        "seed": 2126101819,
+        "noise_prob": 1,
+        "shift_prob": 0
+      },
+      {
+        "kind": "shift",
+        "draw": 1,
+        "seed": 3128507166,
+        "noise_prob": 0,
+        "shift_prob": 1
+      },
+      {
+        "kind": "shift",
+        "draw": 2,
+        "seed": 2387520408,
+        "noise_prob": 0,
+        "shift_prob": 1
+      },
+      {
+        "kind": "shift",
+        "draw": 3,
+        "seed": 1725946312,
+        "noise_prob": 0,
+        "shift_prob": 1
+      },
+      {
+        "kind": "shift",
+        "draw": 4,
+        "seed": 1926575773,
+        "noise_prob": 0,
+        "shift_prob": 1
+      },
+      {
+        "kind": "shift",
+        "draw": 5,
+        "seed": 1293243921,
+        "noise_prob": 0,
+        "shift_prob": 1
+      },
+      {
+        "kind": "both",
+        "draw": 1,
+        "seed": 868107249,
+        "noise_prob": 1,
+        "shift_prob": 1
+      },
+      {
+        "kind": "both",
+        "draw": 2,
+        "seed": 1903870925,
+        "noise_prob": 1,
+        "shift_prob": 1
+      },
+      {
+        "kind": "both",
+        "draw": 3,
+        "seed": 3411735318,
+        "noise_prob": 1,
+        "shift_prob": 1
+      },
+      {
+        "kind": "both",
+        "draw": 4,
+        "seed": 1010325603,
+        "noise_prob": 1,
+        "shift_prob": 1
+      },
+      {
+        "kind": "both",
+        "draw": 5,
+        "seed": 2143474640,
+        "noise_prob": 1,
+        "shift_prob": 1
+      }
+    ]
+  }
+}
