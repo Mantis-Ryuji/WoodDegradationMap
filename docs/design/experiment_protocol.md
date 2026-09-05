@@ -44,6 +44,11 @@ mask率の最適化は主題にせず、提案条件の感度を確認する補�
 樹種、由来、測定条件について確認できる試料構成を報告し、未知樹種・未知産地・別装置への汎化を
 このランダム5-foldだけから主張しない。
 
+2026-09-05のユーザー確認により、現存する本番前処理済み49試料で進める。
+異なるKYOw間の同一原材からの採取関係は不明であり、今回の分割はKYOwだけを単位とする。
+同一KYOwをtrain/testの両方に含めないことを必須の検証条件とする。
+この判断は、異なるKYOw間の由来的な独立性を確認したことを意味しない。
+
 ### 3.2 5-fold CV
 
 - 試料をランダムな5-foldに分割する。
@@ -70,6 +75,25 @@ test試料は、trainで得た変換器、encoder、クラスタ中心を固定�
 主比較の学習5条件は$5\times5\times3=75$学習、追加mask率2条件は$2\times5\times3=30$学習で、
 CVのニューラルネット学習は合計105回となる。Kの数だけ表現学習を繰り返さず、同一fold・条件・反復の
 表現を全Kで共有する。PCA、KMeansおよび全体可視化用の学習はこの105回に含めない。
+
+2026-09-05実装時のCV用seed計画は基準値 `20260905` に事前固定した。
+`["wood-degradation-map-seeds-v1", 基準値, 用途, ...文脈]` を空白なしのASCII JSONへ変換し、
+SHA-256の先頭4 byteをbig-endianの符号なし32 bit整数として用いる。
+用途間でseed値が衝突した場合は停止し、暗黙に別seedを選ばない。
+
+| 用途 | seedに含める文脈 | 共有範囲 |
+| --- | --- | --- |
+| split | なし | 全条件・全K・全反復 |
+| train画素抽出 | fold・KYOw | 全条件・全K・全反復・全epoch |
+| モデル構築・画素順序・mask・学習Aug・PCA | 用途ごとにfold・学習反復 | 全条件・全K |
+| KMeans | fold・学習反復・K | 全条件 |
+| 評価摂動 | KYOw・摂動種類・摂動反復1..5 | 全条件・全K・全学習反復 |
+
+splitはソートした試料IDへNumPy PCG64によるランダム置換を行い、5つに概ね等分する。
+抽出は試料内のHDF5行番号をPCG64の一様・非復元 `choice` で選び、保存時に行番号順へ並べる。
+使用versionとseed数値一覧をmanifestとともに保存する。再読込時は保存済み集合を使用し、
+library versionや呼び出し順の違いを理由にsplit・画素集合を作り直さない。
+seed計画は乱数管理の契約であり、後続の学習・共通評価摂動の動作検証を代用しない。
 
 ### 3.4 train画素の試料間均等化
 
@@ -99,7 +123,7 @@ CVのニューラルネット学習は合計105回となる。Kの数だけ表�
 確認には`scripts/preprocess/check_sampling_pixels.py`を使用する。リポジトリrootからの実行例は次のとおり。
 
 ```powershell
-.\.venv\Scripts\python.exe scripts/preprocess/check_sampling_pixels.py --q 8192
+uv run python scripts/preprocess/check_sampling_pixels.py --q 8192
 ```
 
 既存の`sample_quality.parquet`の試料ID・有効画素数だけを読み、全試料の画素数、要求抽出率、

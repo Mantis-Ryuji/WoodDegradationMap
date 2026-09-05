@@ -1,0 +1,127 @@
+{
+  "status": "fitted_and_roundtrip_checked",
+  "pca_fit": {
+    "fold": 1,
+    "repeat": 1,
+    "seed": 1719286188,
+    "sample_ids": [
+      "KYOw02702",
+      "KYOw02708",
+      "KYOw02709",
+      "KYOw02715",
+      "KYOw02716",
+      "KYOw02717",
+      "KYOw02719",
+      "KYOw02754",
+      "KYOw02756",
+      "KYOw02758",
+      "KYOw02759",
+      "KYOw02760",
+      "KYOw02762",
+      "KYOw02763",
+      "KYOw02764",
+      "KYOw02767",
+      "KYOw02768",
+      "KYOw02770",
+      "KYOw02771",
+      "KYOw02772",
+      "KYOw02773",
+      "KYOw02777",
+      "KYOw02780",
+      "KYOw02783",
+      "KYOw02784",
+      "KYOw02787",
+      "KYOw02788",
+      "KYOw02789",
+      "KYOw02790",
+      "KYOw16662",
+      "KYOw16666",
+      "KYOw16700",
+      "KYOw16702",
+      "KYOw16711",
+      "KYOw16714",
+      "KYOw16716",
+      "KYOw16737",
+      "KYOw16744",
+      "KYOw16750"
+    ],
+    "train_pixel_count": 319488,
+    "solver": "covariance_eigh",
+    "sklearn_version": "1.9.0",
+    "numpy_version": "2.4.4"
+  },
+  "manifest_artifact_sha256": {
+    "config/experiment.json": "9189179175e82d2958248e9cc042ed526960b91dcadbc4f2eefb0aa997a1210f",
+    "config/seeds.json": "367ef557504c53f416addd4bd88b0afdb596faacd9dbd73c0e616ecf38e8eb4a",
+    "manifests/inputs.json": "eb0cfecc1912cf85dedd8a4b84666e7fa230c7dfb3d65368bff8abd74e61936b",
+    "manifests/folds.parquet": "688d7c3d6c842f75c74d462642c506b2b6c0f76744c26f944d63dc8aa6e1dfd7",
+    "manifests/train_pixels/fold_1.parquet": "d8722cbae543755f35d99bb35959987f092f2977d299bfeec942c7e9fccd095f",
+    "manifests/train_pixels/fold_2.parquet": "8db00917efddeaf666d71ae165e2b3e9f5c006a39366f7be1600a2d7a0193fea",
+    "manifests/train_pixels/fold_3.parquet": "ce32db382be0fba72f9e1cef41438348b522f68e1d1f3bed50cb622dc77bd537",
+    "manifests/train_pixels/fold_4.parquet": "ae87572572e30d0e2235ca6535782adccf145b60506d7c445170ca2d14ec0b4e",
+    "manifests/train_pixels/fold_5.parquet": "324898eff0f10f57f47d53b49b4fd920b89c098a178c28bbc8a1f31a3394dba9"
+  },
+  "pca_checkpoint_sha256": "c915be68f979f6d9ab1c86fca17466d9cce3ee8f50b9bc2d1133f3af7d4b3cb2",
+  "pca_reusable_across_repeats": true,
+  "pca_save_load_probe_absolute_error_max": 1.6391277313232422e-07,
+  "probes": [
+    {
+      "split": "train",
+      "sample_id": "KYOw02702",
+      "hdf5_rows": [
+        43
+      ],
+      "B0": {
+        "row_count": 1,
+        "dimension": 256,
+        "nonfinite_rows": [],
+        "nonfinite_norm_rows": [],
+        "zero_norm_rows": [],
+        "epsilon_clamped_rows": [],
+        "unit_norm_absolute_error_max": 0.0
+      },
+      "B1": {
+        "row_count": 1,
+        "dimension": 16,
+        "nonfinite_rows": [],
+        "nonfinite_norm_rows": [],
+        "zero_norm_rows": [],
+        "epsilon_clamped_rows": [],
+        "unit_norm_absolute_error_max": 0.0
+      }
+    },
+    {
+      "split": "test",
+      "sample_id": "KYOw02707",
+      "hdf5_rows": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "B0": {
+        "row_count": 8,
+        "dimension": 256,
+        "nonfinite_rows": [],
+        "nonfinite_norm_rows": [],
+        "zero_norm_rows": [],
+        "epsilon_clamped_rows": [],
+        "unit_norm_absolute_error_max": 1.1920928955078125e-07
+      },
+      "B1": {
+        "row_count": 8,
+        "dimension": 16,
+        "nonfinite_rows": [],
+        "nonfinite_norm_rows": [],
+        "zero_norm_rows": [],
+        "epsilon_clamped_rows": [],
+        "unit_norm_absolute_error_max": 1.1920928955078125e-07
+      }
+    }
+  ],
+  "scope": "Train PCA fit and bounded transform probes; no clustering or test metrics"
+}

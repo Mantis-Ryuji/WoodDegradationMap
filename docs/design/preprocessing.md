@@ -264,7 +264,8 @@ outputs/preprocessing/200hz_snr10_linear256/
 ```
 
 `data/processed/`には下流解析へ渡すデータ、品質表、座標および固定configを置く。
-`outputs/`には人が確認する図だけを置く。探索runの保存物を本番前処理の入力として使用しない。
+`outputs/preprocessing/`には人が確認する図とその描画設定を置く。
+探索runの保存物を本番前処理の入力として使用しない。
 
 ### 6.1 試料HDF5 schema
 
