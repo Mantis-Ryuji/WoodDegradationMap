@@ -13,7 +13,9 @@ B0/B1/A0/M11のGPU上のtrain 64画素probeも成功。
 第4段階のLLA・補正LLAはCPUテスト33件で確認済み。
 LFR用の共通摂動生成・反転率計算はCPUテスト27件で確認済み。
 cosine-silhouetteと3反復間ARIはCPUテスト33件で確認済み。
-現在は試料macro・SD・paired差の集計部を追加し、新規CPUテストの確認待ち。
+試料macro・SD・paired差はCPUテスト34件、評価接続と既存LFRは計52件で確認済み。
+OOF・ARI・計画比較の接続もユーザーから31テスト全件成功の報告を受けた。
+現在は本学習前に残る品質表・全試料空間図の確認用レポートを追加し、CPUテスト待ち。
 第1段階の残る品質表・空間図確認は、本学習前までに完了する。
 この文書は確定済み設計を実行へ移すための作業順序であり、詳細仕様は以下の設計文書を正とする。
 チェックは実装しただけでなく、各項目に必要な確認結果が得られてから付ける。
@@ -151,6 +153,41 @@ fixtureテストは `26 passed in 4.49s`。同じ入力での再実行は不要�
 
 完了条件: 採用データと座標の契約、分割上の確認状況、実装・保存先を説明できる。
 49試料の採用確定と、画素数確認に49試料が載っていたことを区別する。
+
+### 本学習前の品質確認資料（生成処理のCPU検証待ち）
+
+- `input_review.py` と `scripts/experiments/prepare_input_review.py` を追加。
+  既存のmanifest、sample_quality、mask_quality、reference_band_quality、output_band_summaryを読み、
+  全列CSVとHTML表にする。config・cutoff・preprocessing_summary・report_configも表示する。
+  49試料分の反射率L2 norm画像と4種類の全体診断図は、元画像へのリンクで一覧表示する。
+  図の再生成・色scale変更・HDF5読込・スペクトル再計算・raw data変更は行わない。
+- 小さなSNV数値誤差を表示上ゼロへ丸めない。欠損値は欠損として表示し、0で補完しない。
+  表の試料・画素数、summaryの件数・cutoff記録、図のreport_config出典を照合する。
+  CLIは採用済み49 IDとの一致を要求する。画像欠落は一覧と記録に残し、試料を自動除外しない。
+- 保存先は `results/input_review/<UTC時刻>/` の `index.html`、5つのCSV、`review.json`。
+  `--output-dir` で新規保存先を明示できる。既存の保存先は上書きしない。
+  `review.json` に小規模な出典表・設定のhashと画像欠落一覧を記録する。
+  元画像はコピー・hash・再解析しないため、図とデータの対応を独立に再検証したとは扱わない。
+  statusは `input_review_prepared`、`manual_review_required=true` であり、品質承認を意味しない。
+- テスト10件を追加。全列/数値/リンクの保持、HTML escape、欠落画像の明示、出典不一致、上書き拒否を確認する。
+  既存の品質基準・49試料の採用決定・splitは変更していない。
+
+今回ユーザーが実行するコマンド（Codexでは未実行）:
+
+```powershell
+uv run pytest tests/experiments/test_input_review.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
+```
+
+テスト成功後に資料を生成する。既存の小規模表を読むCPU処理で、GPU・HDF5全件走査・前処理再生成は行わない。
+
+```powershell
+uv run python scripts/experiments/prepare_input_review.py
+```
+
+出力の `html` を開く。確認点は49試料・3,902,746画素・`missing_images=[]`。
+続いて品質表の除外/範囲外反射率/SNV指標と全49試料の空間図を目視する。
+現時点では資料生成も全49図の目視確認も未完了。追加除外や本文代表試料を自動で決めない。
+本文代表試料の基準・IDはユーザーと結果を見る前に固定する工程として残っている。
 
 ## 2. 共通config・seed・manifestの実装
 
@@ -575,7 +612,7 @@ uv run python scripts/experiments/cluster_representations.py check --condition B
   評価Augは明示的にtraining mode、encoderは推論mode・全可視とする。
   摂動後にPCAや中心をfitし直さず、各5回のLFRと平均を保存する。
   `perturbations.py` と `lfr.py` の生成・共有・固定中心予測・試料内集計はCPUテスト27件で成功。
-  本番評価CLIと数値結果保存を `evaluation_pipeline.py` に接続済み。新規CPUテスト待ち。
+  本番評価CLIと数値結果保存を `evaluation_pipeline.py` に接続し、CPUテスト成功を確認済み。
 - [ ] `silhouette_samples_cosine_gpu` でfoldの全test画素のscoreを計算し、試料ごとに平均する。
   FP32、singleton、使用クラスタ数1、ゼロ距離などの規約を確認する。
   `diagnostic_metrics.py` の参照関数呼出・試料境界による集計はCPUテストで成功。本番/GPUは未確認。
@@ -583,13 +620,13 @@ uv run python scripts/experiments/cluster_representations.py check --condition B
   試料別とfold全体を区別し、未整列クラスタ番号をfold間で平均しない。
 - [ ] 同一試料の3反復間ARIを3対計算し、退化flagとともに保存する。Hungarian matchingは使用しない。
   `diagnostic_metrics.py` の画素照合・整数contingency・3対と試料内平均はCPUテストで成功。
-  本番3反復のラベル読込・結果保存を `oof_pipeline.py` に接続済み。新規CPUテスト待ち。
+  本番3反復のラベル読込・結果保存を `oof_pipeline.py` に接続し、CPUテスト成功を確認済み。
 - [ ] 試料・fold・条件・K・反復・摂動種別を追跡できる数値出力とrun台帳を実装する。
   未定義理由、利用可能数、失敗・中断・完了状態を記録する。
 - [x] 試料macro、試料間SD、3反復間SD、共通対象でのpaired contrastを実装する。
   ARIの3対を独立反復扱いせず、欠測を0で補完しない。
   `aggregation.py` の共通対象・未定義/失敗の記録と手計算例はCPUテスト34件で成功。
-  本番OOFファイル読込・集計結果保存の接続は未実装。
+  OOFファイル読込・集計結果保存の接続もCPUテスト成功を確認済み。本実験は未実行。
 - [ ] 手計算可能な小ラベルマップ・小スペクトルで指標を検証する。
   背景、孤立画素、単一クラスタ、ラベル番号置換、摂動前後の完全一致、未定義値の集約を含める。
 
@@ -794,7 +831,7 @@ uv run pytest tests/experiments/test_evaluation_pipeline.py tests/experiments/te
 新規25件と既存27件の計52件について、ユーザーから全件成功の報告を受けた。
 実データ・GPU・本学習は使っていない。所要時間の共有はなく、時間値は記録しない。
 CPUテスト成功後も、本番評価のGPU負荷・所要時間・保存容量は別途確認が必要。
-本番3反復のARI保存、全foldのOOF集計CLI、計画比較・2×2交互作用は下記の接続テスト待ち。
+本番3反復のARI保存、全foldのOOF集計CLI、計画比較・2×2交互作用は下記のCPU接続テストで確認済み。
 
 以下は全指定runの本番cleanマップが揃った後の使用例であり、今回の即時実行対象ではない。
 GPU実行前の品質表・空間図確認と負荷確認を先に行う。
@@ -804,7 +841,7 @@ uv run python scripts/experiments/evaluate_representations.py run --conditions B
 uv run python scripts/experiments/evaluate_representations.py check --conditions B0 B1 --fold 1 --repeats 1 2 3
 ```
 
-### 第4段階のOOF・ARI・計画比較の保存（CPU検証待ち）
+### 第4段階のOOF・ARI・計画比較の保存（CPU検証済み）
 
 - `oof_pipeline.py` と `scripts/experiments/aggregate_oof.py` を追加。
   指定条件について全5fold・3反復の評価成果物を `check_evaluations()` で検証する。
@@ -840,8 +877,8 @@ uv run python scripts/experiments/evaluate_representations.py check --conditions
 uv run pytest tests/experiments/test_oof_pipeline.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
 ```
 
-全件成功を確認する。実データ・GPU・本学習は使わない。
-今回の接続テストには小規模CPUクラスタリングと評価も含まれるため、純粋な数値集計テストより処理は多い。
+ユーザーから31テスト全件成功の報告を受けた。所要時間の共有はなく、時間値は記録しない。
+小規模CPUクラスタリングと評価も含む接続テストであり、実データ・GPU・本学習は使っていない。
 本番GPU評価と品質表・空間図、代表試料の事前固定、本学習前の負荷確認は引き続き未完了。
 
 以下は指定条件の本番評価が全5fold・3反復で揃った後の使用例であり、今回の即時実行対象ではない。
@@ -924,7 +961,8 @@ PCA・KMeans fitや評価計算は上表のニューラルネット学習数に�
 - [ ] config・manifest・結果の保存先と、次回最初に行う作業を記録する。
 - [ ] 設定変更が必要になった場合はユーザーの決定を設計文書へ反映し、旧条件のrunと混合しない。
 
-次回の開始位置: **4. OOF・ARI・計画比較の接続CPUテスト結果を確認する**。
+次回の開始位置: **1. 品質確認資料のCPUテスト・生成結果を確認し、品質表と全試料空間図を確認する**。
+OOF・ARI・計画比較の接続31テストはユーザーから全件成功の報告あり。
 評価パイプライン接続と既存LFRの計52テストはユーザーから全件成功の報告あり。
 試料macro・SD・paired差のCPUテスト34件は成功済み。
 loader・B0/PCA（本番fitはfold 1）と、ChemoMAE共通部品のCPUテストは確認済み。
