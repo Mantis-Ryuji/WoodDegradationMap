@@ -20,9 +20,9 @@ def parse_args() -> argparse.Namespace:
                         help="Run only: all five folds and three repeats are required for every condition")
     parser.add_argument("--snapshot", help="Output name; run defaults to UTC timestamp, check requires a name")
     parser.add_argument("--experiment-dir", type=Path,
-                        default=root / "outputs/experiments/cv_200hz_snr10_linear256_v1")
+                        default=root / "outputs/experiments/preflight_v1")
     parser.add_argument("--processed-dir", type=Path,
-                        default=root / "data/processed/preprocessing/200hz_snr10_linear256")
+                        default=root / "data/processed/production_v1")
     parser.add_argument("--metadata", type=Path, default=root / "data/metadata/古材メタデータ.csv")
     args = parser.parse_args()
     if args.action == "run" and not args.conditions:

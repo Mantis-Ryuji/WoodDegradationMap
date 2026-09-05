@@ -4,6 +4,9 @@
 
 **Fixed**
 
+2026-09-06ユーザー決定: SNV前の補間反射率が1帯域でも負の画素は、train・test共通で背景とする。
+旧入力は保持し、`production_v1`として再生成する（本CV実行前の変更）。
+
 本書は、後段の解析と可視化に渡す200 Hz NIR-HSIの本番前処理を定義する。
 前処理は全試料および全実験で共通とし、cross-validationやモデルの結果を見て変更しない。
 
@@ -23,6 +26,7 @@
 | 波長cutoff | reference由来SNR proxyが10以下となる終端連続区間を自動除外 |
 | 補間 | 保持波長範囲内の等間隔256点への線形補間 |
 | 正規化 | 補間後に画素単位のSNV、標本標準偏差、`ddof=1` |
+| 負の反射率 | 補間後・SNV前に1帯域でも0未満なら、その画素全体を解析上の背景とする |
 | 数値型 | 保存時`float32` |
 | 追加加工 | clip、平滑化、微分、baseline補正、外挿を行わない |
 | スペクトルsource | 200 Hzのみ。030/200 Hz融合は行わない |
@@ -63,8 +67,8 @@ uv run python scripts/preprocess/run_production_preprocessing.py
 
 既定の出力先は次のとおりである。
 
-- 解析データ: `data/processed/preprocessing/200hz_snr10_linear256/`
-- 前処理レポート: `outputs/preprocessing/200hz_snr10_linear256/`
+- 解析データ: `data/processed/production_v1/`
+- 前処理レポート: `outputs/preprocessing/production_v1/`
 
 両出力先は新規または空でなければならない。既存runを暗黙に上書きしない。
 CLIで変更できるのは入出力先とmemory用chunk sizeだけであり、SNR閾値、mask条件、補間点数などの
@@ -153,7 +157,8 @@ $$
 referenceスペクトルへ置き換えない。
 
 分母が非正または非有限の場合は対応する反射率を非有限値とする。`eps`の加算や反射率の`[0,1]`への
-clipは行わない。反射率が0未満または1を超える画素は品質統計へ記録するが、それだけでは除外しない。
+clipは行わない。補間後の負値は第5.5節の規則で背景化する。1を超える画素は品質統計へ記録するが、
+それだけでは除外しない。
 
 ### 5.4 有効画素の選択
 
@@ -180,6 +185,15 @@ $$
 256次元とするのは、後段で$16 \times 16$ patchとして扱えるようにするためである。
 
 補間後の標本標準偏差が非有限または0以下の画素はSNVを定義できないため除外し、理由code 2を保存する。
+
+残った画素の補間反射率256帯域に1つでも厳密に0未満の値があれば、画素全体を除外し、理由code 3を保存する。
+除外理由が重なる場合はcode 1、2、3の順に優先する。0のband自体は除外理由にせず、負値を0へ置換しない。
+SNV後に生じる負値にはこの規則を適用しない。
+
+この画素は`valid_spectrum_mask=0`とし、疎な`reflectance`・`snv`・`pixel_row_col`には保存しない。
+後段では背景ラベル0となり、trainの抽出候補、testの全有効画素、評価指標の分母から共通に外す。
+空間診断図では透過表示する。元の形態学的`mask`は診断記録として保持し、
+`excluded_pixel_row_col`と理由codeから背景化した位置を追跡できるようにする。
 
 ### 5.6 SNV
 
@@ -235,7 +249,7 @@ $$
 解析データと確認用可視化を分離する。
 
 ```text
-data/processed/preprocessing/200hz_snr10_linear256/
+data/processed/production_v1/
   config.json
   cutoff_decision.json
   preprocessing_summary.json
@@ -253,7 +267,7 @@ data/processed/preprocessing/200hz_snr10_linear256/
   samples/
     <sample_id>.h5
 
-outputs/preprocessing/200hz_snr10_linear256/
+outputs/preprocessing/production_v1/
   report_config.json
   cutoff_decision.png
   interpolated_reflectance_band_distribution.png
@@ -280,7 +294,7 @@ outputs/preprocessing/200hz_snr10_linear256/
 | `valid_spectrum_mask` | 品質条件適用後の2次元有効画素mask |
 | `pixel_row_col` | `reflectance`および`snv`の各行に対応する元画像座標 |
 | `excluded_pixel_row_col` | 品質条件で除外したmask画素の元画像座標 |
-| `excluded_reason_code` | 除外理由。1は非有限反射率、2は非正のSNV入力標準偏差 |
+| `excluded_reason_code` | 除外理由。1は非有限反射率、2は非正または非有限のSNV入力標準偏差、3は補間反射率の負値 |
 | `reflectance` | SNV前・256点補間後の有効画素反射率 |
 | `snv` | 256次元SNV |
 | `reflectance_l2_norm` | 背景と無効画素を非有限値とした2次元map |
@@ -291,6 +305,10 @@ HDF5は`float32`、gzip level 4、shuffleおよび画素方向chunkを使用し�
 必要なdatasetや画素chunkだけを読めるようにすることである。
 完全な3次元反射率cubeは複製せず、mask内の有効画素スペクトルだけを保存する。
 現在のproduction storage schemaはversion 2とする。
+負値除外版も既存datasetのshape・dtypeを保ち、理由code 3と品質集計列を追加する。
+入力の区別には新しいpreprocessing IDとconfigの`negative_reflectance_policy`を使用する。
+`negative_interpolated_reflectance_excluded_pixel_count`はcode 3で除外した画素数を表す。
+既存の`pixels_with_any_negative_interpolated_reflectance`は保存対象についての件数を維持し、新版では0になる。
 
 圧縮率は反射率分布に依存する。`manifest.parquet`へ試料別の実ファイル容量と、反射率・SNVを非圧縮
 `float32`で保持した場合の容量を保存する。`preprocessing_summary.json`には全試料合計とその比を保存する。

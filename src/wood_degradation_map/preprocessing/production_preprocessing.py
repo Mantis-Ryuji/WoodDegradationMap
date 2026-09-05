@@ -63,8 +63,8 @@ class ProductionPreprocessingConfig:
     """I/O and non-scientific chunk settings for the fixed preprocessing."""
 
     data_dir: Path = Path("data/raw")
-    output_dir: Path = Path("data/processed/preprocessing/200hz_snr10_linear256")
-    report_dir: Path = Path("outputs/preprocessing/200hz_snr10_linear256")
+    output_dir: Path = Path("data/processed/production_v1")
+    report_dir: Path = Path("outputs/preprocessing/production_v1")
     row_chunk_size: int = 64
     spectrum_chunk_size: int = 8192
     hdf5_chunk_pixels: int = 2048
@@ -120,6 +120,13 @@ class ProductionPreprocessingConfig:
                     ],
                     "clip": False,
                     "smoothing": False,
+                    "negative_reflectance_policy": {
+                        "stage": "interpolated reflectance before SNV",
+                        "criterion": "any band < 0",
+                        "action": "background in valid_spectrum_mask; exclude from train and test",
+                        "reason_code": 3,
+                        "reason_priority": [1, 2, 3],
+                    },
                 },
                 "storage": {
                     "format": "HDF5",
@@ -137,7 +144,7 @@ def _validate_output_locations(
     output_dir: Path,
     report_dir: Path,
 ) -> None:
-    processed_root = (data_dir.parent / "processed" / "preprocessing").resolve()
+    processed_root = (data_dir.parent / "processed").resolve()
     repository_root = data_dir.parent.parent
     report_root = (repository_root / "outputs" / "preprocessing").resolve()
     if not output_dir.is_relative_to(processed_root):
@@ -207,6 +214,23 @@ def _write_compressed_dataset(
         compression_opts=4,
         shuffle=True,
     )
+
+
+def _interpolated_exclusion_reasons(interpolated: np.ndarray) -> np.ndarray:
+    """Classify pre-SNV rows; existing invalid-variance reason takes precedence.
+
+    Zero reflectance in an individual band is allowed. Negative SNV values are
+    unrelated to this rule: callers must pass interpolated reflectance.
+    """
+    if interpolated.ndim != 2 or interpolated.shape[1] != _TARGET_BANDS:
+        raise ValueError("Expected interpolated reflectance with 256 columns")
+    with np.errstate(invalid="ignore", over="ignore"):
+        std = interpolated.std(axis=1, ddof=1, dtype=np.float64)
+    valid_variance = np.isfinite(std) & (std > 0.0)
+    reasons = np.zeros(len(interpolated), dtype=np.uint8)
+    reasons[~valid_variance] = 2
+    reasons[valid_variance & (interpolated < 0.0).any(axis=1)] = 3
+    return reasons
 
 
 def _sample_id(cube: CubeDescriptor) -> str:
@@ -331,14 +355,14 @@ def run_production_preprocessing(config: ProductionPreprocessingConfig) -> Path:
             interpolation_plan,
             spectrum_chunk_size=config.spectrum_chunk_size,
         )
-        interpolated_std = interpolated.std(axis=1, ddof=1, dtype=np.float64)
-        valid_variance = np.isfinite(interpolated_std) & (interpolated_std > 0.0)
-        excluded_reason[finite_indices[~valid_variance]] = 2
-        final_indices = finite_indices[valid_variance]
+        interpolated_reasons = _interpolated_exclusion_reasons(interpolated)
+        excluded_reason[finite_indices] = interpolated_reasons
+        valid_interpolated = interpolated_reasons == 0
+        final_indices = finite_indices[valid_interpolated]
         if not final_indices.size:
             raise ValueError(f"No valid spectra remain for {sample_id}")
         final_reflectance = (
-            interpolated if valid_variance.all() else interpolated[valid_variance]
+            interpolated if valid_interpolated.all() else interpolated[valid_interpolated]
         )
         negative_pixel_count = int((final_reflectance < 0.0).any(axis=1).sum())
         above_one_pixel_count = int((final_reflectance > 1.0).any(axis=1).sum())
@@ -477,6 +501,7 @@ def run_production_preprocessing(config: ProductionPreprocessingConfig) -> Path:
                 {
                     "1": "nonfinite retained reflectance",
                     "2": "nonpositive SNV input std",
+                    "3": "negative interpolated reflectance before SNV",
                 }
             )
 
@@ -499,7 +524,10 @@ def run_production_preprocessing(config: ProductionPreprocessingConfig) -> Path:
                     (~finite_retained).sum()
                 ),
                 "nonpositive_snv_input_std_pixel_count": int(
-                    (~valid_variance).sum()
+                    (interpolated_reasons == 2).sum()
+                ),
+                "negative_interpolated_reflectance_excluded_pixel_count": int(
+                    (interpolated_reasons == 3).sum()
                 ),
                 "saved_pixel_count": len(coordinates),
                 "excluded_pixel_count": int(excluded.sum()),
@@ -701,6 +729,9 @@ def run_production_preprocessing(config: ProductionPreprocessingConfig) -> Path:
         "mask_pixel_count": total_mask_pixels,
         "saved_pixel_count": total_saved_pixels,
         "excluded_pixel_count": total_excluded_pixels,
+        "negative_interpolated_reflectance_excluded_pixel_count": int(
+            sample_quality["negative_interpolated_reflectance_excluded_pixel_count"].sum()
+        ),
         "excluded_pixel_fraction": total_excluded_pixels / total_mask_pixels,
         "hdf5_total_bytes": total_hdf5_bytes,
         "hdf5_total_gib": total_hdf5_bytes / (1024**3),

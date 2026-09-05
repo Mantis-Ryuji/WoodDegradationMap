@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "artifact_sha256": {
+    "config/experiment.json": "dfbf072d9bc8b8c32a878bcccdaab1cd7ef02216e3729adbb637996469ccc8ae",
+    "config/seeds.json": "367ef557504c53f416addd4bd88b0afdb596faacd9dbd73c0e616ecf38e8eb4a",
+    "manifests/inputs.json": "87370c47ff3fe6423f35be9011f255779a025b864c3bc17760c64ddb1b4f4fcd",
+    "manifests/folds.parquet": "0d1029cfb5f94245da1bdb6d7c26eb64b85241dfeb135eb66be612cc01c100d5",
+    "manifests/train_pixels/fold_1.parquet": "5984c5210b8f5c83d36a5eee8879e2ab3b3b49ee4f01dd4c6d0ad6da272b199c",
+    "manifests/train_pixels/fold_2.parquet": "0127c589a7aaa9c50f6a95b7725e531140bc26cc9b52e728fce606c00374b9d7",
+    "manifests/train_pixels/fold_3.parquet": "b9ad713c2f9254a4cb9b63732391276c681e2bed5d83a41c9d6b3f98f02359bb",
+    "manifests/train_pixels/fold_4.parquet": "77d8219004e6d291db8ebf87a74c519a0f8f57169a8d0355b390db946ed6bd65",
+    "manifests/train_pixels/fold_5.parquet": "c146d1a95a4282af1a1ac0d18e856e908204c8b92d9969403ea2d46c220dd972"
+  },
+  "fold_summary": [
+    {
+      "fold": 1,
+      "test_samples": 10,
+      "train_samples": 39,
+      "train_pixels": 319488,
+      "batches_per_epoch": 312,
+      "planned_updates_per_run": 249600
+    },
+    {
+      "fold": 2,
+      "test_samples": 10,
+      "train_samples": 39,
+      "train_pixels": 319488,
+      "batches_per_epoch": 312,
+      "planned_updates_per_run": 249600
+    },
+    {
+      "fold": 3,
+      "test_samples": 10,
+      "train_samples": 39,
+      "train_pixels": 319488,
+      "batches_per_epoch": 312,
+      "planned_updates_per_run": 249600
+    },
+    {
+      "fold": 4,
+      "test_samples": 10,
+      "train_samples": 39,
+      "train_pixels": 319488,
+      "batches_per_epoch": 312,
+      "planned_updates_per_run": 249600
+    },
+    {
+      "fold": 5,
+      "test_samples": 9,
+      "train_samples": 40,
+      "train_pixels": 327680,
+      "batches_per_epoch": 320,
+      "planned_updates_per_run": 256000
+    }
+  ],
+  "numpy_version": "2.4.4",
+  "pandas_version": "3.0.3",
+  "h5py_version": "3.16.0"
+}

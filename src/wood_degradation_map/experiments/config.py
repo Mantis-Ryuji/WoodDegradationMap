@@ -62,7 +62,7 @@ def experiment_config() -> dict[str, object]:
     return {
         "schema_version": 1,
         "protocol": "docs/design/experiment_protocol.md",
-        "preprocessing_id": "200hz_snr10_linear256",
+        "preprocessing_id": "production_v1",
         "input": {"dataset": "snv", "bands": 256, "dtype": "float32"},
         "split": {
             "unit": "KYOw", "n_folds": 5, "stratification": None,

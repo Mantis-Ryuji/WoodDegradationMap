@@ -28,7 +28,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=(
             project_root
-            / "data/processed/preprocessing/200hz_snr10_linear256/sample_quality.parquet"
+            / "data/processed/production_v1/sample_quality.parquet"
         ),
         help="Existing sample_quality.parquet; spectra and HDF5 files are not read.",
     )

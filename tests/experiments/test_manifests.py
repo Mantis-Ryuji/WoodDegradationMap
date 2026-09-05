@@ -34,7 +34,7 @@ from wood_degradation_map.experiments.manifests import (
 
 
 def _inventory(tmp_path: Path, *, count: int = 10, pixels: int = 12) -> InputInventory:
-    root = tmp_path / "200hz_snr10_linear256"
+    root = tmp_path / "production_v1"
     (root / "samples").mkdir(parents=True)
     height = (pixels + 319) // 320
     flat = np.arange(pixels, dtype=np.int32)
@@ -66,6 +66,7 @@ def test_fixed_condition_matrix_and_recipe() -> None:
         (0.0, 0.0), (0.5, 0.0), (0.0, 0.5), (0.5, 0.5),
     ]
     config = experiment_config()
+    assert config["preprocessing_id"] == "production_v1"
     assert config["training"]["epochs"] == 800
     assert config["training"]["peak_lr"] == 6e-4
     assert config["training"]["batch_size"] == 1024

@@ -17,9 +17,9 @@ def main() -> int:
     root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--processed-dir", type=Path,
-                        default=root / "data/processed/preprocessing/200hz_snr10_linear256")
+                        default=root / "data/processed/production_v1")
     parser.add_argument("--figures-dir", type=Path,
-                        default=root / "outputs/preprocessing/200hz_snr10_linear256")
+                        default=root / "outputs/preprocessing/production_v1")
     parser.add_argument("--metadata", type=Path, default=root / "data/metadata/古材メタデータ.csv")
     parser.add_argument("--output-dir", type=Path,
                         help="New review directory; defaults to an experiment results/input_review UTC directory")
@@ -27,7 +27,7 @@ def main() -> int:
     inventory = load_input_inventory(args.processed_dir, args.metadata)
     if {sample.sample_id for sample in inventory.samples} != set(ADOPTED_SAMPLE_IDS):
         raise ValueError("Review input differs from the fixed 49 adopted sample IDs")
-    output = args.output_dir or (root / "outputs/experiments/cv_200hz_snr10_linear256_v1/results/input_review"
+    output = args.output_dir or (root / "outputs/experiments/preflight_v1/results/input_review"
                                  / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ"))
     page = prepare_input_review(args.processed_dir, args.figures_dir, output, inventory)
     print(json.dumps({"html": str(page), **_read_json(page.parent / "review.json")},
