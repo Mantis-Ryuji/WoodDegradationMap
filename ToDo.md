@@ -1016,9 +1016,11 @@ uv run python scripts/experiments/aggregate_oof.py check --snapshot main_oof_v1
 
 ## 5. 本学習前の動作確認
 
-- [ ] 対象実装の最小テストと関連チェックのコマンドを用意し、結果を確認する。
-- [ ] 少数batchの学習から全可視抽出・クラスタリング・評価・保存まで通す。
+- [x] 対象実装の最小テストと関連チェックのコマンドを用意し、結果を確認する。
+- [x] 少数batchの学習から全可視抽出・クラスタリング・評価・保存まで通す。
   動作確認runを本実験の結果と分け、短縮学習の値で条件選択をしない。
+  保存済みA0/M11の学習smokeからクラスタリング、合成1,025画素のGPU評価・保存まで成功。
+  実test全画素の評価・全量の負荷確認は次項に残る。
 - [x] batch size=1024で、全可視A0を含めGPUメモリ・入出力負荷を確認する。
   収まらない場合は状況を報告し、batch size・accumulationを暗黙に変更しない。
   A0/M11の各6batchとtrain行列読込で確認済み。長時間の本学習は未実行。
@@ -1026,8 +1028,9 @@ uv run python scripts/experiments/aggregate_oof.py check --snapshot main_oof_v1
   CPUテストとA0/M11のGPU再開確認で検証済み。
 - [ ] GPU・library version・演算設定、実行時間・保存容量の見積りを記録する。
   同一モデルのclean/摂動後表現をK間で再利用できることも確認する。
-- [ ] 本文用の代表試料の選択基準・IDを、結果を見る前にユーザーと固定する。
+- [x] 本文用の代表試料の選択基準・IDを、結果を見る前にユーザーと固定する。
   任意の形状診断を採用する場合は、この時点までに定義を決める。未定義のまま実装・評価しない。
+  ユーザー指定に従い、各樹種の保存有効画素数が最大の7試料を可視化設計書第4.2節へ記録した。
 
 完了条件: 固定configとmanifestで本実験を開始でき、実行コマンド・出力先・所要時間の見通しがある。
 本実験開始時には実行対象と負荷をユーザーへ提示する。
@@ -1065,6 +1068,75 @@ uv run python scripts/experiments/smoke_evaluation.py --condition M11 --fold 1 -
 
 確認点は全件passと、各GPU出力の `status=evaluation_smoke_completed`、`checks_passed=true`、
 `generation_block_sizes=[1024, 1]`。時間・最大メモリを実行後に確認する。全test評価とOOF集約は開始しない。
+
+### 評価smoke成功と負荷確認の準備（2026-09-06）
+
+ユーザーから上記テスト・4条件のGPU実行がすべて成功したとの報告を受けた。
+テストの件数・時間は未共有のため記録しない。保存済みcompletionでも4条件の成功を確認した。
+
+| 条件 | 評価smoke ID（UTC） | 記録秒 | 最大GPU allocated（MiB） | 最大GPU reserved（MiB） |
+| --- | --- | ---: | ---: | ---: |
+| B0 | 20260905T200917_803949Z | 0.812 | 20.07 | 38 |
+| B1 | 20260905T200925_117079Z | 0.986 | 20.02 | 38 |
+| A0 | 20260905T200933_752025Z | 1.250 | 256.81 | 340 |
+| M11 | 20260905T200944_657326Z | 1.150 | 256.81 | 340 |
+
+時間は出典読込から合成評価・保存/再読込までで、CLI開始時のmanifest検証を含まない。
+GPUはRTX 4070 Ti SUPER、PyTorch 2.13.0+cu130、ChemoMAE 0.2.1、CUDA runtime 13.0。
+
+保存済み小規模JSONとファイルのサイズから、次の容量を確認・算出した。
+CodexはPython、学習、評価、HDF5全件読込を実行していない。
+
+| 対象 | 容量・規模 | 適用範囲 |
+| --- | ---: | --- |
+| 新版前処理 | 49試料、3,902,250保存画素、HDF5約5.192 GiB | inputs.jsonの保存記録 |
+| fold 1 train FP32 SNV | 319,488×256、312 MiB | 行列1個。コピー・学習activationを含まない |
+| fold 1 train FP32潜在表現 | 319,488×16、19.5 MiB | 行列1個。KMeans作業領域を含まない |
+| fold 1 test FP32 B0表現 | 906,428×256、約885.18 MiB | 全test行列1個。silhouetteには追加配列が必要 |
+| fold 1 test FP32潜在表現 | 906,428×16、約55.32 MiB | 行列1個。複数条件同時実行では加算 |
+| A0 raw weights / last checkpoint | 約24.21 / 72.65 MiB | 既存smokeファイルの実サイズ。800 epochでは履歴分が増える |
+| CV 105 runのraw weights＋last checkpoint | 約9.93 GiB | 上記サイズを掛けた概算。追加checkpoint・履歴・他の成果物を含まない |
+| 全9条件×3反復×全49試料×7Kのcleanマップ | 約1.838 GiB | 666×320・uint8の非圧縮配列量。NPZ実容量や評価成果物とは異なる |
+
+Cドライブの空きは調査時点で約157.62 GiB。総必要容量・最大GPUメモリの保証とは扱わない。
+これらの行列容量からGPUのピークを断定せず、全量のクラスタリング・評価で実測する。
+
+まず既存CLIの16batch smokeで学習時間の概算材料を増やす。新しい実装やテスト追加は不要。
+A0/M11を順番に実行し、各runで2短縮epochとepoch 2の再開再実行、計48batchを処理する。
+各runは約32万train行のCPU読込も行う。testは使用せず、本番800 epochは開始しない。
+
+```powershell
+uv run python scripts/experiments/train_neural.py smoke --condition A0 --fold 1 --smoke-batches 16
+uv run python scripts/experiments/train_neural.py smoke --condition M11 --fold 1 --smoke-batches 16
+```
+
+両方の `checks_passed=true` と出力IDを確認する。`training_history.json`のepoch 2の時間を16で割り、
+249,600（fold 1〜4）または256,000（fold 5）予定更新を掛けて、更新処理の粗い目安を作る。
+smoke固有のhash/再現性記録の負荷があり、長時間の温度・クロック変動、入出力・checkpoint保存を
+再現する計測ではない。全105 runの確定所要時間とは表現せず、本番開始後の実測で更新する。
+この長めのsmokeからクラスタリング・合成評価を再実行する必要はない。
+
+本文代表試料は、ユーザーの最終指定「各樹種から一番大きい試料」に従い、採用49試料内で
+樹種別の保存有効画素数最大を選んだ。7樹種で同率最大はなく、
+クリKYOw02789、ケヤキKYOw02777、スギKYOw02784、ツガKYOw02787、ヒノキKYOw02720、
+マツKYOw02769、モミKYOw16750を固定した。画素数・候補件数・出典hashは可視化設計書第4.2節に記録。
+
+16batch学習smokeの成功後、B0 fold 1・repeat 1を実データ全量で順番に処理する。
+train 319,488行で全7Kをfitし、test 906,428行・10試料のcleanマップを保存する。
+評価は同じ全test行に15摂動を適用し、全7KのLFR・LLA・pooled silhouetteを計算・保存する。
+これはGPUとI/Oの全量負荷を測るpreflightであり、本番成果物としてコピー・流用しない。
+所要時間・ピークメモリは未実測。単一GPUで実行し、他条件を同時実行しない。
+
+```powershell
+uv run python scripts/experiments/cluster_representations.py run --condition B0 --fold 1 --experiment-dir outputs/experiments/preflight_v1
+uv run python scripts/experiments/cluster_representations.py check --condition B0 --fold 1 --experiment-dir outputs/experiments/preflight_v1
+uv run python scripts/experiments/evaluate_representations.py run --conditions B0 --fold 1 --experiment-dir outputs/experiments/preflight_v1
+uv run python scripts/experiments/evaluate_representations.py check --conditions B0 --fold 1 --experiment-dir outputs/experiments/preflight_v1
+```
+
+runの`checks_passed=true`、checkの`validated_existing_clustering`と`validated_existing_evaluation`を確認する。
+全量runの時間・最大GPUメモリ・保存容量を記録してから、本番開始の見通しを更新する。
+上記6コマンドは今回Codexでは実行していない。コード変更はなく、テストの再実行は不要。
 
 ## 6. 主実験・補助実験の実行
 
@@ -1121,9 +1193,10 @@ PCA・KMeans fitや評価計算は上表のニューラルネット学習数に�
 - [ ] config・manifest・結果の保存先と、次回最初に行う作業を記録する。
 - [ ] 設定変更が必要になった場合はユーザーの決定を設計文書へ反映し、旧条件のrunと混合しない。
 
-次回の開始位置: **上記「合成入力によるGPU評価smoke」のテスト・GPU出力を確認する**。
+次回の開始位置: **A0/M11の16batch学習smokeとB0 fold 1の全量クラスタリング・評価の計測結果を確認する**。
 `data/processed/production_v1/`への保存先簡略化後の再生成・preflight再構築はユーザーから全件成功の報告あり。
-続いて本文代表例の事前指定と本番全量の負荷確認へ進む。代表例の基準・IDは未決定のまま保持する。
+合成入力のGPU評価smokeは全4条件成功済み。続いて実データ全量の負荷確認へ進む。
+本文代表例は各樹種の保存有効画素数最大の7試料に固定済み（可視化設計書第4.2節）。
 OOF・ARI・計画比較の接続31テストはユーザーから全件成功の報告あり。
 評価パイプライン接続と既存LFRの計52テストはユーザーから全件成功の報告あり。
 試料macro・SD・paired差のCPUテスト34件は成功済み。
