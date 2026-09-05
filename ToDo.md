@@ -583,7 +583,7 @@ uv run python scripts/experiments/cluster_representations.py check --condition B
   試料別とfold全体を区別し、未整列クラスタ番号をfold間で平均しない。
 - [ ] 同一試料の3反復間ARIを3対計算し、退化flagとともに保存する。Hungarian matchingは使用しない。
   `diagnostic_metrics.py` の画素照合・整数contingency・3対と試料内平均はCPUテストで成功。
-  本番3反復のラベル読込・結果保存は後続の接続工程。
+  本番3反復のラベル読込・結果保存を `oof_pipeline.py` に接続済み。新規CPUテスト待ち。
 - [ ] 試料・fold・条件・K・反復・摂動種別を追跡できる数値出力とrun台帳を実装する。
   未定義理由、利用可能数、失敗・中断・完了状態を記録する。
 - [x] 試料macro、試料間SD、3反復間SD、共通対象でのpaired contrastを実装する。
@@ -754,7 +754,7 @@ uv run pytest tests/experiments/test_aggregation.py -vv -s --durations=10 -o fau
 2026-09-06のユーザー共有ログで `34 passed in 2.47s` を確認した。
 小規模な数値/ラベルfixtureのみで、実データ・GPU・学習は使っていない。同じ確認の再実行は不要。
 
-### 第4段階の評価CLI・保存結果への接続（CPU検証待ち）
+### 第4段階の評価CLI・保存結果への接続（CPU検証済み）
 
 - `evaluation_pipeline.py` と `scripts/experiments/evaluate_representations.py` を追加。
   1つのfoldで指定した条件×学習反復を対象に、本番の保存済み表現・全7Kの中心・clean testマップを読む。
@@ -791,9 +791,10 @@ uv run pytest tests/experiments/test_aggregation.py -vv -s --durations=10 -o fau
 uv run pytest tests/experiments/test_evaluation_pipeline.py tests/experiments/test_lfr.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
 ```
 
-新規25件と既存27件の計52件が対象。実データ・GPU・本学習は使わない。
+新規25件と既存27件の計52件について、ユーザーから全件成功の報告を受けた。
+実データ・GPU・本学習は使っていない。所要時間の共有はなく、時間値は記録しない。
 CPUテスト成功後も、本番評価のGPU負荷・所要時間・保存容量は別途確認が必要。
-本番3反復のARI保存、全foldのOOF集計CLI、計画比較の保存、2×2交互作用の接続は次工程として残す。
+本番3反復のARI保存、全foldのOOF集計CLI、計画比較・2×2交互作用は下記の接続テスト待ち。
 
 以下は全指定runの本番cleanマップが揃った後の使用例であり、今回の即時実行対象ではない。
 GPU実行前の品質表・空間図確認と負荷確認を先に行う。
@@ -801,6 +802,53 @@ GPU実行前の品質表・空間図確認と負荷確認を先に行う。
 ```powershell
 uv run python scripts/experiments/evaluate_representations.py run --conditions B0 B1 --fold 1 --repeats 1 2 3
 uv run python scripts/experiments/evaluate_representations.py check --conditions B0 B1 --fold 1 --repeats 1 2 3
+```
+
+### 第4段階のOOF・ARI・計画比較の保存（CPU検証待ち）
+
+- `oof_pipeline.py` と `scripts/experiments/aggregate_oof.py` を追加。
+  指定条件について全5fold・3反復の評価成果物を `check_evaluations()` で検証する。
+  保存済みmanifestから試料のtest foldを取り出し、全試料が1回ずつOOF対象になることを確認する。
+  同じfoldの全指定条件・反復で摂動の実現値が一致することを要求し、欠けたrunや失敗・中断を無言で除外しない。
+- 保存済みcleanマップを元HDF5座標で読み、各試料・条件・全7Kについて3反復間のARIを計算する。
+  3対の値、contingency、退化flag、試料内平均を残し、試料macroと試料間SDを保存する。
+  ARIの反復対SDは作らない。spectra読込・学習・再fit・推論・Hungarian matchingは行わない。
+- 通常の10指標は既存 `ScoreRecord` を読み、全OOF試料を対象に既存の集計部へ渡す。
+  試料macro、試料間SD、3反復間SD、共通対象、反復別利用可能数と未定義理由を保存する。
+  fold平均の平均にはしない。入力の欠落/重複/試料・fold・反復不一致はエラー。
+- 実験プロトコル第4.3節の10組の計画比較は、必要条件が指定されている組について全10指標・全Kを保存する。
+  2×2交互作用は主評価6指標（LLA-3/5/9とnoise/shift/bothのLFR）について保存する。
+  同一試料・反復で `(M11-M10)-(M01-M00)` をFP32計算してから、4条件×3反復の共通対象で集約する。
+  条件ごとに異なる対象のmacro差を代用せず、LFRの符号を反転しない。計画外の比較・検定・CIは追加しない。
+- 保存先は `results/oof/<snapshot>/`。snapshotの既定名はUTC時刻で、既存名は上書きしない。
+  `run.json` に固定config・manifest・code hash・全出典runの完了記録hash・比較計画を保持する。
+  `scores.json`、`summaries/<condition>/k<K>.json`、`ari/<condition>/k<K>.json`、
+  `comparisons/<condition>_minus_<reference>/k<K>.json`、`interaction/k<K>.json` を保存する。
+  `completion.json` を最後に作り、中断・計算失敗は `failure.json` に残す。
+  少数の条件のみを集計した場合は、その指定範囲と未作成比較を明示し、全条件完了とは扱わない。
+- `check` は出典を再検証し、成果物hash・保存ファイル集合・対象条件/試料/run件数を照合する。
+  ARIや指標・集約値の再計算はしない。重みは既存の検証経路でCPUへ読み、SNV・GPUは使わない。
+  既存の評価計算部・保存形式・code hash対象ファイルは変更していない。
+- 新規31テストを追加。交互作用の手計算・共通対象・元の符号、小規模保存fixtureでの全fold集計、
+  欠落/重複/変更出典/無効画素/中断を検証する。
+  接続テスト1件は小規模B0の全5fold・3反復でクラスタリング・評価成果物を実際に作り、OOF保存/checkへ接続する。
+  その他の保存テストは合成scoreと出典検証adapterで集計部分を分離しており、本番計算の証拠とは扱わない。
+
+今回ユーザーが実行するコマンド（Codexでは未実行）:
+
+```powershell
+uv run pytest tests/experiments/test_oof_pipeline.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
+```
+
+全件成功を確認する。実データ・GPU・本学習は使わない。
+今回の接続テストには小規模CPUクラスタリングと評価も含まれるため、純粋な数値集計テストより処理は多い。
+本番GPU評価と品質表・空間図、代表試料の事前固定、本学習前の負荷確認は引き続き未完了。
+
+以下は指定条件の本番評価が全5fold・3反復で揃った後の使用例であり、今回の即時実行対象ではない。
+
+```powershell
+uv run python scripts/experiments/aggregate_oof.py run --conditions B0 B1 A0 M00 M10 M01 M11 --snapshot main_oof_v1
+uv run python scripts/experiments/aggregate_oof.py check --snapshot main_oof_v1
 ```
 
 ## 5. 本学習前の動作確認
@@ -876,7 +924,8 @@ PCA・KMeans fitや評価計算は上表のニューラルネット学習数に�
 - [ ] config・manifest・結果の保存先と、次回最初に行う作業を記録する。
 - [ ] 設定変更が必要になった場合はユーザーの決定を設計文書へ反映し、旧条件のrunと混合しない。
 
-次回の開始位置: **4. 評価パイプライン接続と既存LFRのCPUテスト結果を確認する**。
+次回の開始位置: **4. OOF・ARI・計画比較の接続CPUテスト結果を確認する**。
+評価パイプライン接続と既存LFRの計52テストはユーザーから全件成功の報告あり。
 試料macro・SD・paired差のCPUテスト34件は成功済み。
 loader・B0/PCA（本番fitはfold 1）と、ChemoMAE共通部品のCPUテストは確認済み。
 Trainer継承部分とA0/M11のGPU動作確認、KMeans共通部品のCPUテスト15件は成功。
