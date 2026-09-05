@@ -1,0 +1,128 @@
+{
+  "status": "clustering_smoke_completed",
+  "scope": "train-only bounded probe; no CV metrics",
+  "checks_passed": true,
+  "centers_and_probe_labels_save_load_exact": true,
+  "probe_rows": [
+    {
+      "sample_id": "KYOw02702",
+      "hdf5_rows": [
+        43,
+        55
+      ]
+    },
+    {
+      "sample_id": "KYOw02702",
+      "hdf5_rows": [
+        66,
+        74,
+        78,
+        82,
+        83,
+        84,
+        85,
+        88,
+        93,
+        124
+      ]
+    },
+    {
+      "sample_id": "KYOw02702",
+      "hdf5_rows": [
+        133,
+        136,
+        138,
+        146,
+        148,
+        153,
+        154,
+        163,
+        172,
+        175,
+        183
+      ]
+    },
+    {
+      "sample_id": "KYOw02702",
+      "hdf5_rows": [
+        197,
+        203,
+        206,
+        208,
+        227,
+        254
+      ]
+    },
+    {
+      "sample_id": "KYOw02702",
+      "hdf5_rows": [
+        261,
+        264,
+        272,
+        285,
+        293,
+        296,
+        303,
+        310,
+        313,
+        316
+      ]
+    },
+    {
+      "sample_id": "KYOw02702",
+      "hdf5_rows": [
+        325,
+        328,
+        331,
+        333,
+        351,
+        369,
+        372,
+        381
+      ]
+    },
+    {
+      "sample_id": "KYOw02702",
+      "hdf5_rows": [
+        386,
+        402,
+        414,
+        415,
+        419,
+        428,
+        434,
+        435,
+        438
+      ]
+    },
+    {
+      "sample_id": "KYOw02702",
+      "hdf5_rows": [
+        451,
+        452,
+        455,
+        458,
+        466,
+        474,
+        495,
+        496
+      ]
+    }
+  ],
+  "samples": [],
+  "run_sha256": "fd6cf84d2b02f27cf7bc114737cb9ad32839a442229605f567d9c260701e38a7",
+  "fits_sha256": "fee169ee13b972e615ccd6147ea72d1116747498ab812776dc3c184d02c22476",
+  "centers_sha256": {
+    "2": "231b1a6f3eb08644a1ba2969a37cfff86734edde841e7e5c9b1d4d9d25c40341",
+    "4": "7801dfb521802d7093eaba8e2737fc880878a0e981b9e7635af121fd5f9e0379",
+    "6": "58a27460b3a85be0d258ae1fb9925e3364953c7d50fe321e0e007faedc7ea8c5",
+    "8": "69a8b0e8546dbdb52cbf96e91ada390d948819dadc11725249de2c5c61dfae00",
+    "10": "c3031ea44a84269a5f51ade06f5e392b7f61318206fba57d78e6e4234e5cda50",
+    "12": "48a78fdd33f894770617a166e7d7b7c2fae4e8f6ffe46642e9eea0f95cfaa9aa",
+    "14": "20f67f89319add5a3736d059eac86640d83d26f8e69caaa3fc83485c20f128f4"
+  },
+  "wall_seconds": 0.7996339000019361,
+  "timing_scope": "source load through output save; excludes initial manifest validation",
+  "peak_gpu_allocated_bytes": 8720896,
+  "peak_gpu_reserved_bytes": 23068672
+}

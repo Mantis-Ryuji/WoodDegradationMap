@@ -7,7 +7,10 @@
 第3段階のloader・B0/PCAはユーザー実行で検証済み（本番PCAはfold 1）。
 ChemoMAEの共通部品・全可視抽出は、ユーザー共有ログでCPUテスト29件の成功を確認済み。
 Trainer継承部分はCPUテスト16件とA0/M11のGPU動作確認で成功を確認済み。
-現在はCosine-KMeans・元座標へのラベル復元を追加し、新規CPUテスト待ち。
+Cosine-KMeans・元座標へのラベル復元はCPUテスト15件の成功を確認済み。
+重み読込・全Kのクラスタリング・clean testマップ保存の接続はCPUテスト20件で確認済み。
+B0/B1/A0/M11のGPU上のtrain 64画素probeも成功。
+第4段階のLLA-3/5/9と補正LLAを追加し、新規CPUテストの確認待ち。
 第1段階の残る品質表・空間図確認は、本学習前までに完了する。
 この文書は確定済み設計を実行へ移すための作業順序であり、詳細仕様は以下の設計文書を正とする。
 チェックは実装しただけでなく、各項目に必要な確認結果が得られてから付ける。
@@ -218,10 +221,10 @@ manifests/complete.json                完了記録・成果物hash・fold件数
 
 ## 3. 学習・表現抽出・クラスタリングの実装
 
-- [ ] 必要な画素をchunkで読むloaderを実装し、SNVを入力・clean targetとして扱う。
+- [x] 必要な画素をchunkで読むloaderを実装し、SNVを入力・clean targetとして扱う。
   ニューラルネット学習・PCA fit・KMeans fitに同じtrain抽出集合を渡す。
   `data.py` の共通loaderとPCA・NNへの接続を検証済み。
-  KMeans用train表現の収集を追加し、新規テスト待ち。
+  KMeans用train表現の収集とNN重み読込からの接続もCPUテストで検証済み。
 - [x] B0とPCAのfit/transform・正規化・保存/再読込を実装する。
   PCAのfit対象をtrainに限定し、実solverと乱数管理を記録する。
   ユーザーが新規テスト・fold 1の本番fit・checkの成功を報告。保存記録も確認した。
@@ -242,12 +245,14 @@ manifests/complete.json                完了記録・成果物hash・fold件数
 - [x] 全可視16次元抽出を実装する。`ExtractorConfig(amp=False)` または全可視maskを明示したencoderを使う。
   `eval()`だけを指定した通常の `forward()` でランダムmaskを残さない。
   CPUテストとA0/M11のGPU上のtrain 8画素probeを確認済み。全test抽出は未実施。
-- [ ] trainだけでCosine-KMeansをfitし、中心を固定してtestをpredictする。
+- [x] trainだけでCosine-KMeansをfitし、中心を固定してtestをpredictする。
   同じ学習済み表現を全Kで再利用し、中心・seed・停止状況を保存する。
-  `clustering.py` にtrain表現収集・参照KMeans fit/predict・中心保存/再読込を追加。CPUテスト待ち。
-- [ ] 元座標へ予測を戻し、背景0・クラスタ1からKのラベル規約を検証する。
+  `clustering.py` のtrain表現収集・参照KMeans fit/predict・中心保存/再読込をCPUテストで確認済み。
+  接続のCPUテスト20件、B0/B1/A0/M11のGPU train 64画素probeも成功。本番全test推論は未実行。
+- [x] 元座標へ予測を戻し、背景0・クラスタ1からKのラベル規約を検証する。
   非有限値・ゼロnorm・単位norm誤差の記録を実装し、条件別に画素を無言で落とさない。
-  `LabelMap` にchunk追加・重複/背景への誤代入検出・有効画素の全件coverage確認を追加。CPUテスト待ち。
+  `LabelMap` のchunk追加・重複/背景への誤代入検出・有効画素の全件coverage確認はCPUテストで成功。
+  本番test全画素の保存・再読込は未実行。
 
 完了条件: 小規模入力でfitから保存・再読込・全可視推論・元座標への対応まで確認できる。
 
@@ -440,7 +445,7 @@ uv run python scripts/experiments/train_neural.py train --condition M11 --fold 1
 uv run python scripts/experiments/train_neural.py train --condition M11 --fold 1 --repeat 1 --resume outputs/experiments/cv_200hz_snr10_linear256_v1/checkpoints/neural/M11/fold_1/repeat_1/checkpoints/last.pt
 ```
 
-### 第3段階のCosine-KMeans・ラベル復元の実装記録（検証待ち）
+### 第3段階のCosine-KMeans・ラベル復元の実装・確認記録
 
 - `src/wood_degradation_map/experiments/clustering.py`:
   `collect_train_features()` は共通loaderのtrain抽出行だけを読み、各行の表現を一度収集する。
@@ -466,20 +471,102 @@ uv run python scripts/experiments/train_neural.py train --condition M11 --fold 1
   B0/PCAのtrain限定収集と末尾保持、参照fit/predictとの一致、中心の保存/再読込、
   test入力で中心を変更しないこと、無効表現、全test行の座標復元とcoverageをCPU fixtureで検証する。
 
-次の確認コマンド（Codexでは未実行）:
+ユーザー実行で確認済みのコマンド（Codexでは再実行していない）:
 
 ```powershell
-uv run pytest tests/experiments/test_clustering.py
+uv run pytest tests/experiments/test_clustering.py -vv -s --durations=0 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
 ```
 
-今回は共通部品とfixtureを追加した段階。本番CLI・NN checkpointの読込と表現抽出への接続、
-GPU上のKMeans確認、本番test全画素のマップ保存、評価指標は未完了。
+2026-09-06共有ログで `15 passed in 3.28s`、最長のtest本体0.15秒を確認した。
+最初の通常実行は22分42秒で中断（14件成功）したが、`-s`付きの再実行では全件成功。
+出力取得・端末・一時ファイル周辺が候補であり、長時間化の原因は未確定。
+今後の確認コマンドは当面 `-s` を付ける。KMeansの実験条件は変更していない。
+GPU上のKMeansは下記の64画素probeで確認済み。本番test全画素のマップ保存、評価指標は未確認。
 実反復数と停止理由の取得は、参照版のAPI制約として残っている。
+
+### 第3段階の重み読込・クラスタリングCLIの接続・確認記録
+
+- `src/wood_degradation_map/experiments/cluster_pipeline.py`:
+  B0、保存済みPCA、ChemoMAE最終raw weightsを共通のtransformへ接続した。
+  PCAの出典repeatは明示指定できるが、確率的solverの他repeat利用は禁止したまま。
+  NNは条件・fold・repeat・train集合・config・manifest・学習実装hash・library version・
+  完了epoch/更新数・重みhashを照合し、FP32のraw state_dictをstrictに読み込む。
+  本番は800 epoch完了重みだけを使う。smoke重みは明示したIDでsmoke処理にだけ使える。
+  学習済みrunの保存形式や、既存の学習実装hash対象ファイルは変更していない。
+- train表現を一度収集して全7個のKで共有し、各Kの中心を保存・再読込して値とprobe予測を照合する。
+  testはchunkごとに表現を一度抽出し、固定した全Kの中心で予測する。
+  1試料ずつ全有効画素coverageを確認し、背景0・クラスタ1..Kのuint8マップを圧縮NPZへ保存する。
+  数値結果の保存前後にクラスタ番号を整列しない。
+- 出力先（既存experiment root以下）:
+  `results/clustering/<condition>/fold_<f>/repeat_<r>/` に
+  `run.json`、`fits.json`、`maps/<sample_id>.npz`、最後に `completion.json` を保存する。
+  NPZは `labels_k2`、`labels_k4`、…、`labels_k14` の各画像配列を持つ。
+  試料ID・fold・条件・反復・背景規約はrunとcompletionで対応付ける。
+  中心は `checkpoints/clustering/<condition>/fold_<f>/repeat_<r>/centers_k<k>.npz` に保存する。
+  数値結果・マップはGit対象、中心は既存ignoreで対象外。
+  既存出力の上書き・暗黙の再fit・自動resumeはしない。
+  途中失敗・中断は `failure.json` に記録し、`completion.json` がないrunは完了と扱わない。
+- `scripts/experiments/cluster_representations.py`:
+  `run` は単一GPUで本番train全抽出行とtest全有効画素を処理する。
+  `check` はCPUで保存中心・マップ・hash・出典・coverageを検証し、fit・表現抽出・スペクトル読込をしない。
+  NNのcheckでも重みは読込・検証する。元HDF5の座標/mask照合はmanifest loaderで行う。
+  `smoke` は共通trainの先頭最大64行だけで抽出・全K fit・中心保存/再読込を確認する。
+  testスペクトルは読まず、全testマップやCV指標を生成しない。
+  `results/clustering_smoke/<UTC実行ID>/...` と対応する `checkpoints/` に分離して保存する。
+- `tests/experiments/test_cluster_pipeline.py`:
+  CPU人工データでB0/PCA/NNの接続、全Kでの表現共有、test末尾行・マップ保存/再読込、
+  重みの出典不一致・不完全な学習・hash不一致、smokeと本番の分離、失敗時の記録を検証する。
+  NN fixtureだけモデル幅・層数・batch設定を縮小し、実際の800 epoch学習は行わない。
+
+ユーザー実行済みのCPUテスト（Codexでは再実行していない）:
+
+```powershell
+uv run pytest tests/experiments/test_cluster_pipeline.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
+```
+
+ユーザー実行済みのGPU確認（既存smoke重みを再利用し、再学習していない）:
+
+```powershell
+uv run python scripts/experiments/cluster_representations.py smoke --condition B0 --fold 1
+uv run python scripts/experiments/cluster_representations.py smoke --condition B1 --fold 1
+uv run python scripts/experiments/cluster_representations.py smoke --condition A0 --fold 1 --neural-smoke-id 20260905T154032_240426Z
+uv run python scripts/experiments/cluster_representations.py smoke --condition M11 --fold 1 --neural-smoke-id 20260905T154054_126680Z
+```
+
+確認点: `clustering_smoke_completed`、`checks_passed=true`、
+`centers_and_probe_labels_save_load_exact=true`、train probe行、GPU最大メモリと所要時間。
+2026-09-06共有ログでCPUテスト `20 passed, 14 warnings in 8.78s` を確認した。
+警告は既知の `norm_first=True` によるNested Tensor最適化の無効化通知。
+GPUは4条件とも上記status・2つの真偽値が成功し、K=2/4/6/8/10/12/14を処理した。
+全条件のprobeはKYOw02702の同じ64行。中心全値と先頭最大8行の保存/再読込予測は一致した。
+
+| 条件 | clustering smoke ID（UTC） | 記録秒 | 最大GPU allocated（MiB） | 最大GPU reserved（MiB） |
+| --- | --- | ---: | ---: | ---: |
+| B0 | `20260905T171557_535419Z` | 0.80 | 8.32 | 22 |
+| B1 | `20260905T171604_648514Z` | 0.74 | 8.14 | 22 |
+| A0 | `20260905T171611_746388Z` | 1.00 | 34.65 | 48 |
+| M11 | `20260905T171622_056599Z` | 1.00 | 34.65 | 48 |
+
+記録秒は出典読込から出力保存までで、最初のmanifest検証時間を含まない。
+同じ確認を再実行する必要はない。testスペクトル・testマップ・CV指標はこのGPU probeの対象外。
+このsmokeでは本番train全行のKMeansメモリ・全test抽出の負荷まで確認したとは扱わない。
+本番runではB0のtrain表現だけで312–320 MiB、16次元表現は19.5–20 MiBのCPU領域が必要。
+GPUにはKMeansの正規化入力・一時配列が追加される。NN抽出chunkは既定1024行、FP32。
+testマップは1試料分を全Kについて保持する。全test表現の一括保持はしない。
+
+以下は将来の本番マップ生成・保存確認のコマンドであり、今回の即時実行対象ではない。
+評価指標はまだ接続していない。品質表・空間図確認と本学習前確認を先に完了する。
+
+```powershell
+uv run python scripts/experiments/cluster_representations.py run --condition B0 --fold 1 --repeat 1
+uv run python scripts/experiments/cluster_representations.py check --condition B0 --fold 1 --repeat 1
+```
 
 ## 4. 評価・集計の実装
 
 - [ ] 評価文書の式に従いLLA-3/5/9と補正LLAを実装する。
   有効近傍対の計数、背景・中心画素の除外、coverage、単一クラスタ時の未定義を確認する。
+  `spatial_metrics.py` に計算部を追加。手計算・全画素対の列挙との照合テストはユーザー実行待ち。
 - [ ] LFR用に、SNV入力へnoise・shift・両方を各5回適用する。
   同一画素の15入力を全条件・全K・全学習反復で共有できる生成・再利用処理を実装する。
   評価Augは明示的にtraining mode、encoderは推論mode・全可視とする。
@@ -497,6 +584,42 @@ GPU上のKMeans確認、本番test全画素のマップ保存、評価指標は�
   背景、孤立画素、単一クラスタ、ラベル番号置換、摂動前後の完全一致、未定義値の集約を含める。
 
 完了条件: 小規模の一連の処理から、期待する指標と集約表が得られ、同一画素対応と評価の固定性を確認できる。
+
+### 第4段階のLLA・補正LLAの実装記録（検証待ち）
+
+- `src/wood_degradation_map/experiments/spatial_metrics.py`:
+  `local_label_agreement(labels, valid_mask, k=...)` は1試料のラベルマップと本番有効maskを受け取る。
+  maskを予測ラベルから推測せず、背景への割当や有効画素の予測欠落は入力エラーとして停止する。
+  幅3/5/9の正方近傍で中心自身と背景を除き、画像境界のwraparoundやpaddingによる近傍を作らない。
+  近傍対は式どおり有向で数え、分子と分母を整数で合計してからFP32で一致率を計算する。
+  画素ごとの局所一致率を単純平均しない。
+- `LLAResult` は各クラスタの画素数・占有率、使用クラスタ数、最大占有率、帰無一致確率Pと、
+  各幅の `LLAWindowResult` を返す。孤立画素も占有率の分母から落とさない。
+  `pixels_with_neighbors` と `neighbor_pixel_fraction` は、少なくとも1つ有効近傍を持つ中心の
+  件数と全有効画素に対する割合。coverageの診断であり、LLAの分母を置き換えない。
+  未定義scoreはNone（JSON null）と理由を返す。空の有効画素集合は入力失敗として例外にする。
+- 補正値は占有数による非復元の偶然一致確率を使い、負値をclipしない。
+  N<2・近傍対なし・単一クラスタについて、該当する未定義理由をすべて記録する。
+  近傍対がある単一クラスタの未補正LLAは1、補正LLAは未定義。
+  補正式を整数件数の差と最後のFP32除算へ等価変形し、丸めたPが1となる場合にも
+  多クラスタを単一クラスタと誤判定しない。epsilonや新しい除外閾値は追加しない。
+- `tests/experiments/test_spatial_metrics.py`:
+  手計算可能な境界・交互ラベル・対角・孤立画素・単一画素、ラベル置換・転置・背景余白への不変性、
+  不正入力、JSONの未定義値、極端な占有率を検証する。
+  小マップの全有効画素対を独立に列挙し、全3幅の整数件数と有理数による期待値を照合する。
+  極端な占有率の確認は件数だけを使い、巨大配列は生成しない。
+- 計算はNumPy/CPUで、画像面積×近傍offset数に比例する処理と画像面積に比例する一時領域を使う。
+  入力・乱数状態は変更せず、GPU・スペクトル読込・fit・ファイル保存はしない。
+  この段階では保存マップとの一括接続、LFR、silhouette、ARI、試料間集計を追加していない。
+
+ユーザーが実行する最小テスト（Codexでは未実行）:
+
+```powershell
+uv run pytest tests/experiments/test_spatial_metrics.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
+```
+
+確認点は全件成功と、未定義が0/1で補完されず理由付きで保持されること。
+実データ・GPU・学習を使わない。成功結果を確認後、次のLFR用共通摂動へ進む。
 
 ## 5. 本学習前の動作確認
 
@@ -571,8 +694,9 @@ PCA・KMeans fitや評価計算は上表のニューラルネット学習数に�
 - [ ] config・manifest・結果の保存先と、次回最初に行う作業を記録する。
 - [ ] 設定変更が必要になった場合はユーザーの決定を設計文書へ反映し、旧条件のrunと混合しない。
 
-次回の開始位置: **3. Cosine-KMeans・ラベル復元の新規CPUテスト結果を確認する**。
+次回の開始位置: **4. LLA-3/5/9・補正LLAの新規CPUテスト結果を確認する**。
 loader・B0/PCA（本番fitはfold 1）と、ChemoMAE共通部品のCPUテストは確認済み。
-Trainer継承部分とA0/M11のGPU動作確認も成功。KMeansのGPU確認・本番CLI・全test推論・評価は未完了。
+Trainer継承部分とA0/M11のGPU動作確認、KMeans共通部品のCPUテスト15件は成功。
+接続テスト20件とB0/B1/A0/M11のGPU train 64画素probeも成功。本番全test推論・評価は未確認。
 第1段階の品質表・空間図確認は残っており、本学習前までに完了する。
 49試料の採用とKYOw単位の分割は確認済み。原材関係の再確認は新情報がある場合に限る。
