@@ -12,7 +12,8 @@ Cosine-KMeans・元座標へのラベル復元はCPUテスト15件の成功を�
 B0/B1/A0/M11のGPU上のtrain 64画素probeも成功。
 第4段階のLLA・補正LLAはCPUテスト33件で確認済み。
 LFR用の共通摂動生成・反転率計算はCPUテスト27件で確認済み。
-現在はcosine-silhouetteと3反復間ARIの計算部を追加し、新規CPUテストの確認待ち。
+cosine-silhouetteと3反復間ARIはCPUテスト33件で確認済み。
+現在は試料macro・SD・paired差の集計部を追加し、新規CPUテストの確認待ち。
 第1段階の残る品質表・空間図確認は、本学習前までに完了する。
 この文書は確定済み設計を実行へ移すための作業順序であり、詳細仕様は以下の設計文書を正とする。
 チェックは実装しただけでなく、各項目に必要な確認結果が得られてから付ける。
@@ -577,15 +578,17 @@ uv run python scripts/experiments/cluster_representations.py check --condition B
   本番評価CLIと数値結果のファイル保存は後続の接続工程で行う。
 - [ ] `silhouette_samples_cosine_gpu` でfoldの全test画素のscoreを計算し、試料ごとに平均する。
   FP32、singleton、使用クラスタ数1、ゼロ距離などの規約を確認する。
-  `diagnostic_metrics.py` に参照関数の呼出と試料境界による集計を追加。CPUテスト待ち。
+  `diagnostic_metrics.py` の参照関数呼出・試料境界による集計はCPUテストで成功。本番/GPUは未確認。
 - [ ] train fit・clean test・摂動後のoccupancy、使用クラスタ数、最大占有率を保存する。
   試料別とfold全体を区別し、未整列クラスタ番号をfold間で平均しない。
 - [ ] 同一試料の3反復間ARIを3対計算し、退化flagとともに保存する。Hungarian matchingは使用しない。
-  `diagnostic_metrics.py` に画素照合・整数contingency・3対と試料内平均を追加。CPUテスト待ち。
+  `diagnostic_metrics.py` の画素照合・整数contingency・3対と試料内平均はCPUテストで成功。
+  本番3反復のラベル読込・結果保存は後続の接続工程。
 - [ ] 試料・fold・条件・K・反復・摂動種別を追跡できる数値出力とrun台帳を実装する。
   未定義理由、利用可能数、失敗・中断・完了状態を記録する。
 - [ ] 試料macro、試料間SD、3反復間SD、共通対象でのpaired contrastを実装する。
   ARIの3対を独立反復扱いせず、欠測を0で補完しない。
+  `aggregation.py` に集計部を追加。共通対象・未定義/失敗の記録と手計算例のCPUテスト待ち。
 - [ ] 手計算可能な小ラベルマップ・小スペクトルで指標を検証する。
   背景、孤立画素、単一クラスタ、ラベル番号置換、摂動前後の完全一致、未定義値の集約を含める。
 
@@ -673,7 +676,7 @@ uv run pytest tests/experiments/test_lfr.py -vv -s --durations=10 -o faulthandle
 警告は既知の `norm_first=True` によるNested Tensor最適化の無効化通知。
 同じテストの再実行は不要。GPUでの摂動生成と本番評価への接続は未確認。
 
-### 第4段階のcosine-silhouette・3反復間ARI（検証待ち）
+### 第4段階のcosine-silhouette・3反復間ARIの実装・確認記録
 
 - `src/wood_degradation_map/experiments/diagnostic_metrics.py`:
   `fold_silhouette()` は、検証済みfold/inventoryから得るtest試料ID・画素数を別途受け取り、
@@ -703,13 +706,51 @@ uv run pytest tests/experiments/test_lfr.py -vv -s --durations=10 -o faulthandle
   整数積のテストだけ各100,000要素の整数ラベルを使い、スペクトル大配列やGPUは使わない。
   本番データの抽出・評価CLI・結果ファイル保存・OOF集計はこの段階では未接続。
 
-ユーザーが実行する最小テスト（Codexでは未実行）:
+ユーザー実行済みの最小テスト（Codexでは再実行していない）:
 
 ```powershell
 uv run pytest tests/experiments/test_diagnostic_metrics.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
 ```
 
-全件成功と、未定義/退化を補完や除外で隠さないことを確認する。実データ・GPU・学習は使わない。
+ユーザー共有ログで `33 passed in 2.64s` を確認済み。同じテストの再実行は不要。
+実データ・GPU・学習は使っていない。本番CLIへの接続とGPU検証は残っている。
+
+### 第4段階の試料macro・SD・paired差（検証待ち）
+
+- `src/wood_degradation_map/experiments/aggregation.py`:
+  `ScoreRecord` は試料・test fold・条件・K・metric・反復ID・状態・値・理由を持つ。
+  通常の指標は `lla_3/5/9`、`adjusted_lla_3/5/9`、`lfr_noise/shift/both`、`silhouette` を識別する。
+  LFRの入力値は各摂動種の5回平均であり、drawを学習反復として渡さない。
+  expectedの試料→test fold対応は保存済みmanifestから呼出側が渡し、入力レコードから推測しない。
+  全試料×3反復のレコードを要求する。欠落・重複・fold/条件/K/metric不一致はエラー。
+  `defined` は有限値と理由なし、`undefined/failed/interrupted` はNoneと明示的理由を必須にする。
+  NaNを未定義値として取り込まず、実行失敗を指標の定義域外と同一視しない。
+- `aggregate_scores()` は3反復すべてで値が定義された共通試料を使う。
+  試料内の反復平均と、その試料間SD（ddof=1）、各反復の試料macroとその反復間SD（ddof=1）、
+  3つのmacroの平均を返す。計算はFP32。fold平均の平均やpixel-weighted平均にはしない。
+  反復別の元の利用可能数・除外理由、共通対象数・ID・除外ID、全試料/反復の入力値を保持する。
+  共通0試料は集約値を理由付きNone、共通1試料は試料間SDだけ未定義（反復間SDは計算可能）。
+  失敗/中断の出典が含まれる場合はflagを残し、残りの値で全run完了を装わない。
+- `paired_difference()` は条件−参照条件を同じ試料・fold・K・反復で引いてから集計する。
+  両条件・3反復で共通の試料に限定し、条件ごとに対象が違うmacro平均の差を代用しない。
+  共通対象から外れた試料でも、定義できる反復別の差と、計算できない差の出典理由は保持する。
+  LFRの改善方向が負であることを理由に符号を反転しない。
+- `aggregate_ari()` は各試料の3対平均をmacro平均し、試料間SDを返す。
+  反復対の値・未定義理由・退化flagを保持し、3対のSDや通常の反復別paired contrastは作らない。
+  試料レコードや反復対が欠けた状態で平均しない。
+- `tests/experiments/test_aggregation.py`:
+  手計算の異なる2種類のSD、foldサイズの違い、共通0/1試料、条件ごとの利用可能集合の違い、
+  paired差の符号、負の補正LLA、失敗/中断、レコード欠落/重複/不整合、ARIの退化・未定義を検証する。
+  本番のファイル読込・数値結果保存・全条件/全Kの集計CLIはまだ接続していない。
+  有意差検定・信頼区間・指標をまとめた順位scoreは追加していない。
+
+ユーザーが実行する最小テスト（Codexでは未実行）:
+
+```powershell
+uv run pytest tests/experiments/test_aggregation.py -vv -s --durations=10 -o faulthandler_timeout=30 -o faulthandler_exit_on_timeout=true
+```
+
+全件成功を確認する。小規模な数値/ラベルfixtureのみで、実データ・GPU・学習は使わない。
 
 ## 5. 本学習前の動作確認
 
@@ -784,7 +825,7 @@ PCA・KMeans fitや評価計算は上表のニューラルネット学習数に�
 - [ ] config・manifest・結果の保存先と、次回最初に行う作業を記録する。
 - [ ] 設定変更が必要になった場合はユーザーの決定を設計文書へ反映し、旧条件のrunと混合しない。
 
-次回の開始位置: **4. cosine-silhouette・3反復間ARIの新規CPUテスト結果を確認する**。
+次回の開始位置: **4. 試料macro・SD・paired差の新規CPUテスト結果を確認する**。
 loader・B0/PCA（本番fitはfold 1）と、ChemoMAE共通部品のCPUテストは確認済み。
 Trainer継承部分とA0/M11のGPU動作確認、KMeans共通部品のCPUテスト15件は成功。
 接続テスト20件とB0/B1/A0/M11のGPU train 64画素probeも成功。本番全test推論・評価は未確認。
