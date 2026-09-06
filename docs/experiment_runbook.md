@@ -71,9 +71,17 @@ uv run python scripts/experiments/train_neural.py train `
 
 ```powershell
 $completionPath = Join-Path $experimentDir "results/neural/$condition/fold_$fold/repeat_$repeat/completion.json"
-Get-Content -LiteralPath $completionPath |
-    ConvertFrom-Json |
-    Select-Object status, completed_epochs, attempted_updates, optimizer_updates, amp_skips, training_seconds
+$completion = Get-Content -LiteralPath $completionPath -Raw | ConvertFrom-Json
+$completion |
+    Select-Object status, completed_epochs, attempted_updates, optimizer_updates, nonzero_lr_updates, amp_skips, training_seconds
+
+if (-not (Test-Path -LiteralPath $completion.weights_file)) {
+    throw 'weights fileが存在しません'
+}
+$actualWeightsHash = (Get-FileHash -LiteralPath $completion.weights_file -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actualWeightsHash -ne $completion.weights_sha256) {
+    throw 'weights hashがcompletion記録と一致しません'
+}
 ```
 
 完了条件は次のとおり。
@@ -82,9 +90,11 @@ Get-Content -LiteralPath $completionPath |
 - `completed_epochs` が800
 - `attempted_updates` が対象foldの予定数と一致
 - `optimizer_updates + amp_skips == attempted_updates`
-- `weights_file` と `weights_sha256` が記録されている
+- `weights_file` が存在し、実ファイルのSHA-256が `weights_sha256` と一致
 
 `amp_skips` は実測値として保存し、0と仮定しない。正常完了したrunへ同じ `train` を再実行しない。
+`training_seconds` は各epochの処理時間の合計で、CLI全体のwall timeではない。中断再開したrunでも、
+完了した800 epochを1回ずつ合計した値になる。
 
 ### 中断からの再開
 
@@ -104,6 +114,32 @@ uv run python scripts/experiments/train_neural.py train `
 
 checkpointがない、またはsource hash・config・run identityが一致しない場合は、別runとして扱う前に
 原因を確認する。一致検証を回避して継続しない。
+
+### Windowsでcheckpoint記録の置換に失敗した場合
+
+epoch末に `checkpoint.json.tmp` から `checkpoint.json` への置換だけが `PermissionError` になった場合、
+既存ファイルを削除、移動、上書きしない。まず最新の `last.pt` と一時記録、training historyが同じ
+完了epochを表していることをread-onlyで確認する。
+
+```powershell
+$resultDir = Join-Path $experimentDir "results/neural/$condition/fold_$fold/repeat_$repeat"
+$resumePath = Join-Path $experimentDir "checkpoints/neural/$condition/fold_$fold/repeat_$repeat/checkpoints/last.pt"
+$pendingPath = Join-Path $resultDir 'checkpoint.json.tmp'
+
+$pending = Get-Content -LiteralPath $pendingPath -Raw | ConvertFrom-Json
+$history = @(Get-Content -LiteralPath (Join-Path $resultDir 'training_history.json') -Raw | ConvertFrom-Json)
+$actualCheckpointHash = (Get-FileHash -LiteralPath $resumePath -Algorithm SHA256).Hash.ToLowerInvariant()
+
+if ($actualCheckpointHash -ne $pending.checkpoint_sha256 -or
+    $history.Count -ne $pending.completed_epochs -or
+    $history[-1].epoch -ne $pending.completed_epochs) {
+    throw 'checkpoint、一時記録、training historyが一致しません'
+}
+```
+
+一致した場合だけ、前節の `--resume $resumePath` で同じrunを再開する。再開loaderによる内部state、
+run identity、config、manifest、source hashの検証を省略しない。同じ置換エラーが再発する場合は、
+対象JSONを開いているeditorやpreviewを閉じ、原因を確認してから再開する。
 
 ## 5. PCA baseline
 

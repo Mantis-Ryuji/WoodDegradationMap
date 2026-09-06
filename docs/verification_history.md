@@ -2,14 +2,16 @@
 
 ## 1. 位置づけ
 
-この文書は、本番開始前に実施した入力確認、テスト、GPU preflightの要約である。
+この文書は、本番開始前に実施した入力確認、テスト、GPU preflightと、完了した本番runの
+工学的な実行記録の要約である。
 研究条件や評価方法の定義は[design/README.md](design/README.md)以下、現在の実行状態は
 [../ToDo.md](../ToDo.md)を参照する。ここに記す成功は実装と保存契約の工学的確認であり、
 モデル性能や劣化との対応を示す結果ではない。
 
 特記がない限り、コマンドはユーザーが `uv` で実行し、その出力を共有した。Codexは同じテストを
-再実行していない。個々のhash、runtime、GPU memory、completionは
-`outputs/experiments/preflight_v1/` の保存記録を正とする。
+再実行していない。個々のhash、runtime、GPU memory、completionは、preflightでは
+`outputs/experiments/preflight_v1/`、本番runでは `outputs/experiments/production_v1/` の保存記録を
+正とする。
 
 ## 2. 本番入力
 
@@ -87,7 +89,48 @@ test 10試料・906,428画素・7種類のKを処理し、700 score rowsは全�
 試料重複、保存試料の欠落、確認対象のmanifest・run・fit・score・shared input・code hashの不一致は
 なかった。この結果はB0・fold 1のpreflightであり、本番CV結果には含めない。
 
-## 5. 本文代表試料
+## 5. 本番CV実行記録
+
+### 5.1 A0・fold 1
+
+2026-09-06、A0・fold 1の3反復について、学習、全7Kのclustering、全test評価と各checkを完了した。
+学習completion、training history、重みとcheckpointのhashを照合し、各反復で800 epoch・249,600
+attempted updatesが揃っていることを確認した。
+
+| repeat | optimizer updates | AMP skips | epoch時間合計 | 最終train loss |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 249,505 | 95 | 2:47:33.955 | 0.0002234270 |
+| 2 | 249,503 | 97 | 2:41:39.832 | 0.0002196052 |
+| 3 | 249,507 | 93 | 2:47:37.736 | 0.0002236418 |
+
+`optimizer_updates + amp_skips == attempted_updates` は3反復すべてで成立した。 `training_seconds` は
+各epochの処理時間の合計であり、入力読込、source検証、保存処理などを含むCLI全体のwall timeではない。
+本番学習のcompletion schemaはGPU peakを保存しないため、その値は未記録である。第4.1節のpreflight値を
+本番runの実測値として代用しない。
+
+repeat 2はepoch 26のcheckpoint保存後、 `checkpoint.json.tmp` から `checkpoint.json` への置換で
+Windowsの `PermissionError` が発生した。保存済み `last.pt`、一時記録、training historyのepoch・更新数・
+SHA-256が一致することを確認し、同じcheckpointを明示してepoch 27から再開した。失敗attemptと完了attemptは
+両方保存され、最終completionと重みのhashも一致した。
+
+### 5.2 Clustering・評価
+
+各反復でfold 1のtest 10試料・906,428画素を処理し、事前固定した
+$K\in\{2,4,6,8,10,12,14\}$ が揃った。runは `checks_passed=true`、既存成果物のcheckはclustering・
+評価とも成功した。
+
+| repeat | clustering wall | clustering peak allocated / reserved | 評価wall | 評価peak allocated / reserved | run別保存量 |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 109.94 s | 255.81 / 388.00 MiB | 540.91 s | 374.90 / 564.00 MiB | 123.91 MiB |
+| 2 | 81.81 s | 255.81 / 388.00 MiB | 474.94 s | 374.90 / 564.00 MiB | 124.25 MiB |
+| 3 | 71.12 s | 255.81 / 388.00 MiB | 467.34 s | 374.90 / 564.00 MiB | 123.76 MiB |
+
+保存量は各反復のneural・clustering・evaluationのresultsとcheckpointディレクトリを合計した値で、
+3反復合計は371.92 MiBである。共有入力hashは3反復で
+`d3004aefb441eaa86c70963d9e96537a3f538371cbc279eb85e242b696ac1bcd` と一致した。これは実行・保存契約の
+確認であり、A0の性能評価や条件間比較ではない。性能は必要な全fold・反復が揃ったOOF snapshotで評価する。
+
+## 6. 本文代表試料
 
 結果を見る前に、各樹種で保存有効画素数が最大の試料を本文表示例として固定した。
 

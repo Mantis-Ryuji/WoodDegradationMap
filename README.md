@@ -11,7 +11,8 @@
 
 本番入力は `data/processed/production_v1/`、本番実験rootは
 `outputs/experiments/production_v1/` です。前処理、実験pipeline、評価・OOF集計の実装と
-preflightは完了し、2026-09-06にproduction CVを開始しました。進行中のrunと次の作業は
+preflightは完了し、production CVを実行中です。2026-09-06にA0・fold 1の3反復について学習、
+clustering、全test評価を完了しました。進捗と次の作業は
 [ToDo.md](ToDo.md)、実行方法は[実験runbook](docs/experiment_runbook.md)を参照してください。
 
 ## 文書
