@@ -13,11 +13,12 @@
 | 本番入力 | `data/processed/production_v1/`、49試料、3,902,250有効画素 |
 | 本番root | `outputs/experiments/production_v1/` |
 | manifest | 新規作成・check済み。 `preflight_v1` の `complete.json` とSHA-256一致 |
-| 進行中 | A0・fold 1・repeat 1、800 epoch（2026-09-06にユーザーが開始） |
-| 本番結果 | 現runの正常終了報告待ち。性能値はまだ確認していない |
+| 完了 | A0・fold 1・repeat 1–3の学習、clustering、全test評価と各check |
+| 次run | M00・fold 1・repeat 1を独立runとして開始する |
+| 本番結果 | 3/75主ニューラルrun完了。OOF未完成のため性能比較はまだ行わない |
 
-進行中の学習に対して入力、manifest、config、実装を変更しない。ドキュメント整理は学習source hashの
-対象外であり、runのコードとデータには触れない。
+本番CV中は入力、manifest、config、実装を変更しない。ドキュメント整理は学習source hashの対象外で
+あり、runのコードとデータには触れない。
 
 ## 完了済みの準備
 
@@ -35,22 +36,15 @@
 
 ## 直近の作業
 
-- [ ] A0・fold 1・repeat 1の学習を正常終了させる。
-- [ ] `completion.json` で `training_completed`、800 epoch、249,600 attempted updatesを確認する。
-- [ ] `optimizer_updates + amp_skips == attempted_updates`、weights hash、実時間を記録する。
-- [ ] 同runのclean test mapを作成し、`cluster_representations.py check` を通す。
-- [ ] 同runの全test評価を作成し、`evaluate_representations.py check` を通す。
-- [ ] 実測した学習時間、GPU peak、保存量を[検証履歴](docs/verification_history.md)へ追記する。
+- [x] A0・fold 1・repeat 1–3を800 epochまで学習し、完了条件とweights hashを確認した。
+- [x] 3反復すべてで全7Kのclean test mapを作成し、既存成果物のcheckを通した。
+- [x] 3反復すべてで全test評価を作成し、既存成果物のcheckを通した。
+- [x] 実測時間、AMP skip、GPU peak、保存量とrepeat 2の再開を
+  [検証履歴](docs/verification_history.md)へ記録した。
+- [ ] M00・fold 1・repeat 1を新規学習し、完了条件とweights hashを確認する。
+- [ ] 同runのclustering・評価を作成し、それぞれcheckを通す。
 
-正常終了後のコマンドは次のとおり。学習が中断した場合は、先に
-[runbookの再開手順](docs/experiment_runbook.md#中断からの再開)を使う。
-
-```powershell
-uv run python scripts/experiments/cluster_representations.py run --condition A0 --fold 1 --repeat 1 --experiment-dir outputs/experiments/production_v1
-uv run python scripts/experiments/cluster_representations.py check --condition A0 --fold 1 --repeat 1 --experiment-dir outputs/experiments/production_v1
-uv run python scripts/experiments/evaluate_representations.py run --conditions A0 --fold 1 --repeats 1 --experiment-dir outputs/experiments/production_v1
-uv run python scripts/experiments/evaluate_representations.py check --conditions A0 --fold 1 --repeats 1 --experiment-dir outputs/experiments/production_v1
-```
+新規runと中断再開のコマンド、完了判定は[実験runbook](docs/experiment_runbook.md)を使う。
 
 ## 本番CV
 
@@ -65,13 +59,13 @@ uv run python scripts/experiments/evaluate_representations.py check --conditions
 
 各runは800 epochとし、正常完了した重みだけをclusteringへ渡す。
 
-- [ ] A0: 5 folds × 3 repeats（15 runs。fold 1・repeat 1を実行中）
-- [ ] M00: 5 folds × 3 repeats（15 runs）
+- [ ] A0: 5 folds × 3 repeats（3/15 runs。fold 1の学習・clustering・評価が完了）
+- [ ] M00: 5 folds × 3 repeats（0/15 runs。次runはfold 1・repeat 1）
 - [ ] M10: 5 folds × 3 repeats（15 runs）
 - [ ] M01: 5 folds × 3 repeats（15 runs）
 - [ ] M11: 5 folds × 3 repeats（15 runs）
-- [ ] 全75 runsでclean test mapのrun・checkを完了する。
-- [ ] 全75 runsで評価のrun・checkを完了する。
+- [ ] 全75 runsでclean test mapのrun・checkを完了する（3/75組合せ完了）。
+- [ ] 全75 runsで評価のrun・checkを完了する（3/75組合せ完了）。
 
 ### Mask率補助実験
 
@@ -110,9 +104,12 @@ connectivity、閾値、分母を決めて[評価指標](docs/design/evaluation_
 
 - condition、fold、repeat、seedとmanifest・code・config hash
 - status、epoch、attempted/optimizer updates、AMP skips
-- wall time、GPU peak allocated/reserved、保存量
+- 学習のepoch時間合計、clustering・評価のwall timeとGPU peak allocated/reserved、保存量
 - checkpointから再開した場合のsource pathと整合確認
 - clustering・評価のcompletionとcheck結果
 
 重みとcheckpointはGit管理しない。config、manifest、数値結果、図、completion記録は
 `outputs/experiments/production_v1/` に残す。
+
+現行の本番学習completionはGPU peakを保存しないため、学習時の値を事後推定しない。学習GPU peakは
+preflightの実測値だけを工学的参考値として扱い、本番CV中に記録項目を追加するコード変更は行わない。
