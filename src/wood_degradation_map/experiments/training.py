@@ -18,6 +18,7 @@ from .config import experiment_config, run_seed
 from .data import FoldData
 from .manifests import _digest, _read_json, _write_json
 from .neural import TrainingRandomness, build_model, build_optimizer, learning_rate, neural_condition
+from .records import make_run_record
 
 
 @dataclass(frozen=True)
@@ -58,7 +59,7 @@ def runtime_record(device: torch.device) -> dict[str, object]:
 def _code_hashes() -> dict[str, str]:
     directory = Path(__file__).parent
     names = ("training.py", "neural.py", "config.py", "data.py", "input_validation.py",
-             "manifests.py", "baselines.py")
+             "manifests.py", "baselines.py", "records.py")
     return {name: _digest(directory / name) for name in names}
 
 
@@ -124,8 +125,8 @@ class ExperimentTrainer(Trainer):
         weights_dir = experiment / "checkpoints" / suffix
         checkpoint_dir = weights_dir / "checkpoints"  # Preserve Trainer's internal layout.
         manifest_record = _read_json(experiment / "manifests/complete.json")
-        self.run_record = {
-            "schema_version": 1, "mode": "smoke" if self.is_smoke else "training",
+        self.run_record = make_run_record({
+            "schema_version": 2, "mode": "smoke" if self.is_smoke else "training",
             "smoke_id": smoke_id, "smoke_batches_per_epoch": smoke_batches,
             "condition": condition_id, "fold": train.fold, "repeat": repeat,
             "train_sample_ids": list(train.sample_ids), "train_pixels": len(train.spectra),
@@ -137,7 +138,7 @@ class ExperimentTrainer(Trainer):
             "seeds": {purpose: run_seed(purpose, train.fold, repeat)
                       for purpose in ("model_init", "pixel_order", "mask", "train_aug")},
             "resume_boundary": "completed epoch; interrupted epoch is replayed",
-        }
+        })
         if resume_from is None:
             if self.results_dir.exists() or weights_dir.exists():
                 raise FileExistsError("Run output exists; resume explicitly from its checkpoint")

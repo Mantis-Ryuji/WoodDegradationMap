@@ -96,8 +96,9 @@ def fold_silhouette(
     kmeans_seed(fold, repeat, k)
     if device.type not in ("cpu", "cuda") or type(chunk_pixels) is not int or chunk_pixels < 1:
         raise ValueError("Expected CPU/CUDA and a positive integer chunk size")
-    if version("chemomae") != "0.2.1":
-        raise ValueError("The fixed silhouette protocol requires ChemoMAE 0.2.1")
+    required_version = experiment_config()["chemomae"]["version"]
+    if version("chemomae") != required_version:
+        raise ValueError(f"The fixed silhouette protocol requires ChemoMAE {required_version}")
     ids = [sample.pixels.sample_id for sample in samples]
     if (not expected_test_pixels or len(ids) != len(set(ids))
             or set(ids) != set(expected_test_pixels)):

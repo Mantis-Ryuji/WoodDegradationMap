@@ -154,7 +154,8 @@ class FittedClusters:
         _diagnose(self.centroids, self.record.dimension)
         with path.open("xb") as destination:
             np.savez_compressed(destination, centroids=self.centroids,
-                                metadata=np.array(json.dumps({"schema_version": 1,
+                                metadata=np.array(json.dumps({"schema_version": 2,
+                                                              "contract": cluster_contract(),
                                                               "fit": asdict(self.record)})))
 
     @classmethod
@@ -169,7 +170,8 @@ class FittedClusters:
             if set(saved.files) != {"centroids", "metadata"}:
                 raise ValueError("Unexpected centroid checkpoint fields")
             metadata = json.loads(str(saved["metadata"].item()))
-            if metadata.get("schema_version") != 1:
+            if (metadata.get("schema_version") != 2
+                    or metadata.get("contract") != cluster_contract()):
                 raise ValueError("Unsupported centroid checkpoint schema")
             fit = metadata["fit"]
             record = ClusterFitRecord(**{
@@ -182,7 +184,6 @@ class FittedClusters:
                 != (condition_id, fold, repeat, k, expected_seed)
                 or record.dimension != _dimension(condition_id)
                 or record.max_iter != settings["max_iter"] or record.tol != settings["tol"]
-                or record.chemomae_version != version("chemomae")
                 or record.torch_version != str(torch.__version__)):
             raise ValueError("Centroid checkpoint run/config/version mismatch")
         if (centers.shape != (k, record.dimension) or record.train_pixels < k
@@ -205,14 +206,20 @@ class FittedClusters:
         return cls(module, record)
 
 
+def cluster_contract() -> dict[str, str]:
+    """The current reader environment; fit provenance remains in ClusterFitRecord."""
+    return {"chemomae": version("chemomae"), "torch": str(torch.__version__)}
+
+
 def fit_clusters(features: TrainFeatures, k: int, *, device: torch.device) -> FittedClusters:
     """Call reference fit once on all train features; never perform restarts or select K."""
     dimension = _dimension(features.condition_id)
     if type(k) is not int:
         raise ValueError("K must be an integer in the fixed plan")
     seed = kmeans_seed(features.fold, features.repeat, k)
-    if version("chemomae") != "0.2.1":
-        raise ValueError("The fixed protocol requires ChemoMAE 0.2.1")
+    required_version = experiment_config()["chemomae"]["version"]
+    if version("chemomae") != required_version:
+        raise ValueError(f"The fixed protocol requires ChemoMAE {required_version}")
     diagnostics = _diagnose(features.values, dimension)
     if len(features.values) < k or not features.sample_ids:
         raise ValueError("Insufficient train features or missing sample provenance")
@@ -237,7 +244,7 @@ def fit_clusters(features: TrainFeatures, k: int, *, device: torch.device) -> Fi
     record = ClusterFitRecord(
         features.condition_id, features.fold, features.repeat, k, seed, dimension,
         features.sample_ids, len(features.values), occupancy, float(module.inertia_), inertia,
-        settings["max_iter"], settings["tol"], None, "not_exposed_by_ChemoMAE_0.2.1",
+        settings["max_iter"], settings["tol"], None, f"not_exposed_by_ChemoMAE_{required_version}",
         diagnostics.unit_norm_absolute_error_max, center_diagnostic.unit_norm_absolute_error_max,
         elapsed, version("chemomae"), str(torch.__version__), str(device),
     )

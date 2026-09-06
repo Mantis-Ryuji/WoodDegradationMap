@@ -7,6 +7,12 @@
 条件、seed、split、評価方法を変更しない。現在の進捗は[../ToDo.md](../ToDo.md)、実行済みの
 工学的確認は[verification_history.md](verification_history.md)を参照する。
 
+[vMF補助実験](design/experiment_protocol.md#vmf-supplementary)は、
+数値検証・設定確定とpipeline実装が必要であり、CLIはまだない。本書のclustering・評価・OOFコマンドは
+Cosine-KMeansの主実験・mask率補助実験用である。vMFの実施順序は第8.1節を参照する。
+
+実行環境はChemoMAE v0.2.2とする。
+
 すべてのコマンドはリポジトリrootからPowerShellで実行し、Python環境には `uv` を使用する。
 各CLIの終了後に `$LASTEXITCODE -eq 0` を確認し、非0なら後続工程へ進まない。JSONのstatus確認は
 終了codeの確認に加えて行う。
@@ -26,18 +32,14 @@ smokeやpreflightの成果物を本番rootへコピーしない。本番開始�
 
 ## 3. 本番manifest
 
-本番開始時に限り、manifestを新規作成して検証する。2026-09-06の本番開始では次の処理を行い、
-preflightと本番の `complete.json` が同じSHA-256であることを確認してから学習を開始した。
+本番開始時、出力先が存在しない場合に限りmanifestを新規作成して検証する。
+既存の`production_v1`では次の`create`を実行せず、保存済みmanifestの`check`を使う。
 
 ```powershell
 uv run python scripts/experiments/prepare_manifests.py create --experiment-id production_v1
+if ($LASTEXITCODE -ne 0) { throw 'manifest creation failed' }
 uv run python scripts/experiments/prepare_manifests.py check --experiment-id production_v1
-
-$preflightManifestHash = (Get-FileHash 'outputs/experiments/preflight_v1/manifests/complete.json' -Algorithm SHA256).Hash
-$productionManifestHash = (Get-FileHash 'outputs/experiments/production_v1/manifests/complete.json' -Algorithm SHA256).Hash
-if ($preflightManifestHash -ne $productionManifestHash) {
-    throw 'preflightと本番manifestが一致しません'
-}
+if ($LASTEXITCODE -ne 0) { throw 'manifest check failed' }
 ```
 
 以後は `create` を再実行しない。既存manifestの確認には `check` だけを使用する。
@@ -48,14 +50,14 @@ uv run python scripts/experiments/prepare_manifests.py check --experiment-id pro
 
 ## 4. ニューラルネットの1 run
 
-PowerShell変数には値を直接代入する。 `Read-Host '値'` は値の代入ではなく入力promptの表示なので、
-run IDや条件の固定には使わない。
+対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はM00・fold 1・repeat 2の例である。
+完了済みrunは再学習せず、保存済み成果物の確認には各工程の`check`を使う。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'A0'
+$condition = 'M00'
 $fold = 1
-$repeat = 1
+$repeat = 2
 
 uv run python scripts/experiments/train_neural.py train `
     --condition $condition `
@@ -165,9 +167,9 @@ clean test mapを作成し、CPUの `check` で保存物を検証する。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'A0'
+$condition = 'M00'
 $fold = 1
-$repeat = 1
+$repeat = 2
 
 uv run python scripts/experiments/cluster_representations.py run `
     --condition $condition --fold $fold --repeat $repeat --experiment-dir $experimentDir
@@ -195,18 +197,18 @@ clean test mapが揃った組合せを評価する。 `run` はGPUを使用し�
 $experimentDir = 'outputs/experiments/production_v1'
 
 uv run python scripts/experiments/evaluate_representations.py run `
-    --conditions A0 --fold 1 --repeats 1 `
+    --conditions M00 --fold 1 --repeats 2 `
     --experiment-dir $experimentDir
 uv run python scripts/experiments/evaluate_representations.py check `
-    --conditions A0 --fold 1 --repeats 1 `
+    --conditions M00 --fold 1 --repeats 2 `
     --experiment-dir $experimentDir
 ```
 
-同じfoldの未評価3反復をまとめる例は次のとおり。
+同じfoldの3反復をまとめる場合は、指定する全組合せのclean test mapが揃い、すべて未評価であることを確認する。
 
 ```powershell
 uv run python scripts/experiments/evaluate_representations.py run `
-    --conditions B0 B1 M00 M10 M01 M11 --fold 1 --repeats 1 2 3 `
+    --conditions B0 B1 M10 M01 M11 --fold 1 --repeats 1 2 3 `
     --experiment-dir outputs/experiments/production_v1
 ```
 
@@ -224,6 +226,17 @@ runでは各組合せの `status=full_test_evaluation_completed` と `checks_pas
 
 各組合せについてclean mapと評価を完了する。ニューラル学習は合計105 runsで、B0・B1のfitや
 KMeans、評価処理はこの数に含めない。3反復はseed選別に使わず、すべてOOF集計へ含める。
+
+### 8.1 vMF補助実験の準備と実施
+
+1. 実験プロトコル第5.2.3節の数値仕様を確定し、v0.2.2の修正内容と小規模CPU・GPU動作を検証する。
+2. 元の成果物の検証、独立した保存先、fit・評価・check・OOFを実装する。具体的なCLIは実装時に追記する。
+3. 本番CV後、同じ表現・train画素・Kを使って735 fitsを行い、同じtest全画素・共通摂動で評価する。
+4. 完了・失敗・未定義値を保持し、全組合せの完全性を確認して独立にOOF集計・報告する。
+
+ニューラル学習とPCA fitは追加しない。研究条件は[実験プロトコル第5.2節](design/experiment_protocol.md#vmf-supplementary)、
+指標と比較の定義は[評価指標第8.4節](design/evaluation_metrics.md#vmf-evaluation)に従う。
+vMF用の設定・結果・完了記録は主実験から分け、元の成果物との対応とsource hashを保存する。
 
 ## 9. OOF集計
 
@@ -262,5 +275,5 @@ runでは `status=oof_aggregation_completed` と `checks_passed=true`、checkで
 `checkpoints/`、`weights/`、`*.pt`、`*.pth`、`*.safetensors` は `.gitignore` により
 Git管理対象外である。重みを削除する場合も、論文・再解析に必要なrunの由来とhashを数値記録に残す。
 
-実行中にコード、設計条件、入力データ、manifestを変更しない。変更が必要になった場合はrunを止め、
-影響範囲を確認し、`production_v1` と混合しない新しい実験系列として扱う。
+本番CVではコード、設計条件、入力データ、manifestを固定する。
+変更が必要な場合は影響範囲と実験系列の扱いを事前に確認し、変更内容と検証結果を記録する。

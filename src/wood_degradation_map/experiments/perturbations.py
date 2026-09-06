@@ -23,8 +23,9 @@ DRAW_KEYS = tuple((kind, draw) for kind in PERTURBATIONS for draw in range(1, 6)
 def evaluation_augmenter(kind: Perturbation) -> SpectraAugmenter:
     if kind not in PERTURBATIONS:
         raise ValueError("Unknown evaluation perturbation")
-    if version("chemomae") != "0.2.1":
-        raise ValueError("Evaluation perturbations require ChemoMAE 0.2.1")
+    required_version = experiment_config()["chemomae"]["version"]
+    if version("chemomae") != required_version:
+        raise ValueError(f"Evaluation perturbations require ChemoMAE {required_version}")
     settings = dict(experiment_config()["augmentation"])
     for key in ("noise_angle_deg_range", "shift_delta_range"):
         settings[key] = tuple(settings[key])

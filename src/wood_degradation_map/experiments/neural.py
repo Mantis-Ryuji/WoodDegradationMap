@@ -73,8 +73,9 @@ def build_model(condition_id: str, fold: int, repeat: int) -> ChemoMAE:
     """Construct FP32 weights on CPU using unmodified reference initialization."""
     condition = neural_condition(condition_id)
     settings = dict(experiment_config()["chemomae"])
-    if version("chemomae") != settings.pop("version"):
-        raise ValueError("The fixed protocol requires ChemoMAE 0.2.1")
+    required_version = settings.pop("version")
+    if version("chemomae") != required_version:
+        raise ValueError(f"The fixed protocol requires ChemoMAE {required_version}")
     settings.pop("initialization")
     if torch.get_default_dtype() != torch.float32:
         raise ValueError("Model initialization requires the FP32 default dtype")

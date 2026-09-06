@@ -205,7 +205,7 @@
     "additional_autoscaling": false
   },
   "chemomae": {
-    "version": "0.2.1",
+    "version": "0.2.2",
     "seq_len": 256,
     "d_model": 256,
     "nhead": 8,
@@ -216,7 +216,7 @@
     "latent_dim": 16,
     "latent_normalize": true,
     "decoder_num_layers": 1,
-    "initialization": "ChemoMAE 0.2.1 defaults"
+    "initialization": "ChemoMAE 0.2.2 defaults"
   },
   "training": {
     "epochs": 800,
@@ -294,7 +294,7 @@
     "dtype": "float32",
     "device": "cuda",
     "normalization_eps": 1e-06,
-    "other_settings": "ChemoMAE 0.2.1 defaults",
+    "other_settings": "ChemoMAE 0.2.2 defaults",
     "fit_scope": "shared train pixels",
     "test_centers": "fixed"
   },

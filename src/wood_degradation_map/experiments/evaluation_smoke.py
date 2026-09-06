@@ -26,6 +26,7 @@ from .lfr import LFRAccumulator, PixelLabels, accumulate_lfr_block
 from .manifests import _digest, _read_json, _write_json
 from .neural import fp32_inference
 from .perturbations import SharedPerturbations
+from .records import matches_run
 from .spatial_metrics import local_label_agreement
 from .training import _code_hashes as training_code_hashes, runtime_record
 
@@ -54,14 +55,14 @@ def _load_smoke_source(
     results, checkpoints = experiment / "results" / suffix, experiment / "checkpoints" / suffix
     run, completion = _read_json(results / "run.json"), _read_json(results / "completion.json")
     expected = {
-        "schema_version": 1, "mode": "smoke", "condition": condition,
+        "schema_version": 2, "mode": "smoke", "condition": condition,
         "fold": data.fold, "repeat": repeat, "config": experiment_config(),
         "cluster_counts": list(CLUSTER_COUNTS), "code_sha256": _cluster_code_hashes(),
         "manifest_artifact_sha256": _read_json(experiment / "manifests/complete.json")["artifact_sha256"],
         "train_sample_ids": list(data.train_sample_ids), "train_pixels": data.train_pixel_count,
         "test_sample_ids": list(data.test_sample_ids), "test_pixels": data.test_pixel_count,
     }
-    if (any(run.get(key) != value for key, value in expected.items())
+    if (not matches_run(run, expected)
             or completion.get("status") != "clustering_smoke_completed"
             or completion.get("checks_passed") is not True
             or completion.get("centers_and_probe_labels_save_load_exact") is not True

@@ -1,6 +1,6 @@
 # 実験実施 ToDo
 
-更新日: 2026-09-06
+更新日: 2026-09-07
 
 この文書は現在の実行状態と残作業だけを管理する。固定済みの研究条件は
 [研究設計](docs/design/README.md)、CLIと完了判定は[実験runbook](docs/experiment_runbook.md)、
@@ -12,13 +12,15 @@
 | --- | --- |
 | 本番入力 | `data/processed/production_v1/`、49試料、3,902,250有効画素 |
 | 本番root | `outputs/experiments/production_v1/` |
-| manifest | 新規作成・check済み。 `preflight_v1` の `complete.json` とSHA-256一致 |
-| 完了 | A0・fold 1・repeat 1–3の学習、clustering、全test評価と各check |
-| 次run | M00・fold 1・repeat 1を独立runとして開始する |
-| 本番結果 | 3/75主ニューラルrun完了。OOF未完成のため性能比較はまだ行わない |
+| manifest | split・共通train座標は作成済み。現行形式でcheck済み |
+| 完了 | A0・fold 1・repeat 1–3とM00・fold 1・repeat 1の学習、clustering、全test評価と各check |
+| 次の工程 | M00・fold 1・repeat 2の学習 → clustering → 評価 |
+| 実行環境 | ChemoMAE v0.2.2。manifest・完了済み4 runsの成果物は現行形式で検証済み |
+| 本番結果 | 主ニューラル実験の学習・clustering・評価は各4/75完了。OOF未完成のため性能比較はまだ行わない |
+| vMF補助実験 | 主7条件・5-fold・3反復・共通7Kの735 fits。修正版v0.2.2を導入済み、数値検証・設定確定は未完了 |
 
-本番CV中は入力、manifest、config、実装を変更しない。ドキュメント整理は学習source hashの対象外で
-あり、runのコードとデータには触れない。
+本番CVでは入力・manifest・研究条件を固定し、成果物に実行時の設定と環境を記録する。
+環境変更とその確認結果は[検証履歴](docs/verification_history.md)で管理する。
 
 ## 完了済みの準備
 
@@ -34,15 +36,14 @@
 - [x] 本文代表例を各樹種の保存有効画素数最大の7試料に固定した。
 - [x] `production_v1` のmanifestを新規作成し、preflightとの一致を確認した。
 
-## 直近の作業
+## 次のrun
 
-- [x] A0・fold 1・repeat 1–3を800 epochまで学習し、完了条件とweights hashを確認した。
-- [x] 3反復すべてで全7Kのclean test mapを作成し、既存成果物のcheckを通した。
-- [x] 3反復すべてで全test評価を作成し、既存成果物のcheckを通した。
-- [x] 実測時間、AMP skip、GPU peak、保存量とrepeat 2の再開を
-  [検証履歴](docs/verification_history.md)へ記録した。
-- [ ] M00・fold 1・repeat 1を新規学習し、完了条件とweights hashを確認する。
-- [ ] 同runのclustering・評価を作成し、それぞれcheckを通す。
+対象はM00・fold 1・repeat 2とする。完了済みrunの実測値とcheck結果は
+[検証履歴](docs/verification_history.md)にまとめる。
+
+- [ ] 800 epochまで学習し、completionのepoch・更新数・weights hashを確認する。
+- [ ] 全7Kのclean test mapを作成し、clusteringのcheckを通す。
+- [ ] 全test評価を作成し、評価のcheckを通す。
 
 新規runと中断再開のコマンド、完了判定は[実験runbook](docs/experiment_runbook.md)を使う。
 
@@ -60,12 +61,12 @@
 各runは800 epochとし、正常完了した重みだけをclusteringへ渡す。
 
 - [ ] A0: 5 folds × 3 repeats（3/15 runs。fold 1の学習・clustering・評価が完了）
-- [ ] M00: 5 folds × 3 repeats（0/15 runs。次runはfold 1・repeat 1）
+- [ ] M00: 5 folds × 3 repeats（1/15 runs。fold 1・repeat 1の学習・clustering・評価が完了）
 - [ ] M10: 5 folds × 3 repeats（15 runs）
 - [ ] M01: 5 folds × 3 repeats（15 runs）
 - [ ] M11: 5 folds × 3 repeats（15 runs）
-- [ ] 全75 runsでclean test mapのrun・checkを完了する（3/75組合せ完了）。
-- [ ] 全75 runsで評価のrun・checkを完了する（3/75組合せ完了）。
+- [ ] 全75 runsでclean test mapのrun・checkを完了する（4/75組合せ完了）。
+- [ ] 全75 runsで評価のrun・checkを完了する（4/75組合せ完了）。
 
 ### Mask率補助実験
 
@@ -82,6 +83,23 @@
 - [ ] `mask_rate_oof_v1` を作成・checkする。
 - [ ] 欠損、失敗、中断、未定義指標とその理由が集計に保持されていることを確認する。
 - [ ] CV結果からbest条件やseedを事後選択しない。
+
+### vMFクラスタリング補助実験
+
+範囲・数値仕様は[実験プロトコル第5.2節](docs/design/experiment_protocol.md#vmf-supplementary)、
+評価は[評価指標第8.4節](docs/design/evaluation_metrics.md#vmf-evaluation)を参照する。
+既存のニューラル学習回数は増やさない。
+
+- [x] 主7条件 × 5 folds × 3 repeats × 共通7K、計735 fitsの範囲を2026-09-07に確定した。
+- [x] 静的レビューで指摘した問題の修正版ChemoMAE v0.2.2を採用・導入した。
+- [x] 退化成分の扱いを確定した。責務ゼロ時は方向・集中度を保持し、重み付き和ゼロ時は方向を保持して`kappa_min`へ下げる。
+- [ ] v0.2.2の数値関数・公開helper・初期化・最終尤度・保存復元・退化成分を検証する。
+  16次元・256次元の参照値比較、CPU小規模、chunk、GPU最小確認を含む。
+- [ ] 数値精度・EM停止条件・集中度設定をvMFのtest結果を見る前に固定する。
+- [ ] 専用のfit・評価・check・OOFと独立した出力先を設計・実装する。
+- [ ] 本番CV後、既存の主7条件の重み・PCAと共通train画素で735 fitsを実施する。
+- [ ] 同じtest全画素・共通摂動で評価し、完了・失敗・未定義値を保持してOOF集計する。
+- [ ] 既定の条件contrast・2×2交互作用・K依存性をCosine-KMeansと併記する。
 
 ## CV後に残る実装
 

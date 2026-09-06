@@ -24,6 +24,7 @@ from .data import FoldData, SpectrumBatch, SpectrumInputError
 from .input_validation import InputInventory
 from .manifests import _digest, _read_json, _write_json
 from .neural import build_model, extract_full_visible, fp32_inference
+from .records import make_run_record, matches_run
 from .training import _code_hashes, runtime_record
 
 
@@ -91,7 +92,7 @@ def load_representation(
     completion = _read_json(results / "completion.json")
     config = experiment_config()
     expected = {
-        "schema_version": 1, "condition": condition, "fold": data.fold, "repeat": repeat,
+        "schema_version": 2, "condition": condition, "fold": data.fold, "repeat": repeat,
         "mode": "training" if neural_smoke_id is None else "smoke",
         "smoke_id": neural_smoke_id, "config": config,
         "train_sample_ids": list(data.train_sample_ids), "train_pixels": data.train_pixel_count,
@@ -100,10 +101,11 @@ def load_representation(
         "seeds": {purpose: run_seed(purpose, data.fold, repeat)
                   for purpose in ("model_init", "pixel_order", "mask", "train_aug")},
     }
-    if any(run.get(key) != value for key, value in expected.items()):
+    if not matches_run(run, expected):
         raise ValueError("Neural source run/config/manifest/code mismatch")
     current_runtime = runtime_record(device)
-    if any(run["runtime"][key] != current_runtime[key] for key in ("torch", "chemomae")):
+    runtime_keys = ("torch", "chemomae")
+    if any(run["contract"]["runtime"][key] != current_runtime[key] for key in runtime_keys):
         raise ValueError("Neural source library version mismatch")
     steps = data.train_pixel_count // config["training"]["batch_size"]
     epochs = config["training"]["epochs"] if neural_smoke_id is None else 2
@@ -133,12 +135,13 @@ def load_representation(
     model = build_model(condition, data.fold, repeat)
     model.load_state_dict(state, strict=True)
     model.to(device).eval()
-    return NeuralRepresentation(model, device), {
+    source = {
         "kind": "neural", "mode": run["mode"], "smoke_id": neural_smoke_id,
         "weights_sha256": weight_hash, "run_sha256": _digest(results / "run.json"),
         "completion_sha256": _digest(results / "completion.json"),
-        "training_runtime": run["runtime"], "completed_epochs": epochs,
+        "training_runtime": run["execution"]["runtime"], "completed_epochs": epochs,
     }
+    return NeuralRepresentation(model, device), source
 
 
 def _transform_batch(
@@ -282,8 +285,8 @@ def run_clustering(
     )
     with fp32_inference(device):
         runtime = runtime_record(device)
-    record = {
-        "schema_version": 1, "mode": "smoke" if smoke else "clean_test_maps",
+    record = make_run_record({
+        "schema_version": 2, "mode": "smoke" if smoke else "clean_test_maps",
         "condition": condition, "fold": data.fold, "repeat": repeat,
         "cluster_counts": list(CLUSTER_COUNTS), "source": source,
         "source_pca_repeat": pca_repeat, "source_neural_smoke_id": neural_smoke_id,
@@ -295,7 +298,7 @@ def run_clustering(
                                             for name in ("clustering.py", "cluster_pipeline.py")}},
         "label_convention": "background=0; clusters=1..K; no cross-K/fold label alignment",
         "scope": "train-only bounded probe; no CV metrics" if smoke else "clean test maps; no metrics",
-    }
+    })
     results.mkdir(parents=True, exist_ok=False)
     checkpoints.mkdir(parents=True, exist_ok=False)
     _write_json(results / "run.json", record)
@@ -364,12 +367,15 @@ def check_clustering(
     run = _read_json(results / "run.json")
     completion = _read_json(results / "completion.json")
     artifacts = _read_json(experiment / "manifests/complete.json")["artifact_sha256"]
-    expected = {"schema_version": 1, "mode": "clean_test_maps", "condition": condition,
+    expected = {"schema_version": 2, "mode": "clean_test_maps", "condition": condition,
                 "fold": data.fold, "repeat": repeat, "config": experiment_config(),
                 "cluster_counts": list(CLUSTER_COUNTS), "manifest_artifact_sha256": artifacts,
                 "train_sample_ids": list(data.train_sample_ids), "train_pixels": data.train_pixel_count,
-                "test_sample_ids": list(data.test_sample_ids), "test_pixels": data.test_pixel_count}
-    if (any(run.get(key) != value for key, value in expected.items())
+                "test_sample_ids": list(data.test_sample_ids), "test_pixels": data.test_pixel_count,
+                "code_sha256": {**_code_hashes(), **{
+                    name: _digest(Path(__file__).with_name(name))
+                    for name in ("clustering.py", "cluster_pipeline.py")}}}
+    if (not matches_run(run, expected)
             or run["source_neural_smoke_id"] is not None
             or completion["status"] != "clean_test_maps_completed"
             or not completion["checks_passed"]

@@ -66,6 +66,8 @@ def _fit_recorded(trainer: ExperimentTrainer) -> None:
             "in_memory_attempted_updates": trainer.attempted_updates,
             "checkpoint": str(trainer.ckpt_dir / "last.pt"),
             "resume_rule": "Use the saved checkpoint; an interrupted epoch is replayed",
+            "runtime": trainer.run_record["execution"]["runtime"],
+            "code_sha256": trainer.run_record["execution"]["code_sha256"],
         }
         try:
             _write_json(trainer.results_dir / f"attempt_{_stamp()}.json", attempt)

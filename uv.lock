@@ -58,7 +58,7 @@ wheels = [
 
 [[package]]
 name = "chemomae"
-version = "0.2.1"
+version = "0.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
@@ -68,9 +68,9 @@ dependencies = [
     { name = "scipy" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f2/4f/8de2e7e572dd7338fd2fa15b0f4c352447dc7c9db5b7fce73fbef712db09/chemomae-0.2.1.tar.gz", hash = "sha256:c7c140556480b927c1f82325d4d904195a57b115cd3cd247ed84fea39b164f6e", size = 78770, upload-time = "2026-09-04T20:15:01.247Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/41/6d/51c3edc02bf4da6ec514865485c01cacef19014c6c1d89245766f52908c0/chemomae-0.2.2.tar.gz", hash = "sha256:2076e36768d189822fc2b71419f5a803b26ab72b9d5711e45ba5063af4bad7ae", size = 87190, upload-time = "2026-09-06T16:51:04.413Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/3c/23f13fd61617e85036d2ca97bc486543e48a7ec44f2feb2baa4820069b6a/chemomae-0.2.1-py3-none-any.whl", hash = "sha256:2e9dc5094cf290af8081012830cb9d156ccd62d6f788a074784debd66443e442", size = 79760, upload-time = "2026-09-04T20:14:59.973Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/55/afac11c6cf1a4277d460d689606070d45740e17520bc23ec7b4e8c00bd23/chemomae-0.2.2-py3-none-any.whl", hash = "sha256:aa3070d7788918df76f90fba6be36beb742aab0acc978d25a26d512f01f8ecb8", size = 81731, upload-time = "2026-09-06T16:51:03.153Z" },
 ]
 
 [[package]]
@@ -1295,7 +1295,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "chemomae", specifier = "==0.2.1" },
+    { name = "chemomae", specifier = "==0.2.2" },
     { name = "h5py", specifier = ">=3.16.0" },
     { name = "matplotlib", specifier = ">=3.11.0" },
     { name = "numpy", specifier = ">=1.24" },
