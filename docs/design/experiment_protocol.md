@@ -16,10 +16,16 @@ vMF補助実験は範囲・利用版・退化成分の扱いをFixedとし、第
 
 ## 2. 研究目的
 
-近赤外ハイパースペクトル画像から得られるSNV後スペクトルについて、
-ChemoMAEによる表現変換が、教師なし領域分割の空間的一貫性と、指定したスペクトル摂動に対する
+本研究の動機は、近赤外ハイパースペクトル画像から得られるSNV後スペクトルのマスク再構成に
+denoisingを組み合わせ、化学状態をより安定して反映する表現の学習につなげることである。
+noise・shiftはこの学習課題を作るために導入する。指定した摂動への耐性そのものの獲得を
+導入の主目的とはしない。MAEの選択、view間対応を使うSSLを今回試さない背景、およびdenoisingに
+置く仮定は[ChemoMAEの位置づけ 第1節](../chemomae_positioning.md)を参照する。
+
+実験では、ChemoMAEによる表現変換が、教師なし領域分割の空間的一貫性と、指定したスペクトル摂動に対する
 安定性をどのように変えるかを検証する。各表現空間のクラスタ分離性は、その挙動を説明する
-幾何学的診断として扱う。
+幾何学的診断として扱う。これらは表現・マップの性質を評価するものであり、
+denoisingの導入動機や、化学的な表現品質そのものの直接評価とは区別する。
 
 外部の正解劣化ラベルや独立した劣化測定による定量評価は行わない。したがって、劣化領域の検出精度、
 劣化度の推定精度、化学成分量の定量性能は本研究の検証対象に含めない。劣化との対応は、実験条件を
@@ -208,6 +214,11 @@ PCA得点のL2正規化は、本研究のcosineクラスタリングに接続す
 他の乱数系列と分離する。`random_state=None`を乱数管理不要という意味では扱わない。
 
 ChemoMAEでは`latent_normalize=True`を明示し、学習時も正規化した16次元潜在をdecoderへ入力する。
+主理由は、SNV後の全帯域スペクトルが一定normであることを踏まえ、圧縮後もnormの自由度を採用せず、
+方向に情報を集約するという設計判断である。学習時とcosineクラスタリング時に使う表現の整合性は、
+そのうえで得られる利点とする。数学的な必然や入力の角度保存を意味するものではなく、
+採用意図とSAMとの関係は[ChemoMAEの位置づけ 第3.3〜3.4節](../chemomae_positioning.md)を参照する。
+
 抽出するのは最終CLS出力を`to_latent`へ通した潜在であり、256次元CLSやpatch平均を代用しない。
 全可視抽出には`Extractor`を使用するか、`model.eval()`と全要素Trueの`visible_mask`を明示して
 `model.encoder(x, visible_mask)`を呼ぶ。`model.eval()`だけでは`ChemoMAE.forward()`の
@@ -276,6 +287,11 @@ encoder特徴から画素を復元する。本研究はCLS由来の単一の16�
 とする。導入済みpackageと同commitのモデル・augmentation・抽出・optimizer・Trainer・
 Cosine-KMeans・正規化helperのソース内容が一致することを、読み取りによって確認した。
 これは実験pipelineの動作検証を意味しない。
+
+学習augmentationは、SNVの幾何的制約に基づくcorruptionとして入力側だけに適用し、
+追加摂動前の観測SNVをtargetに保つ。ランダムマスクで選ばれた帯域への復元損失を通じて、
+全帯域にわたるdenoisingを学習する。物理化学的な生成過程や実機の誤差分布を同定した設計ではなく、
+その意図と限界は[ChemoMAEの位置づけ 第1.2〜1.3節・第2.2節](../chemomae_positioning.md)を参照する。
 
 [SpectraAugmenterの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/augmenter.py)
 を使用し、noise角度はユーザー指定の$U(0,2.5^\circ)$、shiftおよびその他の操作設定は既定値で固定する。
