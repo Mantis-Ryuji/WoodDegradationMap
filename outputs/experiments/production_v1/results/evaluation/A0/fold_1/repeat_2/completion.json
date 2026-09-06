@@ -1,0 +1,84 @@
+{
+  "status": "full_test_evaluation_completed",
+  "checks_passed": true,
+  "scope": "all test pixels and all K; no cross-fold/repeat aggregation or ARI",
+  "run_sha256": "a64f5ee7ef127914b18cb35e35a206c4e041922177822beb7aba46b3f6fb1677",
+  "scores_sha256": "d7e4f85e3b97928450acf898adece9ebd2dfa8609eb5cba16898016d200378f7",
+  "shared_inputs_sha256": "d3004aefb441eaa86c70963d9e96537a3f538371cbc279eb85e242b696ac1bcd",
+  "samples": [
+    {
+      "sample_id": "KYOw02707",
+      "sha256": "3cbbf6a9438796de5122f83797b451fa4c93642057c9c481edfe9f88616dd4e7"
+    },
+    {
+      "sample_id": "KYOw02720",
+      "sha256": "6960ff8bcb1c4ca84bbec842f25c75c207e5914ea8974be5600fc90025f6f6a5"
+    },
+    {
+      "sample_id": "KYOw02751",
+      "sha256": "9171a653b263ecb9e600b235adad02a5af0a94525e3f51b4396af7279c379a62"
+    },
+    {
+      "sample_id": "KYOw02752",
+      "sha256": "6269f95ba1a476c9c91c95942e6676ba913048ebe930b79968bfea85adf8d9ae"
+    },
+    {
+      "sample_id": "KYOw02766",
+      "sha256": "66f92ed5a2733fade25ea6901a416a42077957f5a49a471f95b6c81110e02efd"
+    },
+    {
+      "sample_id": "KYOw02769",
+      "sha256": "ce3dbaa7689e91d7608443faa51e6d2528b4d3b50c898abfaa06214ff885d336"
+    },
+    {
+      "sample_id": "KYOw02774",
+      "sha256": "2a9a9893111c2fdab0b1aabe6d66f3b9675bcf242723d65d0fb6d3c0f5372010"
+    },
+    {
+      "sample_id": "KYOw02775",
+      "sha256": "bb70c4706ae3e1b8d411d40be98673a17864235c60c162a18c298aaeda9ab239"
+    },
+    {
+      "sample_id": "KYOw02776",
+      "sha256": "f6178d5253aa9d71ba7d6047c5dc9f0239f0b6f131cd031ea9876b9f7cc7c332"
+    },
+    {
+      "sample_id": "KYOw16719",
+      "sha256": "20cff32daf97dc7167fd7ab7dbb1575f155fed96ed07def3377514ba387823d5"
+    }
+  ],
+  "silhouette": [
+    {
+      "k": 2,
+      "sha256": "b7f35a22bd1ecfdc5d43fcd9b9c95e841bd2269dbe8584335d9324536b4a6970"
+    },
+    {
+      "k": 4,
+      "sha256": "2e99421169549adfaa982a6d66d12c04d0538531a80f0e27827184b10829364c"
+    },
+    {
+      "k": 6,
+      "sha256": "876caaed9ec7bf427163d53bbef39a463edbc08c33c0140570b42cf3dbbdb35f"
+    },
+    {
+      "k": 8,
+      "sha256": "0870f4ba3c051b276b8ee6d5bacb738ffd576394b03c676197ae0037d2c87c7f"
+    },
+    {
+      "k": 10,
+      "sha256": "e5f8fd3dcd0b8433ef4bcfc98cfee081471aa7beb9b62a389a6e9f1149782ab0"
+    },
+    {
+      "k": 12,
+      "sha256": "247050f6f8a1a1678987a4f775312fdaca2fa0292483a06f1004e5bd58db5276"
+    },
+    {
+      "k": 14,
+      "sha256": "ff4f3617d40a0796d6e6cc46598235b04501842fea4adcd753ffa23bcec39fa8"
+    }
+  ],
+  "wall_seconds": 474.94226199999684,
+  "timing_scope": "joint evaluation elapsed to this consumer's save; excludes source validation",
+  "peak_gpu_allocated_bytes": 393111552,
+  "peak_gpu_reserved_bytes": 591396864
+}
