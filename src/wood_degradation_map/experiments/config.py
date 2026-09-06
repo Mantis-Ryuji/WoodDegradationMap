@@ -88,10 +88,10 @@ def experiment_config() -> dict[str, object]:
             "fit_scope": "shared train pixels", "additional_autoscaling": False,
         },
         "chemomae": {
-            "version": "0.2.1", "seq_len": 256, "d_model": 256, "nhead": 8,
+            "version": "0.2.2", "seq_len": 256, "d_model": 256, "nhead": 8,
             "num_layers": 8, "dim_feedforward": 1024, "dropout": 0.0,
             "n_patches": 16, "latent_dim": 16, "latent_normalize": True,
-            "decoder_num_layers": 1, "initialization": "ChemoMAE 0.2.1 defaults",
+            "decoder_num_layers": 1, "initialization": "ChemoMAE 0.2.2 defaults",
         },
         "training": {
             "epochs": 800, "batch_size": 1024, "world_size": 1, "accum_iter": 1,
@@ -118,7 +118,7 @@ def experiment_config() -> dict[str, object]:
         "clustering": {
             "K": list(CLUSTER_COUNTS), "K0": 8, "max_iter": 500, "tol": 1e-4,
             "initializations_per_fit": 1, "dtype": "float32", "device": "cuda",
-            "normalization_eps": 1e-6, "other_settings": "ChemoMAE 0.2.1 defaults",
+            "normalization_eps": 1e-6, "other_settings": "ChemoMAE 0.2.2 defaults",
             "fit_scope": "shared train pixels", "test_centers": "fixed",
         },
         "evaluation": {

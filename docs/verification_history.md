@@ -113,7 +113,7 @@ Windowsの `PermissionError` が発生した。保存済み `last.pt`、一時�
 SHA-256が一致することを確認し、同じcheckpointを明示してepoch 27から再開した。失敗attemptと完了attemptは
 両方保存され、最終completionと重みのhashも一致した。
 
-### 5.2 Clustering・評価
+### 5.2 A0のclustering・評価
 
 各反復でfold 1のtest 10試料・906,428画素を処理し、事前固定した
 $K\in\{2,4,6,8,10,12,14\}$ が揃った。runは `checks_passed=true`、既存成果物のcheckはclustering・
@@ -125,10 +125,41 @@ $K\in\{2,4,6,8,10,12,14\}$ が揃った。runは `checks_passed=true`、既存�
 | 2 | 81.81 s | 255.81 / 388.00 MiB | 474.94 s | 374.90 / 564.00 MiB | 124.25 MiB |
 | 3 | 71.12 s | 255.81 / 388.00 MiB | 467.34 s | 374.90 / 564.00 MiB | 123.76 MiB |
 
-保存量は各反復のneural・clustering・evaluationのresultsとcheckpointディレクトリを合計した値で、
-3反復合計は371.92 MiBである。共有入力hashは3反復で
+保存量は2026-09-06の完了時点で各反復のneural・clustering・evaluationのresultsとcheckpointディレクトリを
+合計した値で、3反復合計は371.92 MiBである。同時点の共有入力hashは3反復で
 `d3004aefb441eaa86c70963d9e96537a3f538371cbc279eb85e242b696ac1bcd` と一致した。これは実行・保存契約の
 確認であり、A0の性能評価や条件間比較ではない。性能は必要な全fold・反復が揃ったOOF snapshotで評価する。
+
+### 5.3 M00・fold 1・repeat 1
+
+2026-09-07、学習、全7Kのclustering、全test評価と各checkを完了した。
+ユーザーから両runの`checks_passed=true`と、各checkの`validated_existing_clustering`・
+`validated_existing_evaluation`の確認が共有された。Codexは保存済みのrun・completionを読み取り、
+以下の記録と一致することを確認した。学習の実行版はChemoMAE v0.2.1、clustering・評価はv0.2.2である。
+
+| 項目 | completion記載値 |
+| --- | ---: |
+| status | `training_completed` |
+| completed epochs | 800 |
+| attempted updates | 249,600 |
+| optimizer updates | 249,501 |
+| nonzero LR updates | 249,500 |
+| AMP skips | 99 |
+| training seconds | 9,701.8195 |
+
+completion記載のweights SHA-256は
+`113e42b9a4498331662a42ff55a6314be7edf3150e065b727198000f04ac8fd3`である。
+現行のsource検証で、読込条件と重みファイルのhashの一致を確認した。
+
+clustering・評価はtest 10試料・906,428画素と$K\in\{2,4,6,8,10,12,14\}$を対象とした。
+
+| 工程 | runのstatus | wall time | peak allocated / reserved |
+| --- | --- | ---: | ---: |
+| clustering | `clean_test_maps_completed` | 83.97 s | 255.81 / 388.00 MiB |
+| 全test評価 | `full_test_evaluation_completed` | 521.72 s | 374.90 / 564.00 MiB |
+
+現行形式の共有入力SHA-256は`9e312f38b298c66f4fa0b7a33bb6063d6cae655aca0a17f9026b019913a17368`で、
+A0の3反復と一致した。これは入力・保存条件の確認であり、条件間の性能比較はOOF集計で行う。
 
 ## 6. 本文代表試料
 
@@ -146,3 +177,58 @@ $K\in\{2,4,6,8,10,12,14\}$ が揃った。runは `checks_passed=true`、既存�
 
 選択規則、metadataとmanifestのSHA-256、解釈上の制約は
 [design/visualization_and_interpretation.md](design/visualization_and_interpretation.md)第4.2節に記録した。
+
+<a id="chemomae-022-validation"></a>
+
+## 7. 実行環境と成果物形式の更新
+
+### 7.1 ChemoMAE v0.2.2の採用
+
+2026-09-07、実行環境をChemoMAE v0.2.2へ更新した。
+[v0.2.1](https://github.com/Mantis-Ryuji/ChemoMAE/commit/942804a176750e4f79ee530ca650e0e317efbf90)
+から[v0.2.2](https://github.com/Mantis-Ryuji/ChemoMAE/commit/4ec7f6acecb82035c85001f5aee508910d40adac)
+へのPythonソース差分は`_version.py`と`clustering/vmf_mixture.py`だけだった。
+主実験で使うモデル・loss・Trainer・augmentation・Cosine-KMeans・正規化・silhouetteのソースは同一で、
+導入済みv0.2.2の対象20ファイルともCRLFをLFへ揃えたhashが一致した。依存変更はChemoMAEだけだった。
+
+モデル、loss、augmentation、800 epoch、split、seed、共通K、指標は変更していない。
+vMFの735 fitsは合意済みの補助工程であり、ニューラル再学習を追加せず、主実験のCosine-KMeansも維持する。
+
+### 7.2 更新直後の検証結果
+
+2026-09-07、ユーザーが次のコマンドを実行し、終了code 0と出力を共有した。Codexは再実行していない。
+
+| 確認 | ユーザー実行結果 |
+| --- | --- |
+| `uv run pytest tests/experiments -q` | **383 passed、43 warnings、98.25秒** |
+| `prepare_manifests.py check --experiment-id production_v1` | `validated_existing_manifest`、49試料、5-fold |
+| `evaluate_representations.py check --conditions A0 --fold 1 --repeats 1 2 3` | 3反復すべて`validated_existing_evaluation` |
+
+manifestはfold 1–4でtrain 39試料・319,488画素、fold 5で40試料・327,680画素だった。
+A0は各反復でtest 10試料・906,428画素、$K\in\{2,4,6,8,10,12,14\}$を確認した。
+共有入力SHA-256は3反復とも
+`d3004aefb441eaa86c70963d9e96537a3f538371cbc279eb85e242b696ac1bcd`で、移行前の記録と同じだった。
+43 warningsはTransformerの`norm_first=True`に伴うnested tensorの通知で、テストの失敗はなかった。
+
+この383件は環境更新直後のコードに対する結果であり、次節の成果物形式統一後の全体テスト結果とは区別する。
+A0の再学習・評価値の再計算は行っていない。vMFのfitと数値検証は未実行である。
+
+<a id="artifact-format-migration"></a>
+
+### 7.3 成果物形式の統一（完了）
+
+2026-09-07、ユーザーが移行のplan・apply・checkを実行し、すべて終了code 0で成功した。
+事前の移行用テストは**11 passed、1 warning、4.43秒**だった。
+
+対象はA0・fold 1・repeat 1–3の学習・clustering・評価と、M00・fold 1・repeat 1の完了済み学習である。
+対象183ファイルのうち、50ファイルの保存形式とhash参照を更新した。
+学習時の由来はChemoMAE v0.2.1のまま、読込条件はv0.2.2に統一した。再学習は0 runsで、
+重み・checkpointの数値state・クラスタ中心・map・評価値は保持された。
+
+移行時の最終checkは`validated_artifact_migration`、`archive_preserved=true`、
+`current_checks_passed=true`だった。現行形式でmanifest、A0の3反復の評価、M00の重みを検証した。
+
+検証後、移行専用コード・専用テスト・操作手順を撤去し、ユーザーの判断で退避コピーと移行監査JSONも削除した。
+通常コードは現行形式のみを扱い、実行時の由来は各`run.json`の`execution`に残る。
+現行形式の検証テストは[通常のテスト](../tests/experiments/test_records.py)として保持する。
+既存A0の再評価は不要であり、M00のclustering・評価も同じ本番rootで完了した（第5.3節）。

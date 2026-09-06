@@ -2,12 +2,17 @@
 
 ## 1. ステータス
 
-**Fixed（第11.2節は実行前の確認・記録事項）**
+主実験・mask率補助実験の研究条件は**Fixed**とする。
+vMF補助実験は範囲・利用版・退化成分の扱いをFixedとし、第5.2.3節の数値仕様・実装事項は**Open**とする。
+第11.2節は実行前の確認・記録事項である。
 
 前処理は200 Hzのみを使用する固定仕様とし、詳細は
 [preprocessing.md](preprocessing.md)で管理する。
 本書のraw SNVは、本番前処理済みの256次元SNVを表現変換せず直接使用するbaselineを指し、
 センサのraw強度を意味しない。
+
+実行環境はChemoMAE v0.2.2とする。各runの設定・環境・source hashを成果物に記録する。
+実施済みの確認と環境変更の経緯は[検証履歴](../verification_history.md)で管理する。
 
 ## 2. 研究目的
 
@@ -151,7 +156,7 @@ LFR評価では別途、固定モデルに対する評価摂動を明示的に�
 | M01 | Shift-MAE | 50% | なし | あり | shiftの単独効果 |
 | M11 | Aug-MAE | 50% | あり | あり | 提案条件 |
 
-A0はChemoMAE v0.2.1の全領域再構成lossを使用する。
+A0はChemoMAE v0.2.2の全領域再構成lossを使用する。
 `ChemoMAE(n_mask=0)`と`TrainerConfig(loss_region="all")`を組み合わせ、
 全パッチをencoderへ入力してclean targetの全スペクトルに再構成lossを計算する。
 M00を含むMAE条件では`loss_region="masked"`を使用する。
@@ -221,7 +226,7 @@ silhouetteを各表現空間の診断とする方針は維持する。SNV入力�
 #### 4.1.2 ChemoMAEの構成と初期化（Fixed）
 
 ユーザー提示のencoder構成と確認済みの線形1層decoderを共通構成とする。
-16次元出力・全可視抽出は前節に従う。dropoutは0.0、初期化はChemoMAE v0.2.1の既定動作を採用する。
+16次元出力・全可視抽出は前節に従う。dropoutは0.0、初期化はChemoMAE v0.2.2の既定動作を採用する。
 
 | 設定 | 採用値 |
 | --- | --- |
@@ -238,7 +243,7 @@ silhouetteを各表現空間の診断とする方針は維持する。SNV入力�
 この構成ではA0、mask率25%・50%・75%の`n_mask`はそれぞれ0、4、8、12となる。
 全可視ではCLSを含め17 token、主比較の50% maskでは9 tokenをencoderへ入力する。
 
-[ChemoMAE v0.2.1のモデル実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/942804a176750e4f79ee530ca650e0e317efbf90/src/chemomae/models/chemo_mae.py)
+[ChemoMAE v0.2.2のモデル実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/models/chemo_mae.py)
 では`decoder_num_layers=1`は`Linear(16, 256)`であり、Transformer decoderの1層ではない。
 この場合、再構成は$\hat{x}=Wz+b$で、出力集合は高々16次元のアフィン部分空間に含まれる。
 さらに潜在の単位norm制約がある。非線形encoderから線形に復元可能な表現を学ぶ設計として扱い、
@@ -251,7 +256,7 @@ encoder特徴から画素を復元する。本研究はCLS由来の単一の16�
 この構成のパラメータ数は、実装の各層からの計算でencoder 6,331,152、decoder 4,352、合計6,335,504である。
 モデルを実行して得た計測値ではない。dropout=0.0の最適性を検証したという意味ではない。
 
-初期化は、導入済みChemoMAE v0.2.1とPyTorch 2.13.0のソースで次の動作を確認し、そのまま採用する。
+初期化は、導入済みChemoMAE v0.2.2とPyTorch 2.13.0のソースで次の動作を確認し、そのまま採用する。
 
 - CLS tokenと学習可能な位置埋め込みはChemoMAEが`nn.init.trunc_normal_(..., std=0.02)`で初期化する。
 - patch projection、`to_latent`、線形decoderなどは`nn.Linear`の既定初期化を使う。
@@ -266,13 +271,13 @@ encoder特徴から画素を復元する。本研究はCLS由来の単一の16�
 
 #### 4.1.3 参照実装とaugmentation・クラスタリングの確認
 
-参照版はプロジェクトが固定するChemoMAE v0.2.1、commit
-[`942804a176750e4f79ee530ca650e0e317efbf90`](https://github.com/Mantis-Ryuji/ChemoMAE/commit/942804a176750e4f79ee530ca650e0e317efbf90)
+参照版はプロジェクトが固定するChemoMAE v0.2.2、commit
+[`4ec7f6acecb82035c85001f5aee508910d40adac`](https://github.com/Mantis-Ryuji/ChemoMAE/commit/4ec7f6acecb82035c85001f5aee508910d40adac)
 とする。導入済みpackageと同commitのモデル・augmentation・抽出・optimizer・Trainer・
 Cosine-KMeans・正規化helperのソース内容が一致することを、読み取りによって確認した。
 これは実験pipelineの動作検証を意味しない。
 
-[SpectraAugmenterの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/942804a176750e4f79ee530ca650e0e317efbf90/src/chemomae/training/augmenter.py)
+[SpectraAugmenterの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/augmenter.py)
 を使用し、noise角度はユーザー指定の$U(0,2.5^\circ)$、shiftおよびその他の操作設定は既定値で固定する。
 以下は参照用の候補ではなく、主比較・mask率補助実験・全体学習に共通の採用設定である。
 
@@ -296,7 +301,7 @@ LFRにも同じ角度分布・shift幅・操作設定を使用し、評価対象
 nmへの換算には保存済み波長間隔を使用し、波数軸の等間隔shiftとは記述しない。
 noiseのGaussianは方向の生成方法を指し、回転角の分布や最終的な加算残差がGaussianという意味ではない。
 
-[Cosine-KMeansの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/942804a176750e4f79ee530ca650e0e317efbf90/src/chemomae/clustering/cosine_kmeans.py)
+[Cosine-KMeansの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/clustering/cosine_kmeans.py)
 の既定アルゴリズム・停止設定を採用する（Fixed）。実装から確認した値は次のとおりである。
 
 | 設定 | 採用値・動作 |
@@ -377,8 +382,8 @@ $$
 
 とする。原論文のeffective batch size 4096を勾配蓄積で再現する設定ではない。
 複数GPUへ移行する場合は、GPU数・effective batch size・学習率を一体として再指定する。
-batch size 1024でGPUメモリに収まることは未検証であり、メモリ不足を理由に実装がbatch sizeや
-accumulationを暗黙に変更しない。
+batch size 1024での実行記録は[検証履歴](../verification_history.md)に残す。
+メモリ不足を理由に実装がbatch sizeやaccumulationを暗黙に変更しない。
 
 epoch進捗を$u=e+j/S_f$（$e$は0始まりのepoch、$j$は0始まりのbatch index）として、
 [公式scheduler](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/util/lr_sched.py)
@@ -423,13 +428,13 @@ ImageNetの画像augmentation、RGB正規化、追加のpatch内target正規化�
 ViT-Lなどのモデル構成・初期化を一括して転記せず、ChemoMAEの構成は第4.1.2節に従う。
 dropoutと初期化も第4.1.2節でFixedとした。16次元出力と全可視抽出は第4.1.1節に従う。
 
-ChemoMAE v0.2.1の
-[Trainer](https://github.com/Mantis-Ryuji/ChemoMAE/blob/942804a176750e4f79ee530ca650e0e317efbf90/src/chemomae/training/trainer.py)
+ChemoMAE v0.2.2の
+[Trainer](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/trainer.py)
 を使う場合は`amp_dtype="fp16"`、`grad_clip=None`、`use_ema=False`を明示する。
 既定のBF16・clipping 1.0・EMA有効では本節と一致しない。独立runは`resume_from=None`で開始し、
 再開時は同じrunのcheckpointを明示する。別条件・別反復からの自動resumeを行わない。
 
-[optimizer・scheduler helper](https://github.com/Mantis-Ryuji/ChemoMAE/blob/942804a176750e4f79ee530ca650e0e317efbf90/src/chemomae/training/optim.py)
+[optimizer・scheduler helper](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/optim.py)
 にも差がある。`build_optimizer`はbias・LayerNormに加えてCLS tokenと学習可能な位置埋め込みを
 weight decayから除外する。既存の`build_scheduler`はwarmupに`step + 1`を使い、
 Trainerはbatch更新後にschedulerを進めるため、本節の0から始まる学習率列と完全一致しない。
@@ -466,7 +471,9 @@ $$
 LLAとLFRは改善方向が逆である。contrastは指標の元の尺度で示し、正負の意味を明記する。
 交互作用はこの指標・この強度設定に対する記述であり、augmentationの一般的な相乗効果とは断定しない。
 
-## 5. mask率の補助実験
+## 5. 補助実験
+
+### 5.1 mask率の補助実験
 
 提案条件M11について、mask率25%、50%、75%を比較する。
 
@@ -482,6 +489,95 @@ M11-50は主比較のM11と同一条件であり、新たな条件として重�
 fold、共通K集合、学習budget、3反復のseed一覧および評価指標は主比較と同一にする。
 
 Gaussian noiseのみ、shiftのみの条件ではmask率sweepを行わない。
+
+<a id="vmf-supplementary"></a>
+
+### 5.2 vMF mixtureによるクラスタリング手法の補助実験
+
+目的は、**同じ学習済み表現でクラスタリング方法をCosine-KMeansからvMF mixtureへ変えても、
+第4.3節の条件間比較の結論が保たれるか**を調べることである。主実験ではCosine-KMeansを使い、
+vMFはクラスタリング方法への感度を調べる補助実験として報告する。encoderの再学習は行わない。
+
+2026-09-07に、以下の範囲・利用版・退化成分の扱いをユーザーが確定した。
+これはA0の一部run完了後の追加決定であり、全実験の開始前から固定していたとは記述しない。
+vMFのtest結果を見る前に、残る数値仕様を確定する。
+
+#### 5.2.1 実施範囲と共有する入力（Fixed）
+
+| 項目 | 採用内容 |
+| --- | --- |
+| 条件 | B0、B1、A0、M00、M10、M01、M11 |
+| fold・反復・K | 主実験と同じ5-fold × 3 repeats × $\{2,4,6,8,10,12,14\}$ |
+| vMF fit | $7\times5\times3\times7=735$ 組合せ、各1回 |
+| 初期化 | train表現のcosine kmeans++型。対応するfold・repeat・Kの既存の`kmeans_seed`を使用 |
+| 比較対象 | 同じ条件・fold・repeat・KのCosine-KMeans結果 |
+| 追加する表現学習 | 0回。完了済みの重みとPCAを再利用 |
+| 利用版 | ChemoMAE v0.2.2 |
+
+主7条件により、M11対B0・B1・M00、M00対A0、augmentationの2×2比較を同じ範囲で確認する。
+M11-25・M11-75への適用と、全試料での解釈用vMF fitは含めない。
+追加restart、最良seed選択、既存KMeansの最終中心からのwarm startは行わない。
+条件間でseedを共有しても、異なるアルゴリズム間で初期方向や乱数消費が一致するとは仮定しない。
+3反復は主実験の反復と対応し、vMFの追加restartではない。
+
+前処理・49試料・KYOw単位splitは第3節、表現は第4.1.1節を継承する。
+
+- trainは既存の共通抽出座標（各試料$q=8192$）、testは全有効画素を使い、vMF用に抽出し直さない。
+- B0は256次元SNVの単位表現、B1は固定train PCAの16次元単位表現を使う。
+  PCAのsolverと反復間再利用は元のfit記録に従う。
+- ニューラル条件は対応するfold・repeatの800 epoch完了時の最終重みを使用する。
+  通常抽出は全可視・augmentationなし・FP32、16次元・L2正規化とする。
+- 保存済み表現を再利用できる場合も、元の重み・前処理・抽出実装との対応を検証する。
+  再抽出は許容するが、モデル・PCAの再fitは行わない。
+- 主実験で無効とする入力・非有限値・ゼロnormを、vMFだけで除外・有効化しない。
+
+#### 5.2.2 モデルと退化成分（Fixed）
+
+単位球面上の成分ごとの中心方向・集中度・混合比を推定するsoft EM型のvMF mixtureとする。
+これらはtrain表現だけでfitし、clean test・摂動testでは固定する。testごとの再fitや混合比の更新は行わない。
+hard labelは最大posterior責務の成分とし、背景0・クラスタ1〜Kの規約へ変換する。
+成分番号を条件・fold・反復をまたぐ共通の化学ラベルとはみなさない。
+([Banerjee et al., 2005](https://jmlr.org/papers/v6/banerjee05a.html))
+
+退化成分は次のように扱う。
+
+| 状態 | 方向・集中度の更新 |
+| --- | --- |
+| 責務総和がゼロ | 直前の方向と集中度を保持 |
+| 責務総和が正、方向の重み付き和が厳密にゼロ | 直前の単位方向を保持し、集中度を`kappa_min`へ下げる |
+
+ゼロ判定はepsilon clamp前に行う。混合比は既存の責務に基づく更新を維持し、
+小クラスタの削除・再初期化の閾値は追加しない。`kappa_min`の数値は次節で固定する。
+方向・集中度・混合比と、その有限性・正規化・退化の状態をfit記録に残す。
+
+#### 5.2.3 数値仕様と実装上の未決定事項（Open）
+
+[v0.2.2のvMF実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/clustering/vmf_mixture.py)
+は導入済みだが、本リポジトリのvMF pipelineは未実装・未実行である。
+主実験の工学的な動作確認に加えて、vMF自体の数値・動作検証を行う。
+
+| 項目 | 実施前に確定・確認する内容 |
+| --- | --- |
+| 数値計算 | 安定な`logC`、集中度更新、許容誤差、内部dtype・device。16次元・256次元で参照値と比較 |
+| EM設定 | 集中度の初期値・範囲、最大反復、停止基準、尤度減少・未収束の扱い |
+| 初期化の実装 | CPU乱数方針とdevice整合、chunkによる初期化集合への影響。seed・初期化回数は第5.2.1節を維持 |
+| 修正版の検証 | 数値関数・公開helper・初期化・最終尤度・保存復元・退化成分の修正確認、CPU小規模・chunk・GPU最小検証 |
+| 永続化・CLI | 独立した保存root・schema、元の成果物の検証、fit・評価・check・OOFのインターフェース |
+
+未決定の数値条件をライブラリの既定値で暗黙に埋めて実行しない。
+修正検証とユーザー確認を経て本節に値を固定し、別途実装・実行へ進む。
+評価と比較の読み方は[評価指標第8.4節](evaluation_metrics.md#vmf-evaluation)を正とし、
+新しい研究仮説・条件・指標を数値仕様の確定に混ぜない。
+
+#### 5.2.4 実施順序と成果物
+
+数値仕様の確定・小規模検証・pipeline実装を済ませ、本番CV後に735組合せをfit・評価する。
+入力・重み・PCA・Cosine-KMeans結果との対応とsource hashを検証し、
+実行時間・メモリ・保存量、完了・失敗・未定義値を記録する。
+全条件・fold・反復・Kの完全性を確認してから、独立したOOF集計として報告する。
+
+主実験のconfig・manifest・completion・評価結果は保持し、補助実験には独立した設定・結果・完了記録を持たせる。
+再利用する成果物には元のconfig・runtime・source hashを保持する。
 
 ## 6. 共通クラスタ数とK依存性
 
@@ -597,6 +693,10 @@ PCA、モデル構成・初期化、augmentation、Cosine-KMeans、抽出・評�
 | manifest | fold割当、抽出座標、反復IDとseedの対応、全体学習用の画素集合 |
 | 実行環境 | GPU機種、実際に使用したlibrary version、学習AMP・抽出評価FP32・評価TF32無効の設定、seedと決定性の実設定、PCAの実solver、library既定epsilonと単位norm誤差 |
 | 学習処理 | 第4.2節のrecipeとの整合、run別のcheckpoint、予定・実更新回数、AMP skip回数、実行時間 |
+
+学習・clustering・評価のrun記録はschema 2とし、`contract`に現行の読込条件、`execution`に
+実際の実行時config・runtime・source hashを保存する。読込条件は完全一致で検証し、実行由来と区別する。
+中断再開ではrun記録全体が同じであることを要求する。
 
 本文用の表示例の基準・試料IDは可視化文書、任意の形状診断を採用する場合の定義は評価文書で管理する。
 2026-09-06、本文表示例は各樹種の保存有効画素数が最大の7試料に固定した（可視化文書第4.2節）。

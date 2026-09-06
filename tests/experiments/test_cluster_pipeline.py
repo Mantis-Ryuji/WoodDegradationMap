@@ -19,6 +19,7 @@ from wood_degradation_map.experiments.data import FoldData, SpectrumInputError
 from wood_degradation_map.experiments.input_validation import InputInventory, SampleInput
 from wood_degradation_map.experiments.manifests import _digest, _read_json, _write_json, create_cv_manifest
 from wood_degradation_map.experiments.neural import TorchRandomStream, extract_full_visible
+from wood_degradation_map.experiments.records import make_run_record
 from wood_degradation_map.experiments.training import _code_hashes, runtime_record
 
 CPU = torch.device("cpu")
@@ -218,8 +219,8 @@ def neural_source(
         torch.save(model.state_dict(), weights)
         steps = data.train_pixel_count // 4
         updates = 4 if smoke else steps * 800
-        _write_json(results / "run.json", {
-            "schema_version": 1, "mode": "smoke" if smoke else "training",
+        _write_json(results / "run.json", make_run_record({
+            "schema_version": 2, "mode": "smoke" if smoke else "training",
             "smoke_id": "fixture" if smoke else None, "smoke_batches_per_epoch": 2 if smoke else None,
             "condition": "M11", "fold": 1, "repeat": 1, "config": fixture_config(),
             "train_sample_ids": list(data.train_sample_ids), "train_pixels": data.train_pixel_count,
@@ -228,7 +229,7 @@ def neural_source(
             "manifest_artifact_sha256": {"fixture": "fixed"},
             "seeds": {purpose: run_seed(purpose, 1, 1)
                       for purpose in ("model_init", "pixel_order", "mask", "train_aug")},
-        })
+        }))
         _write_json(results / "completion.json", {
             "status": "smoke_fit_completed" if smoke else "training_completed",
             "completed_epochs": 2 if smoke else 800, "attempted_updates": updates,
@@ -268,7 +269,8 @@ def test_neural_rejects_wrong_run_before_model_loading(
     directory, data, _, _ = neural_source
     path = directory / "results/neural/M11/fold_1/repeat_1/run.json"
     run = _read_json(path)
-    run[field] = value
+    section = run["contract"] if field in ("config", "code_sha256") else run
+    section[field] = value
     path.write_text(json.dumps(run), encoding="utf-8")
     with pytest.raises(ValueError, match="mismatch"):
         pipeline.load_representation(directory, data, "M11", 1, device=CPU)

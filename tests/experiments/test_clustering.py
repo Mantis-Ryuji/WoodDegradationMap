@@ -122,7 +122,7 @@ def test_reference_fit_once_and_fixed_centers_survive_save_load(
     np.testing.assert_array_equal(restored.centroids, centers)
     assert calls == 1
     assert fitted.record.iterations is None
-    assert fitted.record.stop_reason == "not_exposed_by_ChemoMAE_0.2.1"
+    assert fitted.record.stop_reason == "not_exposed_by_ChemoMAE_0.2.2"
     for mismatch in ({"repeat": 2}, {"fold": 2}, {"k": 4}, {"condition_id": "B1"}):
         arguments = {"condition_id": "B0", "fold": 1, "repeat": 1, "k": 2, **mismatch}
         with pytest.raises(ValueError, match="mismatch"):

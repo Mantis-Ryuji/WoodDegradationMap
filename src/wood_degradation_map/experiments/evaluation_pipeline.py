@@ -30,6 +30,7 @@ from .lfr import LFRAccumulator, PixelLabels, accumulate_lfr_block
 from .manifests import _digest, _read_json, _write_json
 from .neural import fp32_inference
 from .perturbations import DRAW_KEYS, SharedPerturbations
+from .records import make_run_record, matches_run
 from .spatial_metrics import local_label_agreement
 from .training import _code_hashes as training_code_hashes, runtime_record
 
@@ -134,8 +135,8 @@ def run_evaluation(
             created.append(results)
             (results / "samples").mkdir()
             (results / "silhouette").mkdir()
-            _write_json(results / "run.json", {
-                "schema_version": 1, "mode": "full_test_evaluation", "condition": condition,
+            _write_json(results / "run.json", make_run_record({
+                "schema_version": 2, "mode": "full_test_evaluation", "condition": condition,
                 "fold": data.fold, "repeat": repeat, "config": experiment_config(),
                 "test_sample_ids": list(data.test_sample_ids), "test_pixels": data.test_pixel_count,
                 "manifest_artifact_sha256": artifacts, "code_sha256": _code_hashes(),
@@ -145,7 +146,7 @@ def run_evaluation(
                 "chunk_pixels": chunk_pixels, "silhouette_chunk_pixels": silhouette_chunk_pixels,
                 "retained_cpu_feature_bytes_all_consumers": feature_bytes,
                 "memory_scope": "excludes models, maps, coordinate arrays and silhouette workspace",
-            })
+            }))
             consumers.append(_Consumer(condition, repeat, results, maps, representation,
                                        clusters, {}, [], []))
 
@@ -193,7 +194,7 @@ def run_evaluation(
                                                          f"repeat={consumer.repeat}, K={k}")
                         consumer.features[sample_id][rows] = predicted.values
                 shared_inputs.append({
-                    "generation": generator.record(), "clean_sha256": clean_hash.hexdigest(),
+                    "generation_contract": generator.record(), "clean_sha256": clean_hash.hexdigest(),
                     "coordinates_sha256": coordinate_hash.hexdigest(),
                     "draws_sha256": [{"kind": kind, "draw": draw, "sha256": digest.hexdigest()}
                                     for (kind, draw), digest in draw_hashes.items()],
@@ -320,14 +321,14 @@ def check_evaluation(
     check_clustering(experiment, data, inventory, condition, repeat, device=torch.device("cpu"))
     results, maps, _ = _paths(experiment, condition, data.fold, repeat)
     run, done = _read_json(results / "run.json"), _read_json(results / "completion.json")
-    expected = {"schema_version": 1, "mode": "full_test_evaluation", "condition": condition,
+    expected = {"schema_version": 2, "mode": "full_test_evaluation", "condition": condition,
                 "fold": data.fold, "repeat": repeat, "config": experiment_config(),
                 "test_sample_ids": list(data.test_sample_ids), "test_pixels": data.test_pixel_count,
                 "manifest_artifact_sha256": _read_json(experiment / "manifests/complete.json")["artifact_sha256"],
                 "code_sha256": _code_hashes(),
                 "clustering_completion_sha256": _digest(maps / "completion.json"),
                 "source": _read_json(maps / "run.json")["source"]}
-    if (any(run.get(key) != value for key, value in expected.items())
+    if (not matches_run(run, expected)
             or done.get("status") != "full_test_evaluation_completed" or done.get("checks_passed") is not True
             or (results / "failure.json").exists()):
         raise ValueError("Evaluation completion/run/source mismatch")
@@ -338,17 +339,17 @@ def check_evaluation(
             or [row["k"] for row in done["silhouette"]] != list(CLUSTER_COUNTS)):
         raise ValueError("Evaluation sample/K coverage mismatch")
     shared = _read_json(results / "shared_inputs.json")["samples"]
-    if [row["generation"]["sample_id"] for row in shared] != list(data.test_sample_ids):
+    if [row["generation_contract"]["sample_id"] for row in shared] != list(data.test_sample_ids):
         raise ValueError("Shared input sample coverage mismatch")
     samples = {sample.sample_id: sample for sample in inventory.samples}
     for row in shared:
-        sample_id = row["generation"]["sample_id"]
+        sample_id = row["generation_contract"]["sample_id"]
         expected_generation = SharedPerturbations(
             sample_id, samples[sample_id].saved_pixel_count,
-            device=torch.device(run["runtime"]["device"]),
+            device=torch.device(run["contract"]["runtime"]["device"]),
         ).record()
         draws = row["draws_sha256"]
-        if (row["generation"] != expected_generation
+        if (row["generation_contract"] != expected_generation
                 or [(item["kind"], item["draw"]) for item in draws] != list(DRAW_KEYS)):
             raise ValueError("Shared input generation/draw contract mismatch")
         digests = [row["clean_sha256"], row["coordinates_sha256"],

@@ -97,7 +97,7 @@ $$
 - test集合の単一クラスタ割当とtrainでの学習collapseは区別する。train/testのoccupancyを確認せず、
   未定義silhouetteだけで学習collapseと断定しない。
 
-実装にはChemoMAE v0.2.1の
+実装にはChemoMAE v0.2.2の
 `silhouette_samples_cosine_gpu`を使用する。この関数はcosine距離の$N\times N$行列を作らず、
 cluster統計とchunk処理を用いてexactなsilhouetteを計算する。
 chunk sizeは計算結果を変えない実装パラメータとして扱う。
@@ -222,7 +222,7 @@ $$
 | shift | `noise_prob=0`, `shift_prob=1` |
 | noise + shift | `noise_prob=1`, `shift_prob=1` |
 
-shiftはChemoMAE v0.2.1の既定設定を採用し、$\delta\sim U(-2,2)$チャネル、線形補間と端点値の延長を使う。
+shiftはChemoMAE v0.2.2の既定設定を採用し、$\delta\sim U(-2,2)$チャネル、線形補間と端点値の延長を使う。
 noiseはGaussian乱数由来の接方向への回転で、角度は$\theta\sim U(0,2.5^\circ)$に固定する。
 `noise_angle_deg_range=(0.0, 2.5)`を明示し、package既定の角度範囲で代用しない。
 操作順はbatchごとにランダム化し、各操作後に画素内平均を0、normを操作前の値へ戻す。
@@ -359,6 +359,42 @@ $$
 - 指標間で結論が異なる場合は、総合順位に潰さずtrade-offとして報告する。
 - LLA=1またはLFR=0だけを良好な結果とみなさず、cluster occupancyと合わせてcollapseを確認する。
 - Hungarian matchingは全体可視化にだけ用い、CV指標の計算には使用しない。
+
+<a id="vmf-evaluation"></a>
+
+### 8.4 vMFクラスタリング補助実験への適用
+
+[実験プロトコル第5.2節](experiment_protocol.md#vmf-supplementary)のvMF補助実験にも、
+本書の有効画素・指標・未定義値・集計規約を適用する。最大posterior責務によるhard labelを
+背景0・クラスタ1〜Kへ変換し、同じtest全画素と共通の評価摂動で比較する。
+
+| 区分 | 評価・報告 |
+| --- | --- |
+| 主評価 | LLA-3/5/9、noise・shift・両方のLFR |
+| 評価摂動 | 各種類5 draws。入力側の摂動実現値・seed・画素対応をCosine-KMeansと共有 |
+| 診断 | cosine-silhouette、補正LLA、反復間ARI、occupancy、使用クラスタ数、有効対象数 |
+| 集計 | OOF試料macro、試料間SDと3反復間SDの分離、既定のpaired比較 |
+| 表示 | $K_0=8$の表と全7Kの曲線。K方向の平均・最大値による総合順位は作らない |
+
+cosine-silhouetteは同じ表現のcosine距離とvMFのhard labelから計算する。
+反復間ARIは各クラスタリング方法内の既存3対を使う。方法間ARIを主評価へ追加せず、
+ARIをencoderだけの再現性とも解釈しない。
+
+各方法内で、実験プロトコル第4.3節の全計画比較とaugmentationの2×2交互作用を求める。
+同一試料・K・反復での条件差をCosine-KMeansとvMFの間で併記し、
+方向・大きさ・K依存性・試料別のばらつきを比較する。同条件の方法間score差も、
+両方法で値が定義された共通試料・反復に対応づける。
+一方が未定義の場合は理由と共通対象数を示し、対象の異なる平均同士を差し引かない。
+LLAとLFRの改善方向、第8.1〜8.2節の不確実性の扱いを継承し、有意差検定や総合scoreは追加しない。
+
+両方法で傾向が一致すれば、検討した二つの球面クラスタリング方法に対して結論が保たれたと述べる。
+異なる場合は、成分の広がりや混合比のモデル化によって、表現の読み取りが変わった可能性を検討する。
+任意のクラスタリング方法への一般化や、化学状態の正しさを実証したとはしない。
+単一成分への集中による見かけのLLA・LFR改善は、occupancyと併せて確認する。
+
+vMFの責務は化学的な正解確率や存在比ではない。方向・集中度・混合比・尤度はfitの診断として記録する。
+尤度をsilhouetteの代替にしたり、異なる表現・次元を横断する品質scoreとして使ったりしない。
+BIC・elbowによる表現条件の順位付けや固定Kの選び直しは行わない。
 
 ## 9. 方法論上の参考文献
 
