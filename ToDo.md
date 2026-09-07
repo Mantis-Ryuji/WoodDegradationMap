@@ -1,6 +1,6 @@
 # 実験実施 ToDo
 
-更新日: 2026-09-07
+更新日: 2026-09-08
 
 この文書は現在の実行状態と残作業だけを管理する。固定済みの研究条件は
 [研究設計](docs/design/README.md)、CLIと完了判定は[実験runbook](docs/experiment_runbook.md)、
@@ -13,10 +13,12 @@
 | 本番入力 | `data/processed/production_v1/`、49試料、3,902,250有効画素 |
 | 本番root | `outputs/experiments/production_v1/` |
 | manifest | split・共通train座標・augmentation contractは現行仕様で確定済み |
-| 完了 | A0・M00のfold 1・repeat 1–3、計6組合せで学習とclean-map clusteringが完了 |
-| 次の工程 | A0・M00の6評価再生成 → M10・fold 1・repeat 1 |
+| 完了 | A0・M00のfold 1・repeat 1–3、計6組合せで学習・clean-map clustering・全test評価と各checkが完了 |
+| 実行中 | M10・fold 1・repeat 1を800 epochまで学習中 |
+| 次の工程 | M10・fold 1・repeat 1の学習完了確認 → clean test map → 全test評価 |
 | 実行環境 | ChemoMAE v0.2.2。noise $U(0,5^\circ)$、shift $U(-2,2)$ |
-| 本番結果 | 主ニューラル実験の学習・clusteringは各6/75完了。現行設定の評価は再生成まで0/75として扱う |
+| 検証 | manifest・neural・clustering・evaluation・records関連テストは現行コードで全件passed |
+| 本番結果 | 主ニューラル実験の学習・clustering・評価は各6/75完了。実行中runは完了数に含めない |
 | vMF補助実験 | 主7条件・5-fold・3反復・共通7Kの735 fits。修正版v0.2.2を導入済み、数値検証・設定確定は未完了 |
 
 本番CVでは入力・manifest・研究条件を固定し、成果物に実行時の設定と環境を記録する。
@@ -36,13 +38,13 @@
 - [x] 本文代表例を各樹種の保存有効画素数最大の7試料に固定した。
 - [x] `production_v1` のmanifestを新規作成し、preflightとの一致を確認した。
 
-## 次のrun
+## 進行中のrun
 
-まずA0・M00のfold 1・repeat 1–3を現行設定で再評価する。完了後の次runは
-M10・fold 1・repeat 1とする。完了済みrunの実測値とcheck結果は[検証履歴](docs/verification_history.md)にまとめる。
+M10・fold 1・repeat 1を学習中である。学習completionを確認するまでは完了runに数えず、
+正常完了後に同じrunのclustering・評価へ進む。完了済みrunの実測値とcheck結果は
+[検証履歴](docs/verification_history.md)にまとめる。
 
-- [ ] manifestと既存A0・M00 sourceを現行contractへ移行し、checkを通す。
-- [ ] A0・M00の6評価を退避・再生成し、評価のcheckを通す。
+- [x] A0・M00のfold 1・repeat 1–3で、現行設定の全test評価とcheckを完了する。
 - [ ] M10・fold 1・repeat 1を800 epochまで学習し、completionのepoch・更新数・weights hashを確認する。
 - [ ] M10・fold 1・repeat 1の全7K clean test mapと全test評価を作成し、各checkを通す。
 
@@ -61,13 +63,13 @@ M10・fold 1・repeat 1とする。完了済みrunの実測値とcheck結果は[
 
 各runは800 epochとし、正常完了した重みだけをclusteringへ渡す。
 
-- [ ] A0: 5 folds × 3 repeats（学習・clusteringは3/15 runs。fold 1の評価再生成待ち）
-- [ ] M00: 5 folds × 3 repeats（学習・clusteringは3/15 runs。fold 1の評価再生成待ち）
-- [ ] M10: 5 folds × 3 repeats（15 runs）
+- [ ] A0: 5 folds × 3 repeats（fold 1の3/15 runsで学習・clustering・評価完了）
+- [ ] M00: 5 folds × 3 repeats（fold 1の3/15 runsで学習・clustering・評価完了）
+- [ ] M10: 5 folds × 3 repeats（fold 1・repeat 1を学習中。完了0/15 runs）
 - [ ] M01: 5 folds × 3 repeats（15 runs）
 - [ ] M11: 5 folds × 3 repeats（15 runs）
 - [ ] 全75 runsでclean test mapのrun・checkを完了する（6/75組合せ完了）。
-- [ ] 全75 runsで評価のrun・checkを完了する（現行設定では0/75。6組合せを再生成待ち）。
+- [ ] 全75 runsで評価のrun・checkを完了する（6/75組合せ完了）。
 
 ### Mask率補助実験
 
