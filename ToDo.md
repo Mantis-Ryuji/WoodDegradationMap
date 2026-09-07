@@ -12,11 +12,11 @@
 | --- | --- |
 | 本番入力 | `data/processed/production_v1/`、49試料、3,902,250有効画素 |
 | 本番root | `outputs/experiments/production_v1/` |
-| manifest | split・共通train座標は作成済み。現行形式でcheck済み |
-| 完了 | A0・fold 1・repeat 1–3とM00・fold 1・repeat 1の学習、clustering、全test評価と各check |
-| 次の工程 | M00・fold 1・repeat 2の学習 → clustering → 評価 |
-| 実行環境 | ChemoMAE v0.2.2。manifest・完了済み4 runsの成果物は現行形式で検証済み |
-| 本番結果 | 主ニューラル実験の学習・clustering・評価は各4/75完了。OOF未完成のため性能比較はまだ行わない |
+| manifest | split・共通train座標・augmentation contractは現行仕様で確定済み |
+| 完了 | A0・M00のfold 1・repeat 1–3、計6組合せで学習とclean-map clusteringが完了 |
+| 次の工程 | A0・M00の6評価再生成 → M10・fold 1・repeat 1 |
+| 実行環境 | ChemoMAE v0.2.2。noise $U(0,5^\circ)$、shift $U(-2,2)$ |
+| 本番結果 | 主ニューラル実験の学習・clusteringは各6/75完了。現行設定の評価は再生成まで0/75として扱う |
 | vMF補助実験 | 主7条件・5-fold・3反復・共通7Kの735 fits。修正版v0.2.2を導入済み、数値検証・設定確定は未完了 |
 
 本番CVでは入力・manifest・研究条件を固定し、成果物に実行時の設定と環境を記録する。
@@ -38,12 +38,13 @@
 
 ## 次のrun
 
-対象はM00・fold 1・repeat 2とする。完了済みrunの実測値とcheck結果は
-[検証履歴](docs/verification_history.md)にまとめる。
+まずA0・M00のfold 1・repeat 1–3を現行設定で再評価する。完了後の次runは
+M10・fold 1・repeat 1とする。完了済みrunの実測値とcheck結果は[検証履歴](docs/verification_history.md)にまとめる。
 
-- [ ] 800 epochまで学習し、completionのepoch・更新数・weights hashを確認する。
-- [ ] 全7Kのclean test mapを作成し、clusteringのcheckを通す。
-- [ ] 全test評価を作成し、評価のcheckを通す。
+- [ ] manifestと既存A0・M00 sourceを現行contractへ移行し、checkを通す。
+- [ ] A0・M00の6評価を退避・再生成し、評価のcheckを通す。
+- [ ] M10・fold 1・repeat 1を800 epochまで学習し、completionのepoch・更新数・weights hashを確認する。
+- [ ] M10・fold 1・repeat 1の全7K clean test mapと全test評価を作成し、各checkを通す。
 
 新規runと中断再開のコマンド、完了判定は[実験runbook](docs/experiment_runbook.md)を使う。
 
@@ -60,13 +61,13 @@
 
 各runは800 epochとし、正常完了した重みだけをclusteringへ渡す。
 
-- [ ] A0: 5 folds × 3 repeats（3/15 runs。fold 1の学習・clustering・評価が完了）
-- [ ] M00: 5 folds × 3 repeats（1/15 runs。fold 1・repeat 1の学習・clustering・評価が完了）
+- [ ] A0: 5 folds × 3 repeats（学習・clusteringは3/15 runs。fold 1の評価再生成待ち）
+- [ ] M00: 5 folds × 3 repeats（学習・clusteringは3/15 runs。fold 1の評価再生成待ち）
 - [ ] M10: 5 folds × 3 repeats（15 runs）
 - [ ] M01: 5 folds × 3 repeats（15 runs）
 - [ ] M11: 5 folds × 3 repeats（15 runs）
-- [ ] 全75 runsでclean test mapのrun・checkを完了する（4/75組合せ完了）。
-- [ ] 全75 runsで評価のrun・checkを完了する（4/75組合せ完了）。
+- [ ] 全75 runsでclean test mapのrun・checkを完了する（6/75組合せ完了）。
+- [ ] 全75 runsで評価のrun・checkを完了する（現行設定では0/75。6組合せを再生成待ち）。
 
 ### Mask率補助実験
 

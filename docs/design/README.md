@@ -37,8 +37,9 @@ label安定性を比較し、表現・マップの性質からその効果を調
   ChemoMAEは全可視でCLSを潜在射影して抽出する。B0は256次元SNVのcosine幾何を用いる。
 - PCAは`PCA(n_components=16)`の既定設定を採用し、train平均による中心化、`whiten=False`、
   `svd_solver="auto"`とする。波長ごとの追加autoscalingは行わない。
-- noise角度は$U(0,2.5^\circ)$、shiftは既定の$U(-2,2)$チャネルに固定する。その他のAug操作設定は
-  ChemoMAE v0.2.2の既定値を採用し、LFRでも同じ強度分布を使う。強度の追加ablationは行わない。
+- noise角度は$U(0,5^\circ)$、shiftは$U(-2,2)$チャネルに固定する。強度はSNVスペクトルの
+  `sanity_check`を通じて恣意的に決定した。その他のAug操作設定はChemoMAE v0.2.2の既定値を採用し、
+  LFRでも同じ強度分布を使う。強度の追加ablationは行わない。
 - 提案M11とB0、B1、M00の直接比較を主要比較とし、その他の計画比較で構成要素の効果を説明する。
 - mask率は主比較では50%に固定し、M11の25/50/75%比較を同じ3反復の補助実験とする。
 - 学習はMAE論文・公式PRETRAIN.mdの800 epoch recipeに従う。単一GPU、batch size 1024、勾配蓄積なし、

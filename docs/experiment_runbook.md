@@ -50,14 +50,14 @@ uv run python scripts/experiments/prepare_manifests.py check --experiment-id pro
 
 ## 4. ニューラルネットの1 run
 
-対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はM00・fold 1・repeat 2の例である。
+対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はM10・fold 1・repeat 1の例である。
 完了済みrunは再学習せず、保存済み成果物の確認には各工程の`check`を使う。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M00'
+$condition = 'M10'
 $fold = 1
-$repeat = 2
+$repeat = 1
 
 uv run python scripts/experiments/train_neural.py train `
     --condition $condition `
@@ -116,6 +116,8 @@ uv run python scripts/experiments/train_neural.py train `
 
 checkpointがない、またはsource hash・config・run identityが一致しない場合は、別runとして扱う前に
 原因を確認する。一致検証を回避して継続しない。
+固定configを変更したrunは旧checkpointから再開しない。明示的に無効と判断した未完了runの
+resultsとcheckpointsだけを対象パスの照合後に除き、新規runとして開始する。
 
 ### Windowsでcheckpoint記録の置換に失敗した場合
 

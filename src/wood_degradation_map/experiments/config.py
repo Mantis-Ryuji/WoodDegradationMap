@@ -107,7 +107,7 @@ def experiment_config() -> dict[str, object]:
             "target": "clean SNV", "patch_target_normalization": False,
         },
         "augmentation": {
-            "noise_angle_deg_range": [0.0, 2.5], "shift_delta_range": [-2.0, 2.0],
+            "noise_angle_deg_range": [0.0, 5.0], "shift_delta_range": [-2.0, 2.0],
             "shuffle_order_per_batch": True, "recenter_after_each_op": True,
             "renorm_to_input_norm": True, "eps": 1e-8,
         },

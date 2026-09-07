@@ -223,11 +223,12 @@ $$
 | noise + shift | `noise_prob=1`, `shift_prob=1` |
 
 shiftはChemoMAE v0.2.2の既定設定を採用し、$\delta\sim U(-2,2)$チャネル、線形補間と端点値の延長を使う。
-noiseはGaussian乱数由来の接方向への回転で、角度は$\theta\sim U(0,2.5^\circ)$に固定する。
-`noise_angle_deg_range=(0.0, 2.5)`を明示し、package既定の角度範囲で代用しない。
+noiseはGaussian乱数由来の接方向への回転で、角度は$\theta\sim U(0,5^\circ)$に固定する。
+`noise_angle_deg_range=(0.0, 5.0)`を明示し、package既定の角度範囲で代用しない。
 操作順はbatchごとにランダム化し、各操作後に画素内平均を0、normを操作前の値へ戻す。
 採用値と各flagは[experiment_protocol.md](experiment_protocol.md)第4.1.3節でFixedとした。
-学習時と評価時には同じ強度分布と操作設定を用い、適用確率だけを評価時に1とする。強度sweepは行わない。
+学習時と評価時には同じ強度分布と操作設定を用い、適用確率だけを評価時に1とする。
+LFRやCV評価値を用いた強度sweepは行わない。
 回転角や最終加算残差を正規分布$N(0,\sigma)$と記述しない。
 
 ### 5.3 摂動反復と解釈範囲
