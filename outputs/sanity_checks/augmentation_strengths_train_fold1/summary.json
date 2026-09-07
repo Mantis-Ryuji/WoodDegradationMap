@@ -1,0 +1,496 @@
+{
+  "status": "augmentation_strength_sanity_check_completed",
+  "scope": "fixed fold-train SNV pixels; no model training, outer-test pixels, or model-evaluation metrics",
+  "fold": 1,
+  "seed": 20260907,
+  "noise": {
+    "visualized_exact_angles_deg": [
+      2.5,
+      5.0,
+      7.5
+    ],
+    "distribution_uniform_ranges_deg": [
+      [
+        0.0,
+        2.5
+      ],
+      [
+        0.0,
+        5.0
+      ],
+      [
+        0.0,
+        7.5
+      ]
+    ],
+    "noise_prob": 1.0,
+    "shift_prob": 0.0,
+    "same_random_draws_across_candidate_maxima": true,
+    "exact_examples_summary": {
+      "2.5": {
+        "spectral_angle_deg": {
+          "mean": 2.499999905594109,
+          "q05": 2.499999532555389,
+          "median": 2.499999916511698,
+          "q95": 2.5000002801952093,
+          "max": 2.5000005664184046
+        },
+        "rms_difference_snv": {
+          "mean": 0.04354447064421081,
+          "q05": 0.043544462959648554,
+          "median": 0.043544470885460616,
+          "q95": 0.04354447776668848,
+          "max": 0.04354448497673189
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.13217575028374995,
+          "q05": 0.1122618556022644,
+          "median": 0.1300435122102499,
+          "q95": 0.159649246558547,
+          "max": 0.20074772834777832
+        }
+      },
+      "5": {
+        "spectral_angle_deg": {
+          "mean": 4.9999994879837715,
+          "q05": 4.99999896494712,
+          "median": 4.999999507299407,
+          "q95": 4.99999996582493,
+          "max": 5.00000043928807
+        },
+        "rms_difference_snv": {
+          "mean": 0.08706821077772733,
+          "q05": 0.08706819961782478,
+          "median": 0.08706821124657182,
+          "q95": 0.08706822086584648,
+          "max": 0.08706822907381448
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.26428251302831995,
+          "q05": 0.2255157306790352,
+          "median": 0.26021168380975723,
+          "q95": 0.318159231543541,
+          "max": 0.39803266525268555
+        }
+      },
+      "7.5": {
+        "spectral_angle_deg": {
+          "mean": 7.500000182082296,
+          "q05": 7.499999480662947,
+          "median": 7.500000183884685,
+          "q95": 7.500000848751428,
+          "max": 7.50000140927774
+        },
+        "rms_difference_snv": {
+          "mean": 0.1305505306418717,
+          "q05": 0.13055051472993875,
+          "median": 0.13055053095915203,
+          "q95": 0.13055054536804195,
+          "max": 0.13055056180924407
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.39625786088203085,
+          "q05": 0.33685894012451173,
+          "median": 0.39010025560855865,
+          "q95": 0.47905831709504126,
+          "max": 0.5914795398712158
+        }
+      }
+    },
+    "uniform_distribution_summary": {
+      "2.5": {
+        "spectral_angle_deg": {
+          "mean": 1.2567525462763622,
+          "q05": 0.14101811299199302,
+          "median": 1.246240465518035,
+          "q95": 2.3758850486645993,
+          "max": 2.4996086013420493
+        },
+        "rms_difference_snv": {
+          "mean": 0.02189071516310677,
+          "q05": 0.002456417928325207,
+          "median": 0.021708046958725795,
+          "q95": 0.04138298273628258,
+          "max": 0.043537658982209494
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.06654247835570004,
+          "q05": 0.007191531360149385,
+          "median": 0.06498277187347412,
+          "q95": 0.12845408879220485,
+          "max": 0.1733030080795288
+        }
+      },
+      "5": {
+        "spectral_angle_deg": {
+          "mean": 2.5135051006680382,
+          "q05": 0.28203611409935464,
+          "median": 2.492480967358162,
+          "q95": 4.751770006779103,
+          "max": 4.9992168319503705
+        },
+        "rms_difference_snv": {
+          "mean": 0.04377619828204217,
+          "q05": 0.0049128302968770065,
+          "median": 0.0434135277962229,
+          "q95": 0.08274817435276222,
+          "max": 0.08705459139162983
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.13307471535097193,
+          "q05": 0.01437589377164841,
+          "median": 0.12978209555149078,
+          "q95": 0.257218681462109,
+          "max": 0.34854233264923096
+        }
+      },
+      "7.5": {
+        "spectral_angle_deg": {
+          "mean": 3.7702576475691365,
+          "q05": 0.4230544753253459,
+          "median": 3.738721623242977,
+          "q95": 7.127655031882526,
+          "max": 7.498826325686903
+        },
+        "rms_difference_snv": {
+          "mean": 0.06565121862326945,
+          "q05": 0.0073692410418682835,
+          "median": 0.06511387447313846,
+          "q95": 0.12407779633144246,
+          "max": 0.1305301329425961
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.19959742077969622,
+          "q05": 0.021552950143814094,
+          "median": 0.19452282041311264,
+          "q95": 0.3846266102045774,
+          "max": 0.5253841280937195
+        }
+      }
+    }
+  },
+  "shift": {
+    "candidate_ranges_channels": [
+      [
+        -1.0,
+        1.0
+      ],
+      [
+        -2.0,
+        2.0
+      ],
+      [
+        -3.0,
+        3.0
+      ]
+    ],
+    "visualized_exact_endpoints_channels": [
+      -3.0,
+      -2.0,
+      -1.0,
+      1.0,
+      2.0,
+      3.0
+    ],
+    "distribution_uniform_ranges_channels": [
+      [
+        -1.0,
+        1.0
+      ],
+      [
+        -2.0,
+        2.0
+      ],
+      [
+        -3.0,
+        3.0
+      ]
+    ],
+    "noise_prob": 0.0,
+    "shift_prob": 1.0,
+    "same_random_draws_across_candidate_ranges": true,
+    "exact_examples_summary": {
+      "-3": {
+        "spectral_angle_deg": {
+          "mean": 6.9277221871528365,
+          "q05": 5.892567983825485,
+          "median": 6.4683731647123395,
+          "q95": 9.012498817519209,
+          "max": 20.296600771815907
+        },
+        "rms_difference_snv": {
+          "mean": 0.1205932200431245,
+          "q05": 0.1025984205551825,
+          "median": 0.11261386911806767,
+          "q95": 0.15682846366498235,
+          "max": 0.351704256592961
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.5025147980463345,
+          "q05": 0.3559853216633201,
+          "median": 0.47373291850090027,
+          "q95": 0.7496098160743712,
+          "max": 3.3249751031398773
+        }
+      },
+      "-2": {
+        "spectral_angle_deg": {
+          "mean": 4.857587857037426,
+          "q05": 4.075462564083237,
+          "median": 4.54490694831488,
+          "q95": 6.335483038507301,
+          "max": 17.41569642293275
+        },
+        "rms_difference_snv": {
+          "mean": 0.08458598644331784,
+          "q05": 0.07097621085457834,
+          "median": 0.07914775286693222,
+          "q95": 0.11030264592940243,
+          "max": 0.302200456872515
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.3847079952888208,
+          "q05": 0.24880101904273033,
+          "median": 0.3539434364065528,
+          "q95": 0.6063007399439811,
+          "max": 2.9996798634529114
+        }
+      },
+      "-1": {
+        "spectral_angle_deg": {
+          "mean": 2.65216523130269,
+          "q05": 2.157355689125241,
+          "median": 2.4619689137777545,
+          "q95": 3.612382069563603,
+          "max": 12.455938340417113
+        },
+        "rms_difference_snv": {
+          "mean": 0.0461933325385044,
+          "q05": 0.03757712651512209,
+          "median": 0.04288215610900849,
+          "q95": 0.06291427707858727,
+          "max": 0.21654509888441315
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.2424288396442762,
+          "q05": 0.13408985678106547,
+          "median": 0.21350973844528198,
+          "q95": 0.41436029940377916,
+          "max": 2.006727457046509
+        }
+      },
+      "1": {
+        "spectral_angle_deg": {
+          "mean": 2.657667024357698,
+          "q05": 2.1565395652489916,
+          "median": 2.4654632640354497,
+          "q95": 3.627272577793576,
+          "max": 12.378351463334472
+        },
+        "rms_difference_snv": {
+          "mean": 0.04628913194833528,
+          "q05": 0.0375629131890198,
+          "median": 0.042943011310635375,
+          "q95": 0.06317352778574407,
+          "max": 0.21520152008944418
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.24293939890614524,
+          "q05": 0.1340002954006195,
+          "median": 0.21401572227478027,
+          "q95": 0.4167008864344097,
+          "max": 1.9944556951522827
+        }
+      },
+      "2": {
+        "spectral_angle_deg": {
+          "mean": 4.933289317737813,
+          "q05": 4.1017473673117255,
+          "median": 4.615264784124321,
+          "q95": 6.4890524224603325,
+          "max": 18.40397370209284
+        },
+        "rms_difference_snv": {
+          "mean": 0.08590297229884104,
+          "q05": 0.07143378281947933,
+          "median": 0.08037234972740764,
+          "q95": 0.11297351497221698,
+          "max": 0.31920554643224985
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.3848508131026165,
+          "q05": 0.24858037838712335,
+          "median": 0.3541968259960413,
+          "q95": 0.6060848630964754,
+          "max": 3.007201060652733
+        }
+      },
+      "3": {
+        "spectral_angle_deg": {
+          "mean": 7.11869022762766,
+          "q05": 5.980428577254082,
+          "median": 6.684707282964072,
+          "q95": 9.272230164163087,
+          "max": 23.88905209104078
+        },
+        "rms_difference_snv": {
+          "mean": 0.12391139387591979,
+          "q05": 0.10412681702995064,
+          "median": 0.11637602609629197,
+          "q95": 0.16133837288822467,
+          "max": 0.41311985716031097
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.5030462224434018,
+          "q05": 0.35543087869882584,
+          "median": 0.4731558058410883,
+          "q95": 0.7518570721149442,
+          "max": 3.3259137123823166
+        }
+      }
+    },
+    "uniform_distribution_summary": {
+      "1": {
+        "spectral_angle_deg": {
+          "mean": 1.3108517216044095,
+          "q05": 0.12581291084064067,
+          "median": 1.2948298814237122,
+          "q95": 2.5975406992273493,
+          "max": 12.36862896246499
+        },
+        "rms_difference_snv": {
+          "mean": 0.022832433185169285,
+          "q05": 0.002191556102463411,
+          "median": 0.022554382729797404,
+          "q95": 0.045243131667364746,
+          "max": 0.21503316259385918
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.11976957279159706,
+          "q05": 0.009953802824020386,
+          "median": 0.10456213355064392,
+          "q95": 0.2728433012962341,
+          "max": 1.992932677268982
+        }
+      },
+      "2": {
+        "spectral_angle_deg": {
+          "mean": 2.502236401832766,
+          "q05": 0.25161028688400366,
+          "median": 2.551658674303235,
+          "q95": 4.839057907892717,
+          "max": 18.39018735813929
+        },
+        "rms_difference_snv": {
+          "mean": 0.04357829252311165,
+          "q05": 0.004382839043082153,
+          "median": 0.044444103587565696,
+          "q95": 0.08426732368967844,
+          "max": 0.31896850110961816
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.21022266012266755,
+          "q05": 0.019910478591918947,
+          "median": 0.19914801977574825,
+          "q95": 0.43921219054609517,
+          "max": 3.004020556807518
+        }
+      },
+      "3": {
+        "spectral_angle_deg": {
+          "mean": 3.621084931488931,
+          "q05": 0.37740352079222156,
+          "median": 3.6665954675821553,
+          "q95": 6.944758069823836,
+          "max": 23.871333810669345
+        },
+        "rms_difference_snv": {
+          "mean": 0.06305191544596155,
+          "q05": 0.006574044308713041,
+          "median": 0.06385815436520567,
+          "q95": 0.12089788531275411,
+          "max": 0.4128178962007082
+        },
+        "max_abs_difference_snv": {
+          "mean": 0.28208116319336796,
+          "q05": 0.02988187670707703,
+          "median": 0.2783391922712326,
+          "q95": 0.5593031451106065,
+          "max": 3.3212190121412277
+        }
+      }
+    }
+  },
+  "selection": {
+    "algorithm": "8 evenly spaced sorted fold-train sample IDs; 128 evenly spaced positions within each sample's fixed manifest rows",
+    "sample_ids": [
+      "KYOw02702",
+      "KYOw02717",
+      "KYOw02759",
+      "KYOw02768",
+      "KYOw02777",
+      "KYOw02789",
+      "KYOw16702",
+      "KYOw16750"
+    ],
+    "sample_count": 8,
+    "pixel_count": 1024,
+    "examples_in_row_order": [
+      {
+        "sample_id": "KYOw02702",
+        "hdf5_row": 31575,
+        "pixel_row": 255,
+        "pixel_col": 223
+      },
+      {
+        "sample_id": "KYOw02759",
+        "hdf5_row": 37959,
+        "pixel_row": 246,
+        "pixel_col": 206
+      },
+      {
+        "sample_id": "KYOw02777",
+        "hdf5_row": 60975,
+        "pixel_row": 333,
+        "pixel_col": 121
+      },
+      {
+        "sample_id": "KYOw16750",
+        "hdf5_row": 29930,
+        "pixel_row": 289,
+        "pixel_col": 98
+      }
+    ]
+  },
+  "wavelength_grid": {
+    "start_nm": 913.1,
+    "end_nm": 2305.59,
+    "mean_step_nm": 5.460745098039217
+  },
+  "constraint_error_max": {
+    "perturbed_mean_absolute": 4.157664079684764e-08,
+    "norm_absolute": 3.2480304916759906e-06
+  },
+  "captions": {
+    "snv_noise_exact_angles_examples.png": "Four fixed fold-1 train pixels, one per row. Left: clean SNV and exact 2.5°, 5°, and 7.5° tangent-direction rotations. Right: perturbed-minus-clean residuals on one common vertical scale. The random tangent direction is shared across the three angles within each pixel.",
+    "snv_noise_uniform_ranges_distributions.png": "Noise sampled independently per spectrum from U(0, 2.5°), U(0, 5°), or U(0, 7.5°) over 1,024 fixed fold-1 train pixels. Panels from left to right show spectral angle, per-spectrum RMS difference, and maximum absolute single-band difference.",
+    "snv_shift_exact_endpoints_examples.png": "Four fixed fold-1 train pixels, one per row. Columns from left to right show clean SNV with negative endpoints, clean SNV with positive endpoints, and residuals. Dashed residuals are negative shifts and solid residuals are positive.",
+    "snv_shift_uniform_ranges_distributions.png": "Shift sampled independently per spectrum from U(-1, 1), U(-2, 2), or U(-3, 3) channels over 1,024 fixed fold-1 train pixels. Panels from left to right show spectral angle, per-spectrum RMS difference, and maximum absolute single-band difference."
+  },
+  "source": {
+    "experiment_dir": "C:\\Users\\PC_User\\Python\\WoodDegradationMap\\outputs\\experiments\\production_v1",
+    "processed_dir": "C:\\Users\\PC_User\\Python\\WoodDegradationMap\\data\\processed\\production_v1",
+    "manifest_completion_sha256": "0752942cbc1aedc0ec8635b7a695312c4b14562e808a1897350cf4a64ad00c2f",
+    "chemomae": "0.2.2",
+    "torch": "2.13.0+cu130",
+    "numpy": "2.4.4"
+  },
+  "artifacts_sha256": {
+    "selection.csv": "f1b09790054193fa139e687ed036a0bc4b041bac2403852a4dd18b03946eda37",
+    "metrics.csv": "28c878d79d1d6eb62dd481ca41a6aa98c789b5010c9f0f317be13c49ed053c52",
+    "snv_noise_exact_angles_examples.png": "0d22f0baabe327f75398c622260c95034463819da330d823e92bb50e49624c5d",
+    "snv_noise_uniform_ranges_distributions.png": "293d7763d66d21e6c1b75282492842b67d1e05b3ff09898e449afb86bf9b9da3",
+    "snv_shift_exact_endpoints_examples.png": "dcbe5c14e03deb772548538541865598e4e38db33bdb33532129e1edb6e32b75",
+    "snv_shift_uniform_ranges_distributions.png": "a6bca4e0450c1e891d037df92933269e399340ff1b7c5f2d48e50e852d300df6"
+  }
+}
