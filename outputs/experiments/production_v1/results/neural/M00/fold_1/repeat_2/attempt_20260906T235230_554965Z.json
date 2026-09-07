@@ -1,0 +1,43 @@
+{
+  "status": "completed",
+  "error_type": null,
+  "wall_seconds": 9501.448298400002,
+  "resume_from": null,
+  "in_memory_completed_epochs": 800,
+  "in_memory_attempted_updates": 249600,
+  "checkpoint": "C:\\Users\\PC_User\\Python\\WoodDegradationMap\\outputs\\experiments\\production_v1\\checkpoints\\neural\\M00\\fold_1\\repeat_2\\checkpoints\\last.pt",
+  "resume_rule": "Use the saved checkpoint; an interrupted epoch is replayed",
+  "runtime": {
+    "python": "3.11.15",
+    "platform": "Windows",
+    "torch": "2.13.0+cu130",
+    "chemomae": "0.2.2",
+    "numpy": "2.4.4",
+    "h5py": "3.16.0",
+    "cuda_runtime": "13.0",
+    "device": "cuda:0",
+    "deterministic_algorithms": false,
+    "deterministic_warn_only": false,
+    "cudnn_benchmark": false,
+    "cudnn_deterministic": false,
+    "matmul_fp32_precision": "none",
+    "cudnn_fp32_precision": "none",
+    "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+    "gpu_memory_bytes": 17170956288,
+    "gpu_capability": [
+      8,
+      9
+    ],
+    "cudnn_version": 92000
+  },
+  "code_sha256": {
+    "training.py": "720d01c34076f975771c562dbdb3df21488ac4ee6eefaea74ebb43469d191db2",
+    "neural.py": "0edd7c2899bf3f8d69c680031463dbce2915bb05cd5730bcf8fafd067ee9f346",
+    "config.py": "b23a4c8bde2c147b4700381a1f1343dbe037ad96b2bc1012cca9ba5ce852ae47",
+    "data.py": "2c22e1e08e522c384ae6f0d323f7473a3e296e712643ee1c6e25e00c181668ad",
+    "input_validation.py": "7aec04fd753625cd7f4432f6f70ef6288a6be79ae3ee28822cbe68dd0777e961",
+    "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",
+    "baselines.py": "6dcd53ab68fef2c3486d8f9b41ce02be79161a7e868027266f683f93df7d9cba",
+    "records.py": "c58eaa48d97b80623787507436a81982ce92747196f99f20ea41a07b88368aae"
+  }
+}
