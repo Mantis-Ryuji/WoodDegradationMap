@@ -91,75 +91,47 @@ test 10試料・906,428画素・7種類のKを処理し、700 score rowsは全�
 
 ## 5. 本番CV実行記録
 
-### 5.1 A0・fold 1
+### 5.1 A0・M00、fold 1
 
-2026-09-06、A0・fold 1の3反復について、学習、全7Kのclustering、全test評価と各checkを完了した。
-学習completion、training history、重みとcheckpointのhashを照合し、各反復で800 epoch・249,600
-attempted updatesが揃っていることを確認した。
+2026-09-06から2026-09-07にかけて、A0・M00のfold 1・repeat 1–3、計6 runの学習と
+全7Kのclusteringを完了した。各学習runは800 epoch・249,600 attempted updatesで、
+completion、training history、重み・checkpointのSHA-256を照合した。
 
-| repeat | optimizer updates | AMP skips | epoch時間合計 | 最終train loss |
-| ---: | ---: | ---: | ---: | ---: |
-| 1 | 249,505 | 95 | 2:47:33.955 | 0.0002234270 |
-| 2 | 249,503 | 97 | 2:41:39.832 | 0.0002196052 |
-| 3 | 249,507 | 93 | 2:47:37.736 | 0.0002236418 |
+| condition | repeat | optimizer updates | AMP skips | training seconds | clustering wall |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| A0 | 1 | 249,505 | 95 | 10,053.9554 | 109.94 s |
+| A0 | 2 | 249,503 | 97 | 9,699.8320 | 81.81 s |
+| A0 | 3 | 249,507 | 93 | 10,057.7363 | 71.12 s |
+| M00 | 1 | 249,501 | 99 | 9,701.8195 | 83.97 s |
+| M00 | 2 | 249,508 | 92 | 9,342.9576 | 71.21 s |
+| M00 | 3 | 249,500 | 100 | 9,382.7762 | 77.03 s |
 
-`optimizer_updates + amp_skips == attempted_updates` は3反復すべてで成立した。 `training_seconds` は
-各epochの処理時間の合計であり、入力読込、source検証、保存処理などを含むCLI全体のwall timeではない。
-本番学習のcompletion schemaはGPU peakを保存しないため、その値は未記録である。第4.1節のpreflight値を
-本番runの実測値として代用しない。
+6 runすべてで`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesは
+optimizer updatesより1少なかった。`training_seconds`は各epochの処理時間の合計であり、CLI全体の
+wall timeではない。本番学習のcompletionはGPU peakを保存しないため、第4.1節のpreflight値で補わない。
 
-repeat 2はepoch 26のcheckpoint保存後、 `checkpoint.json.tmp` から `checkpoint.json` への置換で
-Windowsの `PermissionError` が発生した。保存済み `last.pt`、一時記録、training historyのepoch・更新数・
-SHA-256が一致することを確認し、同じcheckpointを明示してepoch 27から再開した。失敗attemptと完了attemptは
+A0・repeat 2はepoch 26のcheckpoint保存後、`checkpoint.json.tmp`から`checkpoint.json`への置換で
+Windowsの`PermissionError`が発生した。`last.pt`、一時記録、training historyのepoch・更新数・
+SHA-256を照合し、同じcheckpointを明示してepoch 27から再開した。失敗attemptと完了attemptは
 両方保存され、最終completionと重みのhashも一致した。
 
-### 5.2 A0のclustering・評価
+### 5.2 clean test map・全test評価
 
-各反復でfold 1のtest 10試料・906,428画素を処理し、事前固定した
-$K\in\{2,4,6,8,10,12,14\}$ が揃った。runは `checks_passed=true`、既存成果物のcheckはclustering・
-評価とも成功した。
+6組合せすべてでfold 1のtest 10試料・906,428画素と
+$K\in\{2,4,6,8,10,12,14\}$を処理した。clusteringは各runで
+`clean_test_maps_completed`・`checks_passed=true`、保存済み成果物は
+`validated_existing_clustering`だった。GPU peak allocated / reservedは全runで
+255.81 / 388.00 MiBだった。
 
-| repeat | clustering wall | clustering peak allocated / reserved | 評価wall | 評価peak allocated / reserved | run別保存量 |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | 109.94 s | 255.81 / 388.00 MiB | 540.91 s | 374.90 / 564.00 MiB | 123.91 MiB |
-| 2 | 81.81 s | 255.81 / 388.00 MiB | 474.94 s | 374.90 / 564.00 MiB | 124.25 MiB |
-| 3 | 71.12 s | 255.81 / 388.00 MiB | 467.34 s | 374.90 / 564.00 MiB | 123.76 MiB |
+2026-09-08、6組合せを同じ固定configと共通摂動でまとめて評価した。各runで
+`full_test_evaluation_completed`・`checks_passed=true`、保存済み成果物は
+`validated_existing_evaluation`だった。最後のconsumer保存時点の共同評価経過時間は
+2,672.56秒、GPU peak allocated / reservedは495.77 / 684.00 MiBだった。この時間は
+source検証を除く共同評価開始から各consumer保存までの累積値であり、run別の処理時間ではない。
 
-保存量は2026-09-06の完了時点で各反復のneural・clustering・evaluationのresultsとcheckpointディレクトリを
-合計した値で、3反復合計は371.92 MiBである。同時点の共有入力hashは3反復で
-`d3004aefb441eaa86c70963d9e96537a3f538371cbc279eb85e242b696ac1bcd` と一致した。これは実行・保存契約の
-確認であり、A0の性能評価や条件間比較ではない。性能は必要な全fold・反復が揃ったOOF snapshotで評価する。
-
-### 5.3 M00・fold 1・repeat 1
-
-2026-09-07、学習、全7Kのclustering、全test評価と各checkを完了した。
-ユーザーから両runの`checks_passed=true`と、各checkの`validated_existing_clustering`・
-`validated_existing_evaluation`の確認が共有された。Codexは保存済みのrun・completionを読み取り、
-以下の記録と一致することを確認した。学習の実行版はChemoMAE v0.2.1、clustering・評価はv0.2.2である。
-
-| 項目 | completion記載値 |
-| --- | ---: |
-| status | `training_completed` |
-| completed epochs | 800 |
-| attempted updates | 249,600 |
-| optimizer updates | 249,501 |
-| nonzero LR updates | 249,500 |
-| AMP skips | 99 |
-| training seconds | 9,701.8195 |
-
-completion記載のweights SHA-256は
-`113e42b9a4498331662a42ff55a6314be7edf3150e065b727198000f04ac8fd3`である。
-現行のsource検証で、読込条件と重みファイルのhashの一致を確認した。
-
-clustering・評価はtest 10試料・906,428画素と$K\in\{2,4,6,8,10,12,14\}$を対象とした。
-
-| 工程 | runのstatus | wall time | peak allocated / reserved |
-| --- | --- | ---: | ---: |
-| clustering | `clean_test_maps_completed` | 83.97 s | 255.81 / 388.00 MiB |
-| 全test評価 | `full_test_evaluation_completed` | 521.72 s | 374.90 / 564.00 MiB |
-
-現行形式の共有入力SHA-256は`9e312f38b298c66f4fa0b7a33bb6063d6cae655aca0a17f9026b019913a17368`で、
-A0の3反復と一致した。これは入力・保存条件の確認であり、条件間の性能比較はOOF集計で行う。
+共有入力SHA-256は6組合せとも
+`4d11b22228242221662bbeb0dbe634064963ab98e37deec3f5ef949dedc894e7`で一致した。
+これは実行・保存契約の確認であり、条件間の性能比較は全fold・反復が揃ったOOF snapshotで行う。
 
 ## 6. 本文代表試料
 
@@ -180,7 +152,7 @@ A0の3反復と一致した。これは入力・保存条件の確認であり�
 
 <a id="chemomae-022-validation"></a>
 
-## 7. 実行環境と成果物形式の更新
+## 7. 実行環境の確認
 
 ### 7.1 ChemoMAE v0.2.2の採用
 
@@ -191,7 +163,8 @@ A0の3反復と一致した。これは入力・保存条件の確認であり�
 主実験で使うモデル・loss・Trainer・augmentation・Cosine-KMeans・正規化・silhouetteのソースは同一で、
 導入済みv0.2.2の対象20ファイルともCRLFをLFへ揃えたhashが一致した。依存変更はChemoMAEだけだった。
 
-モデル、loss、augmentation、800 epoch、split、seed、共通K、指標は変更していない。
+このpackage更新自体では、モデル、loss、augmentation、800 epoch、split、seed、共通K、指標を
+変更していない。
 vMFの735 fitsは合意済みの補助工程であり、ニューラル再学習を追加せず、主実験のCosine-KMeansも維持する。
 
 ### 7.2 更新直後の検証結果
@@ -202,33 +175,7 @@ vMFの735 fitsは合意済みの補助工程であり、ニューラル再学習
 | --- | --- |
 | `uv run pytest tests/experiments -q` | **383 passed、43 warnings、98.25秒** |
 | `prepare_manifests.py check --experiment-id production_v1` | `validated_existing_manifest`、49試料、5-fold |
-| `evaluate_representations.py check --conditions A0 --fold 1 --repeats 1 2 3` | 3反復すべて`validated_existing_evaluation` |
 
 manifestはfold 1–4でtrain 39試料・319,488画素、fold 5で40試料・327,680画素だった。
-A0は各反復でtest 10試料・906,428画素、$K\in\{2,4,6,8,10,12,14\}$を確認した。
-共有入力SHA-256は3反復とも
-`d3004aefb441eaa86c70963d9e96537a3f538371cbc279eb85e242b696ac1bcd`で、移行前の記録と同じだった。
 43 warningsはTransformerの`norm_first=True`に伴うnested tensorの通知で、テストの失敗はなかった。
-
-この383件は環境更新直後のコードに対する結果であり、次節の成果物形式統一後の全体テスト結果とは区別する。
-A0の再学習・評価値の再計算は行っていない。vMFのfitと数値検証は未実行である。
-
-<a id="artifact-format-migration"></a>
-
-### 7.3 成果物形式の統一（完了）
-
-2026-09-07、ユーザーが移行のplan・apply・checkを実行し、すべて終了code 0で成功した。
-事前の移行用テストは**11 passed、1 warning、4.43秒**だった。
-
-対象はA0・fold 1・repeat 1–3の学習・clustering・評価と、M00・fold 1・repeat 1の完了済み学習である。
-対象183ファイルのうち、50ファイルの保存形式とhash参照を更新した。
-学習時の由来はChemoMAE v0.2.1のまま、読込条件はv0.2.2に統一した。再学習は0 runsで、
-重み・checkpointの数値state・クラスタ中心・map・評価値は保持された。
-
-移行時の最終checkは`validated_artifact_migration`、`archive_preserved=true`、
-`current_checks_passed=true`だった。現行形式でmanifest、A0の3反復の評価、M00の重みを検証した。
-
-検証後、移行専用コード・専用テスト・操作手順を撤去し、ユーザーの判断で退避コピーと移行監査JSONも削除した。
-通常コードは現行形式のみを扱い、実行時の由来は各`run.json`の`execution`に残る。
-現行形式の検証テストは[通常のテスト](../tests/experiments/test_records.py)として保持する。
-既存A0の再評価は不要であり、M00のclustering・評価も同じ本番rootで完了した（第5.3節）。
+vMFのfitと数値検証は未実行である。

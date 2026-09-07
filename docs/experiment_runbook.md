@@ -169,9 +169,9 @@ clean test mapを作成し、CPUの `check` で保存物を検証する。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M00'
+$condition = 'M10'
 $fold = 1
-$repeat = 2
+$repeat = 1
 
 uv run python scripts/experiments/cluster_representations.py run `
     --condition $condition --fold $fold --repeat $repeat --experiment-dir $experimentDir
@@ -197,22 +197,20 @@ clean test mapが揃った組合せを評価する。 `run` はGPUを使用し�
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
+$condition = 'M10'
+$fold = 1
+$repeat = 1
 
 uv run python scripts/experiments/evaluate_representations.py run `
-    --conditions M00 --fold 1 --repeats 2 `
+    --conditions $condition --fold $fold --repeats $repeat `
     --experiment-dir $experimentDir
 uv run python scripts/experiments/evaluate_representations.py check `
-    --conditions M00 --fold 1 --repeats 2 `
+    --conditions $condition --fold $fold --repeats $repeat `
     --experiment-dir $experimentDir
 ```
 
-同じfoldの3反復をまとめる場合は、指定する全組合せのclean test mapが揃い、すべて未評価であることを確認する。
-
-```powershell
-uv run python scripts/experiments/evaluate_representations.py run `
-    --conditions B0 B1 M10 M01 M11 --fold 1 --repeats 1 2 3 `
-    --experiment-dir outputs/experiments/production_v1
-```
+複数条件・反復をまとめる場合は`--conditions`と`--repeats`へ空白区切りで列挙する。
+指定した直積の全組合せでclean test mapが揃い、すべて未評価であることを事前に確認する。
 
 runでは各組合せの `status=full_test_evaluation_completed` と `checks_passed=true`、checkでは
 `status=validated_existing_evaluation` を確認する。未定義指標は理由付きの `null` として扱い、
