@@ -18,7 +18,7 @@
     "mode": "training",
     "smoke_id": null,
     "weights_sha256": "f3eaca7c6f123d9545df554f6680a56d4cfa88d2aa1a03b86c5d330cc8aa79c1",
-    "run_sha256": "24f817e92fc790d96ad8b120060c02875e116843c94e1b2ec1330214453be8b1",
+    "run_sha256": "f6733130e674aa17a2c8c41122fb14facc769f3fe51280e991b368de6952ae92",
     "completion_sha256": "d09da854d8260eddfedcca144cd4fc59a7cfef20f98a8c96291d314816c8f2bd",
     "training_runtime": {
       "python": "3.11.15",
@@ -103,7 +103,7 @@
   ],
   "test_pixels": 906428,
   "manifest_artifact_sha256": {
-    "config/experiment.json": "c8d5d5855e476d08e20bab83dd6e1f1d27ce96892564115238fe51ca98e92b50",
+    "config/experiment.json": "861e52c21803c3ea2f768ae4eecee6831ba6a2d104ec33f2db69c18a9a855389",
     "config/seeds.json": "367ef557504c53f416addd4bd88b0afdb596faacd9dbd73c0e616ecf38e8eb4a",
     "manifests/inputs.json": "87370c47ff3fe6423f35be9011f255779a025b864c3bc17760c64ddb1b4f4fcd",
     "manifests/folds.parquet": "0d1029cfb5f94245da1bdb6d7c26eb64b85241dfeb135eb66be612cc01c100d5",
@@ -377,7 +377,7 @@
       "augmentation": {
         "noise_angle_deg_range": [
           0.0,
-          2.5
+          5.0
         ],
         "shift_delta_range": [
           -2.0,
@@ -484,7 +484,7 @@
     "code_sha256": {
       "training.py": "720d01c34076f975771c562dbdb3df21488ac4ee6eefaea74ebb43469d191db2",
       "neural.py": "0edd7c2899bf3f8d69c680031463dbce2915bb05cd5730bcf8fafd067ee9f346",
-      "config.py": "b23a4c8bde2c147b4700381a1f1343dbe037ad96b2bc1012cca9ba5ce852ae47",
+      "config.py": "6d09044cd9bc023dc0f427193633ef1808910a43d1e158f0702a8c7b2247bb8a",
       "data.py": "2c22e1e08e522c384ae6f0d323f7473a3e296e712643ee1c6e25e00c181668ad",
       "input_validation.py": "7aec04fd753625cd7f4432f6f70ef6288a6be79ae3ee28822cbe68dd0777e961",
       "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",

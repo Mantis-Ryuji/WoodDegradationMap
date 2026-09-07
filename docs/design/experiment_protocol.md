@@ -177,8 +177,8 @@ M00を含むMAE条件では`loss_region="masked"`を使用する。
 - 評価対象の試料および画素
 - augmentationの強度とseed方針
 
-augmentation強度は結果を見て条件ごとに変更せず、CV開始前に固定する。
-強度sweepは行わない。
+augmentation強度はSNVスペクトルの`sanity_check`を通じて恣意的に固定し、条件ごとに変更しない。
+CV評価指標による最適化や追加の強度ablationは行わない。
 
 #### 4.1.1 表現次元とL2正規化（Fixed）
 
@@ -294,7 +294,7 @@ Cosine-KMeans・正規化helperのソース内容が一致することを、読�
 その意図と限界は[ChemoMAEの位置づけ 第1.2〜1.3節・第2.2節](../chemomae_positioning.md)を参照する。
 
 [SpectraAugmenterの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/augmenter.py)
-を使用し、noise角度はユーザー指定の$U(0,2.5^\circ)$、shiftおよびその他の操作設定は既定値で固定する。
+を使用し、noise角度は$U(0,5^\circ)$、shiftおよびその他の操作設定は既定値で固定する。
 以下は参照用の候補ではなく、主比較・mask率補助実験・全体学習に共通の採用設定である。
 
 | 項目 | 採用設定（Fixed） |
@@ -302,16 +302,16 @@ Cosine-KMeans・正規化helperのソース内容が一致することを、読�
 | shift | $\delta\sim U(-2,2)$、チャネルindex単位のfractional shift。`shift_delta_range=(-2.0, 2.0)`（既定値） |
 | shiftの補間・端点 | 線形補間。参照indexを端点へclampし、範囲外は端点値を延長する。循環shiftではない |
 | noise | Gaussian乱数から平均ゼロ・入力に直交する方向を作り、その方向へ指定角度だけ回転 |
-| noise角度 | $\theta\sim U(0,2.5^\circ)$。`noise_angle_deg_range=(0.0, 2.5)`。各チャネルへ独立なGaussian雑音を加算する方式とは異なる |
+| noise角度 | $\theta\sim U(0,5^\circ)$。`noise_angle_deg_range=(0.0, 5.0)`。各チャネルへ独立なGaussian雑音を加算する方式とは異なる |
 | 適用確率 | 学習時は有効な操作ごとに0.5、無効な操作は0。画素ごとに適用を抽選する |
 | 操作順序 | `shuffle_order_per_batch=True`。2操作の順序をbatchごとにランダム化（既定値） |
 | 再中心化・norm | `recenter_after_each_op=True`、`renorm_to_input_norm=True`。各操作後に画素内平均を0、normを操作前の値へ戻す（既定値） |
 | 数値安定化 | `eps=1e-8`（既定値） |
 
-noise強度の最適化や追加の強度ablationは行わない。noiseとshiftの有無による第4節の2×2 ablationは維持する。
+採用強度はSNVスペクトルの`sanity_check`を通じて恣意的に決定した。CV評価指標による最適化や
+追加の強度ablationは行わない。noiseとshiftの有無による第4節の2×2 ablationは維持する。
 LFRにも同じ角度分布・shift幅・操作設定を使用し、評価対象の操作の適用確率だけを1にする。
-これらは実行可能な共通条件として事前固定した値であり、測定装置の誤差分布を同定した値や、
-予備実験で最適化した値とは記述しない。
+これらは測定装置の誤差分布を同定した値や、CV評価指標で最適化した値とは記述しない。
 
 本研究の入力軸は等間隔の波長gridなので、shiftの単位は256点grid上のチャネルindexと記す。
 nmへの換算には保存済み波長間隔を使用し、波数軸の等間隔shiftとは記述しない。
@@ -668,8 +668,8 @@ B0、B1、M00、M11とする。詳細は
 ## 9. 実行しない探索
 
 - Encoder/Decoderの幅またはdepth sweep
-- Gaussian noise強度sweep
-- shift強度sweep
+- CV評価指標を用いたGaussian noise強度sweep
+- CV評価指標を用いたshift強度sweep
 - Gaussian noise単独条件のmask率sweep
 - shift単独条件のmask率sweep
 - 条件別のK選択

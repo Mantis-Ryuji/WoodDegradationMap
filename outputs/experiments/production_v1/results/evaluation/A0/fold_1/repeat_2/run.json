@@ -18,7 +18,7 @@
   ],
   "test_pixels": 906428,
   "manifest_artifact_sha256": {
-    "config/experiment.json": "c8d5d5855e476d08e20bab83dd6e1f1d27ce96892564115238fe51ca98e92b50",
+    "config/experiment.json": "861e52c21803c3ea2f768ae4eecee6831ba6a2d104ec33f2db69c18a9a855389",
     "config/seeds.json": "367ef557504c53f416addd4bd88b0afdb596faacd9dbd73c0e616ecf38e8eb4a",
     "manifests/inputs.json": "87370c47ff3fe6423f35be9011f255779a025b864c3bc17760c64ddb1b4f4fcd",
     "manifests/folds.parquet": "0d1029cfb5f94245da1bdb6d7c26eb64b85241dfeb135eb66be612cc01c100d5",
@@ -28,13 +28,13 @@
     "manifests/train_pixels/fold_4.parquet": "77d8219004e6d291db8ebf87a74c519a0f8f57169a8d0355b390db946ed6bd65",
     "manifests/train_pixels/fold_5.parquet": "c146d1a95a4282af1a1ac0d18e856e908204c8b92d9969403ea2d46c220dd972"
   },
-  "clustering_completion_sha256": "bf35824295ab2a49c923a9436f1bc196a6d3d97bc46097b1fcc43f6b46efdbfb",
+  "clustering_completion_sha256": "bb5d6e805134381e76d83035a9e458393333bc1c636cc7c34f46b0371a2744a0",
   "source": {
     "kind": "neural",
     "mode": "training",
     "smoke_id": null,
     "weights_sha256": "9ce91e2f11954d1d006bf44e5eee68ab976ca59aa1fff54d33dd0650289d5913",
-    "run_sha256": "5fb7c4c4716649f68d8b513cebda8816e9dc671c8b084805bdd243936a31cebd",
+    "run_sha256": "a638fb960df6aa15a96c7d54fa84553afa28c5da62869f5c42dc4573f37ae210",
     "completion_sha256": "6297063b31e8133751cf5d743bdf0f5bbad1d77118842655bab735017978e382",
     "training_runtime": {
       "python": "3.11.15",
@@ -64,12 +64,32 @@
   "shared_consumers": [
     {
       "condition": "A0",
+      "repeat": 1
+    },
+    {
+      "condition": "A0",
       "repeat": 2
+    },
+    {
+      "condition": "A0",
+      "repeat": 3
+    },
+    {
+      "condition": "M00",
+      "repeat": 1
+    },
+    {
+      "condition": "M00",
+      "repeat": 2
+    },
+    {
+      "condition": "M00",
+      "repeat": 3
     }
   ],
   "chunk_pixels": 1024,
   "silhouette_chunk_pixels": 1000000,
-  "retained_cpu_feature_bytes_all_consumers": 58011392,
+  "retained_cpu_feature_bytes_all_consumers": 348068352,
   "memory_scope": "excludes models, maps, coordinate arrays and silhouette workspace",
   "contract": {
     "config": {
@@ -332,7 +352,7 @@
       "augmentation": {
         "noise_angle_deg_range": [
           0.0,
-          2.5
+          5.0
         ],
         "shift_delta_range": [
           -2.0,
@@ -439,7 +459,7 @@
     "code_sha256": {
       "training.py": "720d01c34076f975771c562dbdb3df21488ac4ee6eefaea74ebb43469d191db2",
       "neural.py": "0edd7c2899bf3f8d69c680031463dbce2915bb05cd5730bcf8fafd067ee9f346",
-      "config.py": "b23a4c8bde2c147b4700381a1f1343dbe037ad96b2bc1012cca9ba5ce852ae47",
+      "config.py": "6d09044cd9bc023dc0f427193633ef1808910a43d1e158f0702a8c7b2247bb8a",
       "data.py": "2c22e1e08e522c384ae6f0d323f7473a3e296e712643ee1c6e25e00c181668ad",
       "input_validation.py": "7aec04fd753625cd7f4432f6f70ef6288a6be79ae3ee28822cbe68dd0777e961",
       "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",
@@ -663,7 +683,7 @@
         "additional_autoscaling": false
       },
       "chemomae": {
-        "version": "0.2.1",
+        "version": "0.2.2",
         "seq_len": 256,
         "d_model": 256,
         "nhead": 8,
@@ -674,7 +694,7 @@
         "latent_dim": 16,
         "latent_normalize": true,
         "decoder_num_layers": 1,
-        "initialization": "ChemoMAE 0.2.1 defaults"
+        "initialization": "ChemoMAE 0.2.2 defaults"
       },
       "training": {
         "epochs": 800,
@@ -716,7 +736,7 @@
       "augmentation": {
         "noise_angle_deg_range": [
           0.0,
-          2.5
+          5.0
         ],
         "shift_delta_range": [
           -2.0,
@@ -752,7 +772,7 @@
         "dtype": "float32",
         "device": "cuda",
         "normalization_eps": 1e-06,
-        "other_settings": "ChemoMAE 0.2.1 defaults",
+        "other_settings": "ChemoMAE 0.2.2 defaults",
         "fit_scope": "shared train pixels",
         "test_centers": "fixed"
       },
@@ -801,7 +821,7 @@
       "python": "3.11.15",
       "platform": "Windows",
       "torch": "2.13.0+cu130",
-      "chemomae": "0.2.1",
+      "chemomae": "0.2.2",
       "numpy": "2.4.4",
       "h5py": "3.16.0",
       "cuda_runtime": "13.0",
@@ -821,21 +841,22 @@
       "cudnn_version": 92000
     },
     "code_sha256": {
-      "training.py": "67ecc18d56fec6205f910eb976cb7fcfea3ed94b319d75a6936fc5dcf8fe2cca",
-      "neural.py": "9d7f7cec189633c1f23dc9dda9dc04e87b3b1d02b629b46849b852689d1cb819",
-      "config.py": "2e2d8146803d84494a2c7755111a38469b88b0153fb48df7b463460beea1c412",
+      "training.py": "720d01c34076f975771c562dbdb3df21488ac4ee6eefaea74ebb43469d191db2",
+      "neural.py": "0edd7c2899bf3f8d69c680031463dbce2915bb05cd5730bcf8fafd067ee9f346",
+      "config.py": "6d09044cd9bc023dc0f427193633ef1808910a43d1e158f0702a8c7b2247bb8a",
       "data.py": "2c22e1e08e522c384ae6f0d323f7473a3e296e712643ee1c6e25e00c181668ad",
       "input_validation.py": "7aec04fd753625cd7f4432f6f70ef6288a6be79ae3ee28822cbe68dd0777e961",
       "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",
       "baselines.py": "6dcd53ab68fef2c3486d8f9b41ce02be79161a7e868027266f683f93df7d9cba",
-      "evaluation_pipeline.py": "f76ed9e7337d53943af45f68c1a10bf5cd1f89bf59705592d371b4000b079225",
-      "perturbations.py": "fa391c8f9d3206e208cc274a81e1bb3bc034c5c053edec660df4b405d4ae82a7",
+      "records.py": "c58eaa48d97b80623787507436a81982ce92747196f99f20ea41a07b88368aae",
+      "evaluation_pipeline.py": "5f3543e2d14a3004fea2a2977fb4a9af1ffeefcb8abfe70c64494499fba946e4",
+      "perturbations.py": "8f5fd91928847b8116f789ac6c1f397aa4c0f2628970ac4f9b6757d26cd29d67",
       "lfr.py": "958aa18cc5d8fcbf82130682d8810a33b0ca68b53f9bc35560c466991a7446bd",
       "spatial_metrics.py": "3487fec112e8487f7908c3cc5ea1836eb952880be59125a31c393415083fca32",
-      "diagnostic_metrics.py": "e72bd3e4691fca10fef90c0511c3a6cb94fc39033579ec73fec01ca7fed8f0f5",
+      "diagnostic_metrics.py": "fb8fd47f7678fabff4dc6040eec4311f92f1e1731f6787ee19b6cd419dca42f0",
       "aggregation.py": "614deeb219db2d6370f05c24514b314535d2107d8f901ba8bfb09b813f724a8d",
-      "cluster_pipeline.py": "02d86cd25ecb433a48562238d12926227d514a8ff41408b4c8722e3c0080e5b1",
-      "clustering.py": "d5b938d411b2828ef6d5efe216eb883eb71414fe0a7a865bea48ad2a9d4d991d"
+      "cluster_pipeline.py": "b4c5592859fc6b3af7edcc864a0b3abc9667cf3637a6c8be8b864d7a9e32b316",
+      "clustering.py": "14b4eb1b6ba0bf315115c7c1d6786618fcec3272ac6a22ca3340240ea2970880"
     }
   }
 }

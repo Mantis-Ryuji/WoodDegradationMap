@@ -119,7 +119,7 @@ noise・shiftの有無による2×2 ablationで追加corruptionの効果を調�
 物理化学的な生成過程や装置の誤差分布をモデル化して導いたものではない。
 固定仕様では各操作後に画素内平均を0、normを操作前の値へ戻し、noise強度を角度で制御する。
 noiseはGaussian乱数から平均ゼロ・入力に直交する方向を作り、その方向へ
-$\theta\sim U(0,2.5^\circ)$ だけ回転する。shiftは256点の等間隔波長grid上で
+$\theta\sim U(0,5^\circ)$ だけ回転する。shiftは256点の等間隔波長grid上で
 $\delta\sim U(-2,2)$ チャネルのfractional shiftを行い、線形補間と端点値の延長を使う。
 ([augmentationの固定仕様](design/experiment_protocol.md))
 

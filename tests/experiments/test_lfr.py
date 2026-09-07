@@ -55,7 +55,7 @@ def test_production_generation_width_and_probability_settings() -> None:
         augmenter = perturbations.evaluation_augmenter(kind)
         assert augmenter.training
         assert (augmenter.config.noise_prob, augmenter.config.shift_prob) == (noise, shift)
-        assert augmenter.config.noise_angle_deg_range == (0.0, 2.5)
+        assert augmenter.config.noise_angle_deg_range == (0.0, 5.0)
         assert augmenter.config.shift_delta_range == (-2.0, 2.0)
         assert augmenter.config.shuffle_order_per_batch
         assert augmenter.config.recenter_after_each_op and augmenter.config.renorm_to_input_norm
