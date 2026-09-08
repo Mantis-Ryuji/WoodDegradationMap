@@ -91,9 +91,9 @@ test 10試料・906,428画素・7種類のKを処理し、700 score rowsは全�
 
 ## 5. 本番CV実行記録
 
-### 5.1 A0・M00、fold 1
+### 5.1 A0・M00・M10、fold 1
 
-2026-09-06から2026-09-07にかけて、A0・M00のfold 1・repeat 1–3、計6 runの学習と
+2026-09-06から2026-09-08にかけて、A0・M00・M10のfold 1・repeat 1–3、計9 runの学習と
 全7Kのclusteringを完了した。各学習runは800 epoch・249,600 attempted updatesで、
 completion、training history、重み・checkpointのSHA-256を照合した。
 
@@ -105,8 +105,11 @@ completion、training history、重み・checkpointのSHA-256を照合した。
 | M00 | 1 | 249,501 | 99 | 9,701.8195 | 83.97 s |
 | M00 | 2 | 249,508 | 92 | 9,342.9576 | 71.21 s |
 | M00 | 3 | 249,500 | 100 | 9,382.7762 | 77.03 s |
+| M10 | 1 | 249,504 | 96 | 9,976.5919 | 112.44 s |
+| M10 | 2 | 249,501 | 99 | 9,956.5483 | 117.43 s |
+| M10 | 3 | 249,501 | 99 | 9,865.9994 | 116.56 s |
 
-6 runすべてで`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesは
+9 runすべてで`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesは
 optimizer updatesより1少なかった。`training_seconds`は各epochの処理時間の合計であり、CLI全体の
 wall timeではない。本番学習のcompletionはGPU peakを保存しないため、第4.1節のpreflight値で補わない。
 
@@ -117,19 +120,28 @@ SHA-256を照合し、同じcheckpointを明示してepoch 27から再開した�
 
 ### 5.2 clean test map・全test評価
 
-6組合せすべてでfold 1のtest 10試料・906,428画素と
+9組合せすべてでfold 1のtest 10試料・906,428画素と
 $K\in\{2,4,6,8,10,12,14\}$を処理した。clusteringは各runで
 `clean_test_maps_completed`・`checks_passed=true`、保存済み成果物は
 `validated_existing_clustering`だった。GPU peak allocated / reservedは全runで
 255.81 / 388.00 MiBだった。
 
-2026-09-08、6組合せを同じ固定configと共通摂動でまとめて評価した。各runで
+2026-09-08、A0・M00の6組合せはまとめて、M10の3組合せは個別に、同じ固定configと共通摂動で
+評価した。各runで
 `full_test_evaluation_completed`・`checks_passed=true`、保存済み成果物は
-`validated_existing_evaluation`だった。最後のconsumer保存時点の共同評価経過時間は
-2,672.56秒、GPU peak allocated / reservedは495.77 / 684.00 MiBだった。この時間は
-source検証を除く共同評価開始から各consumer保存までの累積値であり、run別の処理時間ではない。
+`validated_existing_evaluation`だった。保存記録の実測値は次のとおり。
 
-共有入力SHA-256は6組合せとも
+| 対象 | 評価単位 | `wall_seconds` | peak allocated | peak reserved |
+| --- | --- | ---: | ---: | ---: |
+| A0・M00、repeat 1–3 | 6組合せの共同評価・最後のconsumer | 2,672.56 s | 495.77 MiB | 684.00 MiB |
+| M10、repeat 1 | 1組合せ | 575.89 s | 374.90 MiB | 564.00 MiB |
+| M10、repeat 2 | 1組合せ | 489.78 s | 374.90 MiB | 564.00 MiB |
+| M10、repeat 3 | 1組合せ | 559.64 s | 374.90 MiB | 564.00 MiB |
+
+`wall_seconds`はsource検証を除く評価開始から対象consumer保存までの経過時間である。
+A0・M00の値は共同評価の累積時間であり、組合せ別の処理時間ではない。
+
+共有入力SHA-256は9組合せとも
 `4d11b22228242221662bbeb0dbe634064963ab98e37deec3f5ef949dedc894e7`で一致した。
 これは実行・保存契約の確認であり、条件間の性能比較は全fold・反復が揃ったOOF snapshotで行う。
 
