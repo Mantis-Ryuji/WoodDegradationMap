@@ -397,8 +397,8 @@ vMFの責務は化学的な正解確率や存在比ではない。方向・集�
 尤度をsilhouetteの代替にしたり、異なる表現・次元を横断する品質scoreとして使ったりしない。
 BIC・elbowによる表現条件の順位付けや固定Kの選び直しは行わない。
 
-全体学習後の4条件 × 2手法のマップ比較は、[可視化設計第4.3節](visualization_and_interpretation.md#vmf-global-maps)
-に従う探索的解釈として別に報告する。全体解釈用vMFの4 fitsとその全試料予測を、本節のCV評価・OOF集計へ含めない。
+全体学習後の5条件（B0・B1・A0・M00・M11）× 2手法のマップ比較は、[可視化設計第4.3節](visualization_and_interpretation.md#vmf-global-maps)
+に従う探索的解釈として別に報告する。全体解釈用vMFの5 fitsとその全試料予測を、本節のCV評価・OOF集計へ含めない。
 
 <a id="interpretation-notes"></a>
 
