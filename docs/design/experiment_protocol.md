@@ -384,7 +384,8 @@ GPUの並列reductionによる微小な非決定性まで消えたとは主張�
 | checkpoint選択 | 800 epoch完了時のraw weights（`last_model.pt`）。EMA weightsを使用しない |
 
 この設定をA0、M00、M10、M01、M11およびM11のmask率25%・75%へ共通適用する。
-全体可視化用のM00・M11にも同じ800 epochのrecipeを使用する。
+全体可視化用のA0・M00・M11にも、CVと同じ条件別のmask・loss対象・augmentation設定と、
+同じ800 epochのrecipeを適用する。
 参照は[公式PRETRAIN.mdの明示設定](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/PRETRAIN.md)
 を優先する。`main_pretrain.py`の引数既定値には400 epoch・base lr $10^{-3}$が含まれるが、
 それらを本研究の学習設定へ転記しない。
@@ -532,8 +533,9 @@ vMFのtest結果を見る前に、残る数値仕様を確定する。
 
 主7条件により、M11対B0・B1・M00、M00対A0、augmentationの2×2比較を同じ範囲で確認する。
 M11-25・M11-75への適用は含めない。
-2026-09-08に追加した全体解釈用のvMFは、B0・B1・M00・M11、$K_0=8$、各1回の計4 fitsとし、
-本節のCV補助実験735 fitsとは別枠で扱う。全体学習の表現を再利用し、追加の表現学習は行わない。
+全体解釈用のvMFは2026-09-08に追加し、2026-09-09に対象へA0を加えた。
+対象はB0・B1・A0・M00・M11、$K_0=8$、各1回の計5 fitsとし、本節のCV補助実験735 fitsとは別枠で扱う。
+全体学習済みの各表現を再利用し、vMFのための追加の表現学習は行わない。
 fit条件・マップ・解釈の規約は[全体可視化設計](visualization_and_interpretation.md)に定義する。
 
 追加restart、最良seed選択、既存KMeansの最終中心からのwarm startは行わない。
@@ -665,9 +667,10 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 - 計画比較ごとに、各指標の方向とKに対する傾向を報告する。
 - 解釈・可視化結果を用いて主条件を事後選択しない。
 
-全体学習および解釈の対象はCV順位にかかわらず、事前に定めた4条件
-B0、B1、M00、M11とし、各条件の同じ表現にCosine-KMeansとvMFを適用する。詳細は
-[visualization_and_interpretation.md](visualization_and_interpretation.md)に定義する。
+全体学習および解釈の対象はCV順位にかかわらず、B0、B1、A0、M00、M11の5条件とし、
+各条件の同じ表現にCosine-KMeansとvMFを適用する。A0は再構成方式の違いをマップとスペクトルでも
+比較するため、2026-09-09に追加した。CV開始前からの固定事項とは記述しない。
+追加の経緯と解釈規約は[visualization_and_interpretation.md](visualization_and_interpretation.md)に定義する。
 
 ## 9. 実行しない探索
 
@@ -689,11 +692,11 @@ B0、B1、M00、M11とし、各条件の同じ表現にCosine-KMeansとvMFを適
 4. 主比較7条件を3反復で評価する。
 5. M11のmask率補助実験を同じ3反復で行う。
 6. pairedな条件差、K依存性、mask率依存性および反復間安定性を集計する。
-7. B0、B1、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$K_0$で
+7. B0、B1、A0、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$K_0$で
    Cosine-KMeansとvMFを各1回fitする。vMFは第5.2.3節の数値仕様の確定・検証後に実施する。
-8. B0のCosine-KMeansを共通基準にラベルを整列し、4条件 × 2手法のマップとスペクトル、潜在空間を解釈する。
+8. B0のCosine-KMeansを共通基準にラベルを整列し、5条件 × 2手法のマップとスペクトル、潜在空間を解釈する。
 
-vMFのCV補助実験735 fitsの実施順序は第5.2.4節に従い、手順7の全体解釈用4 fitsとは分けて記録する。
+vMFのCV補助実験735 fitsの実施順序は第5.2.4節に従い、手順7の全体解釈用5 fitsとは分けて記録する。
 
 ## 11. 実験条件の確定状況と実行記録
 

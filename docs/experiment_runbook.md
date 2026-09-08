@@ -238,10 +238,14 @@ KMeans、評価処理はこの数に含めない。3反復はseed選別に使わ
 指標と比較の定義は[評価指標第8.4節](design/evaluation_metrics.md#vmf-evaluation)に従う。
 vMF用の設定・結果・完了記録は主実験から分け、元の成果物との対応とsource hashを保存する。
 
-全体解釈用のvMFは、この735 fitsとは別に4条件・$K_0=8$・各1回の計4 fitsを行う。
-同じ数値仕様の確定・検証後、全体学習用のPCA・encoder・共通抽出座標を再利用する。
+全体解釈はB0・B1・A0・M00・M11の5条件を対象とする。全49試料の共通抽出画素でPCAをfitし、
+A0・M00・M11を各1回、計3回学習する。この3学習はCVの105学習とは別に行う。
+得られた各条件の同じ表現に、$K_0=8$でCosine-KMeansとvMFを各1回fitする。
+vMFはCV補助実験と同じ数値仕様の確定・検証後に実施し、全体学習用のPCA・encoder・共通抽出座標を再利用する。
+全体解釈用のvMF 5 fitsは、CV補助実験の735 fitsとは別枠で管理する。
 fitと表示の規約は[全体可視化設計](design/visualization_and_interpretation.md)に従い、成果物をCVのOOF集計へ含めない。
 全体解釈pipelineと具体的なCLIは未実装であり、実装時に実行手順を追記する。
+既存の`train_neural.py`は`--fold`を必須とするCV用CLIであり、そのまま全体学習には使用できない。
 
 ## 9. OOF集計
 
