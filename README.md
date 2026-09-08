@@ -19,8 +19,10 @@ vMFクラスタリングの補助実験は主7条件・5-fold・3反復・共通
 範囲と数値仕様は[実験プロトコル第5.2節](docs/design/experiment_protocol.md#vmf-supplementary)、
 評価方法は[評価指標第8.4節](docs/design/evaluation_metrics.md#vmf-evaluation)で管理します。
 
-全体解釈では、4条件の同じ表現にCosine-KMeansとvMFを適用して空間マップを比較します。
-このvMF 4 fitsはCV補助実験とは別枠で、[全体可視化設計](docs/design/visualization_and_interpretation.md)に従います。
+全体解釈では、B0・B1・A0・M00・M11の5条件を全49試料でfitまたは学習し、各条件の同じ表現に
+Cosine-KMeansとvMFを適用してマップとスペクトルを比較します。ニューラル学習はA0・M00・M11の各1回です。
+このvMF 5 fitsはCV補助実験とは別枠で、[全体可視化設計](docs/design/visualization_and_interpretation.md)に従います。
+全体解釈pipelineとOOF結果からの図表生成は未実装で、CV後に実装する予定です。
 
 ## 文書
 
