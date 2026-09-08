@@ -238,6 +238,11 @@ KMeans、評価処理はこの数に含めない。3反復はseed選別に使わ
 指標と比較の定義は[評価指標第8.4節](design/evaluation_metrics.md#vmf-evaluation)に従う。
 vMF用の設定・結果・完了記録は主実験から分け、元の成果物との対応とsource hashを保存する。
 
+全体解釈用のvMFは、この735 fitsとは別に4条件・$K_0=8$・各1回の計4 fitsを行う。
+同じ数値仕様の確定・検証後、全体学習用のPCA・encoder・共通抽出座標を再利用する。
+fitと表示の規約は[全体可視化設計](design/visualization_and_interpretation.md)に従い、成果物をCVのOOF集計へ含めない。
+全体解釈pipelineと具体的なCLIは未実装であり、実装時に実行手順を追記する。
+
 ## 9. OOF集計
 
 指定する全conditionについて5 folds × 3 repeatsの評価が揃ってから実行する。snapshot名は一度だけ

@@ -113,9 +113,13 @@
 - [ ] AstraでOOF snapshotから主表、補助表、K依存性、mask率依存性、paired差の図表を生成する。
 - [ ] 図表のsource hash、captionに必要な定義、試料間SDと反復間SDの区別を保存する。
 - [ ] AstraでB0、B1、M00、M11を全49試料でfitする全体解釈pipelineを実装する。
-- [ ] 全試料の$K_0=8$ map、Hungarian matching、代表・差スペクトル、潜在空間図を保存する。
+- [x] 2026-09-08、全体解釈にvMFの4 fitsを追加し、4条件 × 2手法の比較を[可視化設計](docs/design/visualization_and_interpretation.md)へ反映した。
+- [ ] vMFの数値仕様確定・検証後、全体学習の同じ表現・抽出座標・$K_0=8$で4 fitsを行う。追加の表現学習は0回とし、CVの735 fitsとは分ける。
+- [ ] 全試料の4条件 × 2手法のhard label map、B0のCosine-KMeansを共通基準とするHungarian matching、overlap、occupancy、代表・差スペクトル、潜在空間図を保存する。
 - [ ] 固定済み7代表試料を本文用表示に使い、全49試料のmapも保存する。
 - [ ] 劣化との対応を探索的解釈として記述し、定量的な劣化検出性能として扱わない。
+
+任意の最大posterior責務マップは採用・表示規約がOpenであり、[可視化設計第4.4節](docs/design/visualization_and_interpretation.md#vmf-responsibility-maps)で管理する。
 
 任意の孤立label・連結成分shape診断は定義がOpenである。採用する場合だけ、結果を見る前に
 connectivity、閾値、分母を決めて[評価指標](docs/design/evaluation_metrics.md)へ反映してから実装する。
