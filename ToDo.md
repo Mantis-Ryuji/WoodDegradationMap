@@ -1,6 +1,6 @@
 # 実験実施 ToDo
 
-更新日: 2026-09-08
+更新日: 2026-09-09
 
 この文書は現在の実行状態と残作業だけを管理する。固定済みの研究条件は
 [研究設計](docs/design/README.md)、CLIと完了判定は[実験runbook](docs/experiment_runbook.md)、
@@ -110,12 +110,17 @@
 この節の実装はAstraへ切り替えて進める予定（ユーザー指定）。これは作業時のモデル選択であり、
 研究条件や成果物の再現性要件には含めない。
 
+現行CV（Cosine-KMeans）の学習・評価・OOF数値集計は実装済みで、以下の図表生成と全体解釈pipelineは未実装である。
+A0のモデル・学習条件は既存実装を再利用し、全体解釈pipelineの対象を最初から5条件とする。
+全体学習用の画素抽出・manifest、seedの適用、実行記録・保存先・CLIは、このpipelineで扱う。
+
 - [ ] AstraでOOF snapshotから主表、補助表、K依存性、mask率依存性、paired差の図表を生成する。
 - [ ] 図表のsource hash、captionに必要な定義、試料間SDと反復間SDの区別を保存する。
-- [ ] AstraでB0、B1、M00、M11を全49試料でfitする全体解釈pipelineを実装する。
-- [x] 2026-09-08、全体解釈にvMFの4 fitsを追加し、4条件 × 2手法の比較を[可視化設計](docs/design/visualization_and_interpretation.md)へ反映した。
-- [ ] vMFの数値仕様確定・検証後、全体学習の同じ表現・抽出座標・$K_0=8$で4 fitsを行う。追加の表現学習は0回とし、CVの735 fitsとは分ける。
-- [ ] 全試料の4条件 × 2手法のhard label map、B0のCosine-KMeansを共通基準とするHungarian matching、overlap、occupancy、代表・差スペクトル、潜在空間図を保存する。
+- [ ] AstraでB0、B1、A0、M00、M11を全49試料でfitまたは学習する全体解釈pipelineを実装する。ニューラル学習はA0・M00・M11の各1回、計3回とする。
+- [x] 2026-09-08、全体解釈にvMFを追加し、当時の4条件 × 2手法の比較を[可視化設計](docs/design/visualization_and_interpretation.md)へ反映した。
+- [x] 2026-09-09、全体学習・可視化へA0を追加し、5条件 × 2手法、全体3学習、各手法5 fitsへ設計文書を更新した。CV開始後の追加決定として記録した。
+- [ ] vMFの数値仕様確定・検証後、全体学習の同じ表現・抽出座標・$K_0=8$で5 fitsを行う。vMFのための追加の表現学習は0回とし、CVの735 fitsとは分ける。
+- [ ] 全試料の5条件 × 2手法のhard label map、B0のCosine-KMeansを共通基準とするHungarian matching、overlap、occupancy、代表・差スペクトル、潜在空間図を保存する。
 - [ ] 固定済み7代表試料を本文用表示に使い、全49試料のmapも保存する。
 - [ ] 劣化との対応を探索的解釈として記述し、定量的な劣化検出性能として扱わない。
 
