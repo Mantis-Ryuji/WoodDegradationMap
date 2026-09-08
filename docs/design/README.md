@@ -23,7 +23,7 @@ label安定性を比較し、表現・マップの性質からその効果を調
 | [preprocessing.md](preprocessing.md) | Fixed | 200 Hz本番前処理、mask、自動cutoff、256点補間、SNV |
 | [experiment_protocol.md](experiment_protocol.md) | 主条件Fixed / vMF数値仕様Open | 主比較、5-fold・3反復、均等画素抽出、事前固定K、mask率・vMF補助実験 |
 | [evaluation_metrics.md](evaluation_metrics.md) | Fixed / 任意診断Open | 主評価LLA・LFR、silhouette・補正LLA・ARI・occupancy、pairedな報告 |
-| [visualization_and_interpretation.md](visualization_and_interpretation.md) | Fixed | 全体学習後の4条件比較、Hungarian matching、本文代表例、探索的解釈 |
+| [visualization_and_interpretation.md](visualization_and_interpretation.md) | Fixed / 任意責務マップOpen | 全体学習後の4条件 × 2手法比較、Hungarian matching、本文代表例、探索的解釈 |
 
 ## 設計の要約
 
@@ -51,7 +51,8 @@ label安定性を比較し、表現・マップの性質からその効果を調
   全試料elbowによるK校正は行わない。
 - 試料別のpairedな差、試料間SDおよび3反復間SDを区別して報告する。有意差検定による採否判定は行わない。
 - CV結果から「best条件」を事後選択しない。
-- 全体学習後はraw SNV、PCA、標準MAE、提案Aug-MAEの4条件を解釈・可視化する。
+- 全体学習後はraw SNV、PCA、標準MAE、提案Aug-MAEの4条件の同じ表現をCosine-KMeansとvMFで分割し、
+  全49試料のマップとスペクトルを解釈・可視化する。全8組の表示ラベルはB0のCosine-KMeansへ直接整列する。
 - A0はChemoMAE v0.2.2の全領域再構成lossを使用する。
 - リポジトリ内の可視化にはfigure titleおよびaxes titleを付けず、説明はcaptionまたはファイル名で管理する。
 
@@ -63,10 +64,12 @@ label安定性を比較し、表現・マップの性質からその効果を調
 | 補助実験 | M11のmask率25%・75%。50%は主実験を再利用 | 30回 |
 | 補助実験 | 主7条件の既存表現へvMF mixtureを適用。5-fold・3反復・共通7Kの735 fits。数値実装はOpen | 0回 |
 | 補助解析 | 共通K集合内のK依存性、反復間ARI、補正LLAおよびoccupancy診断 | 追加なし |
-| 探索的解釈 | B0、B1、M00、M11を全試料でfitし、事前指定K・seedでマップとスペクトルを解釈 | 2回 |
+| 探索的解釈 | B0、B1、M00、M11を全試料でfit・学習し、同じ表現・指定K・seedでCosine-KMeansとvMFのマップ・スペクトルを解釈。vMFは別枠の4 fits | 2回 |
 
 CVは合計105学習、全体解釈まで含めると107学習となる。PCA、KMeans、vMFのfit、表現抽出、評価摂動の計算は
 この回数に含めない。Kごとに表現を再学習しない。
+2026-09-08に追加した全体解釈用vMFは全体学習の表現を再利用するため、追加の表現学習は0回である。
+CV補助実験の735 fitsと全体解釈の4 fitsは、成果物・集計を分けて管理する。
 
 ## 残るOpen事項
 
@@ -75,10 +78,12 @@ CVは合計105学習、全体解釈まで含めると107学習となる。PCA、
 
 | Open事項 | 確定・確認する内容 | 定義先 |
 | --- | --- | --- |
-| vMF補助実験 | 数値精度、EM停止条件、集中度設定、修正版の検証と専用pipeline。範囲・利用版・退化成分の扱いはFixed | [実験プロトコル第5.2節](experiment_protocol.md#vmf-supplementary) |
+| vMF数値仕様・実装 | CV補助実験と全体解釈で共用する数値精度、EM停止条件、集中度設定、修正版の検証と専用pipeline。範囲・利用版・退化成分の扱いはFixed | [実験プロトコル第5.2節](experiment_protocol.md#vmf-supplementary) |
 | 任意の形状診断 | 孤立label・連結成分shapeの定義。採用する場合だけ、結果を見る前に固定する | [評価指標第7節](evaluation_metrics.md) |
+| 任意の責務マップ | vMFの最大posterior責務マップの採用と表示規約。hard label mapは必須 | [可視化設計第4.4節](visualization_and_interpretation.md#vmf-responsibility-maps) |
 
-vMFの比較と解釈は[評価指標第8.4節](evaluation_metrics.md#vmf-evaluation)に従う。
+vMFのCV比較は[評価指標第8.4節](evaluation_metrics.md#vmf-evaluation)、全体マップの比較と解釈は
+[可視化設計第4.3節](visualization_and_interpretation.md#vmf-global-maps)に従う。
 Open事項をライブラリの既定値で暗黙に埋めて実行しない。
 
 ## 実行文書
