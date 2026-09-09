@@ -116,6 +116,15 @@ completion、training history、重み・checkpointのSHA-256を照合した。
 optimizer updatesより1少なかった。`training_seconds`は各epochの処理時間の合計であり、CLI全体の
 wall timeではない。本番学習のcompletionはGPU peakを保存しないため、第4.1節のpreflight値で補わない。
 
+`AMP skip`は有限なlossに対するscaled backward後、動的GradScalerが非有限勾配を検出し、
+そのbatchの`optimizer.step()`を呼ばずにloss scaleを下げた回数である。モデル初期値・画素順・mask・
+augmentationはrepeatで変わり、mask・loss領域・augmentationは条件でも異なるため、勾配とloss scaleの
+軌跡が変わり、run間でskip数が完全には一致しない。12 runのskipは92～101回、249,600 attempted updatesの
+約0.037～0.040%であった。skipはepoch 47～59に始まりepoch 785～799まで分散し、該当epochの大半で1回、
+最大3回だったため、学習開始時だけの異常ではなく、GradScalerが学習中にscaleを上げ、数値範囲の限界で
+下げる動作として記録する。run間の実optimizer update数の最大差は9回（attempted updatesの約0.0036%）である。
+固定予算は共通のepoch数とattempted updatesで定義し、skip分をrun別に補填して条件依存の延長は行わない。
+
 A0・repeat 2はepoch 26のcheckpoint保存後、`checkpoint.json.tmp`から`checkpoint.json`への置換で
 Windowsの`PermissionError`が発生した。`last.pt`、一時記録、training historyのepoch・更新数・
 SHA-256を照合し、同じcheckpointを明示してepoch 27から再開した。失敗attemptと完了attemptは
