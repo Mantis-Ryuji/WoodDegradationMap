@@ -1,6 +1,6 @@
 # ChemoMAEの特徴とケモメトリクスにおける位置づけ
 
-調査日: 2026-09-06〜07。対象は、本リポジトリで採用するChemoMAE v0.2.2の構成。
+調査日: 2026-09-06〜07。2026-09-10に添付論文LeafVAEを追加確認。対象は、本リポジトリで採用するChemoMAE v0.2.2の構成。
 本書は実装確認と文献調査に基づく説明資料であり、研究条件の正は
 [実験プロトコル](design/experiment_protocol.md)とする。
 文献が示した事実、本構成から導ける性質、今後の評価で確かめる仮説を区別する。
@@ -410,6 +410,7 @@ SAMやPearson相関に一致するという意味ではない。本研究は角�
 | [Xie et al. (2022), SimMIM](https://openaccess.thecvf.com/content/CVPR2022/html/Xie_SimMIM_A_Simple_Framework_for_Masked_Image_Modeling_CVPR_2022_paper.html) | masked modelingで単純な線形予測headを使う | 各位置のencoder特徴から復元する構成で、単一の低次元潜在ではない。原論文の損失はL1 |
 | [Georgiev et al. (2024), Raman unmixing AE](https://arxiv.org/html/2403.04526v1) | 非線形encoderと線形decoderの組合せ。Transformer encoderの例もある | 物理制約を用いた成分分離が目的で、MAEではない |
 | [Ren et al. (2025), Raman SMAE](https://arxiv.org/html/2504.16130v1) | スペクトルのmask再構成と、得た表現によるPCA等とのクラスタリング比較 | Transformer decoderを用い、教師ありfine-tuningも別途評価する |
+| [Ji et al. (2026), LeafVAE](https://doi.org/10.1016/j.compag.2026.111971) | 画素スペクトルの教師なし圧縮、潜在のクラスタリング、空間マップ化。学習済みモデルと固定クラスタ中心を新規データへ適用する | 2次元VAEと非線形decoderを使い、mask再構成ではない。葉の診断にはクラスタ構成比を入力とする教師ありrandom forestとSHAPを使う |
 
 ### 4.2 構成として特に近い例: Raman unmixing AE
 
@@ -454,6 +455,26 @@ RenらのSMAEは、スペクトルpatchを隠して再構成するTransformer型
 これは画像認識での結果であり、本ChemoMAEを否定するものでも、decoderを深くすべきという
 結論でもない。**decoderの単純さは本研究の採用制約であって、固定表現の品質を保証する法則ではない。**
 同様に、SimMIMの線形headの成功も、globalな16次元bottleneckの最適性までは検証していない。
+
+### 4.5 解析の流れとして特に近い例: LeafVAE
+
+JiらのLeafVAEは、葉のハイパースペクトル画像の各画素スペクトルを、教師なしの再構成学習で
+2次元潜在へ圧縮し、KMeansによって代表的なspectral signatureへ分ける。
+その割当を画像上の空間分布へ戻し、葉ごとのクラスタ構成比としても集約する。
+トウモロコシの実験では、学習済みモデルと固定したクラスタ中心を用い、別の年・遺伝子型・
+撮像条件を含むデータを共通の潜在空間で解析している。
+**画素スペクトルの表現学習からクラスタリング、空間マップ化、新規データへの適用までの
+解析の流れが本研究と近い先行研究**として位置づけられる。
+([Ji et al., §2.3 / §3, Figs. 1–4](https://doi.org/10.1016/j.compag.2026.111971))
+
+構成は全結合の非線形encoder・decoderを持つVAEで、再構成損失とKL正則化を用いる。
+本研究のmask学習、アフィンdecoder、16次元単位潜在とは異なる。
+また、同論文の教師なし学習はスペクトル表現とクラスタの獲得を指し、窒素量や病害などの
+診断段階では、クラスタ構成比を入力とする教師ありrandom forestとSHAPを用いる。
+SHAPによる画素への寄与の割当を、画素単位の化学量の直接測定とは扱わない。
+本研究の教師なし領域分割とLLA・LFRによる評価とは目的・評価条件が異なるため、
+同論文の診断性能を古材の劣化状態の同定や本モデルの優位性の根拠にはしない。
+([Ji et al., §2.3 / §3–4](https://doi.org/10.1016/j.compag.2026.111971))
 
 ## 5. 本研究で主張できる特徴と、評価を待つ事項
 
@@ -551,6 +572,10 @@ ChemoMAEの表現をCosine-KMeansで評価する主実験に加え、同じ学�
 [Vincent et al., 2010](https://jmlr.org/papers/volume11/vincent10a/vincent10a.pdf);
 [Georgiev et al., 2024](https://doi.org/10.1073/pnas.2407439121);
 [Ren et al., 2025](https://arxiv.org/html/2504.16130v1))
+
+さらに、LeafVAEは「画素スペクトルの教師なし圧縮からクラスタリングと空間マップ化へ進み、
+固定した表現・クラスタ中心を新規データへ適用する解析」の前例として引用できる。
+([Ji et al., 2026](https://doi.org/10.1016/j.compag.2026.111971))
 
 ### 英語での短い定義
 
@@ -654,6 +679,12 @@ ChemoMAEの表現をCosine-KMeansで評価する主実験に加え、同じ学�
     [ENVI Classic Tutorial: Mapping Methods、pp. 8–9](https://www.nv5geospatialsoftware.com/portals/0/pdfs/envi/Mapping_Methods.pdf).
     SAMの角度による比較、反射率データの前提、未知のgainに対する不変性を参照。
     本研究の潜在正規化やSNV後の角度の妥当性を検証した資料ではない。
+19. Ji, K. et al. (2026).
+    [Variational autoencoder enables unsupervised leaf diagnosis via hyperspectral imaging](https://doi.org/10.1016/j.compag.2026.111971).
+    *Computers and Electronics in Agriculture*, 251, 111971。
+    ユーザー提供の刊行版PDFの§2.3、§3–4、Figs. 1–4を確認。
+    画素スペクトルのVAE表現、クラスタリング、固定中心による新規データへの適用、空間マップ化を参照。
+    教師なし表現学習と、ラベルを用いる下流の診断・SHAPによる説明を区別する。
 
 実装確認は固定config、利用側コード、導入済みChemoMAEのソースを読み取って行った。
 今回の意図に関する改訂では、固定仕様と利用側の学習処理を読み直し、入力だけを摂動して
