@@ -5,16 +5,23 @@
 このディレクトリは、本リポジトリにおける現行の研究・実装設計を管理する。
 各文書で `Open` と明示した事項を除き、記載内容を **Fixed** とする。
 
-本研究は、古材NIRスペクトルのマスク再構成にnoise・shiftからのdenoisingを組み合わせ、
-化学状態をより安定して反映する表現の学習につながるかを問う。これはaugmentationの導入動機であり、
-指定した摂動への耐性そのものの獲得を主目的とするものではない。
-採用理由と仮定の詳細は[ChemoMAEの位置づけ](../chemomae_positioning.md)にまとめる。
+本研究の主軸は、**状態を事前に定義しにくい材料の化学的な違いを捉える、自己教師ありスペクトル表現学習**である。
+化学状態の区分や正解ラベルをあらかじめ定めにくい材料に対し、帯域間の関係から状態差の探索・解釈に
+有用な表現を学べるかを問う。実証対象は古材NIR-HSIであり、他材料への有効性は未検証である。
+手法としてマスク再構成に、SNVの幾何的制約を保つnoise・shiftからのdenoisingを組み合わせる。
+化学状態をより安定して反映する表現の獲得を期待することが
+augmentationの導入動機であり、指定した摂動への耐性そのものの獲得を主目的とするものではない。
+研究目的・手法・証拠の対応は[研究の主軸](../chemomae_positioning.md#research-focus)、
+採用理由と仮定は同文書第1節にまとめる。
 
 実験では、得られた表現による教師なし領域分割の空間的一貫性と、指定したスペクトル摂動への
 label安定性を比較し、表現・マップの性質からその効果を調べる。
 これらの指標だけで化学的な表現品質を直接検証したとはしない。
-外部の正解劣化ラベルや独立した劣化測定による定量評価は行わず、
-劣化との対応は最後のスペクトル・マップに基づく探索的解釈に限定する。
+現行CVでは外部の正解劣化ラベルや独立した劣化測定による定量評価は行わず、
+劣化との対応はスペクトル・マップに基づく探索的解釈とする。
+これを深めるため、HSIクラスタと同じ領域または位置対応した領域のFT-IR測定を予定している。
+2026-09-10に計画を文書化した。詳細設計はOpen、結果は未確認であり、現行CVの条件・評価は変更しない。
+([FT-IRの計画とOpen事項](visualization_and_interpretation.md#ftir-interpretation))
 
 ## 文書一覧
 
@@ -23,7 +30,7 @@ label安定性を比較し、表現・マップの性質からその効果を調
 | [preprocessing.md](preprocessing.md) | Fixed | 200 Hz本番前処理、mask、自動cutoff、256点補間、SNV |
 | [experiment_protocol.md](experiment_protocol.md) | 主条件Fixed / vMF数値仕様Open | 主比較、5-fold・3反復、均等画素抽出、事前固定K、mask率・vMF補助実験 |
 | [evaluation_metrics.md](evaluation_metrics.md) | Fixed / 任意診断Open | 主評価LLA・LFR、silhouette・補正LLA・ARI・occupancy、pairedな報告 |
-| [visualization_and_interpretation.md](visualization_and_interpretation.md) | Fixed / 任意責務マップOpen | 全体学習後の5条件 × 2手法比較、Hungarian matching、本文代表例、探索的解釈 |
+| [visualization_and_interpretation.md](visualization_and_interpretation.md) | Fixed / 任意責務マップ・FT-IR詳細Open | 全体学習後の5条件 × 2手法比較、Hungarian matching、本文代表例、位置対応FT-IRの計画 |
 
 ## 設計の要約
 
@@ -83,6 +90,7 @@ CV補助実験のvMF 735 fitsと全体解釈のvMF 5 fitsは、成果物・集�
 | vMF数値仕様・実装 | CV補助実験と全体解釈で共用する数値精度、EM停止条件、集中度設定、修正版の検証と専用pipeline。範囲・利用版・退化成分の扱いはFixed | [実験プロトコル第5.2節](experiment_protocol.md#vmf-supplementary) |
 | 任意の形状診断 | 孤立label・連結成分shapeの定義。採用する場合だけ、結果を見る前に固定する | [評価指標第7節](evaluation_metrics.md) |
 | 任意の責務マップ | vMFの最大posterior責務マップの採用と表示規約。hard label mapは必須 | [可視化設計第4.4節](visualization_and_interpretation.md#vmf-responsibility-maps) |
+| 位置対応FT-IRの詳細設計 | HSIクラスタに対応する領域の測定予定。対象選定、位置対応、測定・反復条件、前処理・指標、解釈範囲 | [可視化設計第5.1節](visualization_and_interpretation.md#ftir-interpretation) |
 
 vMFのCV比較は[評価指標第8.4節](evaluation_metrics.md#vmf-evaluation)、全体マップの比較と解釈は
 [可視化設計第4.3節](visualization_and_interpretation.md#vmf-global-maps)に従う。

@@ -1,11 +1,19 @@
 # ChemoMAEの特徴とケモメトリクスにおける位置づけ
 
 調査日: 2026-09-06〜07。2026-09-10に添付論文LeafVAEを追加確認。対象は、本リポジトリで採用するChemoMAE v0.2.2の構成。
+2026-09-10にaugmentationの提案内容、位置対応FT-IRの計画、研究の主軸を整理した。
 本書は実装確認と文献調査に基づく説明資料であり、研究条件の正は
 [実験プロトコル](design/experiment_protocol.md)とする。
 文献が示した事実、本構成から導ける性質、今後の評価で確かめる仮説を区別する。
 
 ## 1. この構成をどう捉えるか
+
+本研究の主軸は、**状態を事前に定義しにくい材料の化学的な違いを捉える、自己教師ありスペクトル表現学習**である。
+化学状態の区分や正解ラベルをあらかじめ定めにくい材料を問題設定とし、古材NIR-HSIを実証対象とする。
+ChemoMAEは、帯域間の予測関係からスペクトルを低次元へ集約し、状態差を探索するための座標系を学ぶ役割を担う。
+クラスタリングによってその座標を試料表面の領域へ対応づけ、マップの性質をCVで比較し、
+NIRスペクトルと位置対応FT-IRから化学的な意味を検討する。研究全体の問いと証拠の対応は
+[第7節](#research-focus)にまとめる。
 
 **PCAと同じく、ラベルなしでスペクトルを圧縮し、得られた座標を可視化・クラスタリングに使う、
 という目的に整合した構成である。** 再構成学習をこの用途に使う考え方には、
@@ -144,6 +152,60 @@ noiseや波長方向のずれが実測で生じうることは、操作を検討
 本研究では、この限定したcorruptionから元の観測を復元する学習が表現に有用かを問う。
 化学的に重要な微小差の抑制や、元の観測に含まれる測定上の特徴の学習もありうるため、
 denoisingを採用したこと自体で「化学状態に頑健な潜在空間」を獲得したとはしない。
+
+### 1.4 提案するaugmentation: Tangent Gaussian NoiseとFractional Shift
+
+本研究では、[著者の解説記事 §3.2–3.3](https://zenn.dev/mantis_ryuji/articles/e17b4d223cd7da)に示した
+Tangent Gaussian Noise（TGN）とFractional Shiftを採用し、augmentation自体も提案として
+位置づける。具体的な提案内容は、**SNVの平均ゼロ・一定norm制約を保つ摂動の定義と、
+それをmasked denoisingへ組み込むこと**である。既存部品の採用理由だけでなく、操作の設計も説明する。
+文献上の優先性は第5.1節で分けて扱う。
+
+以下は[固定仕様](design/experiment_protocol.md)とChemoMAE v0.2.2の`SpectraAugmenter`を照合した
+理想演算での記述である。帯域数を $C=256$、$r=\sqrt{C-1}=\sqrt{255}$ とし、
+平均ゼロ・norm $r$ の入力 $x$、単位方向 $u=x/r$、全要素1のベクトル $\mathbf{1}$ を用いる。
+TGNはGaussian方向から平均方向と半径方向を除き、残った接方向へ回転する。
+
+$$
+P=I-\frac{\mathbf{1}\mathbf{1}^{\mathsf T}}{C},\qquad
+\epsilon\sim\mathcal{N}(0,I),\qquad
+v=P\epsilon-u\bigl(u^{\mathsf T}P\epsilon\bigr),\qquad
+q=\frac{v}{\lVert v\rVert_2}.
+$$
+
+$$
+T_{\mathrm{TGN}}(x)=r\bigl(\cos\theta\,u+\sin\theta\,q\bigr),\qquad
+\theta\sim U(0,\pi/36).
+$$
+
+$\lVert v\rVert_2>0$ の通常の場合、$q$ は平均ゼロ、$x$ と直交、単位normであり、出力も
+平均ゼロ・norm $r$ を保つ。上の角度範囲は本研究で固定した $0$–$5^\circ$ をradianで表したものとなる。
+入力と出力の角度は $\theta$、半径 $r$ の球面上の弧長は $r\theta$ であり、両者を区別する。
+Gaussianは方向候補の生成分布を指し、角度や最終残差の分布ではない。
+
+Fractional Shiftでは、チャネルindex上の線形補間と端点値の延長を行う操作を $S_\delta$ とすると、
+補間後の再中心化・再正規化は次のように書ける。
+
+$$
+y=P S_\delta(x),\qquad
+T_{\mathrm{FS}}(x)=r\frac{y}{\lVert y\rVert_2},\qquad
+\delta\sim U(-2,2).
+$$
+
+$\lVert y\rVert_2>0$ ならSNV制約集合へ戻る。shift幅が同じでも入力形状によって角度変化は異なるため、
+TGNと同じ角度制御とはしない。両式のゼロ・極小normには実装で`eps=1e-8`による保護があり、
+退化した接方向または再投影候補では元の入力を保持する。制約の等式は浮動小数演算での厳密一致を意味しない。
+
+記事では母標準偏差に対応する半径 $\sqrt{C}$ とcosine類似度 $\rho$ の一様抽選を用いるが、
+本研究は標本標準偏差に対応する $\sqrt{C-1}$ と**角度 $\theta$ の一様抽選**を採用する。
+$\rho=\cos\theta$ と変数を書き換えても一様分布同士は一致しない。shiftの軸も本研究では等間隔の
+波長gridであり、記事の波数軸という説明をそのまま移さない。操作の発想を参照し、設定は本研究の固定仕様に従う。
+M11では各操作を画素ごとに確率0.5で適用し、順序をbatchごとにランダム化するため、
+常に同じ順序で両操作を適用する合成式を実装仕様として書かない。
+
+角度で強度を明示できることはTGNの設計上の特徴である。ただし、化学的に許容される角度が自動で
+決まるわけではない。現行の2×2 ablationはTGN・shiftを追加する効果を調べるもので、通常の加法noiseや
+再投影なしshiftとの比較は含まないため、**幾何制約を保つこと自体の優位性を単独で実証する比較ではない**。
 
 ## 2. 実装で確認できる構成
 
@@ -331,6 +393,19 @@ $$
 この性質を踏まえ、圧縮後も情報を方向として表現させる方針を採った。
 ([前処理仕様 §5.6](design/preprocessing.md))
 
+一般に、標本標準偏差でSNV変換した非定数スペクトルの制約集合は
+
+$$
+\mathcal{M}_{\mathrm{SNV}}
+=\{x\in\mathbb{R}^{C}:\mathbf{1}^{\mathsf T}x=0,\ \lVert x\rVert_2=\sqrt{C-1}\}
+$$
+
+である。平均ゼロ超平面の次元は $C-1$、その中の球面の内在次元は $C-2$ なので、
+本入力では半径 $\sqrt{255}$ の254次元球面となる。周囲の $\mathbb{R}^{256}$ の球面全体とは区別する。
+16次元単位潜在には平均ゼロ制約を課していないため、この入力の次元の議論をそのまま潜在へ適用しない。
+SNVがscore plotに曲線状の構造を誘導しうることには既報があり、SNVの幾何そのものを新規提案とはしない。
+([Fearn et al., 2009](https://doi.org/10.1016/j.chemolab.2008.11.006))
+
 ただし、入力の一定normは、非線形encoderの潜在にも自動的に引き継がれる性質ではない。
 別の符号化では潜在のnormにスペクトル形状の情報を載せることも可能である。
 したがって「潜在のnormは数学的に必ず不要」とするのではなく、**本研究ではその自由度を
@@ -410,6 +485,7 @@ SAMやPearson相関に一致するという意味ではない。本研究は角�
 | [Xie et al. (2022), SimMIM](https://openaccess.thecvf.com/content/CVPR2022/html/Xie_SimMIM_A_Simple_Framework_for_Masked_Image_Modeling_CVPR_2022_paper.html) | masked modelingで単純な線形予測headを使う | 各位置のencoder特徴から復元する構成で、単一の低次元潜在ではない。原論文の損失はL1 |
 | [Georgiev et al. (2024), Raman unmixing AE](https://arxiv.org/html/2403.04526v1) | 非線形encoderと線形decoderの組合せ。Transformer encoderの例もある | 物理制約を用いた成分分離が目的で、MAEではない |
 | [Ren et al. (2025), Raman SMAE](https://arxiv.org/html/2504.16130v1) | スペクトルのmask再構成と、得た表現によるPCA等とのクラスタリング比較 | Transformer decoderを用い、教師ありfine-tuningも別途評価する |
+| [Jensen et al. (2024), Ramanのdenoising VAE](https://www.nature.com/articles/s41598-024-56788-7) | noise・軸方向変動などを加えたスペクトルから元の観測を復元し、表現を学ぶ | 強度と周波数軸を別に扱うVAEが基礎で、SNV制約を保つTGNとmaskを用いる本構成とは異なる |
 | [Ji et al. (2026), LeafVAE](https://doi.org/10.1016/j.compag.2026.111971) | 画素スペクトルの教師なし圧縮、潜在のクラスタリング、空間マップ化。学習済みモデルと固定クラスタ中心を新規データへ適用する | 2次元VAEと非線形decoderを使い、mask再構成ではない。葉の診断にはクラスタ構成比を入力とする教師ありrandom forestとSHAPを使う |
 
 ### 4.2 構成として特に近い例: Raman unmixing AE
@@ -476,6 +552,17 @@ SHAPによる画素への寄与の割当を、画素単位の化学量の直接�
 同論文の診断性能を古材の劣化状態の同定や本モデルの優位性の根拠にはしない。
 ([Ji et al., §2.3 / §3–4](https://doi.org/10.1016/j.compag.2026.111971))
 
+### 4.6 学習課題として近い例: Ramanのdenoising VAE
+
+Jensenらは、RamanスペクトルへGaussian noise、波長校正の変動、clippingを加え、元のスペクトルを
+復元する自己教師あり学習を行う。VAEを基礎とし、強度と周波数軸を分けて扱い、下流では潜在を
+教師あり分類器へ渡す。**スペクトルのnoise・軸方向変動からの復元を表現学習に使う前例**である。
+([Jensen et al., 2024, Introduction](https://www.nature.com/articles/s41598-024-56788-7))
+
+したがって、noise・shiftから元の観測を復元する学習全般について「初」とは主張しない。
+本研究との差分は、SNV制約を保つ具体的なcorruption、帯域maskとの組合せ、単一単位潜在への圧縮、
+および古材の教師なしマッピングという用途に分けて説明する。Jensenらと直接比較する実験は行っていない。
+
 ## 5. 本研究で主張できる特徴と、評価を待つ事項
 
 | 項目 | 現時点での位置づけ |
@@ -490,9 +577,9 @@ SHAPによる画素への寄与の割当を、画素単位の化学量の直接�
 | 化学状態に関連する自然なまとまり | 検証したい仮説。再構成lossもCLSへの集約も、クラスタの生成・分離を保証しない |
 | 指定したnoise・shiftへのlabel安定性 | LFRで測る評価項目。augmentation導入の主目的とは区別し、denoisingによる化学的な表現改善の証明には使わない |
 | PCAより良い領域分割 | 実験で検証する問い。構造や参考論文だけでは結論できない |
-| 化学成分・劣化度の抽出 | 外部の独立した裏づけはない。現在はスペクトル・マップに基づく探索的解釈 |
+| 化学成分・劣化度の抽出 | 現在はスペクトル・マップに基づく探索的解釈。位置対応FT-IRを予定するが、測定設計はOpen、結果は本書では未確認 |
 | 各構成要素の最適性 | 8層、16次元、線形decoder、L2正規化それぞれの最適性を比較する実験ではない |
-| 新規性 | 既存要素の組合せと古材NIRでの評価を具体的に説明する。「初の構成」とは主張しない |
+| 新規性 | TGN・SNV制約へ再投影するshiftの提案、masked denoisingへの統合、古材NIRでの評価を区別して説明する。優先性は未確定（第5.1節） |
 
 とくに、以下を解釈に含める。
 
@@ -521,6 +608,25 @@ LFRの評価摂動は、学習augmentationと同じ種類・強度設定に基�
 現在の評価はdenoising追加の効果を表現・マップの性質から調べるものであり、
 「より化学状態を反映する」という仮説の直接検証には独立した化学的裏づけが必要である。
 
+この解釈を深めるため、HSIクラスタと同じ領域または位置対応した領域をFT-IRで測定する予定である。
+計画と未決定事項は[可視化・解釈設計 第5.1節](design/visualization_and_interpretation.md#ftir-interpretation)にまとめる。
+別モダリティの観測を加える計画であり、全画素の正解ラベルが得られたことや、化学的対応が実証済みであることは意味しない。
+
+### 5.1 論文で説明する貢献と、新規性の確認範囲
+
+| 貢献として説明する内容 | 根拠・確認する範囲 |
+| --- | --- |
+| SNV制約を保つTGNとFractional Shiftの設計 | 第1.4節の操作と保存量を明示する。Gaussian乱数、shift、球面幾何自体の発明とはしない |
+| そのcorruptionをmasked denoisingへ組み込む表現学習 | 元の観測をtargetに保つlossと、CLS由来の単一単位潜在を説明する。denoising一般とspectral MAEには既報がある |
+| 正解劣化ラベルを使わない、試料単位のマップ比較 | 空間的一貫性・指定摂動への安定性・反復間再現性を、occupancyと併せて評価する。各指標自体の新規性や化学的正しさは主張しない |
+| 歴史木材への適用と位置対応FT-IRによる化学的解釈 | NIRマップと局所的な別モダリティ観測を対応づける計画。結果を確認するまでは実証済みの貢献に数えない |
+
+「提案内容が具体的であること」「先行研究と異なること」「評価で有用性が示されること」は別々に確認する。
+本書の限定した文献照合では、TGNや一連の構成の網羅的な優先性調査は完了していない。
+投稿時に「初」を検討するなら、SNV後のnoise付加と再正規化、接方向・角度制御、shift後の再投影、
+masked denoisingとの組合せについて、名称が異なる先行研究も含めて操作と学習targetを照合し、
+検索範囲・日付と差分を記録する。「知る限り初」と限定するだけで、この確認を代替しない。
+
 ## 6. クラスタリング方法への依存性
 
 ChemoMAEの表現をCosine-KMeansで評価する主実験に加え、同じ学習済み表現にvMF mixtureを
@@ -528,42 +634,84 @@ ChemoMAEの表現をCosine-KMeansで評価する主実験に加え、同じ学�
 保たれるかを調べることである。実施範囲・利用版・採用前の検証事項は
 [実験プロトコル第5.2節](design/experiment_protocol.md#vmf-supplementary)で管理する。
 
-## 7. 説明文として使える表現
+<a id="research-focus"></a>
 
-以下は研究の位置づけを説明する文案であり、未完了の比較結果を述べるものではない。
+## 7. 研究の主軸と説明文
 
-### 短い説明
+本節は現行設計を一つの研究課題として説明するための整理であり、未完了の比較結果を述べるものではない。
+実験条件と評価方法は各設計文書に従う。
 
-> ChemoMAEを、ケモメトリクスにおけるPCAのような教師なし次元削減器として用いる。
-> 古材のスペクトルで何を不変にすべきか、どのようなviewが妥当かを定める難しさから、
-> 帯域間の予測関係を学ぶマスク再構成を基礎とする。noise・shiftは、SNVの幾何的制約に基づく
-> corruptionとしてdenoisingを組み込み、化学状態をより安定して反映する表現の学習を期待して加える。
-> SNV後の入力が一定normであることを踏まえ、CLS由来の単一潜在も単位normに制約し、方向に情報を
-> 集約する。得られた表現とマップの性質からその効果を調べる。
-> 化学状態との対応は、独立した裏づけを要する仮説として扱う。
+### 7.1 一つの問いにまとめる
 
-### 論文・発表向けの説明
+主軸は、**状態を事前に定義しにくい材料の化学的な違いを捉える、自己教師ありスペクトル表現学習**とする。
+研究の中心となる問いは次のように表せる。
 
-> 本研究では、マスク自己教師あり学習を用いて、近赤外スペクトルの低次元表現を学習する。
-> その役割は、ケモメトリクスでPCAが担うスペクトル圧縮と教師なし構造探索に対応する。
-> 古材では、劣化・樹種・表面性状などに関わるスペクトル変動のうち、何に対する不変性を
-> 求めるべきかが自明でなく、その学習を支えるviewの多様性・妥当性・レシピも十分に定まっていない。
-> 対象固有のaugmentation探索を研究の中心に置かない方針から、view間対応を用いるSSLとの比較は
-> 本研究の範囲に含めず、可視帯域から隠れた帯域を予測する再構成課題を基礎に置く。
-> さらに、SNVの幾何的制約に基づくnoise・shiftを入力側に加え、ランダムマスクで選ばれた帯域への
-> 復元損失を通じて、追加摂動前のスペクトルをtargetとする全帯域にわたるdenoisingを学習する。
-> これはDenoising AEの発想に基づき、復元に必要な帯域間関係を捉える
-> 表現学習を促す試みである。corruptionを選ぶ仮定は残り、実測誤差の物理化学的な再現や、
-> 変換前後の化学状態の同一性を保証する設計ではない。
-> Transformer encoderは可視スペクトルpatchを単一の16次元単位ベクトルへ集約し、
-> アフィンdecoderが全スペクトルを復元する。潜在の単位norm制約は、SNV後の入力が一定normであることを
-> 踏まえ、圧縮後もnormの自由度を採用せず、方向に情報を集約するために課す。
-> これにより、可視帯域からの非線形な座標推定と、
-> 共通の復元方向による低ランク表現を組み合わせる。潜在軸を化学成分へ対応づける制約は課さず、
-> この学習が化学状態に関連するスペクトル群のまとまりへどう影響するかを問う。
-> 学習後は全帯域を可視としてencoderを固定し、
-> 得られた表現をcosineクラスタリングへ用いる。評価では、PCAなどのbaselineに対する未知試料の
-> 領域分割の空間的一貫性と、指定したスペクトル摂動へのlabel安定性を比較する。
+> 化学状態の正解ラベルを与えずに、スペクトルの帯域間関係を学ぶことで、
+> 状態の違いを探索・解釈できる表現を得られるか。
+
+ここで「定義しにくい」とは、状態の区分や正解ラベルを事前に定める根拠が十分にないことを指す。
+中心に置くのは、どの違いを状態として区別するか自体が探索課題である場合である。
+化学状態が連続的・複合的である可能性も考え、クラスタを初めから存在する離散的な化学classとは仮定しない。
+「化学状態を捉える」とは、組成や構造などに関わる違いが表現上でどう現れるかを調べ、その対応を
+別の観測から解釈することであり、潜在の各軸を成分や濃度として同定することを前提としない。
+
+本研究では、この課題の実証対象として古材を扱う。劣化、樹種、組織、含水、表面状態などに関わる変動が
+重なりうるNIR-HSIから低次元の座標系を学び、スペクトル群の空間分布を調べる。
+古材で得られる知見は、この条件での手法の有用性と限界を示すものである。他材料への適用可能性を論じる際は、
+SNVで保持・除去する情報、corruptionの妥当性、化学的対応の根拠を対象ごとに検討する必要がある。
+
+| 範囲 | 本研究での位置づけ |
+| --- | --- |
+| 研究課題 | 状態の区分や正解を事前に定めにくい材料から、化学状態の違いを捉える表現を学ぶ |
+| 提案する方法 | SNV制約を保つ摂動をmasked denoisingへ組み込む自己教師あり学習 |
+| 実証対象 | 古材NIR-HSIの教師なし空間マッピングと、位置対応FT-IRによる解釈の計画 |
+| 一般化の範囲 | 現行実験で比較する範囲は古材の未知試料。他材料・別測定条件への有効性は未検証 |
+
+手法上の中心は、**TGN・Fractional Shiftという摂動の設計と、それをマスク再構成へ組み込む学習課題**である。
+追加摂動前の観測を復元する過程で、化学状態をより安定して反映する表現の獲得を期待する。
+この期待を、得られたマップの比較と化学的解釈から検討する構成にする。
+
+| 研究内の役割 | 方法・観測 | 答える問い |
+| --- | --- | --- |
+| 表現を学ぶための提案 | SNV制約を保つTGN・shiftとmasked denoising | 帯域補完と追加摂動からの復元を学ぶことで、利用時の表現とマップがどう変わるか |
+| 表現を領域へ対応づける | CLS由来の単一単位潜在、cosineクラスタリング、空間マップ | 学習したスペクトル群が試料表面のどこに分布するか。vMFは分割手法への依存性も調べる |
+| マップの性質を比較する | 試料単位CV、baseline・ablation、LLA・LFR・ARI・occupancy等 | 未知試料でどの程度空間的にまとまり、指定摂動や学習反復でどう変わるか。退化やtrade-offはあるか |
+| 化学的な意味を検討する | NIRの代表・差スペクトル、試料情報、位置対応FT-IRの計画 | 分割された領域の差を化学状態とどう対応づけられるか。劣化以外の説明は何か |
+
+CVで比較できるのはマップの性質であり、化学的な意味は別の観測から検討する。
+例えば、LLAが高くてもクラスタが一つへ集中していれば状態差を捉えやすくなったとは言えず、
+LFRが低くても化学的に重要な差を保持したとは限らない。逆に、一部領域のFT-IRで差が見つかっても、
+全画素の劣化分類精度や未知試料での性能が示されたことにはならない。
+
+結果は「どの条件で、どの性質が変わったか」と「その領域差をどこまで化学的に解釈できたか」を対応づけて報告する。
+改善が限定的な場合や化学的対応が不明な場合も、その範囲を研究の結論に含める。
+
+### 7.2 短い説明
+
+> 状態の区分や正解ラベルを事前に定めにくい材料から、化学的な違いを捉えるスペクトル表現の学習を目指す。
+> SNVの幾何的制約を保つTangent Gaussian NoiseとFractional Shiftをマスク再構成へ組み込み、
+> 帯域補完とdenoisingを通じて、状態差を捉えるのに有用な座標系の獲得を目指す。
+> 古材NIR-HSIを実証対象に、得られた表現を教師なしでマッピングし、試料単位CVで空間的一貫性・摂動安定性・反復間再現性を比較する。
+> 化学的な意味はNIRスペクトルと位置対応FT-IRから検討する計画であり、他材料への有効性は今後の検証課題とする。
+
+### 7.3 論文・発表向けの説明
+
+> 本研究は、状態の区分や正解ラベルを事前に定めにくい材料に対し、化学状態の違いを探索・解釈するための
+> 自己教師ありスペクトル表現学習を検討する。可視帯域から隠した帯域を予測するマスク再構成を基礎とし、
+> SNV後の平均ゼロ・一定norm制約を保つTangent Gaussian NoiseとFractional Shiftを入力へ加える。
+> 復元targetには追加摂動前の観測を用い、帯域補完とdenoisingを通じて、化学状態を反映する帯域間関係の
+> 学習を促すことを期待する。Transformer encoderは画素ごとのスペクトルをCLS由来の単一16次元単位ベクトルへ
+> 集約し、アフィンdecoderによる再構成を学ぶ。実証対象には、画素単位の正解劣化ラベルがない古材NIR-HSIを用いる。
+> 学習後は全帯域を可視としてencoderを固定し、表現のクラスタリングから試料表面の領域マップを得る。
+> 試料単位のheld-out評価では、raw SNV、PCA、AE、MAEとの比較とaugmentationのablationにより、
+> マップの空間的一貫性、指定摂動への安定性、反復間再現性を、占有率やクラスタ分離の診断と併せて調べる。
+> さらに、NIRの代表・差スペクトルと、クラスタの位置に対応するFT-IR測定によって、
+> 領域間の差を化学的に解釈する計画である。教師なし指標による比較と局所的な化学的観測を区別し、
+> 学習した表現がどのような状態差の探索に有用か、その根拠と限界を明らかにする。
+> 他材料への有効性は、この古材での実証とは分けて検証すべき課題として扱う。
+
+上記は研究目的と方法を説明する文案であり、FT-IRの実施・結果を確認するまでは計画形を維持する。
+MAEの選択とdenoisingに置く仮定は第1節、潜在の単位norm制約は第3節、主張できる範囲は第5節に詳述する。
 
 この位置づけの背景としては、非線形PCA、Denoising AE、Raman unmixing AE、Raman SMAEをそれぞれ
 「利用目的」「denoisingによる表現学習」「非線形encoderと線形decoder」「mask学習とクラスタリング」
@@ -577,34 +725,36 @@ ChemoMAEの表現をCosine-KMeansで評価する主実験に加え、同じ学�
 固定した表現・クラスタ中心を新規データへ適用する解析」の前例として引用できる。
 ([Ji et al., 2026](https://doi.org/10.1016/j.compag.2026.111971))
 
-### 英語での短い定義
+### 7.4 英語での短い説明
 
-> We use ChemoMAE as an unsupervised spectral representation model for chemometric analysis.
-> For aged wood, the spectral variations to treat as invariant and the validity and diversity of
-> augmented views remain difficult to establish. We therefore use masked reconstruction as the
-> core learning task and leave comparisons with view-matching SSL methods outside this study's scope.
-> We incorporate noise and wavelength-axis shifts as input corruptions for a denoising objective:
-> predicting the original observed spectrum at masked channels from corrupted visible channels.
-> Random masking makes every spectral channel a reconstruction target over training, so denoising
-> is learned across the full spectral range, with loss evaluated only at masked channels in each step.
-> Inspired by denoising autoencoders, we hypothesize that this task encourages representations
-> that more reliably reflect chemical state. The corruptions follow geometric constraints of SNV
-> spectra; they are neither calibrated measurement-error models nor validated chemical-state-preserving
-> transformations. The denoising formulation retains an assumption about what should be reconstructed.
-> A nonlinear Transformer encoder maps visible spectral patches to a single unit-norm latent
-> vector derived from CLS, and an affine decoder reconstructs the spectrum from this bottleneck.
-> Because full SNV spectra already have a fixed norm, we deliberately omit a radial degree of
-> freedom from the latent representation and concentrate information in its direction.
-> This is an inductive constraint; alignment with subsequent cosine-based clustering is an
-> additional benefit, and preservation of input spectral angles is not imposed.
-> We investigate whether learning inter-band predictive relationships produces latent groupings
-> associated with differences in chemical state, without imposing an explicit unmixing model.
-> Label stability under specified perturbations is an evaluation outcome, distinct from the
-> motivation for adding denoising, and does not establish chemical validity.
-> After masked reconstruction training, the encoder is frozen and applied to fully visible
-> spectra for cosine-based clustering. This provides a PCA-inspired approach to spectral
-> compression and structure exploration, with nonlinear coordinate inference and an explicit
-> linear reconstruction constraint.
+> We investigate self-supervised spectral representation learning to capture chemical-state variation
+> in materials for which state categories or ground-truth labels are difficult to define in advance.
+> We combine masked reconstruction with Tangent Gaussian Noise and Fractional Shift,
+> which preserve the zero-mean and constant-norm constraints of SNV spectra. The model predicts the
+> original observed spectrum at masked channels from corrupted visible bands through a single
+> unit-norm latent vector and an affine decoder. We hypothesize that this task encourages
+> representations useful for exploring chemical-state differences. Aged-wood near-infrared hyperspectral
+> imaging serves as the empirical case study. The frozen encoder is applied to fully visible spectra
+> for clustering and spatial mapping. Sample-level held-out comparisons
+> assess spatial coherence, stability under specified perturbations, and repeatability, alongside
+> occupancy and geometric diagnostics. Spatially matched FT-IR measurements are planned to support
+> chemical interpretation of selected regions. These complementary observations will be used to
+> examine the utility and limits of the learned representation; the unsupervised metrics alone
+> do not establish chemical validity or degradation-detection accuracy. Transfer to other materials
+> remains to be evaluated.
+
+### 7.5 論文での説明順序と数式の配置
+
+論文は、材料側の課題、表現学習の提案、CVでの比較、化学的解釈という順に組み立てる。
+木材・文化財の読者には領域差と化学的解釈を、分光・ケモメトリクスの読者には摂動の設計と表現学習を
+詳しく説明できるが、研究全体の問いと証拠の役割は共通とする。投稿先と最終的な強調点は未決定である。
+既定の主要比較、反例、trade-offを保持し、結果を見て強調点を決めた場合も、後から作った仮説を事前仮説として記載しない。
+
+本文の数式は、各式がどの設計判断を支えるかを一緒に説明する。SNVの二つの制約、
+提案するTGN・shift、masked denoisingのtargetとlossを、手法の違いを理解するための中心に置く。
+クラスタリングとLLA・LFRには意味と必要な定義を示し、標準的なTransformer内部式、導出の逐次展開、
+vMFの数値処理、seedの生成詳細などは補足資料へ配置できる。vMFを主に論じる場合は密度・割当の定義も本文に置く。
+この区分は論文編集上の案であり、リポジトリの再現用仕様を省略する方針ではない。
 
 ## 8. 参考文献と確認範囲
 
@@ -685,8 +835,23 @@ ChemoMAEの表現をCosine-KMeansで評価する主実験に加え、同じ学�
     ユーザー提供の刊行版PDFの§2.3、§3–4、Figs. 1–4を確認。
     画素スペクトルのVAE表現、クラスタリング、固定中心による新規データへの適用、空間マップ化を参照。
     教師なし表現学習と、ラベルを用いる下流の診断・SHAPによる説明を区別する。
+20. Fearn, T., Riccioli, C., Garrido-Varo, A. & Guerrero-Ginel, J. E. (2009).
+    [On the geometry of SNV and MSC](https://doi.org/10.1016/j.chemolab.2008.11.006).
+    *Chemometrics and Intelligent Laboratory Systems*, 96(1), 22–26。
+    出版社公開abstract・Introductionを確認。SNVの幾何とscore plotの曲線状構造の先行研究として参照し、
+    TGNの優先性を示す文献とはしない。本書の次元・半径は本研究のSNV定義から導いた。
+21. Jensen, M. N. et al. (2024).
+    [Identification of extracellular vesicles from their Raman spectra via self-supervised learning](https://www.nature.com/articles/s41598-024-56788-7).
+    *Scientific Reports*, 14, 6791。公開本文Introductionのcorruption・復元targetとVAEの説明を確認。
+    noise・軸方向変動を用いるdenoising表現学習の前例として参照する。
+22. Mantis-Ryuji.
+    [分光データ拡張の著者解説、§3.2 Tangent Gaussian Noise・§3.3 Fractional Shift](https://zenn.dev/mantis_ryuji/articles/e17b4d223cd7da).
+    2026-09-10確認。提案者自身の操作説明であり、第三者による優先性・有用性の検証ではない。
+    SNVの分母、noise強度の抽選、入力軸の違いは第1.4節に記載した。
 
 実装確認は固定config、利用側コード、導入済みChemoMAEのソースを読み取って行った。
 今回の意図に関する改訂では、固定仕様と利用側の学習処理を読み直し、入力だけを摂動して
 元の観測をtargetにする点とmasked lossの関係を照合した。
 文献調査のための学習・評価・ベンチマークは実行していない。
+2026-09-10の改訂では、上記追加文献・記事と導入済みaugmentation実装をread-onlyで確認した。
+FT-IRのデータ・結果と網羅的な新規性評価は確認対象に含めていない。
