@@ -13,12 +13,12 @@
 | 本番入力 | `data/processed/production_v1/`、49試料、3,902,250有効画素 |
 | 本番root | `outputs/experiments/production_v1/` |
 | manifest | split・共通train座標・augmentation contractは現行仕様で確定済み |
-| 完了 | A0・M00・M10のfold 1・repeat 1–3、計9組合せで学習・clean-map clustering・全test評価と各checkが完了 |
-| 実行中 | なし |
-| 次の工程 | 次の未完了runを選択 → 800 epoch学習 → clean test map → 全test評価 |
+| 完了 | A0・M00・M10・M01のfold 1・repeat 1–3、計12組合せで学習・clean-map clustering・全test評価と各checkが完了 |
+| 実行中 | M11・fold 1・repeat 1を800 epochまで学習中 |
+| 次の工程 | M11・fold 1・repeat 1の学習完了確認 → clean test map → 全test評価 |
 | 実行環境 | ChemoMAE v0.2.2。noise $U(0,5^\circ)$、shift $U(-2,2)$ |
 | 検証 | manifest・neural・clustering・evaluation・records関連テストは現行コードで全件passed |
-| 本番結果 | 主ニューラル実験の学習・clustering・評価は各9/75完了 |
+| 本番結果 | 主ニューラル実験の学習・clustering・評価は各12/75完了。実行中runは完了数に含めない |
 | vMF補助実験 | 主7条件・5-fold・3反復・共通7Kの735 fits。修正版v0.2.2を導入済み、数値検証・設定確定は未完了 |
 
 本番CVでは入力・manifest・研究条件を固定し、成果物に実行時の設定と環境を記録する。
@@ -38,16 +38,20 @@
 - [x] 本文代表例を各樹種の保存有効画素数最大の7試料に固定した。
 - [x] `production_v1` のmanifestを新規作成し、preflightとの一致を確認した。
 
-## 直近の完了と次のrun
+## 直近の完了と進行中のrun
 
-現在、実行中のrunはない。M10・fold 1・repeat 1–3は、学習completionと重み・checkpointの
-整合確認、全7Kのclustering、全test評価、各保存済み成果物のcheckまで完了した。
+M01・fold 1・repeat 1–3は、学習completionと重み・checkpointの整合確認、全7Kのclustering、
+全test評価、各保存済み成果物のcheckまで完了した。repeat 3はWindowsの予期しない再起動後、
+epoch 432の整合するcheckpointから再開して800 epochまで完了した。現在はM11・fold 1・repeat 1を
+学習中である。
 完了済みrunの実測値とcheck結果は[検証履歴](docs/verification_history.md)にまとめる。
 
 - [x] A0・M00のfold 1・repeat 1–3で、現行設定の全test評価とcheckを完了する。
 - [x] M10・fold 1・repeat 1–3を800 epochまで学習し、completion、training history、重み・checkpointを照合する。
 - [x] M10・fold 1・repeat 1–3の全7K clean test mapと全test評価を作成し、各checkを通す。
-- [ ] 次の未完了runを選び、同じ完了判定に従って学習・clustering・評価を進める。
+- [x] M01・fold 1・repeat 1–3を800 epochまで学習し、completion、training history、重み・checkpointを照合する。
+- [x] M01・fold 1・repeat 1–3の全7K clean test mapと全test評価を作成し、各checkを通す。
+- [ ] M11・fold 1・repeat 1を800 epochまで学習し、同じ完了判定に従ってclustering・評価を進める。
 
 新規runと中断再開のコマンド、完了判定は[実験runbook](docs/experiment_runbook.md)を使う。
 
@@ -67,10 +71,10 @@
 - [ ] A0: 5 folds × 3 repeats（fold 1の3/15 runsで学習・clustering・評価完了）
 - [ ] M00: 5 folds × 3 repeats（fold 1の3/15 runsで学習・clustering・評価完了）
 - [ ] M10: 5 folds × 3 repeats（fold 1の3/15 runsで学習・clustering・評価完了）
-- [ ] M01: 5 folds × 3 repeats（15 runs）
-- [ ] M11: 5 folds × 3 repeats（15 runs）
-- [ ] 全75 runsでclean test mapのrun・checkを完了する（9/75組合せ完了）。
-- [ ] 全75 runsで評価のrun・checkを完了する（9/75組合せ完了）。
+- [ ] M01: 5 folds × 3 repeats（fold 1の3/15 runsで学習・clustering・評価完了）
+- [ ] M11: 5 folds × 3 repeats（fold 1・repeat 1を学習中。完了0/15 runs）
+- [ ] 全75 runsでclean test mapのrun・checkを完了する（12/75組合せ完了）。
+- [ ] 全75 runsで評価のrun・checkを完了する（12/75組合せ完了）。
 
 ### Mask率補助実験
 
