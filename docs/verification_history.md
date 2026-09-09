@@ -91,9 +91,9 @@ test 10試料・906,428画素・7種類のKを処理し、700 score rowsは全�
 
 ## 5. 本番CV実行記録
 
-### 5.1 A0・M00・M10、fold 1
+### 5.1 A0・M00・M10・M01、fold 1
 
-2026-09-06から2026-09-08にかけて、A0・M00・M10のfold 1・repeat 1–3、計9 runの学習と
+2026-09-06から2026-09-09にかけて、A0・M00・M10・M01のfold 1・repeat 1–3、計12 runの学習と
 全7Kのclusteringを完了した。各学習runは800 epoch・249,600 attempted updatesで、
 completion、training history、重み・checkpointのSHA-256を照合した。
 
@@ -108,8 +108,11 @@ completion、training history、重み・checkpointのSHA-256を照合した。
 | M10 | 1 | 249,504 | 96 | 9,976.5919 | 112.44 s |
 | M10 | 2 | 249,501 | 99 | 9,956.5483 | 117.43 s |
 | M10 | 3 | 249,501 | 99 | 9,865.9994 | 116.56 s |
+| M01 | 1 | 249,503 | 97 | 9,898.3589 | 109.03 s |
+| M01 | 2 | 249,503 | 97 | 9,917.9678 | 114.41 s |
+| M01 | 3 | 249,499 | 101 | 9,195.9055 | 99.60 s |
 
-9 runすべてで`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesは
+12 runすべてで`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesは
 optimizer updatesより1少なかった。`training_seconds`は各epochの処理時間の合計であり、CLI全体の
 wall timeではない。本番学習のcompletionはGPU peakを保存しないため、第4.1節のpreflight値で補わない。
 
@@ -118,16 +121,21 @@ Windowsの`PermissionError`が発生した。`last.pt`、一時記録、training
 SHA-256を照合し、同じcheckpointを明示してepoch 27から再開した。失敗attemptと完了attemptは
 両方保存され、最終completionと重みのhashも一致した。
 
+M01・repeat 3はepoch 432のcheckpoint保存後、Windowsの予期しない再起動によって中断した。
+`last.pt`、`checkpoint.json`、training historyのepoch・更新数・SHA-256が一致することを確認し、
+同じcheckpointを明示してepoch 433から再開した。最終的に800 epochを完了し、completion、
+training history、重み・checkpointのhashも一致した。
+
 ### 5.2 clean test map・全test評価
 
-9組合せすべてでfold 1のtest 10試料・906,428画素と
+12組合せすべてでfold 1のtest 10試料・906,428画素と
 $K\in\{2,4,6,8,10,12,14\}$を処理した。clusteringは各runで
 `clean_test_maps_completed`・`checks_passed=true`、保存済み成果物は
 `validated_existing_clustering`だった。GPU peak allocated / reservedは全runで
 255.81 / 388.00 MiBだった。
 
-2026-09-08、A0・M00の6組合せはまとめて、M10の3組合せは個別に、同じ固定configと共通摂動で
-評価した。各runで
+2026-09-08から2026-09-09にかけて、A0・M00の6組合せはまとめて、M10・M01の各3組合せは
+個別に、同じ固定configと共通摂動で評価した。各runで
 `full_test_evaluation_completed`・`checks_passed=true`、保存済み成果物は
 `validated_existing_evaluation`だった。保存記録の実測値は次のとおり。
 
@@ -137,11 +145,14 @@ $K\in\{2,4,6,8,10,12,14\}$を処理した。clusteringは各runで
 | M10、repeat 1 | 1組合せ | 575.89 s | 374.90 MiB | 564.00 MiB |
 | M10、repeat 2 | 1組合せ | 489.78 s | 374.90 MiB | 564.00 MiB |
 | M10、repeat 3 | 1組合せ | 559.64 s | 374.90 MiB | 564.00 MiB |
+| M01、repeat 1 | 1組合せ | 572.00 s | 374.90 MiB | 564.00 MiB |
+| M01、repeat 2 | 1組合せ | 594.00 s | 374.90 MiB | 564.00 MiB |
+| M01、repeat 3 | 1組合せ | 468.02 s | 374.90 MiB | 564.00 MiB |
 
 `wall_seconds`はsource検証を除く評価開始から対象consumer保存までの経過時間である。
 A0・M00の値は共同評価の累積時間であり、組合せ別の処理時間ではない。
 
-共有入力SHA-256は9組合せとも
+共有入力SHA-256は12組合せとも
 `4d11b22228242221662bbeb0dbe634064963ab98e37deec3f5ef949dedc894e7`で一致した。
 これは実行・保存契約の確認であり、条件間の性能比較は全fold・反復が揃ったOOF snapshotで行う。
 
