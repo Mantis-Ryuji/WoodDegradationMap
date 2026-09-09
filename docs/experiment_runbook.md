@@ -145,27 +145,44 @@ if ($actualCheckpointHash -ne $pending.checkpoint_sha256 -or
 run identity、config、manifest、source hashの検証を省略しない。同じ置換エラーが再発する場合は、
 対象JSONを開いているeditorやpreviewを閉じ、原因を確認してから再開する。
 
-## 5. PCA baseline
+## 5. B1 PCA fitとbaseline変換の検証
 
-B0は学習済み変換を必要としない。B1は各foldのtrain画素だけでPCAをfitする。まずrepeat 1をfitし、
-保存・再読込と由来を確認する。
+B0は学習済み変換を必要とせず、fitするパラメータを持たない。B1はfoldごとにtrain集合が異なるため、
+各foldのtrain画素だけでPCAを1回ずつ、5 foldsで計5回fitする。同じfold内では決定的なPCA変換を
+repeat 1～3で共有し、PCAを15回fitしない。KMeansはPCAを共有してもrepeatごとにfitする。
+
+CLI名の`fit_baselines.py fit`と保存先`results/baselines/`は、B0・B1をまとめて検証する工程を表す。
+本書でいう「baseline fit」の実質はB1 PCA fitであり、B0について行うのは無パラメータ変換の仕様保存と
+probe検証だけである。完了済みのfoldで`fit`を再実行しない。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$fold = 1
 
-uv run python scripts/experiments/fit_baselines.py fit --fold $fold --repeat 1 --experiment-dir $experimentDir
-uv run python scripts/experiments/fit_baselines.py check --fold $fold --repeat 1 --experiment-dir $experimentDir
+foreach ($fold in 1..5) {
+    uv run python scripts/experiments/fit_baselines.py fit `
+        --fold $fold --repeat 1 --experiment-dir $experimentDir
+    if ($LASTEXITCODE -ne 0) { throw "B1 PCA fit failed: fold $fold" }
+
+    uv run python scripts/experiments/fit_baselines.py check `
+        --fold $fold --repeat 1 --experiment-dir $experimentDir
+    if ($LASTEXITCODE -ne 0) { throw "baseline check failed: fold $fold" }
+}
 ```
 
-`fit.json` の `pca_reusable_across_repeats` が `true` なら、B1のrepeat 2・3では
-`cluster_representations.py run` へ `--pca-repeat 1` を明示する。 `false` ならrepeatごとに
-PCAをfitする。KMeansはPCAを再利用する場合も各repeatでfitする。
+各foldで`fit`は`status=fitted_and_roundtrip_checked`、`pca_reusable_across_repeats=true`、
+`check`は`status=validated_existing_baselines`を確認する。production_v1では5 foldsすべてで
+repeat間再利用可否が`true`だったため、B1のrepeat 2・3では`cluster_representations.py run`へ
+`--pca-repeat 1`を明示する。
+
+`results/baselines/fold_<fold>/repeat_1/b0.json`はB0変換仕様、同じ場所の`fit.json`は主にB1 PCAの
+fit由来とB0・B1のprobe診断である。実際のPCAパラメータは
+`checkpoints/baselines/fold_<fold>/repeat_1/pca.npz`に保存する。
 
 ## 6. clean test map
 
-学習またはbaseline fitが完了したcondition・fold・repeatについて、全事前固定KのKMeansと
-clean test mapを作成し、CPUの `check` で保存物を検証する。
+ニューラル学習、またはB1で必要なfold別PCA fitが完了したcondition・fold・repeatについて、
+全事前固定KのKMeansとclean test mapを作成し、CPUの`check`で保存物を検証する。
+B0には前段のfitはない。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'

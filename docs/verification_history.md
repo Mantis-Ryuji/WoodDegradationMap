@@ -91,9 +91,9 @@ test 10試料・906,428画素・7種類のKを処理し、700 score rowsは全�
 
 ## 5. 本番CV実行記録
 
-### 5.1 A0・M00・M10・M01、fold 1
+### 5.1 主ニューラル5条件、fold 1
 
-2026-09-06から2026-09-09にかけて、A0・M00・M10・M01のfold 1・repeat 1–3、計12 runの学習と
+2026-09-06から2026-09-10にかけて、A0・M00・M10・M01・M11のfold 1・repeat 1–3、計15 runの学習と
 全7Kのclusteringを完了した。各学習runは800 epoch・249,600 attempted updatesで、
 completion、training history、重み・checkpointのSHA-256を照合した。
 
@@ -111,15 +111,18 @@ completion、training history、重み・checkpointのSHA-256を照合した。
 | M01 | 1 | 249,503 | 97 | 9,898.3589 | 109.03 s |
 | M01 | 2 | 249,503 | 97 | 9,917.9678 | 114.41 s |
 | M01 | 3 | 249,499 | 101 | 9,195.9055 | 99.60 s |
+| M11 | 1 | 249,503 | 97 | 9,822.4305 | 102.69 s |
+| M11 | 2 | 249,503 | 97 | 9,985.8211 | 87.41 s |
+| M11 | 3 | 249,501 | 99 | 9,959.2961 | 100.91 s |
 
-12 runすべてで`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesは
+15 runすべてで`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesは
 optimizer updatesより1少なかった。`training_seconds`は各epochの処理時間の合計であり、CLI全体の
 wall timeではない。本番学習のcompletionはGPU peakを保存しないため、第4.1節のpreflight値で補わない。
 
 `AMP skip`は有限なlossに対するscaled backward後、動的GradScalerが非有限勾配を検出し、
 そのbatchの`optimizer.step()`を呼ばずにloss scaleを下げた回数である。モデル初期値・画素順・mask・
 augmentationはrepeatで変わり、mask・loss領域・augmentationは条件でも異なるため、勾配とloss scaleの
-軌跡が変わり、run間でskip数が完全には一致しない。12 runのskipは92～101回、249,600 attempted updatesの
+軌跡が変わり、run間でskip数が完全には一致しない。15 runのskipは92～101回、249,600 attempted updatesの
 約0.037～0.040%であった。skipはepoch 47～59に始まりepoch 785～799まで分散し、該当epochの大半で1回、
 最大3回だったため、学習開始時だけの異常ではなく、GradScalerが学習中にscaleを上げ、数値範囲の限界で
 下げる動作として記録する。run間の実optimizer update数の最大差は9回（attempted updatesの約0.0036%）である。
@@ -135,15 +138,19 @@ M01・repeat 3はepoch 432のcheckpoint保存後、Windowsの予期しない再�
 同じcheckpointを明示してepoch 433から再開した。最終的に800 epochを完了し、completion、
 training history、重み・checkpointのhashも一致した。
 
+M11・repeat 2はepoch 487の途中で`KeyboardInterrupt`により中断し、その時点では486 epochが完了していた。
+同じrunの`last.pt`を明示してepoch 487を先頭から再実行し、800 epochまで完了した。中断前後のattempt記録を
+両方保持し、最終completion、training history、重み・checkpointの整合を確認した。
+
 ### 5.2 clean test map・全test評価
 
-12組合せすべてでfold 1のtest 10試料・906,428画素と
+15組合せすべてでfold 1のtest 10試料・906,428画素と
 $K\in\{2,4,6,8,10,12,14\}$を処理した。clusteringは各runで
 `clean_test_maps_completed`・`checks_passed=true`、保存済み成果物は
 `validated_existing_clustering`だった。GPU peak allocated / reservedは全runで
 255.81 / 388.00 MiBだった。
 
-2026-09-08から2026-09-09にかけて、A0・M00の6組合せはまとめて、M10・M01の各3組合せは
+2026-09-08から2026-09-10にかけて、A0・M00の6組合せはまとめて、M10・M01・M11の各3組合せは
 個別に、同じ固定configと共通摂動で評価した。各runで
 `full_test_evaluation_completed`・`checks_passed=true`、保存済み成果物は
 `validated_existing_evaluation`だった。保存記録の実測値は次のとおり。
@@ -157,13 +164,50 @@ $K\in\{2,4,6,8,10,12,14\}$を処理した。clusteringは各runで
 | M01、repeat 1 | 1組合せ | 572.00 s | 374.90 MiB | 564.00 MiB |
 | M01、repeat 2 | 1組合せ | 594.00 s | 374.90 MiB | 564.00 MiB |
 | M01、repeat 3 | 1組合せ | 468.02 s | 374.90 MiB | 564.00 MiB |
+| M11、repeat 1 | 1組合せ | 505.11 s | 374.90 MiB | 564.00 MiB |
+| M11、repeat 2 | 1組合せ | 546.94 s | 374.90 MiB | 564.00 MiB |
+| M11、repeat 3 | 1組合せ | 575.82 s | 374.90 MiB | 564.00 MiB |
 
 `wall_seconds`はsource検証を除く評価開始から対象consumer保存までの経過時間である。
 A0・M00の値は共同評価の累積時間であり、組合せ別の処理時間ではない。
 
-共有入力SHA-256は12組合せとも
+共有入力SHA-256は15組合せとも
 `4d11b22228242221662bbeb0dbe634064963ab98e37deec3f5ef949dedc894e7`で一致した。
 これは実行・保存契約の確認であり、条件間の性能比較は全fold・反復が揃ったOOF snapshotで行う。
+
+### 5.3 B0・B1、全5 folds
+
+2026-09-10、B1の16次元PCAを各foldの共通train画素で1回ずつ、計5回fitし、保存・再読込と由来を
+検証した。fold 1～4は39試料・319,488画素、fold 5は40試料・327,680画素を使用した。
+実solverは全foldで`covariance_eigh`、`pca_reusable_across_repeats=true`であり、保存・再読込後の
+probe最大絶対誤差は全foldで$2.50\times10^{-7}$以下だった。同じfoldのB1 repeat 1～3は、この
+repeat 1のPCAを共有する。B0はfitするパラメータを持たない。
+
+`fit_baselines.py fit`と`results/baselines/`はB0・B1をまとめて検証する工程名・保存先であるが、
+ここで実質的にfitされるのはB1 PCAだけである。`b0.json`はB0変換仕様、`fit.json`は主にB1 PCAの
+fit由来とB0・B1のprobe診断を記録し、PCAパラメータ本体は`checkpoints/baselines/`の`pca.npz`へ保存する。
+
+続いてB0・B1の各5 folds × 3 repeats、計30組合せについて全7Kのclusteringと全test評価を完了した。
+各condition・repeatで5 foldsを合わせると49試料・3,902,250有効画素を1回ずつ覆う。全30組合せで
+clusteringは`clean_test_maps_completed`・`checks_passed=true`、評価は
+`full_test_evaluation_completed`・`checks_passed=true`であり、各checkはそれぞれ
+`validated_existing_clustering`・`validated_existing_evaluation`だった。
+
+評価は各foldでB0・B1の3反復、計6 consumerをまとめ、同じfold内では共有入力SHA-256が全consumerで
+一致した。最終consumer保存までの共同評価実測値は次のとおりである。
+
+| fold | test試料 | test画素 | joint evaluation wall | peak allocated | peak reserved |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 10 | 906,428 | 915.94 s | 4,476.37 MiB | 4,524.00 MiB |
+| 2 | 10 | 781,665 | 782.67 s | 3,861.13 MiB | 3,892.00 MiB |
+| 3 | 10 | 667,682 | 643.36 s | 3,296.52 MiB | 3,340.00 MiB |
+| 4 | 10 | 750,105 | 752.47 s | 3,703.39 MiB | 3,740.00 MiB |
+| 5 | 9 | 796,370 | 795.86 s | 3,931.75 MiB | 3,962.00 MiB |
+
+B0は10,290 score rowsが全件definedだった。B1は10,290 rows中10,281 rowsがdefinedで、残る9 rowsは
+fold 2のKYOw02789・$K=2$における補正LLA（窓3・5・9、3反復）が`single_cluster`のためundefinedだった。
+これは理由付き未定義値として保持し、0で補完しない。B0・B1だけを用いた性能順位は確定せず、
+主7条件の全fold・反復が揃ったOOF snapshotで計画比較する。
 
 ## 6. 本文代表試料
 
