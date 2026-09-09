@@ -1,6 +1,6 @@
 # 実験実施 ToDo
 
-更新日: 2026-09-09
+更新日: 2026-09-10
 
 この文書は現在の実行状態と残作業だけを管理する。固定済みの研究条件は
 [研究設計](docs/design/README.md)、CLIと完了判定は[実験runbook](docs/experiment_runbook.md)、
@@ -13,12 +13,12 @@
 | 本番入力 | `data/processed/production_v1/`、49試料、3,902,250有効画素 |
 | 本番root | `outputs/experiments/production_v1/` |
 | manifest | split・共通train座標・augmentation contractは現行仕様で確定済み |
-| 完了 | A0・M00・M10・M01のfold 1・repeat 1–3、計12組合せで学習・clean-map clustering・全test評価と各checkが完了 |
-| 実行中 | M11・fold 1・repeat 1を800 epochまで学習中 |
-| 次の工程 | M11・fold 1・repeat 1の学習完了確認 → clean test map → 全test評価 |
+| 完了 | B0・B1の全5 folds × 3 repeats、およびA0・M00・M10・M01・M11のfold 1・repeat 1–3でclean-map clustering・全test評価と各checkが完了 |
+| 実行中 | なし |
+| 次の工程 | M11・fold 2・repeat 1の学習 → clean test map → 全test評価 |
 | 実行環境 | ChemoMAE v0.2.2。noise $U(0,5^\circ)$、shift $U(-2,2)$ |
 | 検証 | manifest・neural・clustering・evaluation・records関連テストは現行コードで全件passed |
-| 本番結果 | 主ニューラル実験の学習・clustering・評価は各12/75完了。実行中runは完了数に含めない |
+| 本番結果 | 主ニューラル実験の学習・clustering・評価は各15/75完了。B0・B1を含む主7条件のclustering・評価は各45/105組合せ完了 |
 | vMF補助実験 | 主7条件・5-fold・3反復・共通7Kの735 fits。修正版v0.2.2を導入済み、数値検証・設定確定は未完了 |
 
 本番CVでは入力・manifest・研究条件を固定し、成果物に実行時の設定と環境を記録する。
@@ -38,12 +38,12 @@
 - [x] 本文代表例を各樹種の保存有効画素数最大の7試料に固定した。
 - [x] `production_v1` のmanifestを新規作成し、preflightとの一致を確認した。
 
-## 直近の完了と進行中のrun
+## 直近の完了と次のrun
 
-M01・fold 1・repeat 1–3は、学習completionと重み・checkpointの整合確認、全7Kのclustering、
-全test評価、各保存済み成果物のcheckまで完了した。repeat 3はWindowsの予期しない再起動後、
-epoch 432の整合するcheckpointから再開して800 epochまで完了した。現在はM11・fold 1・repeat 1を
-学習中である。
+M11・fold 1・repeat 1–3は、学習completionと重み・checkpointの整合確認、全7Kのclustering、
+全test評価、各保存済み成果物のcheckまで完了した。続いてB1 PCAを5 foldsで各1回fit・checkし、
+B0・B1の全5 folds × 3 repeats、計30組合せのclustering・評価と各checkを完了した。
+次はM11・fold 2・repeat 1から主ニューラル実験を再開する。
 完了済みrunの実測値とcheck結果は[検証履歴](docs/verification_history.md)にまとめる。
 
 - [x] A0・M00のfold 1・repeat 1–3で、現行設定の全test評価とcheckを完了する。
@@ -51,7 +51,7 @@ epoch 432の整合するcheckpointから再開して800 epochまで完了した�
 - [x] M10・fold 1・repeat 1–3の全7K clean test mapと全test評価を作成し、各checkを通す。
 - [x] M01・fold 1・repeat 1–3を800 epochまで学習し、completion、training history、重み・checkpointを照合する。
 - [x] M01・fold 1・repeat 1–3の全7K clean test mapと全test評価を作成し、各checkを通す。
-- [ ] M11・fold 1・repeat 1を800 epochまで学習し、同じ完了判定に従ってclustering・評価を進める。
+- [x] M11・fold 1・repeat 1–3を800 epochまで学習し、全7K clean test mapと全test評価の各checkを通す。
 
 新規runと中断再開のコマンド、完了判定は[実験runbook](docs/experiment_runbook.md)を使う。
 
@@ -59,10 +59,10 @@ epoch 432の整合するcheckpointから再開して800 epochまで完了した�
 
 ### Baseline
 
-- [ ] B1 PCAを5 foldsのtrain画素でfit・checkする。
-- [ ] B0を5 folds × 3 repeatsでclustering・評価する（15組合せ）。
-- [ ] B1を5 folds × 3 repeatsでclustering・評価する（15組合せ）。
-- [ ] PCAの実solverとrepeat間再利用可否を各foldのfit記録から保存する。
+- [x] B1 PCAを5 foldsのtrain画素で各1回、計5回fit・checkする。
+- [x] B0を5 folds × 3 repeatsでclustering・評価する（15組合せ）。
+- [x] B1を5 folds × 3 repeatsでclustering・評価する（15組合せ）。
+- [x] PCAの実solverとrepeat間再利用可否を各foldのfit記録へ保存する。
 
 ### 主ニューラル条件
 
@@ -72,9 +72,9 @@ epoch 432の整合するcheckpointから再開して800 epochまで完了した�
 - [ ] M00: 5 folds × 3 repeats（fold 1の3/15 runsで学習・clustering・評価完了）
 - [ ] M10: 5 folds × 3 repeats（fold 1の3/15 runsで学習・clustering・評価完了）
 - [ ] M01: 5 folds × 3 repeats（fold 1の3/15 runsで学習・clustering・評価完了）
-- [ ] M11: 5 folds × 3 repeats（fold 1・repeat 1を学習中。完了0/15 runs）
-- [ ] 全75 runsでclean test mapのrun・checkを完了する（12/75組合せ完了）。
-- [ ] 全75 runsで評価のrun・checkを完了する（12/75組合せ完了）。
+- [ ] M11: 5 folds × 3 repeats（fold 1の3/15 runsで学習・clustering・評価完了）
+- [ ] 全75 runsでclean test mapのrun・checkを完了する（15/75組合せ完了）。
+- [ ] 全75 runsで評価のrun・checkを完了する（15/75組合せ完了）。
 
 ### Mask率補助実験
 
