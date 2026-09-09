@@ -1,0 +1,3844 @@
+{
+  "sample_id": "KYOw02767",
+  "valid_pixels": 152143,
+  "spatial": {
+    "2": {
+      "k": 2,
+      "valid_pixels": 152143,
+      "cluster_counts": [
+        11107,
+        141036
+      ],
+      "occupancy": [
+        0.07300368696451187,
+        0.9269962906837463
+      ],
+      "used_clusters": 2,
+      "maximum_occupancy": 0.9269962906837463,
+      "expected_agreement": 0.8646508455276489,
+      "windows": [
+        {
+          "window": 3,
+          "matching_pairs": 1190094,
+          "valid_pairs": 1212060,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.9818771481513977,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.8661028742790222,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 5,
+          "matching_pairs": 3536808,
+          "valid_pairs": 3626478,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.9752735495567322,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.8173134922981262,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 9,
+          "matching_pairs": 11602886,
+          "valid_pairs": 12023640,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.9650061130523682,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.7414547204971313,
+          "adjusted_undefined_reasons": []
+        }
+      ]
+    },
+    "4": {
+      "k": 4,
+      "valid_pixels": 152143,
+      "cluster_counts": [
+        62283,
+        66556,
+        1936,
+        21368
+      ],
+      "occupancy": [
+        0.40937143564224243,
+        0.437456876039505,
+        0.012724870815873146,
+        0.14044681191444397
+      ],
+      "used_clusters": 4,
+      "maximum_occupancy": 0.437456876039505,
+      "expected_agreement": 0.37883666157722473,
+      "windows": [
+        {
+          "window": 3,
+          "matching_pairs": 941152,
+          "valid_pairs": 1212060,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.7764896154403687,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.6401745676994324,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 5,
+          "matching_pairs": 2483104,
+          "valid_pairs": 3626478,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.6847150325775146,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.4924282729625702,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 9,
+          "matching_pairs": 6877426,
+          "valid_pairs": 12023640,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.5719919800758362,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.3109574317932129,
+          "adjusted_undefined_reasons": []
+        }
+      ]
+    },
+    "6": {
+      "k": 6,
+      "valid_pixels": 152143,
+      "cluster_counts": [
+        30897,
+        628,
+        1503,
+        35845,
+        81150,
+        2120
+      ],
+      "occupancy": [
+        0.20307868719100952,
+        0.004127695690840483,
+        0.009878863580524921,
+        0.23560072481632233,
+        0.5333797931671143,
+        0.013934259302914143
+      ],
+      "used_clusters": 6,
+      "maximum_occupancy": 0.5333797931671143,
+      "expected_agreement": 0.38154736161231995,
+      "windows": [
+        {
+          "window": 3,
+          "matching_pairs": 948154,
+          "valid_pairs": 1212060,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.7822665572166443,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.6479383707046509,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 5,
+          "matching_pairs": 2537772,
+          "valid_pairs": 3626478,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.6997897028923035,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.5145783424377441,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 9,
+          "matching_pairs": 7076776,
+          "valid_pairs": 12023640,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.5885718464851379,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.3347459137439728,
+          "adjusted_undefined_reasons": []
+        }
+      ]
+    },
+    "8": {
+      "k": 8,
+      "valid_pixels": 152143,
+      "cluster_counts": [
+        6,
+        24432,
+        21481,
+        89436,
+        2368,
+        9,
+        452,
+        13959
+      ],
+      "occupancy": [
+        3.9436581573681906e-05,
+        0.16058576107025146,
+        0.1411895453929901,
+        0.5878416895866394,
+        0.015564304776489735,
+        5.915487417951226e-05,
+        0.0029708892107009888,
+        0.09174920618534088
+      ],
+      "used_clusters": 8,
+      "maximum_occupancy": 0.5878416895866394,
+      "expected_agreement": 0.3999451994895935,
+      "windows": [
+        {
+          "window": 3,
+          "matching_pairs": 945638,
+          "valid_pairs": 1212060,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.7801907658576965,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.6336847543716431,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 5,
+          "matching_pairs": 2539042,
+          "valid_pairs": 3626478,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.7001399397850037,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.5002788305282593,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 9,
+          "matching_pairs": 7124578,
+          "valid_pairs": 12023640,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.5925475358963013,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.32097455859184265,
+          "adjusted_undefined_reasons": []
+        }
+      ]
+    },
+    "10": {
+      "k": 10,
+      "valid_pixels": 152143,
+      "cluster_counts": [
+        3326,
+        0,
+        20842,
+        81682,
+        22338,
+        13417,
+        8,
+        9657,
+        149,
+        724
+      ],
+      "occupancy": [
+        0.021861013025045395,
+        0.0,
+        0.1369895488023758,
+        0.5368764996528625,
+        0.14682239294052124,
+        0.08818677067756653,
+        5.258210876490921e-05,
+        0.063473179936409,
+        0.0009793417993932962,
+        0.004758681170642376
+      ],
+      "used_clusters": 9,
+      "maximum_occupancy": 0.5368764996528625,
+      "expected_agreement": 0.3408622741699219,
+      "windows": [
+        {
+          "window": 3,
+          "matching_pairs": 870500,
+          "valid_pairs": 1212060,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.7181987762451172,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.5724698901176453,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 5,
+          "matching_pairs": 2308166,
+          "valid_pairs": 3626478,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.6364759206771851,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.44848543405532837,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 9,
+          "matching_pairs": 6387802,
+          "valid_pairs": 12023640,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.5312702059745789,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.2888743281364441,
+          "adjusted_undefined_reasons": []
+        }
+      ]
+    },
+    "12": {
+      "k": 12,
+      "valid_pixels": 152143,
+      "cluster_counts": [
+        19655,
+        157,
+        26618,
+        8,
+        366,
+        771,
+        5187,
+        67555,
+        8611,
+        19878,
+        0,
+        3337
+      ],
+      "occupancy": [
+        0.129187673330307,
+        0.0010319239227101207,
+        0.17495383322238922,
+        5.258210876490921e-05,
+        0.0024056315887719393,
+        0.00506760086864233,
+        0.03409292548894882,
+        0.4440230429172516,
+        0.05659806728363037,
+        0.13065339624881744,
+        0.0,
+        0.021933313459157944
+      ],
+      "used_clusters": 11,
+      "maximum_occupancy": 0.4440230429172516,
+      "expected_agreement": 0.2663995325565338,
+      "windows": [
+        {
+          "window": 3,
+          "matching_pairs": 810540,
+          "valid_pairs": 1212060,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.6687292456626892,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.5484316945075989,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 5,
+          "matching_pairs": 2098868,
+          "valid_pairs": 3626478,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.5787621140480042,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.4257938265800476,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 9,
+          "matching_pairs": 5657296,
+          "valid_pairs": 12023640,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.4705144166946411,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.27823710441589355,
+          "adjusted_undefined_reasons": []
+        }
+      ]
+    },
+    "14": {
+      "k": 14,
+      "valid_pixels": 152143,
+      "cluster_counts": [
+        11573,
+        354,
+        708,
+        0,
+        6,
+        3601,
+        17289,
+        22187,
+        3027,
+        39374,
+        2805,
+        47438,
+        144,
+        3637
+      ],
+      "occupancy": [
+        0.07606659829616547,
+        0.0023267583455890417,
+        0.004653516691178083,
+        0.0,
+        3.9436581573681906e-05,
+        0.023668522015213966,
+        0.11363651603460312,
+        0.1458299160003662,
+        0.019895756617188454,
+        0.25879600644111633,
+        0.018436603248119354,
+        0.3117987811565399,
+        0.0009464779868721962,
+        0.023905141279101372
+      ],
+      "used_clusters": 13,
+      "maximum_occupancy": 0.3117987811565399,
+      "expected_agreement": 0.20604974031448364,
+      "windows": [
+        {
+          "window": 3,
+          "matching_pairs": 769100,
+          "valid_pairs": 1212060,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.6345395445823669,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.5396935343742371,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 5,
+          "matching_pairs": 1978622,
+          "valid_pairs": 3626478,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.5456042885780334,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.4276773929595947,
+          "adjusted_undefined_reasons": []
+        },
+        {
+          "window": 9,
+          "matching_pairs": 5300534,
+          "valid_pairs": 12023640,
+          "pixels_with_neighbors": 152143,
+          "neighbor_pixel_fraction": 1.0,
+          "lla": 0.44084271788597107,
+          "lla_undefined_reason": null,
+          "adjusted_lla": 0.29572755098342896,
+          "adjusted_undefined_reasons": []
+        }
+      ]
+    }
+  },
+  "lfr": {
+    "2": {
+      "sample_id": "KYOw02767",
+      "k": 2,
+      "valid_pixels": 152143,
+      "clean_occupancy": {
+        "counts": [
+          11107,
+          141036
+        ],
+        "fractions": [
+          0.07300368696451187,
+          0.9269962906837463
+        ],
+        "used_clusters": 2,
+        "maximum_fraction": 0.9269962906837463
+      },
+      "draws": [
+        {
+          "kind": "noise",
+          "draw": 1,
+          "flipped_pixels": 270,
+          "rate": 0.0017746462253853679,
+          "occupancy": {
+            "counts": [
+              11099,
+              141044
+            ],
+            "fractions": [
+              0.07295110821723938,
+              0.927048921585083
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.927048921585083
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 2,
+          "flipped_pixels": 294,
+          "rate": 0.0019323925953358412,
+          "occupancy": {
+            "counts": [
+              11117,
+              141026
+            ],
+            "fractions": [
+              0.07306941598653793,
+              0.9269306063652039
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9269306063652039
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 3,
+          "flipped_pixels": 296,
+          "rate": 0.0019455380970612168,
+          "occupancy": {
+            "counts": [
+              11115,
+              141028
+            ],
+            "fractions": [
+              0.07305626571178436,
+              0.9269437193870544
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9269437193870544
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 4,
+          "flipped_pixels": 285,
+          "rate": 0.001873237662948668,
+          "occupancy": {
+            "counts": [
+              11098,
+              141045
+            ],
+            "fractions": [
+              0.0729445293545723,
+              0.9270554780960083
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9270554780960083
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 5,
+          "flipped_pixels": 276,
+          "rate": 0.0018140828469768167,
+          "occupancy": {
+            "counts": [
+              11121,
+              141022
+            ],
+            "fractions": [
+              0.07309570908546448,
+              0.9269043207168579
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9269043207168579
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 1,
+          "flipped_pixels": 1839,
+          "rate": 0.012087312527000904,
+          "occupancy": {
+            "counts": [
+              11118,
+              141025
+            ],
+            "fractions": [
+              0.07307598739862442,
+              0.9269239902496338
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9269239902496338
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 2,
+          "flipped_pixels": 1814,
+          "rate": 0.011922993697226048,
+          "occupancy": {
+            "counts": [
+              11135,
+              141008
+            ],
+            "fractions": [
+              0.07318772375583649,
+              0.9268122911453247
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9268122911453247
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 3,
+          "flipped_pixels": 1867,
+          "rate": 0.012271350249648094,
+          "occupancy": {
+            "counts": [
+              11078,
+              141065
+            ],
+            "fractions": [
+              0.07281307876110077,
+              0.927186906337738
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.927186906337738
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 4,
+          "flipped_pixels": 1837,
+          "rate": 0.012074166908860207,
+          "occupancy": {
+            "counts": [
+              11096,
+              141047
+            ],
+            "fractions": [
+              0.07293138653039932,
+              0.9270685911178589
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9270685911178589
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 5,
+          "flipped_pixels": 1828,
+          "rate": 0.012015012092888355,
+          "occupancy": {
+            "counts": [
+              11167,
+              140976
+            ],
+            "fractions": [
+              0.07339805364608765,
+              0.9266019463539124
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9266019463539124
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 1,
+          "flipped_pixels": 1831,
+          "rate": 0.012034730054438114,
+          "occupancy": {
+            "counts": [
+              11176,
+              140967
+            ],
+            "fractions": [
+              0.07345721125602722,
+              0.9265428185462952
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9265428185462952
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 2,
+          "flipped_pixels": 1855,
+          "rate": 0.01219247654080391,
+          "occupancy": {
+            "counts": [
+              11110,
+              141033
+            ],
+            "fractions": [
+              0.07302340865135193,
+              0.9269766211509705
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9269766211509705
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 3,
+          "flipped_pixels": 1849,
+          "rate": 0.012153040617704391,
+          "occupancy": {
+            "counts": [
+              11132,
+              141011
+            ],
+            "fractions": [
+              0.07316800951957703,
+              0.9268320202827454
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9268320202827454
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 4,
+          "flipped_pixels": 1833,
+          "rate": 0.012047875672578812,
+          "occupancy": {
+            "counts": [
+              11140,
+              141003
+            ],
+            "fractions": [
+              0.07322058826684952,
+              0.9267793893814087
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9267793893814087
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 5,
+          "flipped_pixels": 1802,
+          "rate": 0.011844119988381863,
+          "occupancy": {
+            "counts": [
+              11181,
+              140962
+            ],
+            "fractions": [
+              0.07349006831645966,
+              0.9265099167823792
+            ],
+            "used_clusters": 2,
+            "maximum_fraction": 0.9265099167823792
+          }
+        }
+      ],
+      "mean_by_kind": {
+        "noise": 0.001867979415692389,
+        "shift": 0.012074166908860207,
+        "both": 0.012054448947310448
+      }
+    },
+    "4": {
+      "sample_id": "KYOw02767",
+      "k": 4,
+      "valid_pixels": 152143,
+      "clean_occupancy": {
+        "counts": [
+          62283,
+          66556,
+          1936,
+          21368
+        ],
+        "fractions": [
+          0.40937143564224243,
+          0.437456876039505,
+          0.012724870815873146,
+          0.14044681191444397
+        ],
+        "used_clusters": 4,
+        "maximum_fraction": 0.437456876039505
+      },
+      "draws": [
+        {
+          "kind": "noise",
+          "draw": 1,
+          "flipped_pixels": 3725,
+          "rate": 0.024483544752001762,
+          "occupancy": {
+            "counts": [
+              62237,
+              66610,
+              1937,
+              21359
+            ],
+            "fractions": [
+              0.40906909108161926,
+              0.43781179189682007,
+              0.012731443159282207,
+              0.1403876543045044
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.43781179189682007
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 2,
+          "flipped_pixels": 3747,
+          "rate": 0.02462814562022686,
+          "occupancy": {
+            "counts": [
+              62357,
+              66474,
+              1937,
+              21375
+            ],
+            "fractions": [
+              0.409857839345932,
+              0.43691790103912354,
+              0.012731443159282207,
+              0.14049282670021057
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.43691790103912354
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 3,
+          "flipped_pixels": 3713,
+          "rate": 0.024404671043157578,
+          "occupancy": {
+            "counts": [
+              62209,
+              66614,
+              1943,
+              21377
+            ],
+            "fractions": [
+              0.40888506174087524,
+              0.437838077545166,
+              0.0127708800137043,
+              0.14050596952438354
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.437838077545166
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 4,
+          "flipped_pixels": 3721,
+          "rate": 0.024457253515720367,
+          "occupancy": {
+            "counts": [
+              62260,
+              66578,
+              1941,
+              21364
+            ],
+            "fractions": [
+              0.40922027826309204,
+              0.4376014769077301,
+              0.012757734395563602,
+              0.14042052626609802
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4376014769077301
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 5,
+          "flipped_pixels": 3778,
+          "rate": 0.024831902235746384,
+          "occupancy": {
+            "counts": [
+              62321,
+              66530,
+              1936,
+              21356
+            ],
+            "fractions": [
+              0.4096212089061737,
+              0.4372859597206116,
+              0.012724870815873146,
+              0.14036794006824493
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4372859597206116
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 1,
+          "flipped_pixels": 18887,
+          "rate": 0.12413979321718216,
+          "occupancy": {
+            "counts": [
+              60503,
+              68221,
+              1956,
+              21463
+            ],
+            "fractions": [
+              0.3976719379425049,
+              0.4484005272388458,
+              0.012856326065957546,
+              0.14107123017311096
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4484005272388458
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 2,
+          "flipped_pixels": 18643,
+          "rate": 0.12253603339195251,
+          "occupancy": {
+            "counts": [
+              60480,
+              68244,
+              1967,
+              21452
+            ],
+            "fractions": [
+              0.3975207507610321,
+              0.4485516846179962,
+              0.012928626500070095,
+              0.1409989297389984
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4485516846179962
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 3,
+          "flipped_pixels": 18990,
+          "rate": 0.12481678277254105,
+          "occupancy": {
+            "counts": [
+              60399,
+              68363,
+              1945,
+              21436
+            ],
+            "fractions": [
+              0.3969883620738983,
+              0.4493338465690613,
+              0.012784025631844997,
+              0.14089375734329224
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4493338465690613
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 4,
+          "flipped_pixels": 18649,
+          "rate": 0.12257546931505203,
+          "occupancy": {
+            "counts": [
+              60586,
+              68134,
+              1969,
+              21454
+            ],
+            "fractions": [
+              0.39821746945381165,
+              0.4478286802768707,
+              0.012941772118210793,
+              0.1410120725631714
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4478286802768707
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 5,
+          "flipped_pixels": 18751,
+          "rate": 0.12324589490890503,
+          "occupancy": {
+            "counts": [
+              60334,
+              68449,
+              1940,
+              21420
+            ],
+            "fractions": [
+              0.3965611159801483,
+              0.4498991072177887,
+              0.012751162052154541,
+              0.14078859984874725
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4498991072177887
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 1,
+          "flipped_pixels": 19110,
+          "rate": 0.125605508685112,
+          "occupancy": {
+            "counts": [
+              60431,
+              68311,
+              1967,
+              21434
+            ],
+            "fractions": [
+              0.3971986770629883,
+              0.4489920735359192,
+              0.012928626500070095,
+              0.14088061451911926
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4489920735359192
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 2,
+          "flipped_pixels": 18879,
+          "rate": 0.12408720701932907,
+          "occupancy": {
+            "counts": [
+              60455,
+              68281,
+              1966,
+              21441
+            ],
+            "fractions": [
+              0.39735642075538635,
+              0.4487948715686798,
+              0.012922053225338459,
+              0.14092662930488586
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4487948715686798
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 3,
+          "flipped_pixels": 19074,
+          "rate": 0.1253688931465149,
+          "occupancy": {
+            "counts": [
+              60554,
+              68143,
+              1947,
+              21499
+            ],
+            "fractions": [
+              0.3980071246623993,
+              0.4478878378868103,
+              0.012797171249985695,
+              0.14130784571170807
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4478878378868103
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 4,
+          "flipped_pixels": 19177,
+          "rate": 0.12604589760303497,
+          "occupancy": {
+            "counts": [
+              60480,
+              68278,
+              1949,
+              21436
+            ],
+            "fractions": [
+              0.3975207507610321,
+              0.44877517223358154,
+              0.012810316868126392,
+              0.14089375734329224
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.44877517223358154
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 5,
+          "flipped_pixels": 19230,
+          "rate": 0.12639424204826355,
+          "occupancy": {
+            "counts": [
+              60367,
+              68472,
+              1946,
+              21358
+            ],
+            "fractions": [
+              0.39677801728248596,
+              0.4500502943992615,
+              0.012790597975254059,
+              0.1403810828924179
+            ],
+            "used_clusters": 4,
+            "maximum_fraction": 0.4500502943992615
+          }
+        }
+      ],
+      "mean_by_kind": {
+        "noise": 0.02456110343337059,
+        "shift": 0.12346279621124268,
+        "both": 0.12550035119056702
+      }
+    },
+    "6": {
+      "sample_id": "KYOw02767",
+      "k": 6,
+      "valid_pixels": 152143,
+      "clean_occupancy": {
+        "counts": [
+          30897,
+          628,
+          1503,
+          35845,
+          81150,
+          2120
+        ],
+        "fractions": [
+          0.20307868719100952,
+          0.004127695690840483,
+          0.009878863580524921,
+          0.23560072481632233,
+          0.5333797931671143,
+          0.013934259302914143
+        ],
+        "used_clusters": 6,
+        "maximum_fraction": 0.5333797931671143
+      },
+      "draws": [
+        {
+          "kind": "noise",
+          "draw": 1,
+          "flipped_pixels": 3546,
+          "rate": 0.023307019844651222,
+          "occupancy": {
+            "counts": [
+              30887,
+              625,
+              1512,
+              36064,
+              80891,
+              2164
+            ],
+            "fractions": [
+              0.20301295816898346,
+              0.0041079772636294365,
+              0.009938018396496773,
+              0.23704014718532562,
+              0.5316774249076843,
+              0.014223461039364338
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5316774249076843
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 2,
+          "flipped_pixels": 3608,
+          "rate": 0.02371453121304512,
+          "occupancy": {
+            "counts": [
+              30877,
+              627,
+              1512,
+              36006,
+              80988,
+              2133
+            ],
+            "fractions": [
+              0.2029472291469574,
+              0.004121122881770134,
+              0.009938018396496773,
+              0.23665893077850342,
+              0.5323150157928467,
+              0.014019705355167389
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5323150157928467
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 3,
+          "flipped_pixels": 3531,
+          "rate": 0.02320842817425728,
+          "occupancy": {
+            "counts": [
+              30852,
+              627,
+              1513,
+              35974,
+              81006,
+              2171
+            ],
+            "fractions": [
+              0.20278291404247284,
+              0.004121122881770134,
+              0.009944591671228409,
+              0.23644860088825226,
+              0.5324333310127258,
+              0.014269470237195492
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5324333310127258
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 4,
+          "flipped_pixels": 3497,
+          "rate": 0.022984955459833145,
+          "occupancy": {
+            "counts": [
+              30935,
+              626,
+              1509,
+              36052,
+              80874,
+              2147
+            ],
+            "fractions": [
+              0.2033284455537796,
+              0.004114550072699785,
+              0.009918300434947014,
+              0.2369612753391266,
+              0.5315657258033752,
+              0.014111723750829697
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5315657258033752
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 5,
+          "flipped_pixels": 3549,
+          "rate": 0.02332673780620098,
+          "occupancy": {
+            "counts": [
+              30806,
+              628,
+              1501,
+              36035,
+              80984,
+              2189
+            ],
+            "fractions": [
+              0.20248055458068848,
+              0.004127695690840483,
+              0.009865718893706799,
+              0.23684954643249512,
+              0.5322887301445007,
+              0.014387779869139194
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5322887301445007
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 1,
+          "flipped_pixels": 17903,
+          "rate": 0.11767219007015228,
+          "occupancy": {
+            "counts": [
+              30610,
+              614,
+              1547,
+              37777,
+              78996,
+              2599
+            ],
+            "fractions": [
+              0.20119230449199677,
+              0.004035676829516888,
+              0.010168065316975117,
+              0.24829930067062378,
+              0.5192220211029053,
+              0.017082612961530685
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5192220211029053
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 2,
+          "flipped_pixels": 18053,
+          "rate": 0.11865810304880142,
+          "occupancy": {
+            "counts": [
+              30570,
+              616,
+              1579,
+              37809,
+              78943,
+              2626
+            ],
+            "fractions": [
+              0.20092938840389252,
+              0.004048822447657585,
+              0.010378394275903702,
+              0.24850963056087494,
+              0.5188736915588379,
+              0.017260078340768814
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5188736915588379
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 3,
+          "flipped_pixels": 17749,
+          "rate": 0.1166599839925766,
+          "occupancy": {
+            "counts": [
+              30593,
+              621,
+              1566,
+              37629,
+              79130,
+              2604
+            ],
+            "fractions": [
+              0.2010805606842041,
+              0.004081686493009329,
+              0.010292948223650455,
+              0.24732652306556702,
+              0.5201027989387512,
+              0.017115477472543716
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5201027989387512
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 4,
+          "flipped_pixels": 17909,
+          "rate": 0.1177116259932518,
+          "occupancy": {
+            "counts": [
+              30555,
+              610,
+              1591,
+              37922,
+              78848,
+              2617
+            ],
+            "fractions": [
+              0.20083080232143402,
+              0.00400938605889678,
+              0.010457267053425312,
+              0.2492523491382599,
+              0.5182492733001709,
+              0.017200922593474388
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5182492733001709
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 5,
+          "flipped_pixels": 17854,
+          "rate": 0.11735012382268906,
+          "occupancy": {
+            "counts": [
+              30654,
+              621,
+              1555,
+              37897,
+              78872,
+              2544
+            ],
+            "fractions": [
+              0.20148150622844696,
+              0.004081686493009329,
+              0.010220647789537907,
+              0.24908803403377533,
+              0.5184070467948914,
+              0.01672111079096794
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5184070467948914
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 1,
+          "flipped_pixels": 18320,
+          "rate": 0.12041303515434265,
+          "occupancy": {
+            "counts": [
+              30642,
+              614,
+              1576,
+              37874,
+              78787,
+              2650
+            ],
+            "fractions": [
+              0.20140263438224792,
+              0.004035676829516888,
+              0.010358675383031368,
+              0.24893686175346375,
+              0.5178483128547668,
+              0.017417823895812035
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5178483128547668
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 2,
+          "flipped_pixels": 18197,
+          "rate": 0.11960458010435104,
+          "occupancy": {
+            "counts": [
+              30523,
+              619,
+              1583,
+              38003,
+              78758,
+              2657
+            ],
+            "fractions": [
+              0.20062047243118286,
+              0.004068540874868631,
+              0.010404685512185097,
+              0.24978473782539368,
+              0.5176577568054199,
+              0.01746383309364319
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5176577568054199
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 3,
+          "flipped_pixels": 18189,
+          "rate": 0.11955200135707855,
+          "occupancy": {
+            "counts": [
+              30497,
+              619,
+              1541,
+              37825,
+              79021,
+              2640
+            ],
+            "fractions": [
+              0.20044957101345062,
+              0.004068540874868631,
+              0.010128629393875599,
+              0.24861478805541992,
+              0.519386351108551,
+              0.017352096736431122
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.519386351108551
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 4,
+          "flipped_pixels": 18130,
+          "rate": 0.11916420608758926,
+          "occupancy": {
+            "counts": [
+              30528,
+              615,
+              1580,
+              37923,
+              78858,
+              2639
+            ],
+            "fractions": [
+              0.2006533294916153,
+              0.004042249638587236,
+              0.010384966619312763,
+              0.24925892055034637,
+              0.5183150172233582,
+              0.017345523461699486
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.5183150172233582
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 5,
+          "flipped_pixels": 18182,
+          "rate": 0.11950599402189255,
+          "occupancy": {
+            "counts": [
+              30602,
+              620,
+              1575,
+              37920,
+              78814,
+              2612
+            ],
+            "fractions": [
+              0.20113971829414368,
+              0.00407511368393898,
+              0.010352103039622307,
+              0.24923920631408691,
+              0.518025815486908,
+              0.017168058082461357
+            ],
+            "used_clusters": 6,
+            "maximum_fraction": 0.518025815486908
+          }
+        }
+      ],
+      "mean_by_kind": {
+        "noise": 0.02330833300948143,
+        "shift": 0.11761040985584259,
+        "both": 0.11964795738458633
+      }
+    },
+    "8": {
+      "sample_id": "KYOw02767",
+      "k": 8,
+      "valid_pixels": 152143,
+      "clean_occupancy": {
+        "counts": [
+          6,
+          24432,
+          21481,
+          89436,
+          2368,
+          9,
+          452,
+          13959
+        ],
+        "fractions": [
+          3.9436581573681906e-05,
+          0.16058576107025146,
+          0.1411895453929901,
+          0.5878416895866394,
+          0.015564304776489735,
+          5.915487417951226e-05,
+          0.0029708892107009888,
+          0.09174920618534088
+        ],
+        "used_clusters": 8,
+        "maximum_fraction": 0.5878416895866394
+      },
+      "draws": [
+        {
+          "kind": "noise",
+          "draw": 1,
+          "flipped_pixels": 2120,
+          "rate": 0.013934259302914143,
+          "occupancy": {
+            "counts": [
+              10,
+              24380,
+              21604,
+              89295,
+              2367,
+              13,
+              455,
+              14019
+            ],
+            "fractions": [
+              6.572763959411532e-05,
+              0.16024398803710938,
+              0.14199799299240112,
+              0.5869149565696716,
+              0.015557731501758099,
+              8.544592856196687e-05,
+              0.0029906074050813913,
+              0.09214357286691666
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5869149565696716
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 2,
+          "flipped_pixels": 2077,
+          "rate": 0.013651629909873009,
+          "occupancy": {
+            "counts": [
+              9,
+              24408,
+              21496,
+              89394,
+              2372,
+              9,
+              453,
+              14002
+            ],
+            "fractions": [
+              5.915487417951226e-05,
+              0.1604280173778534,
+              0.1412881314754486,
+              0.5875656604766846,
+              0.01559059601277113,
+              5.915487417951226e-05,
+              0.0029774620197713375,
+              0.09203183650970459
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5875656604766846
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 3,
+          "flipped_pixels": 2101,
+          "rate": 0.013809376396238804,
+          "occupancy": {
+            "counts": [
+              10,
+              24432,
+              21502,
+              89325,
+              2363,
+              12,
+              457,
+              14042
+            ],
+            "fractions": [
+              6.572763959411532e-05,
+              0.16058576107025146,
+              0.14132755994796753,
+              0.5871121287345886,
+              0.015531441196799278,
+              7.887316314736381e-05,
+              0.003003753023222089,
+              0.09229475259780884
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5871121287345886
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 4,
+          "flipped_pixels": 2111,
+          "rate": 0.013875104486942291,
+          "occupancy": {
+            "counts": [
+              10,
+              24417,
+              21521,
+              89325,
+              2387,
+              10,
+              452,
+              14021
+            ],
+            "fractions": [
+              6.572763959411532e-05,
+              0.16048717498779297,
+              0.14145244657993317,
+              0.5871121287345886,
+              0.0156891867518425,
+              6.572763959411532e-05,
+              0.0029708892107009888,
+              0.09215672314167023
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5871121287345886
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 5,
+          "flipped_pixels": 2059,
+          "rate": 0.013533320277929306,
+          "occupancy": {
+            "counts": [
+              9,
+              24401,
+              21530,
+              89382,
+              2374,
+              9,
+              456,
+              13982
+            ],
+            "fractions": [
+              5.915487417951226e-05,
+              0.1603820025920868,
+              0.14151160418987274,
+              0.587486743927002,
+              0.015603741630911827,
+              5.915487417951226e-05,
+              0.00299718021415174,
+              0.09190038591623306
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.587486743927002
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 1,
+          "flipped_pixels": 11460,
+          "rate": 0.07532387226819992,
+          "occupancy": {
+            "counts": [
+              60,
+              24554,
+              22187,
+              87441,
+              2395,
+              12,
+              462,
+              15032
+            ],
+            "fractions": [
+              0.0003943658375646919,
+              0.161387637257576,
+              0.1458299160003662,
+              0.5747290253639221,
+              0.01574176922440529,
+              7.887316314736381e-05,
+              0.003036616835743189,
+              0.09880178421735764
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5747290253639221
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 2,
+          "flipped_pixels": 11609,
+          "rate": 0.07630321383476257,
+          "occupancy": {
+            "counts": [
+              58,
+              24502,
+              22189,
+              87515,
+              2378,
+              13,
+              454,
+              15034
+            ],
+            "fractions": [
+              0.0003812203067354858,
+              0.1610458642244339,
+              0.14584305882453918,
+              0.5752153992652893,
+              0.015630032867193222,
+              8.544592856196687e-05,
+              0.0029840348288416862,
+              0.09881492704153061
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5752153992652893
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 3,
+          "flipped_pixels": 11555,
+          "rate": 0.07594828307628632,
+          "occupancy": {
+            "counts": [
+              52,
+              24471,
+              22171,
+              87598,
+              2372,
+              12,
+              461,
+              15006
+            ],
+            "fractions": [
+              0.00034178371424786747,
+              0.16084210574626923,
+              0.14572474360466003,
+              0.5757609605789185,
+              0.01559059601277113,
+              7.887316314736381e-05,
+              0.00303004402667284,
+              0.098630890250206
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5757609605789185
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 4,
+          "flipped_pixels": 11572,
+          "rate": 0.07606001943349838,
+          "occupancy": {
+            "counts": [
+              50,
+              24438,
+              22332,
+              87396,
+              2418,
+              12,
+              452,
+              15045
+            ],
+            "fractions": [
+              0.00032863818341866136,
+              0.16062520444393158,
+              0.14678296446800232,
+              0.5744332671165466,
+              0.015892943367362022,
+              7.887316314736381e-05,
+              0.0029708892107009888,
+              0.09888722747564316
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5744332671165466
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 5,
+          "flipped_pixels": 11455,
+          "rate": 0.07529100775718689,
+          "occupancy": {
+            "counts": [
+              56,
+              24477,
+              22247,
+              87439,
+              2383,
+              12,
+              456,
+              15073
+            ],
+            "fractions": [
+              0.0003680747759062797,
+              0.16088153421878815,
+              0.1462242752313614,
+              0.5747159123420715,
+              0.015662895515561104,
+              7.887316314736381e-05,
+              0.00299718021415174,
+              0.09907127171754837
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5747159123420715
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 1,
+          "flipped_pixels": 11794,
+          "rate": 0.07751917839050293,
+          "occupancy": {
+            "counts": [
+              60,
+              24462,
+              22367,
+              87313,
+              2364,
+              10,
+              462,
+              15105
+            ],
+            "fractions": [
+              0.0003943658375646919,
+              0.16078294813632965,
+              0.14701300859451294,
+              0.5738877058029175,
+              0.01553801354020834,
+              6.572763959411532e-05,
+              0.003036616835743189,
+              0.09928159415721893
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5738877058029175
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 2,
+          "flipped_pixels": 12085,
+          "rate": 0.07943184673786163,
+          "occupancy": {
+            "counts": [
+              56,
+              24467,
+              22458,
+              87148,
+              2380,
+              9,
+              463,
+              15162
+            ],
+            "fractions": [
+              0.0003680747759062797,
+              0.16081580519676208,
+              0.1476111263036728,
+              0.5728031992912292,
+              0.015643177554011345,
+              5.915487417951226e-05,
+              0.0030431896448135376,
+              0.09965624660253525
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5728031992912292
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 3,
+          "flipped_pixels": 11638,
+          "rate": 0.07649382203817368,
+          "occupancy": {
+            "counts": [
+              64,
+              24454,
+              22233,
+              87404,
+              2377,
+              8,
+              451,
+              15152
+            ],
+            "fractions": [
+              0.00042065687011927366,
+              0.16073036193847656,
+              0.14613226056098938,
+              0.5744858384132385,
+              0.015623459592461586,
+              5.258210876490921e-05,
+              0.00296431640163064,
+              0.09959051758050919
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5744858384132385
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 4,
+          "flipped_pixels": 12000,
+          "rate": 0.0788731649518013,
+          "occupancy": {
+            "counts": [
+              57,
+              24468,
+              22294,
+              87217,
+              2377,
+              10,
+              466,
+              15254
+            ],
+            "fractions": [
+              0.0003746475267689675,
+              0.16082239151000977,
+              0.14653319120407104,
+              0.5732567310333252,
+              0.015623459592461586,
+              6.572763959411532e-05,
+              0.00306290783919394,
+              0.10026093572378159
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5732567310333252
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 5,
+          "flipped_pixels": 11947,
+          "rate": 0.07852480560541153,
+          "occupancy": {
+            "counts": [
+              70,
+              24480,
+              22306,
+              87305,
+              2395,
+              9,
+              460,
+              15118
+            ],
+            "fractions": [
+              0.000460093462606892,
+              0.1609012633562088,
+              0.14661206305027008,
+              0.5738351345062256,
+              0.01574176922440529,
+              5.915487417951226e-05,
+              0.003023471450433135,
+              0.09936704486608505
+            ],
+            "used_clusters": 8,
+            "maximum_fraction": 0.5738351345062256
+          }
+        }
+      ],
+      "mean_by_kind": {
+        "noise": 0.01376073807477951,
+        "shift": 0.07578527927398682,
+        "both": 0.07816855609416962
+      }
+    },
+    "10": {
+      "sample_id": "KYOw02767",
+      "k": 10,
+      "valid_pixels": 152143,
+      "clean_occupancy": {
+        "counts": [
+          3326,
+          0,
+          20842,
+          81682,
+          22338,
+          13417,
+          8,
+          9657,
+          149,
+          724
+        ],
+        "fractions": [
+          0.021861013025045395,
+          0.0,
+          0.1369895488023758,
+          0.5368764996528625,
+          0.14682239294052124,
+          0.08818677067756653,
+          5.258210876490921e-05,
+          0.063473179936409,
+          0.0009793417993932962,
+          0.004758681170642376
+        ],
+        "used_clusters": 9,
+        "maximum_fraction": 0.5368764996528625
+      },
+      "draws": [
+        {
+          "kind": "noise",
+          "draw": 1,
+          "flipped_pixels": 3403,
+          "rate": 0.022367116063833237,
+          "occupancy": {
+            "counts": [
+              3337,
+              0,
+              20842,
+              81538,
+              22420,
+              13462,
+              7,
+              9665,
+              150,
+              722
+            ],
+            "fractions": [
+              0.021933313459157944,
+              0.0,
+              0.1369895488023758,
+              0.5359300374984741,
+              0.1473613679409027,
+              0.08848254382610321,
+              4.600934698828496e-05,
+              0.06352575868368149,
+              0.000985914608463645,
+              0.0047455355525016785
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5359300374984741
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 2,
+          "flipped_pixels": 3510,
+          "rate": 0.023070400580763817,
+          "occupancy": {
+            "counts": [
+              3350,
+              0,
+              20846,
+              81527,
+              22437,
+              13465,
+              8,
+              9641,
+              150,
+              719
+            ],
+            "fractions": [
+              0.022018758580088615,
+              0.0,
+              0.13701583445072174,
+              0.5358577370643616,
+              0.14747309684753418,
+              0.08850226551294327,
+              5.258210876490921e-05,
+              0.06336801499128342,
+              0.000985914608463645,
+              0.004725817125290632
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5358577370643616
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 3,
+          "flipped_pixels": 3498,
+          "rate": 0.022991526871919632,
+          "occupancy": {
+            "counts": [
+              3348,
+              0,
+              20788,
+              81523,
+              22438,
+              13493,
+              8,
+              9676,
+              151,
+              718
+            ],
+            "fractions": [
+              0.022005613893270493,
+              0.0,
+              0.13663461804389954,
+              0.5358314514160156,
+              0.14747966825962067,
+              0.08868630230426788,
+              5.258210876490921e-05,
+              0.06359805911779404,
+              0.000992487301118672,
+              0.0047192443162202835
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5358314514160156
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 4,
+          "flipped_pixels": 3493,
+          "rate": 0.02295866422355175,
+          "occupancy": {
+            "counts": [
+              3338,
+              0,
+              20781,
+              81481,
+              22503,
+              13469,
+              8,
+              9687,
+              150,
+              726
+            ],
+            "fractions": [
+              0.02193988487124443,
+              0.0,
+              0.13658860325813293,
+              0.535555362701416,
+              0.14790689945220947,
+              0.08852855861186981,
+              5.258210876490921e-05,
+              0.06367035955190659,
+              0.000985914608463645,
+              0.004771826323121786
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.535555362701416
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 5,
+          "flipped_pixels": 3425,
+          "rate": 0.022511715069413185,
+          "occupancy": {
+            "counts": [
+              3344,
+              0,
+              20815,
+              81546,
+              22434,
+              13447,
+              7,
+              9676,
+              149,
+              725
+            ],
+            "fractions": [
+              0.021979322656989098,
+              0.0,
+              0.13681207597255707,
+              0.535982608795166,
+              0.14745338261127472,
+              0.08838395774364471,
+              4.600934698828496e-05,
+              0.06359805911779404,
+              0.0009793417993932962,
+              0.004765253514051437
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.535982608795166
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 1,
+          "flipped_pixels": 18563,
+          "rate": 0.12201021611690521,
+          "occupancy": {
+            "counts": [
+              3429,
+              0,
+              20700,
+              77785,
+              24896,
+              14566,
+              7,
+              9885,
+              152,
+              723
+            ],
+            "fractions": [
+              0.02253800630569458,
+              0.0,
+              0.13605621457099915,
+              0.5112624168395996,
+              0.1636355221271515,
+              0.09573888033628464,
+              4.600934698828496e-05,
+              0.06497176736593246,
+              0.0009990601101890206,
+              0.004752108361572027
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5112624168395996
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 2,
+          "flipped_pixels": 18663,
+          "rate": 0.12266749143600464,
+          "occupancy": {
+            "counts": [
+              3399,
+              0,
+              20738,
+              77821,
+              24793,
+              14657,
+              9,
+              9857,
+              153,
+              716
+            ],
+            "fractions": [
+              0.022340824827551842,
+              0.0,
+              0.13630597293376923,
+              0.5114990472793579,
+              0.1629585325717926,
+              0.09633699804544449,
+              5.915487417951226e-05,
+              0.06478773057460785,
+              0.0010056328028440475,
+              0.004706098698079586
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5114990472793579
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 3,
+          "flipped_pixels": 18422,
+          "rate": 0.12108345329761505,
+          "occupancy": {
+            "counts": [
+              3407,
+              0,
+              20807,
+              77934,
+              24742,
+              14523,
+              10,
+              9837,
+              151,
+              732
+            ],
+            "fractions": [
+              0.022393405437469482,
+              0.0,
+              0.13675948977470398,
+              0.512241780757904,
+              0.1626233160495758,
+              0.09545625001192093,
+              6.572763959411532e-05,
+              0.06465627998113632,
+              0.000992487301118672,
+              0.0048112631775438786
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.512241780757904
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 4,
+          "flipped_pixels": 18519,
+          "rate": 0.12172101438045502,
+          "occupancy": {
+            "counts": [
+              3394,
+              0,
+              20723,
+              77866,
+              24711,
+              14629,
+              9,
+              9933,
+              148,
+              730
+            ],
+            "fractions": [
+              0.02230796031653881,
+              0.0,
+              0.13620738685131073,
+              0.5117948055267334,
+              0.16241957247257233,
+              0.09615296125411987,
+              5.915487417951226e-05,
+              0.0652872622013092,
+              0.0009727690485306084,
+              0.004798117559403181
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5117948055267334
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 5,
+          "flipped_pixels": 18589,
+          "rate": 0.12218110263347626,
+          "occupancy": {
+            "counts": [
+              3407,
+              0,
+              20686,
+              77868,
+              24764,
+              14650,
+              8,
+              9891,
+              157,
+              712
+            ],
+            "fractions": [
+              0.022393405437469482,
+              0.0,
+              0.13596418499946594,
+              0.5118079781532288,
+              0.1627679169178009,
+              0.09629099071025848,
+              5.258210876490921e-05,
+              0.06501120328903198,
+              0.0010319239227101207,
+              0.004679807927459478
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5118079781532288
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 1,
+          "flipped_pixels": 18760,
+          "rate": 0.12330504506826401,
+          "occupancy": {
+            "counts": [
+              3403,
+              0,
+              20793,
+              77779,
+              24743,
+              14670,
+              8,
+              9872,
+              148,
+              727
+            ],
+            "fractions": [
+              0.022367116063833237,
+              0.0,
+              0.13666747510433197,
+              0.5112230181694031,
+              0.1626298874616623,
+              0.09642244130373001,
+              5.258210876490921e-05,
+              0.06488632410764694,
+              0.0009727690485306084,
+              0.004778399132192135
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5112230181694031
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 2,
+          "flipped_pixels": 19137,
+          "rate": 0.12578298151493073,
+          "occupancy": {
+            "counts": [
+              3406,
+              0,
+              20734,
+              77451,
+              25086,
+              14742,
+              5,
+              9838,
+              151,
+              730
+            ],
+            "fractions": [
+              0.022386834025382996,
+              0.0,
+              0.13627968728542328,
+              0.5090671181678772,
+              0.16488435864448547,
+              0.09689568728208542,
+              3.286381979705766e-05,
+              0.06466285139322281,
+              0.000992487301118672,
+              0.004798117559403181
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5090671181678772
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 3,
+          "flipped_pixels": 18852,
+          "rate": 0.12390974164009094,
+          "occupancy": {
+            "counts": [
+              3376,
+              0,
+              20784,
+              77701,
+              24860,
+              14726,
+              8,
+              9812,
+              157,
+              719
+            ],
+            "fractions": [
+              0.022189650684595108,
+              0.0,
+              0.1366083174943924,
+              0.5107102990150452,
+              0.16339890658855438,
+              0.09679052233695984,
+              5.258210876490921e-05,
+              0.06449195742607117,
+              0.0010319239227101207,
+              0.004725817125290632
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5107102990150452
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 4,
+          "flipped_pixels": 19015,
+          "rate": 0.1249811053276062,
+          "occupancy": {
+            "counts": [
+              3446,
+              0,
+              20673,
+              77439,
+              24951,
+              14817,
+              8,
+              9938,
+              150,
+              721
+            ],
+            "fractions": [
+              0.022649744525551796,
+              0.0,
+              0.13587874174118042,
+              0.5089882612228394,
+              0.16399702429771423,
+              0.09738864004611969,
+              5.258210876490921e-05,
+              0.06532012671232224,
+              0.000985914608463645,
+              0.00473896274343133
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5089882612228394
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 5,
+          "flipped_pixels": 19256,
+          "rate": 0.1265651434659958,
+          "occupancy": {
+            "counts": [
+              3378,
+              0,
+              20790,
+              77589,
+              24918,
+              14720,
+              11,
+              9852,
+              152,
+              733
+            ],
+            "fractions": [
+              0.02220279537141323,
+              0.0,
+              0.1366477608680725,
+              0.5099741816520691,
+              0.1637801229953766,
+              0.09675108641386032,
+              7.230040500871837e-05,
+              0.06475486606359482,
+              0.0009990601101890206,
+              0.004817835986614227
+            ],
+            "used_clusters": 9,
+            "maximum_fraction": 0.5099741816520691
+          }
+        }
+      ],
+      "mean_by_kind": {
+        "noise": 0.022779883816838264,
+        "shift": 0.12193266302347183,
+        "both": 0.12490880489349365
+      }
+    },
+    "12": {
+      "sample_id": "KYOw02767",
+      "k": 12,
+      "valid_pixels": 152143,
+      "clean_occupancy": {
+        "counts": [
+          19655,
+          157,
+          26618,
+          8,
+          366,
+          771,
+          5187,
+          67555,
+          8611,
+          19878,
+          0,
+          3337
+        ],
+        "fractions": [
+          0.129187673330307,
+          0.0010319239227101207,
+          0.17495383322238922,
+          5.258210876490921e-05,
+          0.0024056315887719393,
+          0.00506760086864233,
+          0.03409292548894882,
+          0.4440230429172516,
+          0.05659806728363037,
+          0.13065339624881744,
+          0.0,
+          0.021933313459157944
+        ],
+        "used_clusters": 11,
+        "maximum_fraction": 0.4440230429172516
+      },
+      "draws": [
+        {
+          "kind": "noise",
+          "draw": 1,
+          "flipped_pixels": 5349,
+          "rate": 0.035157714039087296,
+          "occupancy": {
+            "counts": [
+              19607,
+              161,
+              26904,
+              8,
+              361,
+              768,
+              5201,
+              67160,
+              8645,
+              20002,
+              0,
+              3326
+            ],
+            "fractions": [
+              0.12887218594551086,
+              0.001058214926160872,
+              0.1768336296081543,
+              5.258210876490921e-05,
+              0.0023727677762508392,
+              0.005047882441431284,
+              0.03418494388461113,
+              0.4414268136024475,
+              0.0568215437233448,
+              0.13146841526031494,
+              0.0,
+              0.021861013025045395
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.4414268136024475
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 2,
+          "flipped_pixels": 5253,
+          "rate": 0.034526728093624115,
+          "occupancy": {
+            "counts": [
+              19638,
+              158,
+              26710,
+              7,
+              362,
+              769,
+              5209,
+              67329,
+              8602,
+              20024,
+              0,
+              3335
+            ],
+            "fractions": [
+              0.12907592952251434,
+              0.0010384967317804694,
+              0.17555852234363556,
+              4.600934698828496e-05,
+              0.002379340585321188,
+              0.005054455250501633,
+              0.03423752635717392,
+              0.4425376057624817,
+              0.056538913398981094,
+              0.13161301612854004,
+              0.0,
+              0.02192016690969467
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.4425376057624817
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 3,
+          "flipped_pixels": 5426,
+          "rate": 0.03566381707787514,
+          "occupancy": {
+            "counts": [
+              19593,
+              159,
+              26690,
+              7,
+              362,
+              772,
+              5217,
+              67375,
+              8660,
+              19968,
+              0,
+              3340
+            ],
+            "fractions": [
+              0.12878015637397766,
+              0.0010450694244354963,
+              0.17542706429958344,
+              4.600934698828496e-05,
+              0.002379340585321188,
+              0.005074173677712679,
+              0.03429010882973671,
+              0.44283995032310486,
+              0.0569201335310936,
+              0.1312449425458908,
+              0.0,
+              0.021953031420707703
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.44283995032310486
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 4,
+          "flipped_pixels": 5322,
+          "rate": 0.03498024865984917,
+          "occupancy": {
+            "counts": [
+              19632,
+              157,
+              26729,
+              7,
+              373,
+              772,
+              5218,
+              67291,
+              8606,
+              20010,
+              0,
+              3348
+            ],
+            "fractions": [
+              0.12903650104999542,
+              0.0010319239227101207,
+              0.1756834089756012,
+              4.600934698828496e-05,
+              0.002451640786603093,
+              0.005074173677712679,
+              0.034296680241823196,
+              0.4422878623008728,
+              0.05656520649790764,
+              0.13152100145816803,
+              0.0,
+              0.022005613893270493
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.4422878623008728
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 5,
+          "flipped_pixels": 5344,
+          "rate": 0.035124849528074265,
+          "occupancy": {
+            "counts": [
+              19629,
+              159,
+              26704,
+              8,
+              360,
+              768,
+              5194,
+              67365,
+              8627,
+              19979,
+              0,
+              3350
+            ],
+            "fractions": [
+              0.12901678681373596,
+              0.0010450694244354963,
+              0.17551907896995544,
+              5.258210876490921e-05,
+              0.0023661949671804905,
+              0.005047882441431284,
+              0.034138936549425125,
+              0.44277423620224,
+              0.05670323222875595,
+              0.13131724298000336,
+              0.0,
+              0.022018758580088615
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.44277423620224
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 1,
+          "flipped_pixels": 26935,
+          "rate": 0.17703738808631897,
+          "occupancy": {
+            "counts": [
+              19306,
+              158,
+              28038,
+              6,
+              359,
+              776,
+              5745,
+              62415,
+              8834,
+              23070,
+              0,
+              3436
+            ],
+            "fractions": [
+              0.1268937736749649,
+              0.0010384967317804694,
+              0.1842871457338333,
+              3.9436581573681906e-05,
+              0.0023596221581101418,
+              0.005100464913994074,
+              0.03776052966713905,
+              0.410239040851593,
+              0.05806379392743111,
+              0.15163366496562958,
+              0.0,
+              0.022584015503525734
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.410239040851593
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 2,
+          "flipped_pixels": 26690,
+          "rate": 0.17542706429958344,
+          "occupancy": {
+            "counts": [
+              19326,
+              163,
+              28019,
+              9,
+              370,
+              770,
+              5802,
+              62449,
+              8831,
+              22968,
+              0,
+              3436
+            ],
+            "fractions": [
+              0.12702523171901703,
+              0.0010713605443015695,
+              0.18416227400302887,
+              5.915487417951226e-05,
+              0.0024319225922226906,
+              0.005061028059571981,
+              0.03813517466187477,
+              0.41046252846717834,
+              0.05804407596588135,
+              0.15096323192119598,
+              0.0,
+              0.022584015503525734
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.41046252846717834
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 3,
+          "flipped_pixels": 26645,
+          "rate": 0.17513129115104675,
+          "occupancy": {
+            "counts": [
+              19374,
+              157,
+              27943,
+              9,
+              378,
+              787,
+              5762,
+              62546,
+              8792,
+              22944,
+              0,
+              3451
+            ],
+            "fractions": [
+              0.12734071910381317,
+              0.0010319239227101207,
+              0.18366274237632751,
+              5.915487417951226e-05,
+              0.002484504599124193,
+              0.005172764882445335,
+              0.03787226602435112,
+              0.4111000895500183,
+              0.05778773874044418,
+              0.1508054882287979,
+              0.0,
+              0.022682607173919678
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.4111000895500183
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 4,
+          "flipped_pixels": 26818,
+          "rate": 0.17626838386058807,
+          "occupancy": {
+            "counts": [
+              19136,
+              160,
+              28204,
+              8,
+              391,
+              773,
+              5815,
+              62287,
+              8977,
+              22962,
+              0,
+              3430
+            ],
+            "fractions": [
+              0.12577641010284424,
+              0.001051642233505845,
+              0.18537822365760803,
+              5.258210876490921e-05,
+              0.0025699506513774395,
+              0.005080746486783028,
+              0.03822062164545059,
+              0.40939775109291077,
+              0.05900369957089424,
+              0.15092380344867706,
+              0.0,
+              0.022544579580426216
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.40939775109291077
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 5,
+          "flipped_pixels": 26800,
+          "rate": 0.17615006864070892,
+          "occupancy": {
+            "counts": [
+              19252,
+              166,
+              28062,
+              8,
+              375,
+              763,
+              5836,
+              62524,
+              8867,
+              22873,
+              0,
+              3417
+            ],
+            "fractions": [
+              0.12653884291648865,
+              0.001091078738681972,
+              0.18444490432739258,
+              5.258210876490921e-05,
+              0.0024647864047437906,
+              0.0050150188617408276,
+              0.0383586511015892,
+              0.4109554886817932,
+              0.05828069522976875,
+              0.15033882856369019,
+              0.0,
+              0.022459134459495544
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.4109554886817932
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 1,
+          "flipped_pixels": 27305,
+          "rate": 0.17946931719779968,
+          "occupancy": {
+            "counts": [
+              19231,
+              155,
+              28120,
+              8,
+              378,
+              783,
+              5762,
+              62344,
+              8923,
+              22996,
+              0,
+              3443
+            ],
+            "fractions": [
+              0.12640081346035004,
+              0.001018778420984745,
+              0.18482612073421478,
+              5.258210876490921e-05,
+              0.002484504599124193,
+              0.005146474111825228,
+              0.03787226602435112,
+              0.4097723960876465,
+              0.05864877253770828,
+              0.1511472761631012,
+              0.0,
+              0.022630026564002037
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.4097723960876465
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 2,
+          "flipped_pixels": 27372,
+          "rate": 0.17990969121456146,
+          "occupancy": {
+            "counts": [
+              19330,
+              160,
+              28287,
+              7,
+              368,
+              771,
+              5805,
+              61952,
+              8848,
+              23164,
+              0,
+              3451
+            ],
+            "fractions": [
+              0.12705151736736298,
+              0.001051642233505845,
+              0.185923770070076,
+              4.600934698828496e-05,
+              0.002418776974081993,
+              0.00506760086864233,
+              0.03815489262342453,
+              0.4071958661079407,
+              0.058155812323093414,
+              0.1522514969110489,
+              0.0,
+              0.022682607173919678
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.4071958661079407
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 3,
+          "flipped_pixels": 27525,
+          "rate": 0.18091532588005066,
+          "occupancy": {
+            "counts": [
+              19342,
+              166,
+              28155,
+              6,
+              359,
+              765,
+              5755,
+              62310,
+              8847,
+              22995,
+              0,
+              3443
+            ],
+            "fractions": [
+              0.1271304041147232,
+              0.001091078738681972,
+              0.1850561648607254,
+              3.9436581573681906e-05,
+              0.0023596221581101418,
+              0.005028164479881525,
+              0.03782625496387482,
+              0.40954890847206116,
+              0.05814924091100693,
+              0.1511407047510147,
+              0.0,
+              0.022630026564002037
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.40954890847206116
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 4,
+          "flipped_pixels": 27413,
+          "rate": 0.1801791787147522,
+          "occupancy": {
+            "counts": [
+              19215,
+              161,
+              28246,
+              9,
+              379,
+              779,
+              5844,
+              62023,
+              8900,
+              23120,
+              0,
+              3467
+            ],
+            "fractions": [
+              0.12629565596580505,
+              0.001058214926160872,
+              0.18565428256988525,
+              5.915487417951226e-05,
+              0.002491077408194542,
+              0.005120182875543833,
+              0.038411229848861694,
+              0.4076625406742096,
+              0.0584975965321064,
+              0.1519622951745987,
+              0.0,
+              0.022787772119045258
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.4076625406742096
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 5,
+          "flipped_pixels": 27678,
+          "rate": 0.18192096054553986,
+          "occupancy": {
+            "counts": [
+              19341,
+              162,
+              28232,
+              11,
+              388,
+              766,
+              5866,
+              62129,
+              8815,
+              23013,
+              0,
+              3420
+            ],
+            "fractions": [
+              0.12712381780147552,
+              0.0010647877352312207,
+              0.18556226789951324,
+              7.230040500871837e-05,
+              0.002550232456997037,
+              0.005034737288951874,
+              0.03855583071708679,
+              0.40835922956466675,
+              0.05793891102075577,
+              0.15125901997089386,
+              0.0,
+              0.022478852421045303
+            ],
+            "used_clusters": 11,
+            "maximum_fraction": 0.40835922956466675
+          }
+        }
+      ],
+      "mean_by_kind": {
+        "noise": 0.035090673714876175,
+        "shift": 0.1760028451681137,
+        "both": 0.18047888576984406
+      }
+    },
+    "14": {
+      "sample_id": "KYOw02767",
+      "k": 14,
+      "valid_pixels": 152143,
+      "clean_occupancy": {
+        "counts": [
+          11573,
+          354,
+          708,
+          0,
+          6,
+          3601,
+          17289,
+          22187,
+          3027,
+          39374,
+          2805,
+          47438,
+          144,
+          3637
+        ],
+        "fractions": [
+          0.07606659829616547,
+          0.0023267583455890417,
+          0.004653516691178083,
+          0.0,
+          3.9436581573681906e-05,
+          0.023668522015213966,
+          0.11363651603460312,
+          0.1458299160003662,
+          0.019895756617188454,
+          0.25879600644111633,
+          0.018436603248119354,
+          0.3117987811565399,
+          0.0009464779868721962,
+          0.023905141279101372
+        ],
+        "used_clusters": 13,
+        "maximum_fraction": 0.3117987811565399
+      },
+      "draws": [
+        {
+          "kind": "noise",
+          "draw": 1,
+          "flipped_pixels": 8157,
+          "rate": 0.05361403524875641,
+          "occupancy": {
+            "counts": [
+              11593,
+              355,
+              713,
+              0,
+              8,
+              3634,
+              17166,
+              22386,
+              3099,
+              39089,
+              2791,
+              47478,
+              145,
+              3686
+            ],
+            "fractions": [
+              0.076198048889637,
+              0.0023333311546593904,
+              0.004686380736529827,
+              0.0,
+              5.258210876490921e-05,
+              0.023885423317551613,
+              0.11282806098461151,
+              0.14713789522647858,
+              0.020368995144963264,
+              0.25692275166511536,
+              0.018344582989811897,
+              0.3120616674423218,
+              0.000953050737734884,
+              0.024227207526564598
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.3120616674423218
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 2,
+          "flipped_pixels": 8244,
+          "rate": 0.054185863584280014,
+          "occupancy": {
+            "counts": [
+              11536,
+              352,
+              712,
+              0,
+              8,
+              3667,
+              17200,
+              22266,
+              3120,
+              39277,
+              2784,
+              47413,
+              145,
+              3663
+            ],
+            "fractions": [
+              0.07582340389490128,
+              0.002313612960278988,
+              0.004679807927459478,
+              0.0,
+              5.258210876490921e-05,
+              0.02410232461988926,
+              0.11305153369903564,
+              0.14634916186332703,
+              0.020507022738456726,
+              0.25815844535827637,
+              0.018298573791980743,
+              0.31163445115089417,
+              0.000953050737734884,
+              0.024076033383607864
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.31163445115089417
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 3,
+          "flipped_pixels": 8159,
+          "rate": 0.05362717807292938,
+          "occupancy": {
+            "counts": [
+              11566,
+              347,
+              705,
+              0,
+              7,
+              3632,
+              17171,
+              22366,
+              3118,
+              39099,
+              2798,
+              47523,
+              146,
+              3665
+            ],
+            "fractions": [
+              0.07602058351039886,
+              0.002280749147757888,
+              0.004633798263967037,
+              0.0,
+              4.600934698828496e-05,
+              0.02387227863073349,
+              0.11286092549562454,
+              0.14700643718242645,
+              0.020493878051638603,
+              0.2569884955883026,
+              0.01839059218764305,
+              0.31235745549201965,
+              0.0009596234885975718,
+              0.024089179933071136
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.31235745549201965
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 4,
+          "flipped_pixels": 8160,
+          "rate": 0.05363375321030617,
+          "occupancy": {
+            "counts": [
+              11501,
+              351,
+              715,
+              0,
+              7,
+              3665,
+              17212,
+              22327,
+              3098,
+              39185,
+              2790,
+              47507,
+              145,
+              3640
+            ],
+            "fractions": [
+              0.07559335976839066,
+              0.002307040151208639,
+              0.004699525889009237,
+              0.0,
+              4.600934698828496e-05,
+              0.024089179933071136,
+              0.11313041299581528,
+              0.1467500925064087,
+              0.02036242187023163,
+              0.25755375623703003,
+              0.01833801157772541,
+              0.3122522830963135,
+              0.000953050737734884,
+              0.02392485924065113
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.3122522830963135
+          }
+        },
+        {
+          "kind": "noise",
+          "draw": 5,
+          "flipped_pixels": 8059,
+          "rate": 0.052969902753829956,
+          "occupancy": {
+            "counts": [
+              11542,
+              353,
+              713,
+              0,
+              7,
+              3642,
+              17184,
+              22361,
+              3128,
+              39162,
+              2783,
+              47464,
+              143,
+              3661
+            ],
+            "fractions": [
+              0.0758628398180008,
+              0.002320185536518693,
+              0.004686380736529827,
+              0.0,
+              4.600934698828496e-05,
+              0.023938005790114403,
+              0.11294637620449066,
+              0.14697356522083282,
+              0.020559605211019516,
+              0.25740256905555725,
+              0.018292002379894257,
+              0.31196966767311096,
+              0.0009399052360095084,
+              0.02406288869678974
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.31196966767311096
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 1,
+          "flipped_pixels": 38812,
+          "rate": 0.25510209798812866,
+          "occupancy": {
+            "counts": [
+              11112,
+              332,
+              718,
+              0,
+              6,
+              4143,
+              16556,
+              22970,
+              3708,
+              37004,
+              2860,
+              48564,
+              139,
+              4031
+            ],
+            "fractions": [
+              0.0730365514755249,
+              0.002182157477363944,
+              0.0047192443162202835,
+              0.0,
+              3.9436581573681906e-05,
+              0.027230961248278618,
+              0.10881868004798889,
+              0.15097638964653015,
+              0.024371808394789696,
+              0.2432185560464859,
+              0.01879810355603695,
+              0.31919971108436584,
+              0.0009136141743510962,
+              0.026494810357689857
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.31919971108436584
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 2,
+          "flipped_pixels": 38621,
+          "rate": 0.2538467049598694,
+          "occupancy": {
+            "counts": [
+              11209,
+              365,
+              700,
+              0,
+              7,
+              4160,
+              16629,
+              23102,
+              3683,
+              36876,
+              2852,
+              48460,
+              143,
+              3957
+            ],
+            "fractions": [
+              0.07367411255836487,
+              0.0023990587797015905,
+              0.004600934684276581,
+              0.0,
+              4.600934698828496e-05,
+              0.027342697605490685,
+              0.10929848998785019,
+              0.15184399485588074,
+              0.02420748956501484,
+              0.24237723648548126,
+              0.01874552294611931,
+              0.3185161352157593,
+              0.0009399052360095084,
+              0.026008427143096924
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.3185161352157593
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 3,
+          "flipped_pixels": 38830,
+          "rate": 0.2552204132080078,
+          "occupancy": {
+            "counts": [
+              11160,
+              347,
+              721,
+              0,
+              9,
+              4209,
+              16566,
+              22980,
+              3737,
+              36983,
+              2824,
+              48518,
+              141,
+              3948
+            ],
+            "fractions": [
+              0.07335204631090164,
+              0.002280749147757888,
+              0.00473896274343133,
+              0.0,
+              5.915487417951226e-05,
+              0.02766476199030876,
+              0.10888440161943436,
+              0.1510421186685562,
+              0.024562418460845947,
+              0.2430805265903473,
+              0.018561484292149544,
+              0.3188973665237427,
+              0.0009267596760764718,
+              0.025949271395802498
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.3188973665237427
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 4,
+          "flipped_pixels": 38587,
+          "rate": 0.25362324714660645,
+          "occupancy": {
+            "counts": [
+              11132,
+              364,
+              724,
+              0,
+              7,
+              4270,
+              16525,
+              23108,
+              3689,
+              37074,
+              2821,
+              48240,
+              138,
+              4051
+            ],
+            "fractions": [
+              0.07316800951957703,
+              0.002392485970631242,
+              0.004758681170642376,
+              0.0,
+              4.600934698828496e-05,
+              0.028065701946616173,
+              0.10861492156982422,
+              0.15188342332839966,
+              0.024246925488114357,
+              0.24367864429950714,
+              0.018541766330599785,
+              0.3170701265335083,
+              0.0009070414234884083,
+              0.026626266539096832
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.3170701265335083
+          }
+        },
+        {
+          "kind": "shift",
+          "draw": 5,
+          "flipped_pixels": 38597,
+          "rate": 0.2536889612674713,
+          "occupancy": {
+            "counts": [
+              11183,
+              369,
+              705,
+              0,
+              12,
+              4211,
+              16621,
+              22998,
+              3710,
+              36724,
+              2789,
+              48751,
+              146,
+              3924
+            ],
+            "fractions": [
+              0.07350321859121323,
+              0.002425349783152342,
+              0.004633798263967037,
+              0.0,
+              7.887316314736381e-05,
+              0.027677908539772034,
+              0.1092459037899971,
+              0.15116041898727417,
+              0.02438495308160782,
+              0.24137817323207855,
+              0.018331438302993774,
+              0.3204288184642792,
+              0.0009596234885975718,
+              0.025791525840759277
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.3204288184642792
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 1,
+          "flipped_pixels": 39688,
+          "rate": 0.2608598470687866,
+          "occupancy": {
+            "counts": [
+              11219,
+              361,
+              715,
+              0,
+              5,
+              4226,
+              16442,
+              23122,
+              3809,
+              36907,
+              2810,
+              48389,
+              141,
+              3997
+            ],
+            "fractions": [
+              0.07373983412981033,
+              0.0023727677762508392,
+              0.004699525889009237,
+              0.0,
+              3.286381979705766e-05,
+              0.027776500210165977,
+              0.10806938260793686,
+              0.15197543799877167,
+              0.025035656988620758,
+              0.24258099496364594,
+              0.018469465896487236,
+              0.31804946064949036,
+              0.0009267596760764718,
+              0.026271337643265724
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.31804946064949036
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 2,
+          "flipped_pixels": 39310,
+          "rate": 0.258375346660614,
+          "occupancy": {
+            "counts": [
+              11226,
+              370,
+              715,
+              0,
+              6,
+              4147,
+              16493,
+              23320,
+              3771,
+              36670,
+              2838,
+              48455,
+              142,
+              3990
+            ],
+            "fractions": [
+              0.07378584891557693,
+              0.0024319225922226906,
+              0.004699525889009237,
+              0.0,
+              3.9436581573681906e-05,
+              0.027257250621914864,
+              0.10840459167957306,
+              0.15327684581279755,
+              0.02478589303791523,
+              0.2410232424736023,
+              0.01865350268781185,
+              0.31848326325416565,
+              0.0009333324851468205,
+              0.02622532658278942
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.31848326325416565
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 3,
+          "flipped_pixels": 39199,
+          "rate": 0.25764575600624084,
+          "occupancy": {
+            "counts": [
+              11156,
+              348,
+              715,
+              0,
+              6,
+              4195,
+              16497,
+              23166,
+              3786,
+              37068,
+              2785,
+              48276,
+              146,
+              3999
+            ],
+            "fractions": [
+              0.0733257532119751,
+              0.002287321723997593,
+              0.004699525889009237,
+              0.0,
+              3.9436581573681906e-05,
+              0.027572743594646454,
+              0.1084308847784996,
+              0.15226463973522186,
+              0.024884482845664024,
+              0.24363920092582703,
+              0.01830514706671238,
+              0.3173067569732666,
+              0.0009596234885975718,
+              0.026284482330083847
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.3173067569732666
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 4,
+          "flipped_pixels": 39419,
+          "rate": 0.2590917646884918,
+          "occupancy": {
+            "counts": [
+              11129,
+              362,
+              713,
+              0,
+              7,
+              4162,
+              16482,
+              23378,
+              3807,
+              36732,
+              2827,
+              48402,
+              144,
+              3998
+            ],
+            "fractions": [
+              0.07314828783273697,
+              0.002379340585321188,
+              0.004686380736529827,
+              0.0,
+              4.600934698828496e-05,
+              0.027355842292308807,
+              0.10833229124546051,
+              0.15365807712078094,
+              0.025022512301802635,
+              0.24143075942993164,
+              0.018581204116344452,
+              0.3181349039077759,
+              0.0009464779868721962,
+              0.02627790905535221
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.3181349039077759
+          }
+        },
+        {
+          "kind": "both",
+          "draw": 5,
+          "flipped_pixels": 39377,
+          "rate": 0.2588157057762146,
+          "occupancy": {
+            "counts": [
+              11103,
+              386,
+              712,
+              0,
+              9,
+              4241,
+              16508,
+              23213,
+              3787,
+              36660,
+              2815,
+              48577,
+              146,
+              3986
+            ],
+            "fractions": [
+              0.07297739386558533,
+              0.0025370868388563395,
+              0.004679807927459478,
+              0.0,
+              5.915487417951226e-05,
+              0.02787509188055992,
+              0.10850318521261215,
+              0.1525735706090927,
+              0.02489105612039566,
+              0.24095751345157623,
+              0.018502330407500267,
+              0.31928515434265137,
+              0.0009596234885975718,
+              0.026199037209153175
+            ],
+            "used_clusters": 13,
+            "maximum_fraction": 0.31928515434265137
+          }
+        }
+      ],
+      "mean_by_kind": {
+        "noise": 0.053606145083904266,
+        "shift": 0.25429627299308777,
+        "both": 0.2589576840400696
+      }
+    }
+  }
+}
