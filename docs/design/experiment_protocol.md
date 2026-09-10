@@ -14,40 +14,31 @@ vMF補助実験は範囲・利用版・退化成分の扱いをFixedとし、第
 実行環境はChemoMAE v0.2.2とする。各runの設定・環境・source hashを成果物に記録する。
 実施済みの確認と環境変更の経緯は[検証履歴](../verification_history.md)で管理する。
 
+- [CV・seed・画素抽出](#cv-design)
+- [条件・表現・学習設定](#conditions)と[計画比較](#planned-comparisons)
+- [vMF補助実験](#vmf-supplementary)、[Kの方針](#cluster-counts)
+- [実行時に保存する記録](#execution-records)
+
 ## 2. 研究目的
 
-本研究は、**状態を事前に定義しにくい材料の化学的な違いを捉える、自己教師ありスペクトル表現学習**を扱う。
-中心となる問いは、化学状態の正解ラベルを与えずに帯域間の関係を学ぶことで、状態差の探索・解釈に
-有用な表現を得られるか、である。本プロトコルでは古材NIR-HSIを実証対象とし、
-SNV後スペクトルのマスク再構成にdenoisingを組み合わせる方法を検討する。他材料への有効性は本実験だけでは検証できない。
-化学状態をより安定して反映する表現を期待し、SNVの幾何的制約を保つnoise・shiftを
-この学習課題へ導入する。指定した摂動への耐性そのものの獲得を
-導入の主目的とはしない。MAEの選択、view間対応を使うSSLを今回試さない背景、およびdenoisingに
-置く仮定は[ChemoMAEの位置づけ 第1節](../chemomae_positioning.md)を参照する。
+古材NIR-HSIを実証対象に、マスク再構成とSNV制約を保つdenoisingによって、
+状態差の探索・解釈に有用なスペクトル表現を得られるかを調べる。
+研究全体の問いと証拠の役割は[研究の目的](../research_overview.md)、
+MAEとaugmentationの採用理由は[ChemoMAEの位置づけ](../chemomae_positioning.md)を参照する。
 
-実験では、ChemoMAEによる表現変換が、教師なし領域分割の空間的一貫性と、指定したスペクトル摂動に対する
-安定性をどのように変えるかを検証する。各表現空間のクラスタ分離性は、その挙動を説明する
-幾何学的診断として扱う。これらは表現・マップの性質を評価するものであり、
-denoisingの導入動機や、化学的な表現品質そのものの直接評価とは区別する。
+本プロトコルのCVが比較する問いは次の3点である。
 
-現行CVでは外部の正解劣化ラベルや独立した劣化測定による定量評価は行わない。したがって、劣化領域の検出精度、
-劣化度の推定精度、化学成分量の定量性能は本プロトコルの検証対象に含めない。劣化との対応は、実験条件を
-確定した後のラベルマップ、代表スペクトル、差スペクトルおよび試料情報に基づく探索的解釈とする。
-教師なし指標が良好であることを、劣化との対応の証明に置き換えない。
+1. 提案Aug-MAEはraw SNV、PCA、標準MAEと比べ、空間的一貫性・指定摂動への安定性をどう変えるか。
+   指標間にtrade-offがあるか。
+2. 標準MAEのmasked reconstruction方式は、maskなし・全領域再構成AEと比べてどのような違いを与えるか。
+3. noiseと波長方向shiftは、それぞれ単独・併用でどのような効果を与えるか。
 
-別途、位置対応FT-IRによってクラスタの解釈を深める計画を、2026-09-10に文書化した。
-測定・解析の詳細は[可視化・解釈設計第5.1節のOpen事項](visualization_and_interpretation.md#ftir-interpretation)とする。
-この計画は現行CVの条件・指標・splitを変更せず、化学的対応の実証済みという意味でもない。
+mask率は提案条件の感度解析とし、最適化の主題にしない。
+CV指標は化学的な表現品質や劣化検出精度を直接測らない。劣化との対応は、マップ・代表／差スペクトル・
+試料情報に基づく探索的解釈とする。[位置対応FT-IR](visualization_and_interpretation.md#ftir-interpretation)は
+その解釈を深める別の計画で、詳細設計はOpen。現行CVの条件・指標・splitは変更しない。
 
-この研究課題のうち、現行CVが検証する問いは次の3点である。研究全体における手法と証拠の役割は
-[研究の主軸](../chemomae_positioning.md#research-focus)を参照する。
-
-1. 提案Aug-MAEはraw SNV、PCAおよび標準MAEと比べて、領域分割の空間的一貫性と摂動安定性を
-   どのように変えるか。指標間にtrade-offがあるか。
-2. 標準MAEのmasked reconstruction方式は、maskなし・全領域再構成のAEと比べて、どのような違いを与えるか。
-3. Gaussian noiseと波長方向shiftは、MAEに対してそれぞれ単独または併用でどのような効果を与えるか。
-
-mask率の最適化は主題にせず、提案条件の感度を確認する補助実験として扱う。
+<a id="cv-design"></a>
 
 ## 3. 実験単位とcross-validation
 
@@ -78,6 +69,8 @@ mask率の最適化は主題にせず、提案条件の感度を確認する補�
 
 各foldでは、表現学習、PCAのfit、Cosine-KMeansのfitをtrain試料だけで行う。
 test試料は、trainで得た変換器、encoder、クラスタ中心を固定した状態で評価する。
+
+<a id="seed-plan"></a>
 
 ### 3.3 3反復と乱数の管理
 
@@ -114,6 +107,8 @@ splitはソートした試料IDへNumPy PCG64によるランダム置換を行�
 library versionや呼び出し順の違いを理由にsplit・画素集合を作り直さない。
 seed計画は乱数管理の契約であり、後続の学習・共通評価摂動の動作検証を代用しない。
 
+<a id="pixel-sampling"></a>
+
 ### 3.4 train画素の試料間均等化
 
 - 各foldの各train試料から同数$q=8192$の有効画素を、試料内の一様ランダム・非復元抽出で選ぶ。
@@ -129,7 +124,7 @@ seed計画は乱数管理の契約であり、後続の学習・共通評価摂�
 `data/processed/production_v1/sample_quality.parquet` の49試料・3,902,250有効画素に対し、
 49/49試料で$q=8192$の非復元抽出が可能だった。
 補間後・SNV前の負の反射率496画素は、この抽出候補とtest評価対象から除外済みである。
-この49試料を採用する場合、trainは39または40試料となり、
+現行49試料では、trainは39または40試料となり、
 319,488または327,680画素/fold、312または320 batch/epoch、
 800 epochで249,600または256,000予定更新/runとなる。
 1024の倍数なので、この$q$では`drop_last=True`でも端数除外が発生しない。
@@ -139,24 +134,19 @@ seed計画は乱数管理の契約であり、後続の学習・共通評価摂�
 試料集合や前処理データを変更した場合は、`sample_quality.parquet`の`saved_pixel_count`で
 抽出可能性を再確認する。test評価には引き続き全有効画素を使う。
 
-確認には`scripts/preprocess/check_sampling_pixels.py`を使用する。リポジトリrootからの実行例は次のとおり。
-
-```powershell
-uv run python scripts/preprocess/check_sampling_pixels.py --q 8192
-```
-
-既存の`sample_quality.parquet`の試料ID・有効画素数だけを読み、全試料の画素数、要求抽出率、
-不足画素数、最小・中央値・最大画素数を標準出力へ表示する。全試料で抽出可能なら終了code 0、
-不足があれば終了code 1とする。これは画素数の確認であり、実際の画素抽出・split作成・
-スペクトル網羅性の評価は行わない。生成物や前処理データを変更しない。
+抽出可能数は既存の品質表から確認する。[runbookの入力確認](../experiment_runbook.md#input-preparation)に
+`check_sampling_pixels.py`のコマンドと終了codeを示す。これは画素数の確認であり、
+実際の抽出・split作成・スペクトル網羅性の評価ではない。
 
 抽出seed、$q$、試料IDおよび`pixel_row_col`に対応する抽出座標をmanifestへ保存する。
 空間近傍を使うLLAは、抽出したtrain画素上では計算しない。各試料から同数を使うことは試料の重みを
 揃える操作であり、樹種や由来の構成比を均等にする操作ではない。
 
+<a id="conditions"></a>
+
 ## 4. 主比較条件
 
-主比較ではmask率を50%に固定する。通常の推論入力にはaugmentationを適用せず、
+主比較のMAE条件ではmask率を50%に固定し、A0は0%とする。通常の推論入力にはaugmentationを適用せず、
 学習時の各augmentationの適用確率は、有効な条件においてそれぞれ0.5とする。
 LFR評価では別途、固定モデルに対する評価摂動を明示的に生成する。
 
@@ -187,6 +177,8 @@ M00を含むMAE条件では`loss_region="masked"`を使用する。
 
 augmentation強度はSNVスペクトルの`sanity_check`を通じて恣意的に固定し、条件ごとに変更しない。
 CV評価指標による最適化や追加の強度ablationは行わない。
+
+<a id="representations"></a>
 
 #### 4.1.1 表現次元とL2正規化（Fixed）
 
@@ -242,6 +234,8 @@ libraryのepsilonによる除算保護はゼロnormを有効にする規則で�
 silhouetteを各表現空間の診断とする方針は維持する。SNV入力・再構成target・保存済み前処理データは、
 この後段の単位化とは区別する。B0の単位化も、元のSNVで定義されるcosine距離を変えるものではない。
 
+<a id="model-architecture"></a>
+
 #### 4.1.2 ChemoMAEの構成と初期化（Fixed）
 
 ユーザー提示のencoder構成と確認済みの線形1層decoderを共通構成とする。
@@ -287,6 +281,8 @@ encoder特徴から画素を復元する。本研究はCLS由来の単一の16�
 
 用途別seedを設定してからモデルを構築する。同じfold・反復では同じ構築seedを全学習条件に対応付ける。
 原MAEの画像用モデルに対する初期化を上書きして混ぜない。
+
+<a id="augmentation-clustering"></a>
 
 #### 4.1.3 参照実装とaugmentation・クラスタリングの確認
 
@@ -342,6 +338,8 @@ noiseのGaussianは方向の生成方法を指し、回転角の分布や最終�
 これらは既に決めたK依存性と3反復のための指定であり、既定値のK=8・seed=42で全runを上書きしない。
 libraryに`n_init`引数はない。3反復と、1 fit内の初期化1回を区別する。
 
+<a id="evaluation-precision"></a>
+
 #### 4.1.4 表現抽出・評価の数値設定（Fixed）
 
 PCAのfit・transform、ChemoMAEの全可視抽出、評価摂動の生成、L2正規化、Cosine-KMeansおよび
@@ -359,6 +357,8 @@ SpectraAugmenterは`eps=1e-8`である。B0/PCA後の明示的な正規化には
 離散ラベル・画素数・一致件数・contingencyなどは整数で保持し、FP32指定を理由に整数の計数を
 浮動小数へ置き換えない。seed、実際の演算設定とlibrary versionは第11.2節に記録する。
 GPUの並列reductionによる微小な非決定性まで消えたとは主張しない。
+
+<a id="training-recipe"></a>
 
 ### 4.2 学習設定（Fixed）
 
@@ -463,8 +463,11 @@ ChemoMAE v0.2.2の
 にも差がある。`build_optimizer`はbias・LayerNormに加えてCLS tokenと学習可能な位置埋め込みを
 weight decayから除外する。既存の`build_scheduler`はwarmupに`step + 1`を使い、
 Trainerはbatch更新後にschedulerを進めるため、本節の0から始まる学習率列と完全一致しない。
-本節のrecipeに合わせるには利用側のparameter groupingと学習率列の調整が必要となる。
-既定helperをそのまま使用して原MAEと完全に同じ設定だと記述しない。本文書の更新では学習コードを変更しない。
+本リポジトリでは[利用側のoptimizer構築](../../src/wood_degradation_map/experiments/neural.py)と
+[ExperimentTrainer](../../src/wood_degradation_map/experiments/training.py)でparameter groupingとbatch前の学習率更新を実装する。
+この仕様はlibrary既定helperをそのまま使った場合と区別する。
+
+<a id="planned-comparisons"></a>
 
 ### 4.3 計画比較
 
@@ -505,10 +508,10 @@ LLAとLFRは改善方向が逆である。contrastは指標の元の尺度で示
 | ID | mask率 | Gaussian noise | shift |
 | --- | ---: | ---: | ---: |
 | M11-25 | 25% | あり | あり |
-| M11-50 | 50% | あり | あり |
+| M11 | 50% | あり | あり |
 | M11-75 | 75% | あり | あり |
 
-M11-50は主比較のM11と同一条件であり、新たな条件として重複学習させない。
+50%の実行IDは主比較と同じ`M11`とし、別のIDで重複学習させない。
 この実験は「最適mask率」の選択ではなく、提案条件のmask率依存性を確認する感度解析として扱う。
 結果は補助実験として報告し、主条件M11を事後的に置き換えない。
 fold、共通K集合、学習budget、3反復のseed一覧および評価指標は主比較と同一にする。
@@ -523,9 +526,8 @@ Gaussian noiseのみ、shiftのみの条件ではmask率sweepを行わない。
 第4.3節の条件間比較の結論が保たれるか**を調べることである。主実験ではCosine-KMeansを使い、
 vMFはクラスタリング方法への感度を調べる補助実験として報告する。encoderの再学習は行わない。
 
-2026-09-07に、以下の範囲・利用版・退化成分の扱いをユーザーが確定した。
-これはA0の一部run完了後の追加決定であり、全実験の開始前から固定していたとは記述しない。
-vMFのtest結果を見る前に、残る数値仕様を確定する。
+範囲・利用版・退化成分の扱いは2026-09-07に確定した。
+[決定記録](decisions.md)のとおりCV開始後の追加であり、vMFのtest結果を見る前に残る数値仕様を確定する。
 
 #### 5.2.1 実施範囲と共有する入力（Fixed）
 
@@ -541,10 +543,8 @@ vMFのtest結果を見る前に、残る数値仕様を確定する。
 
 主7条件により、M11対B0・B1・M00、M00対A0、augmentationの2×2比較を同じ範囲で確認する。
 M11-25・M11-75への適用は含めない。
-全体解釈用のvMFは2026-09-08に追加し、2026-09-09に対象へA0を加えた。
-対象はB0・B1・A0・M00・M11、$K_0=8$、各1回の計5 fitsとし、本節のCV補助実験735 fitsとは別枠で扱う。
-全体学習済みの各表現を再利用し、vMFのための追加の表現学習は行わない。
-fit条件・マップ・解釈の規約は[全体可視化設計](visualization_and_interpretation.md)に定義する。
+[全体解釈のvMF 5 fits](visualization_and_interpretation.md#global-fit)は、本節のCV補助実験735 fitsと別枠で扱う。
+対象拡張の決定時点は[決定記録](decisions.md)に示す。
 
 追加restart、最良seed選択、既存KMeansの最終中心からのwarm startは行わない。
 条件間でseedを共有しても、異なるアルゴリズム間で初期方向や乱数消費が一致するとは仮定しない。
@@ -608,6 +608,8 @@ hard labelは最大posterior責務の成分とし、背景0・クラスタ1〜K�
 
 主実験のconfig・manifest・completion・評価結果は保持し、補助実験には独立した設定・結果・完了記録を持たせる。
 再利用する成果物には元のconfig・runtime・source hashを保持する。
+
+<a id="cluster-counts"></a>
 
 ## 6. 共通クラスタ数とK依存性
 
@@ -708,7 +710,7 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 全体学習および解釈の対象はCV順位にかかわらず、B0、B1、A0、M00、M11の5条件とし、
 各条件の同じ表現にCosine-KMeansとvMFを適用する。A0は再構成方式の違いをマップとスペクトルでも
 比較するため、2026-09-09に追加した。CV開始前からの固定事項とは記述しない。
-追加の経緯と解釈規約は[visualization_and_interpretation.md](visualization_and_interpretation.md)に定義する。
+追加の経緯は[決定記録](decisions.md)、現行のfit・解釈規約は[全体可視化設計](visualization_and_interpretation.md)に示す。
 
 ## 9. 実行しない探索
 
@@ -732,7 +734,7 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 6. pairedな条件差、K依存性、mask率依存性および反復間安定性を集計する。
 7. B0、B1、A0、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$K_0$で
    Cosine-KMeansとvMFを各1回fitする。vMFは第5.2.3節の数値仕様の確定・検証後に実施する。
-8. B0のCosine-KMeansを共通基準にラベルを整列し、5条件 × 2手法のマップとスペクトル、潜在空間を解釈する。
+8. A0のCosine-KMeansを共通基準にラベルを整列し、5条件 × 2手法のマップとスペクトル、潜在空間を解釈する。
 
 vMFのCV補助実験735 fitsの実施順序は第5.2.4節に従い、手順7の全体解釈用5 fitsとは分けて記録する。
 
@@ -742,8 +744,9 @@ vMFのCV補助実験735 fitsの実施順序は第5.2.4節に従い、手順7の�
 
 PCA、モデル構成・初期化、augmentation、Cosine-KMeans、抽出・評価のFP32、LFRの$R=5$はFixedとした。
 共通抽出数$q=8192$画素/試料と一様ランダム・非復元抽出もFixedとし、現行49試料すべてで
-抽出可能なことを確認した（第3.4節）。これまでOpenとしていた主実験の条件選択は解消した。
-既に決まった条件を未決定事項として再掲しない。
+抽出可能なことを確認した（第3.4節）。残るOpen事項はvMFの数値仕様・実装であり、第5.2.3節にまとめる。
+
+<a id="execution-records"></a>
 
 ### 11.2 データ確認と実行記録
 

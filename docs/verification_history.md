@@ -13,6 +13,8 @@
 `outputs/experiments/preflight_v1/`、本番runでは `outputs/experiments/production_v1/` の保存記録を
 正とする。
 
+<a id="production-inputs"></a>
+
 ## 2. 本番入力
 
 2026-09-06、補間後・SNV前の反射率が1帯域でも負の画素を背景とする前処理を再生成した。
@@ -33,6 +35,9 @@ KYOw単位の5-fold splitにtrain/testの試料重複はない。異なるKYOw�
 ユーザー決定によりKYOwだけをsplit単位とした。
 
 ## 3. 自動テスト
+
+以下はそれぞれの実装時点で共有された検証結果であり、単一時点の全suiteの内訳ではない。
+2026-09-07の一括検証は[第7.2節](#chemomae-022-validation)に示す。
 
 | 対象 | 結果 | 主な確認 |
 | --- | ---: | --- |
@@ -184,8 +189,7 @@ probe最大絶対誤差は全foldで$2.50\times10^{-7}$以下だった。同じf
 repeat 1のPCAを共有する。B0はfitするパラメータを持たない。
 
 `fit_baselines.py fit`と`results/baselines/`はB0・B1をまとめて検証する工程名・保存先であるが、
-ここで実質的にfitされるのはB1 PCAだけである。`b0.json`はB0変換仕様、`fit.json`は主にB1 PCAの
-fit由来とB0・B1のprobe診断を記録し、PCAパラメータ本体は`checkpoints/baselines/`の`pca.npz`へ保存する。
+ここで実質的にfitされるのはB1 PCAだけである。保存先の契約は[runbookのPCA fit](experiment_runbook.md#5-b1-pca-fitとbaseline変換の検証)を参照する。
 
 続いてB0・B1の各5 folds × 3 repeats、計30組合せについて全7Kのclusteringと全test評価を完了した。
 各condition・repeatで5 foldsを合わせると49試料・3,902,250有効画素を1回ずつ覆う。全30組合せで
@@ -209,22 +213,16 @@ fold 2のKYOw02789・$K=2$における補正LLA（窓3・5・9、3反復）が`s
 これは理由付き未定義値として保持し、0で補完しない。B0・B1だけを用いた性能順位は確定せず、
 主7条件の全fold・反復が揃ったOOF snapshotで計画比較する。
 
-## 6. 本文代表試料
+## 6. 本文代表試料とOOF sanity
 
-結果を見る前に、各樹種で保存有効画素数が最大の試料を本文表示例として固定した。
+代表試料は2026-09-06に、各樹種で保存有効画素数が最大の7試料へ固定した。
+試料一覧、選択規則、metadata・manifestのSHA-256は[可視化設計](design/visualization_and_interpretation.md#representative-samples)に集約する。
 
-| 樹種 | 試料 | 保存有効画素数 |
-| --- | --- | ---: |
-| クリ | KYOw02789 | 125,946 |
-| ケヤキ | KYOw02777 | 121,687 |
-| スギ | KYOw02784 | 117,549 |
-| ツガ | KYOw02787 | 106,684 |
-| ヒノキ | KYOw02720 | 131,174 |
-| マツ | KYOw02769 | 161,734 |
-| モミ | KYOw16750 | 58,739 |
-
-選択規則、metadataとmanifestのSHA-256、解釈上の制約は
-[design/visualization_and_interpretation.md](design/visualization_and_interpretation.md)第4.2節に記録した。
+2026-09-10、B0・B1の既存OOF mapとscoreから、[sanity可視化](design/oof_sanity_visualization.md)を生成した。
+保存物は条件別label sheet 2枚、silhouette 1枚、数値CSV 3つで、各label sheetの試料下にKYOw名を表示する。
+この作業ではCodexが可視化を実行し、ラベル図を目視確認した。試料名追加後の対象テストは1 passed・11 deselected、
+Ruffはpassedだった。この確認は図の出力・配置に関するものであり、劣化との対応は[解釈メモ](interpretation_notes.md)に分ける。
+今回の文書整理で学習・評価・可視化を再実行したものではない。
 
 <a id="chemomae-022-validation"></a>
 
