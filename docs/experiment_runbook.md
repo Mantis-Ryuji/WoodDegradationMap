@@ -82,12 +82,12 @@ uv run --no-sync python scripts/experiments/prepare_manifests.py check --experim
 
 ## 4. ニューラルネットの1 run
 
-対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はM11・fold 2・repeat 1の例である。
+対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はA0・fold 2・repeat 1の例である。
 完了済みrunは再学習せず、保存済み成果物の確認には各工程の`check`を使う。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M11'
+$condition = 'A0'
 $fold = 2
 $repeat = 1
 
@@ -97,6 +97,31 @@ uv run --no-sync python scripts/experiments/train_neural.py train `
     --repeat $repeat `
     --experiment-dir $experimentDir
 ```
+
+同一foldの未着手repeatを連続実行する場合も、CLIは1 runずつ呼び出す。
+以下はA0・fold 2・repeat 1–3を並列化せずに順次実行する例である。
+実行時は`$repeats`に未着手runだけを列挙し、完了済みrunや中断したrunを含めない。
+
+```powershell
+$experimentDir = 'outputs/experiments/production_v1'
+$condition = 'A0'
+$fold = 2
+$repeats = 1..3
+
+foreach ($repeat in $repeats) {
+    uv run --no-sync python scripts/experiments/train_neural.py train `
+        --condition $condition `
+        --fold $fold `
+        --repeat $repeat `
+        --experiment-dir $experimentDir
+    if ($LASTEXITCODE -ne 0) {
+        throw "$condition fold $fold repeat $repeat training failed"
+    }
+}
+```
+
+非0終了でloopは停止する。中断時は完了済みrepeatを再実行せず、
+対象repeatだけを次節の手順で明示的に再開する。
 
 ニューラル条件は `A0`、`M00`、`M10`、`M01`、`M11`、`M11-25`、`M11-75` である。
 各runは800 epochで、fold 1–4は249,600回、fold 5は256,000回のbatch試行を予定する。

@@ -1,6 +1,6 @@
 # 実験実施 ToDo
 
-更新日: 2026-09-10。進捗はこの日までに確認・共有された状態を示す。
+更新日: 2026-09-11。進捗はこの日までに確認・共有された状態を示す。
 
 本書は残作業を管理する。[文書案内](docs/README.md)から、
 [固定設計](docs/design/README.md)、[実行手順](docs/experiment_runbook.md)、[検証履歴](docs/verification_history.md)へ進む。
@@ -13,11 +13,11 @@
 | 本番root | `outputs/experiments/production_v1/` |
 | manifest | split・共通train座標・augmentation contractは現行仕様で確定済み |
 | baseline | B1 PCAの5 fits、B0・B1の全5 folds×3反復のclustering・評価・checkが完了 |
-| 主ニューラル条件 | A0・M00・M10・M01・M11のfold 1・repeat 1–3で学習・clustering・評価・checkが完了 |
-| 主実験の完了数 | NN学習・clustering・評価は各15/75。B0・B1を含むclustering・評価は各45/105組合せ |
+| 主ニューラル条件 | A0・M00・M10・M01のfold 1、M11のfold 1–2の各repeat 1–3で学習・clustering・評価・checkが完了 |
+| 主実験の完了数 | NN学習・clustering・評価は各18/75。B0・B1を含むclustering・評価は各48/105組合せ |
 | OOF sanity | B0・B1のPNG 3枚・CSV 3つを生成済み。[表示仕様](docs/design/oof_sanity_visualization.md) |
 | 実行中 | なし（最終確認時点） |
-| 次のrun | M11・fold 2・repeat 1の学習 → clean test map → 全test評価 → 各check |
+| 次のrun | A0・fold 2・repeat 1–3。学習は同repeatを順次実行し、clean test map → 全test評価 → 各checkまで完了する |
 | 実行環境 | ChemoMAE v0.2.2。固定設定と環境確認は[runbook](docs/experiment_runbook.md)・[検証履歴](docs/verification_history.md) |
 
 前処理・入力照合、学習と再開、clustering、評価、OOF数値集計の実装とpreflightは完了済み。
@@ -32,7 +32,7 @@
 - [ ] M00のfold 2–5・repeat 1–3を完了する（3/15 runs完了）。
 - [ ] M10のfold 2–5・repeat 1–3を完了する（3/15 runs完了）。
 - [ ] M01のfold 2–5・repeat 1–3を完了する（3/15 runs完了）。
-- [ ] M11のfold 2–5・repeat 1–3を完了する（3/15 runs完了）。
+- [ ] M11のfold 3–5・repeat 1–3を完了する（6/15 runs完了。fold 1–2は完了）。
 - [ ] 主7条件の5 folds×3反復の完全性を確認し、`main_oof_v1`を作成・checkする。
 - [ ] 欠損・失敗・中断・未定義指標と理由がOOF集計に保持されていることを確認する。
 
