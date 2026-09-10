@@ -4,8 +4,8 @@
 
 **Fixed**
 
-2026-09-06ユーザー決定: SNV前の補間反射率が1帯域でも負の画素は、train・test共通で背景とする。
-`production_v1` として再生成し、ユーザーが旧生成ディレクトリを削除した。raw原本は変更していない。
+SNV前の補間反射率が1帯域でも負の画素は、train・test共通で背景とする。
+2026-09-06の決定と再生成は[決定記録](decisions.md)・[入力の確認結果](../verification_history.md#production-inputs)に記録する。
 
 本書は、後段の解析と可視化に渡す200 Hz NIR-HSIの本番前処理を定義する。
 前処理は全試料および全実験で共通とし、cross-validationやモデルの結果を見て変更しない。
@@ -57,22 +57,13 @@ rawデータは原本として扱い、変更、改名、移動または上書�
 試料間で画像高さが異なることは許容する。200 Hzだけを使用するため、030 Hzとの共通高さへの切り詰めや
 画像registrationは行わない。
 
-## 4. 実行方法
+## 4. CLIと出力先
 
-リポジトリrootから次を実行する。
-
-```powershell
-uv run python scripts/preprocess/run_production_preprocessing.py
-```
-
-既定の出力先は次のとおりである。
-
-- 解析データ: `data/processed/production_v1/`
-- 前処理レポート: `outputs/preprocessing/production_v1/`
-
-両出力先は新規または空でなければならない。既存runを暗黙に上書きしない。
-CLIで変更できるのは入出力先とmemory用chunk sizeだけであり、SNR閾値、mask条件、補間点数などの
-研究上の固定値はoptionとして公開しない。
+CLIは`scripts/preprocess/run_production_preprocessing.py`。
+実行手順と画素数の確認は[runbook](../experiment_runbook.md#input-preparation)に示す。
+既定出力は解析データが`data/processed/production_v1/`、確認図が`outputs/preprocessing/production_v1/`である。
+両出力先は新規または空でなければならない。CLIで変更できるのは入出力先とmemory用chunk sizeだけとし、
+SNR閾値、mask条件、補間点数などの固定値はoptionとして公開しない。
 
 ## 5. 処理手順
 
@@ -304,9 +295,8 @@ HDF5は`float32`、gzip level 4、shuffleおよび画素方向chunkを使用し�
 目的は圧縮率だけではなく、可変長の画素スペクトル、座標、mask、波長およびmetadataを対応付け、
 必要なdatasetや画素chunkだけを読めるようにすることである。
 完全な3次元反射率cubeは複製せず、mask内の有効画素スペクトルだけを保存する。
-現在のproduction storage schemaはversion 2とする。
-負値除外版も既存datasetのshape・dtypeを保ち、理由code 3と品質集計列を追加する。
-入力の区別には新しいpreprocessing IDとconfigの`negative_reflectance_policy`を使用する。
+production_v1のstorage schemaはversion 2とし、理由code 3と対応する品質集計列を持つ。
+入力の識別にはpreprocessing IDとconfigの`negative_reflectance_policy`を使用する。
 `negative_interpolated_reflectance_excluded_pixel_count`はcode 3で除外した画素数を表す。
 既存の`pixels_with_any_negative_interpolated_reflectance`は保存対象についての件数を維持し、新版では0になる。
 
@@ -339,8 +329,8 @@ HDF5は`float32`、gzip level 4、shuffleおよび画素方向chunkを使用し�
 
 ## 8. 可視化規約
 
-本リポジトリのすべての図にfigure titleおよびaxes titleを付けない。図の意味、試料ID、条件名および
-panelの説明はcaptionまたはファイル名で管理する。軸ラベル、目盛およびlegendは解釈に必要な場合だけ使う。
+[共通描画規約](visualization_and_interpretation.md#figure-style)に従い、figure title・axes titleは付けない。
+前処理図の意味、試料ID、条件、panel説明はcaptionまたはファイル名で管理する。
 
 反射率L2 norm mapは次で統一する。
 

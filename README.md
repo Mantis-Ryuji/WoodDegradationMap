@@ -5,70 +5,60 @@
 [![CI](https://github.com/Mantis-Ryuji/WoodDegradationMap/actions/workflows/ci.yml/badge.svg)](https://github.com/Mantis-Ryuji/WoodDegradationMap/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> 古材の近赤外ハイパースペクトル画像を教師なしで領域分割し、表現空間上のクラスタ品質、クラスタの空間的一貫性、ノイズ摂動に対するクラスタラベルの安定性を比較する研究リポジトリです。
+> 古材の近赤外ハイパースペクトル画像からスペクトル表現を学び、教師なしで試料表面の領域をマッピングする研究リポジトリです。
 
-状態を事前に定義しにくい材料の化学的な違いを捉える、自己教師ありスペクトル表現学習の研究です。
 中心となる問いは、化学状態の正解ラベルを与えずに帯域間の関係を学ぶことで、
-状態の違いを探索・解釈できるスペクトル表現を得られるか、です。マスク再構成にSNVの幾何的制約を保つ
-denoisingを組み合わせ、古材表面の状態分布を教師なしでマッピングします。試料単位CVでマップの空間的一貫性・
-指定摂動への安定性・反復間再現性を調べ、NIRスペクトルと位置対応FT-IRから化学的な意味を検討します。
-FT-IRは測定計画の段階であり、化学状態や劣化との対応は検証すべき仮説として扱います。他の材料への有効性は未検証です。
-研究の問いと各手法の役割は[研究の主軸](docs/chemomae_positioning.md#research-focus)にまとめています。
+状態の違いを探索・解釈できる表現を得られるか、です。マスク再構成にSNV制約を保つdenoisingを組み合わせ、
+得られたマップの空間的一貫性・指定摂動への安定性・反復間再現性を試料単位CVで比較します。
+化学的な意味はNIRスペクトルと位置対応FT-IRから検討する計画です。
+FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
+
+## 読み始める場所
+
+| 目的 | 文書 |
+| --- | --- |
+| 研究の問いと全体像 | [研究の目的と説明文](docs/research_overview.md) |
+| 固定条件・評価・可視化の設計 | [研究設計](docs/design/README.md) |
+| 現在の進捗と残作業 | [ToDo](ToDo.md) |
+| 実行・再開・完了確認 | [実験runbook](docs/experiment_runbook.md) |
+| 採用理由・関連研究・所見を含む全体案内 | [ドキュメント案内](docs/README.md) |
 
 ## 現在の段階
 
-本番入力は `data/processed/production_v1/`、本番実験rootは
-`outputs/experiments/production_v1/` です。前処理、実験pipeline、評価・OOF集計の実装と
-preflightは完了し、production CVを実行中です。runごとの完了状況と次の作業は
-[ToDo.md](ToDo.md)、実行方法は[実験runbook](docs/experiment_runbook.md)を参照してください。
+本番入力は`data/processed/production_v1/`、実験rootは`outputs/experiments/production_v1/`です。
+前処理、Cosine-KMeansを使うCVの学習・評価・OOF数値集計とpreflightを終え、
+本番CVを順次進めています。確認済みのrunと次のrunは[ToDo](ToDo.md)に集約しています。
 
-vMFクラスタリングの補助実験は主7条件・5-fold・3反復・共通7Kの735 fitsを計画しています。
-追加ニューラル学習はありません。v0.2.2の数値検証・設定確定と補助実験pipelineの実装が残っています。
-範囲と数値仕様は[実験プロトコル第5.2節](docs/design/experiment_protocol.md#vmf-supplementary)、
-評価方法は[評価指標第8.4節](docs/design/evaluation_metrics.md#vmf-evaluation)で管理します。
-
-全体解釈では、B0・B1・A0・M00・M11の5条件を全49試料でfitまたは学習し、各条件の同じ表現に
-Cosine-KMeansとvMFを適用してマップとスペクトルを比較します。ニューラル学習はA0・M00・M11の各1回です。
-このvMF 5 fitsはCV補助実験とは別枠で、[全体可視化設計](docs/design/visualization_and_interpretation.md)に従います。
-全体解釈pipelineとOOF結果からの図表生成は未実装で、CV後に実装する予定です。
-
-## 文書
-
-| 文書 | 役割 |
-| --- | --- |
-| [研究設計](docs/design/README.md) | 固定した研究条件と各設計文書への入口 |
-| [前処理仕様](docs/design/preprocessing.md) | 200 Hz入力、mask、反射率、SNV、保存schema |
-| [実験プロトコル](docs/design/experiment_protocol.md) | split、学習、主実験・mask率・vMF補助実験、実行順序 |
-| [評価指標](docs/design/evaluation_metrics.md) | LLA、LFR、silhouette、ARI、集約と比較 |
-| [可視化と解釈](docs/design/visualization_and_interpretation.md) | 全体学習、ラベル整列、本文代表例、解釈上の制約 |
-| [ChemoMAEの位置づけ](docs/chemomae_positioning.md) | PCAとの関係、構成の特徴と限界、関連研究と出典 |
-| [実験runbook](docs/experiment_runbook.md) | 本番CLI、再開、完了判定、OOF作成 |
-| [検証履歴](docs/verification_history.md) | テスト、preflight、本番runと環境更新の確認結果 |
-| [ToDo](ToDo.md) | 現在の実行状態と残作業 |
-
-設計文書を研究条件の正とし、runbookには運用手順、検証履歴には実行済みの工学的確認だけを置きます。
+B0・B1の[OOF sanity可視化](docs/design/oof_sanity_visualization.md)は生成済みです。
+全主条件の最終報告用図表、vMF補助実験、全体fitのpipelineは未実装です。
+vMFの数値仕様にはOpen事項があります。全体解釈では5条件×2手法を比較し、
+表示番号はA0のCosine-KMeansへ整列します。
 
 ## 主な配置
 
 ```text
-data/raw/                          raw原本
-data/processed/production_v1/     本番前処理済みデータ
-outputs/preprocessing/production_v1/
-                                   前処理の確認図
-outputs/experiments/preflight_v1/ 動作確認の成果物
-outputs/experiments/production_v1/
-                                   本番manifest・数値結果・図・checkpoint
-src/wood_degradation_map/         実装
-scripts/                          CLI
-tests/                            テスト
+data/raw/                              raw原本
+data/processed/production_v1/           前処理済み入力
+outputs/preprocessing/production_v1/    前処理確認図
+outputs/experiments/preflight_v1/       動作確認の成果物
+outputs/experiments/production_v1/      本番manifest・結果・checkpoint
+outputs/sanity_checks/                 探索的な確認図・数値
+docs/                                  設計・手順・研究説明・記録
+src/wood_degradation_map/               実装
+scripts/                               CLI
+tests/                                 テスト
 ```
 
-Python環境とコマンド実行には `uv` を使用します。
+## 環境と検証
+
+Pythonの指定は[.python-version](.python-version)、依存関係は[pyproject.toml](pyproject.toml)と`uv.lock`にあります。
+環境構築には`uv`を使用します。
 
 ```powershell
 uv sync
-uv run pytest
+uv run --no-sync pytest
 ```
 
-`outputs/` 内のconfig、manifest、数値結果、図はGit管理対象です。モデル重み、checkpoint、
-optimizer stateは容量が大きいためGit管理対象外です。
+本番の実行手順は[runbook](docs/experiment_runbook.md)を参照してください。
+`data/`は再配布せず、`outputs/`内のconfig・manifest・数値結果・図はGit管理対象です。
+重み・checkpointはGit管理対象外とし、[保存規約](docs/experiment_runbook.md#artifact-records)に従います。

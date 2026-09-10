@@ -1,103 +1,72 @@
-# 研究設計文書
+# 研究設計
 
-## ステータス
+本ディレクトリは研究条件・計算方法・データ契約を管理する。
+**Fixed**は採用済みの仕様、**Open**は実施前に決定が必要な事項を表す。Fixedは実装・実行済みという意味ではない。
+研究目的は[研究の目的と説明文](../research_overview.md)、進捗は[ToDo](../../ToDo.md)を参照する。
 
-このディレクトリは、本リポジトリにおける現行の研究・実装設計を管理する。
-各文書で `Open` と明示した事項を除き、記載内容を **Fixed** とする。
+## 設計文書と定義の置き場所
 
-本研究の主軸は、**状態を事前に定義しにくい材料の化学的な違いを捉える、自己教師ありスペクトル表現学習**である。
-化学状態の区分や正解ラベルをあらかじめ定めにくい材料に対し、帯域間の関係から状態差の探索・解釈に
-有用な表現を学べるかを問う。実証対象は古材NIR-HSIであり、他材料への有効性は未検証である。
-手法としてマスク再構成に、SNVの幾何的制約を保つnoise・shiftからのdenoisingを組み合わせる。
-化学状態をより安定して反映する表現の獲得を期待することが
-augmentationの導入動機であり、指定した摂動への耐性そのものの獲得を主目的とするものではない。
-研究目的・手法・証拠の対応は[研究の主軸](../chemomae_positioning.md#research-focus)、
-採用理由と仮定は同文書第1節にまとめる。
-
-実験では、得られた表現による教師なし領域分割の空間的一貫性と、指定したスペクトル摂動への
-label安定性を比較し、表現・マップの性質からその効果を調べる。
-これらの指標だけで化学的な表現品質を直接検証したとはしない。
-現行CVでは外部の正解劣化ラベルや独立した劣化測定による定量評価は行わず、
-劣化との対応はスペクトル・マップに基づく探索的解釈とする。
-これを深めるため、HSIクラスタと同じ領域または位置対応した領域のFT-IR測定を予定している。
-2026-09-10に計画を文書化した。詳細設計はOpen、結果は未確認であり、現行CVの条件・評価は変更しない。
-([FT-IRの計画とOpen事項](visualization_and_interpretation.md#ftir-interpretation))
-
-## 文書一覧
-
-| 文書 | 状態 | 内容 |
+| 文書 | 状態 | 定義する内容 |
 | --- | --- | --- |
-| [preprocessing.md](preprocessing.md) | Fixed | 200 Hz本番前処理、mask、自動cutoff、256点補間、SNV |
-| [experiment_protocol.md](experiment_protocol.md) | 主条件Fixed / vMF数値仕様Open | 主比較、5-fold・3反復、均等画素抽出、事前固定K、mask率・vMF補助実験 |
-| [evaluation_metrics.md](evaluation_metrics.md) | Fixed / 任意診断Open | 主評価LLA・LFR、silhouette・補正LLA・ARI・occupancy、pairedな報告 |
-| [visualization_and_interpretation.md](visualization_and_interpretation.md) | Fixed / 任意責務マップ・FT-IR詳細Open | 全体学習後の5条件 × 2手法比較、Hungarian matching、本文代表例、位置対応FT-IRの計画 |
+| [前処理](preprocessing.md) | Fixed | 200 Hz入力、mask、負値除外、256点補間、SNV、保存schema |
+| [実験プロトコル](experiment_protocol.md) | 主条件Fixed / vMF数値仕様Open | 条件、split、seed、共通画素、学習、クラスタリング、実行記録 |
+| [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA、LFR、silhouette、ARI、occupancy、未定義値、集約、比較 |
+| [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1のPNG・CSV、fold内B0基準のmatching |
+| [全体可視化と解釈](visualization_and_interpretation.md) | Fixed / 任意責務マップ・FT-IR詳細Open | 全体fit、A0基準のmatching、代表例、スペクトル、FT-IR計画 |
+| [設計上の決定記録](decisions.md) | 記録 | 決定日、CV開始後の追加事項と適用範囲 |
 
-## 設計の要約
+## 固定条件の早見表
 
-- 分割・集計単位は `KYOw...` で識別される試料とする。上位の採取関係がある場合の扱いはsplit前に確認する。
-- 試料単位のランダム5-fold CVを行い、同一試料をfold間で分割しない。同じsplitで3反復する。
-- 各train試料から$q=8192$画素を一様ランダム・非復元抽出し、学習・PCA・KMeansで全条件・全反復に共通利用する。
-  test評価には各試料の全有効画素を使用する。
-- 主比較は本番前処理済みSNVを直接使うraw SNV、PCA、AE、MAE、およびaugmentationの
-  2×2 ablationとする。
-- PCA・AE・すべてのMAE条件は16次元に統一し、次元削減後の表現をL2正規化する。
-  ChemoMAEは全可視でCLSを潜在射影して抽出する。B0は256次元SNVのcosine幾何を用いる。
-- PCAは`PCA(n_components=16)`の既定設定を採用し、train平均による中心化、`whiten=False`、
-  `svd_solver="auto"`とする。波長ごとの追加autoscalingは行わない。
-- noise角度は$U(0,5^\circ)$、shiftは$U(-2,2)$チャネルに固定する。強度はSNVスペクトルの
-  `sanity_check`を通じて恣意的に決定した。その他のAug操作設定はChemoMAE v0.2.2の既定値を採用し、
-  LFRでも同じ強度分布を使う。強度の追加ablationは行わない。
-- 提案M11とB0、B1、M00の直接比較を主要比較とし、その他の計画比較で構成要素の効果を説明する。
-- mask率は主比較では50%に固定し、M11の25/50/75%比較を同じ3反復の補助実験とする。
-- 学習はMAE論文・公式PRETRAIN.mdの800 epoch recipeに従う。単一GPU、batch size 1024、勾配蓄積なし、
-  AdamW、peak lr $6\times10^{-4}$、40 epoch warmup後のcosine decayとする。
-- CVの主評価はLLA-3/5/9と3種類のlabel flip rateとし、劣化検出精度の代用にしない。
-- LFRの評価摂動は各種類$R=5$回とする。表現抽出・評価はFP32、抽出AMPと評価TF32は無効にする。
-- cosine-silhouetteは各表現空間の幾何学的診断とする。補正LLA、反復間ARIおよびoccupancyを補助報告する。
-- 共通K集合は$\mathcal{K}=\{2,4,6,8,10,12,14\}$、主表・全体可視化の代表値は$K_0=8$に固定する。
-  全試料elbowによるK校正は行わない。
-- 試料別のpairedな差、試料間SDおよび3反復間SDを区別して報告する。有意差検定による採否判定は行わない。
-- CV結果から「best条件」を事後選択しない。
-- 全体学習後はraw SNV、PCA、AE、標準MAE、提案Aug-MAEの5条件の同じ表現をCosine-KMeansとvMFで分割し、
-  全49試料のマップとスペクトルを解釈・可視化する。全10組の表示ラベルはB0のCosine-KMeansへ直接整列する。
-  A0とM00の比較では、maskの有無とloss対象の両方が異なることを踏まえて解釈する。
-- A0はChemoMAE v0.2.2の全領域再構成lossを使用する。
-- リポジトリ内の可視化にはfigure titleおよびaxes titleを付けず、説明はcaptionまたはファイル名で管理する。
-
-## 主実験・補助実験・解釈の区分
-
-| 区分 | 内容 | 追加するニューラルネット学習 |
+| 項目 | 要点 | 詳細 |
 | --- | --- | --- |
-| 主実験 | B0、B1、A0、M00、M10、M01、M11の5-fold・3反復。主要比較と2×2 ablationを同じrunから報告 | 75回 |
-| 補助実験 | M11のmask率25%・75%。50%は主実験を再利用 | 30回 |
-| 補助実験 | 主7条件の既存表現へvMF mixtureを適用。5-fold・3反復・共通7Kの735 fits。数値実装はOpen | 0回 |
-| 補助解析 | 共通K集合内のK依存性、反復間ARI、補正LLAおよびoccupancy診断 | 追加なし |
-| 探索的解釈 | B0、B1、A0、M00、M11を全試料でfit・学習し、同じ表現・指定K・seedでCosine-KMeansとvMFのマップ・スペクトルを解釈。各手法5 fits | 3回 |
+| 入力・分割 | 採用49試料、KYOw単位のランダム5-fold。同一splitで3反復、樹種層化なし | [CV](experiment_protocol.md#cv-design) |
+| 画素 | trainは各試料8192画素を一様・非復元抽出し、全条件・K・反復で共有。testは全有効画素 | [抽出](experiment_protocol.md#pixel-sampling) |
+| 表現 | B0はSNV 256次元、PCA・NNは16次元。クラスタリングへ渡す表現をL2正規化 | [表現](experiment_protocol.md#representations) |
+| PCA | train平均中心化、追加autoscalingなし、whiten=False、solver=auto | [PCA](experiment_protocol.md#representations) |
+| NN | CLS由来16次元の単位潜在、線形1層decoder、全可視で表現抽出 | [構成](experiment_protocol.md#model-architecture) |
+| 学習 | 800 epoch、単一GPU、batch 1024、AdamW、peak lr $6\times10^{-4}$、40 epoch warmup | [学習設定](experiment_protocol.md#training-recipe) |
+| augmentation | noise角度$U(0,5^\circ)$、shift幅$U(-2,2)$チャネル。各操作後に平均とnormを復元 | [操作仕様](experiment_protocol.md#augmentation-clustering) |
+| K | 共通集合$\{2,4,6,8,10,12,14\}$、代表表示$K_0=8$。結果による選び直しなし | [Kの方針](experiment_protocol.md#cluster-counts) |
+| 数値設定 | 学習はFP16 AMP。抽出・評価はFP32、抽出AMP・評価TF32は無効 | [数値設定](experiment_protocol.md#evaluation-precision) |
+| 主評価 | LLA-3/5/9、LFR noise・shift・両方（各5 draws） | [評価](evaluation_metrics.md) |
+| 集約 | OOF試料macro、paired差、試料間SDと3反復間SDを分離。有意差検定・総合scoreなし | [報告](evaluation_metrics.md#reporting) |
 
-CVは合計105学習、全体解釈のA0・M00・M11各1回を含めると108学習となる。
-PCA、KMeans、vMFのfit、表現抽出、評価摂動の計算はこの回数に含めない。Kごとに表現を再学習しない。
-2026-09-08に追加した全体解釈用vMFは全体学習の表現を再利用するため、追加の表現学習は0回である。
-2026-09-09に全体学習・可視化へA0を追加した。これはCV開始後の対象拡張であり、CVの条件・105学習は変更しない。
-CV補助実験のvMF 735 fitsと全体解釈のvMF 5 fitsは、成果物・集計を分けて管理する。
+主要比較はM11対B0・B1・M00、構成要素の説明はAE/MAE比較とnoise・shiftの2×2 ablationで行う。
+条件IDと全contrastは[実験プロトコル](experiment_protocol.md#conditions)を正とする。
+augmentation強度はSNVスペクトルのsanity checkを通じて恣意的に固定した値であり、
+実測誤差の同定値やCV指標で最適化した値ではない。
+
+## 主実験・補助実験・解釈
+
+| 区分 | 対象 | 追加NN学習 | クラスタリング |
+| --- | --- | ---: | --- |
+| 主実験 | B0、B1、A0、M00、M10、M01、M11の5-fold・3反復 | 75回 | Cosine-KMeans、全7K |
+| Mask率補助 | M11-25・M11-75。50%はM11を再利用 | 30回 | Cosine-KMeans、全7K |
+| vMF補助 | 主7条件の既存表現、5-fold・3反復 | 0回 | vMF、全7Kの735 fits |
+| OOF sanity | 完了済みB0・B1のOOF map・指標 | 0回 | 既存成果物のみ |
+| 全体解釈 | B0、B1、A0、M00、M11を全49試料でfit・学習 | 3回 | $K_0=8$、各手法5 fits |
+
+CVは105学習、全体解釈を含めると108学習。PCA、KMeans、vMF、表現抽出、評価摂動はこの学習数に含めない。
+全体fitの表示番号はA0のCosine-KMeansへ直接整列する。B0・B1 OOF sanityはfold内B0基準とする。
+CV開始後の対象拡張・追加決定は[決定記録](decisions.md)を参照する。
+
+<a id="open-items"></a>
 
 ## 残るOpen事項
 
-主実験の研究条件はFixedである。実装値は[実験プロトコル](experiment_protocol.md)第3・4・6節、
-実行時に保存するseed・manifest・環境などは同第11.2節を参照する。
-
-| Open事項 | 確定・確認する内容 | 定義先 |
+| Open事項 | 実施前に決める・確認する内容 | 定義先 |
 | --- | --- | --- |
-| vMF数値仕様・実装 | CV補助実験と全体解釈で共用する数値精度、EM停止条件、集中度設定、修正版の検証と専用pipeline。範囲・利用版・退化成分の扱いはFixed | [実験プロトコル第5.2節](experiment_protocol.md#vmf-supplementary) |
-| 任意の形状診断 | 孤立label・連結成分shapeの定義。採用する場合だけ、結果を見る前に固定する | [評価指標第7節](evaluation_metrics.md) |
-| 任意の責務マップ | vMFの最大posterior責務マップの採用と表示規約。hard label mapは必須 | [可視化設計第4.4節](visualization_and_interpretation.md#vmf-responsibility-maps) |
-| 位置対応FT-IRの詳細設計 | HSIクラスタに対応する領域の測定予定。対象選定、位置対応、測定・反復条件、前処理・指標、解釈範囲 | [可視化設計第5.1節](visualization_and_interpretation.md#ftir-interpretation) |
+| vMF数値仕様・実装 | 精度、EM停止条件、集中度設定、修正版検証、専用pipeline。利用版・範囲・退化成分の扱いはFixed | [vMF](experiment_protocol.md#vmf-supplementary) |
+| 任意の形状診断 | 採用する場合の近傍・connectivity・閾値・分母 | [診断](evaluation_metrics.md#occupancy) |
+| 任意の責務マップ | 採用する場合の表示範囲・配色・背景 | [責務マップ](visualization_and_interpretation.md#vmf-responsibility-maps) |
+| 位置対応FT-IR | 対象、位置対応、測定・反復条件、前処理・指標、解釈範囲 | [FT-IR](visualization_and_interpretation.md#ftir-interpretation) |
 
-vMFのCV比較は[評価指標第8.4節](evaluation_metrics.md#vmf-evaluation)、全体マップの比較と解釈は
-[可視化設計第4.3節](visualization_and_interpretation.md#vmf-global-maps)に従う。
-Open事項をライブラリの既定値で暗黙に埋めて実行しない。
+ライブラリの既定値でOpen事項を暗黙に埋めない。
+探索的な原因仮説は[解釈メモ](../interpretation_notes.md)で扱い、実験条件として採用したことにはしない。
 
-## 実行文書
+## 評価と解釈の範囲
 
-設計から実行を分離し、本番CLIと再開・完了判定は[../experiment_runbook.md](../experiment_runbook.md)、
-テストとpreflightの要約は[../verification_history.md](../verification_history.md)、現在の進捗は
-[../../ToDo.md](../../ToDo.md)で管理する。
+CVが比較するのは未知試料の分離性・空間的一貫性・指定摂動への安定性・反復間再現性である。
+劣化検出精度や化学成分量は直接評価していない。全体fitのマップとスペクトルは探索的に解釈する。
+位置対応FT-IRはその解釈を深める計画で、詳細・結果は未確定。他材料への有効性も未検証である。
+採用理由と主張の範囲は[ChemoMAEの位置づけ](../chemomae_positioning.md)を参照する。

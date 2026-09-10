@@ -7,17 +7,16 @@
 本文例の選択基準と試料IDは第4.2節で事前固定済み。実行時の記録事項は
 実験プロトコル第11.2節を参照する。
 
-2026-09-08、全体可視化にvMF mixtureを追加し、同じ表現に対するCosine-KMeansとの
-分割の違いを試料表面の領域・境界から探索的に読む方針をユーザーが確定した。
-これは実験開始後の追加決定であり、当初から事前固定していたとは記述しない。
+本書は全49試料を使った全体fit後の記述的解析を定義する。
+[OOF sanity可視化](oof_sanity_visualization.md)は、foldモデルの既存予測を読む別の工程である。
+CV開始後のvMF・A0追加、FT-IR計画、matching基準の変更時点は[決定記録](decisions.md)にまとめる。
 
-2026-09-09、全体学習・可視化の対象にA0を追加する方針をユーザーが確定した。
-A0とM00の再構成方式の違い、M00とM11のaugmentationの違いを、マップと代表スペクトルでも
-比較できる構成とする。A0追加はCV開始後・全体学習実施前の決定として記録し、CV開始前からの
-固定事項とは記述しない。CVの条件・計画比較・学習回数は変更しない。
+- [全体fit条件](#global-fit)
+- [A0基準のmatching](#matching-reference)
+- [共通描画規約](#figure-style)・[代表試料](#representative-samples)
+- [手法間比較](#vmf-global-maps)・[FT-IR計画](#ftir-interpretation)
 
-2026-09-10、HSIクラスタと同じ領域または位置対応した領域をFT-IRで測定し、解釈を深める計画を文書化した。
-詳細設計は第5.1節のOpen事項とし、測定結果は本書では未確認である。CV開始前に固定した評価とは区別する。
+### 1.1 対象と位置づけ
 
 全体学習の対象は次の5条件とし、CV結果からbest条件を選択しない。
 本書のraw SNVは、本番前処理済みの256次元SNVを表現変換せず直接使用するbaselineを指す。
@@ -36,6 +35,10 @@ A0とM00の再構成方式の違い、M00とM11のaugmentationの違いを、マ
 未知試料への適用時の空間的一貫性・指定摂動への安定性の根拠は5-fold CVに置く。
 CVと全体学習のどちらも、劣化検出の正確さを定量的に検証するものではない。
 
+<a id="global-fit"></a>
+
+### 1.2 全体fitの入力と表現
+
 全49試料のそれぞれから、実験プロトコルと同じ$q=8192$画素を一様ランダム・非復元抽出する。
 全条件・両手法で同じ抽出座標を共有し、抽出画素を全試料でまとめた集合を使ってPCA・ChemoMAEの
 fitまたは学習を行う。得られた各条件の同じ表現にCosine-KMeansとvMFをfitする。
@@ -45,6 +48,8 @@ fit後はモデルを固定して全試料の全有効画素へ推論し、マ�
 B0は256次元SNVの単位表現、PCAとChemoMAEはCVと同じ16次元・L2正規化を用いる。
 ChemoMAEの表現抽出は全可視・augmentationなし・FP32とする。
 表示用の2次元投影はクラスタリング後の補助表示とし、元の表現に代えてクラスタリングへ入力しない。
+
+### 1.3 反復・seed・クラスタリング
 
 全体可視化は、CVの反復ID 1に対応する事前固定seed設定を使い、必要な表現変換器のfitまたは学習と、
 各条件・各手法のクラスタリングをそれぞれ1回行う。
@@ -73,11 +78,17 @@ source hashとの対応、vMFの成分診断と完了・失敗の状態を残す
 
 ## 3. Hungarian matching
 
+<a id="matching-reference"></a>
+
 ### 3.1 基準条件
 
-B0のraw SNVをCosine-KMeansで分割したpartitionを、全10組の共通基準とする。
-Cosine-KMeansのB1・A0・M00・M11と、vMFのB0・B1・A0・M00・M11の計9組を、
+A0（AE、mask率0%）の表現をCosine-KMeansで分割したpartitionを、全10組の共通基準とする。
+Cosine-KMeansのB0・B1・M00・M11と、vMFのB0・B1・A0・M00・M11の計9組を、
 それぞれ独立にこの基準へ直接matchingする。
+
+mask・augmentation導入前の再構成学習を比較の起点とする。
+これは表示番号の基準であり、A0の劣化検出性能・解釈可能性やクラスタの順序を保証しない。
+[2026-09-10の決定](decisions.md)として全体fit後へ適用し、[OOF sanityのfold内B0基準](oof_sanity_visualization.md#3-fold内hungarian-matching)とは区別する。
 
 試料ごとのmatching、および別の条件や手法を経由する連鎖matchingは行わない。
 
@@ -121,11 +132,16 @@ contingency matrixまたはmatching後のoverlapを併記し、対応の弱い�
 
 ## 4. 可視化・解釈項目
 
-本節の規約は、前処理診断を含むリポジトリ内のすべての可視化へ適用する。
+<a id="figure-style"></a>
+
+以下の描画規約は、前処理診断を含むリポジトリ内のすべての可視化へ適用する。
 
 - figure titleおよびaxes titleを付けない。
-- 図の意味、試料ID、条件名およびpanelの説明はcaptionまたはファイル名で管理する。
+- 図の意味、条件名およびpanelの説明はcaptionまたはファイル名で管理する。
+- クラスタマップでは各試料の下に試料ID（KYOwから始まる名前）を表示する。
 - 軸ラベル、目盛、legendおよびcolorbar labelは、値の解釈に必要な場合は表示する。
+
+以下は全体fit後に保存する項目である。OOF sanityの保存物は[専用仕様](oof_sanity_visualization.md)に従う。
 
 | 項目 | 目的 |
 | --- | --- |
@@ -151,6 +167,8 @@ B0、B1、A0、M00、M11と両クラスタリング手法で、同じ試料順�
 - difference spectraは上記代表線の差として表示し、差を取る条件・クラスタと引き算の向きを記す。
   別々の構成試料から作った代表線の差を、同一試料のpairedな化学変化とは解釈しない。
 - SNVでは画素ごとのoffsetとscaleを除いているため、SNV振幅差を吸収量や成分量の直接比較に使わない。
+
+<a id="representative-samples"></a>
 
 ### 4.2 表示例の選択
 
@@ -190,7 +208,8 @@ CVの49試料、split、学習画素集合、評価対象は変更しない。�
 
 同じ全体学習済み表現に対する分割の違いを読むため、各試料の比較図は行をCosine-KMeans・vMF、
 列をB0・B1・A0・M00・M11の順とする2行5列で構成する。両手法で第4.2節の固定済み7代表試料を共用する。
-panelの条件・手法・試料IDはcaptionまたはファイル名に記し、figure titleとaxes titleは付けない。
+panelの条件・手法はcaptionまたはファイル名に記し、試料IDはマップの下に表示する。
+figure titleとaxes titleは付けない。この2行5列の構成は全体fit後の手法間比較用とする。
 
 hard label mapと併せて、共通基準へのcontingency/overlap、試料別occupancyと使用クラスタ数、
 第4.1節に従う代表・差スペクトルを両手法について保存する。領域の広がり、境界の位置、
@@ -213,7 +232,7 @@ vMFの画素ごとの最大posterior責務を、割当が拮抗する場所を�
 ## 5. 解釈上の制約
 
 潜在空間と試料表面の対応に関する探索的仮説と、silhouette・LLA・LFRを併読する際の注意は
-[評価指標第8.5節](evaluation_metrics.md#interpretation-notes)を参照する。
+[実験途中の所見と解釈メモ](../interpretation_notes.md)を参照する。
 
 - 正解劣化ラベルがないため、クラスタを直ちに劣化classと断定しない。
 - label map、代表スペクトル、差スペクトルおよび試料情報を合わせて解釈する。

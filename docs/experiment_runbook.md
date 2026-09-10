@@ -14,6 +14,14 @@ Cosine-KMeansの主実験・mask率補助実験用である。vMFの実施順序
 実行環境はChemoMAE v0.2.2とする。
 
 すべてのコマンドはリポジトリrootからPowerShellで実行し、Python環境には `uv` を使用する。
+本番実行例は`uv run --no-sync`とし、環境構築・更新をrun開始時の処理から分ける。
+
+- [入力確認](#input-preparation)・[manifest](#3-本番manifest)
+- [NNの1 runと再開](#neural-run)・[PCA](#5-b1-pca-fitとbaseline変換の検証)
+- [clean test map](#6-clean-test-map)・[評価](#7-評価)
+- [OOF集計](#oof-aggregation)・[B0/B1 sanity図](#oof-sanity)
+- [未実装の全体fit](#global-fit-pipeline)・[保存規約](#artifact-records)
+
 各CLIの終了後に `$LASTEXITCODE -eq 0` を確認し、非0なら後続工程へ進まない。JSONのstatus確認は
 終了codeの確認に加えて行う。
 
@@ -26,9 +34,31 @@ Cosine-KMeansの主実験・mask率補助実験用である。vMFの実施順序
 | preflight | `outputs/experiments/preflight_v1/` |
 | 本番実験 | `outputs/experiments/production_v1/` |
 | metadata | `data/metadata/古材メタデータ.csv` |
+| B0・B1 OOF sanity | `outputs/sanity_checks/b0_b1_oof_visualization/` |
 
 smokeやpreflightの成果物を本番rootへコピーしない。本番開始後はmanifestを作り直さず、
 `outputs/experiments/production_v1/manifests/` を同じ実験系列の固定入力として扱う。
+
+<a id="input-preparation"></a>
+
+### 2.1 前処理と入力確認
+
+本番前処理は生成済みである。再生成が必要な別runで、両出力先が新規または空の場合に限り、
+[前処理の固定仕様](design/preprocessing.md)に従って実行する。
+
+```powershell
+uv run --no-sync python scripts/preprocess/run_production_preprocessing.py
+```
+
+既存の品質表から、各試料で8192画素の非復元抽出が可能か確認する場合は次を使う。
+スペクトルやHDF5は読み込まず、データ・manifestを変更しない。
+
+```powershell
+uv run --no-sync python scripts/preprocess/check_sampling_pixels.py --q 8192
+```
+
+試料別の保存有効画素数、抽出率、不足数と全体の最小・中央値・最大を表示する。
+全試料で抽出可能なら終了code 0、不足があれば1。実際の抽出とsplitの作成は次節で行う。
 
 ## 3. 本番manifest
 
@@ -36,30 +66,32 @@ smokeやpreflightの成果物を本番rootへコピーしない。本番開始�
 既存の`production_v1`では次の`create`を実行せず、保存済みmanifestの`check`を使う。
 
 ```powershell
-uv run python scripts/experiments/prepare_manifests.py create --experiment-id production_v1
+uv run --no-sync python scripts/experiments/prepare_manifests.py create --experiment-id production_v1
 if ($LASTEXITCODE -ne 0) { throw 'manifest creation failed' }
-uv run python scripts/experiments/prepare_manifests.py check --experiment-id production_v1
+uv run --no-sync python scripts/experiments/prepare_manifests.py check --experiment-id production_v1
 if ($LASTEXITCODE -ne 0) { throw 'manifest check failed' }
 ```
 
 以後は `create` を再実行しない。既存manifestの確認には `check` だけを使用する。
 
 ```powershell
-uv run python scripts/experiments/prepare_manifests.py check --experiment-id production_v1
+uv run --no-sync python scripts/experiments/prepare_manifests.py check --experiment-id production_v1
 ```
+
+<a id="neural-run"></a>
 
 ## 4. ニューラルネットの1 run
 
-対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はM10・fold 1・repeat 1の例である。
+対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はM11・fold 2・repeat 1の例である。
 完了済みrunは再学習せず、保存済み成果物の確認には各工程の`check`を使う。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M10'
-$fold = 1
+$condition = 'M11'
+$fold = 2
 $repeat = 1
 
-uv run python scripts/experiments/train_neural.py train `
+uv run --no-sync python scripts/experiments/train_neural.py train `
     --condition $condition `
     --fold $fold `
     --repeat $repeat `
@@ -106,7 +138,7 @@ configを変えない。
 ```powershell
 $resumePath = Join-Path $experimentDir "checkpoints/neural/$condition/fold_$fold/repeat_$repeat/checkpoints/last.pt"
 
-uv run python scripts/experiments/train_neural.py train `
+uv run --no-sync python scripts/experiments/train_neural.py train `
     --condition $condition `
     --fold $fold `
     --repeat $repeat `
@@ -159,11 +191,11 @@ probe検証だけである。完了済みのfoldで`fit`を再実行しない。
 $experimentDir = 'outputs/experiments/production_v1'
 
 foreach ($fold in 1..5) {
-    uv run python scripts/experiments/fit_baselines.py fit `
+    uv run --no-sync python scripts/experiments/fit_baselines.py fit `
         --fold $fold --repeat 1 --experiment-dir $experimentDir
     if ($LASTEXITCODE -ne 0) { throw "B1 PCA fit failed: fold $fold" }
 
-    uv run python scripts/experiments/fit_baselines.py check `
+    uv run --no-sync python scripts/experiments/fit_baselines.py check `
         --fold $fold --repeat 1 --experiment-dir $experimentDir
     if ($LASTEXITCODE -ne 0) { throw "baseline check failed: fold $fold" }
 }
@@ -186,20 +218,21 @@ B0には前段のfitはない。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M10'
-$fold = 1
+$condition = 'M11'
+$fold = 2
 $repeat = 1
 
-uv run python scripts/experiments/cluster_representations.py run `
+uv run --no-sync python scripts/experiments/cluster_representations.py run `
     --condition $condition --fold $fold --repeat $repeat --experiment-dir $experimentDir
-uv run python scripts/experiments/cluster_representations.py check `
+if ($LASTEXITCODE -ne 0) { throw 'clustering failed' }
+uv run --no-sync python scripts/experiments/cluster_representations.py check `
     --condition $condition --fold $fold --repeat $repeat --experiment-dir $experimentDir
 ```
 
 B1でrepeat 1のPCAを再利用する例は次のとおり。
 
 ```powershell
-uv run python scripts/experiments/cluster_representations.py run `
+uv run --no-sync python scripts/experiments/cluster_representations.py run `
     --condition B1 --fold 1 --repeat 2 --pca-repeat 1 `
     --experiment-dir outputs/experiments/production_v1
 ```
@@ -214,14 +247,15 @@ clean test mapが揃った組合せを評価する。 `run` はGPUを使用し�
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M10'
-$fold = 1
+$condition = 'M11'
+$fold = 2
 $repeat = 1
 
-uv run python scripts/experiments/evaluate_representations.py run `
+uv run --no-sync python scripts/experiments/evaluate_representations.py run `
     --conditions $condition --fold $fold --repeats $repeat `
     --experiment-dir $experimentDir
-uv run python scripts/experiments/evaluate_representations.py check `
+if ($LASTEXITCODE -ne 0) { throw 'evaluation failed' }
+uv run --no-sync python scripts/experiments/evaluate_representations.py check `
     --conditions $condition --fold $fold --repeats $repeat `
     --experiment-dir $experimentDir
 ```
@@ -255,6 +289,10 @@ KMeans、評価処理はこの数に含めない。3反復はseed選別に使わ
 指標と比較の定義は[評価指標第8.4節](design/evaluation_metrics.md#vmf-evaluation)に従う。
 vMF用の設定・結果・完了記録は主実験から分け、元の成果物との対応とsource hashを保存する。
 
+<a id="global-fit-pipeline"></a>
+
+### 8.2 全体fitと解釈（未実装）
+
 全体解釈はB0・B1・A0・M00・M11の5条件を対象とする。全49試料の共通抽出画素でPCAをfitし、
 A0・M00・M11を各1回、計3回学習する。この3学習はCVの105学習とは別に行う。
 得られた各条件の同じ表現に、$K_0=8$でCosine-KMeansとvMFを各1回fitする。
@@ -264,17 +302,20 @@ fitと表示の規約は[全体可視化設計](design/visualization_and_interpr
 全体解釈pipelineと具体的なCLIは未実装であり、実装時に実行手順を追記する。
 既存の`train_neural.py`は`--fold`を必須とするCV用CLIであり、そのまま全体学習には使用できない。
 
+<a id="oof-aggregation"></a>
+
 ## 9. OOF集計
 
 指定する全conditionについて5 folds × 3 repeatsの評価が揃ってから実行する。snapshot名は一度だけ
 使用し、既存snapshotは `check` で読む。
 
 ```powershell
-uv run python scripts/experiments/aggregate_oof.py run `
+uv run --no-sync python scripts/experiments/aggregate_oof.py run `
     --conditions B0 B1 A0 M00 M10 M01 M11 `
     --snapshot main_oof_v1 `
     --experiment-dir outputs/experiments/production_v1
-uv run python scripts/experiments/aggregate_oof.py check `
+if ($LASTEXITCODE -ne 0) { throw 'OOF aggregation failed' }
+uv run --no-sync python scripts/experiments/aggregate_oof.py check `
     --snapshot main_oof_v1 `
     --experiment-dir outputs/experiments/production_v1
 ```
@@ -282,11 +323,12 @@ uv run python scripts/experiments/aggregate_oof.py check `
 mask率補助実験は別snapshotにする。
 
 ```powershell
-uv run python scripts/experiments/aggregate_oof.py run `
+uv run --no-sync python scripts/experiments/aggregate_oof.py run `
     --conditions M11-25 M11 M11-75 `
     --snapshot mask_rate_oof_v1 `
     --experiment-dir outputs/experiments/production_v1
-uv run python scripts/experiments/aggregate_oof.py check `
+if ($LASTEXITCODE -ne 0) { throw 'OOF aggregation failed' }
+uv run --no-sync python scripts/experiments/aggregate_oof.py check `
     --snapshot mask_rate_oof_v1 `
     --experiment-dir outputs/experiments/production_v1
 ```
@@ -295,11 +337,51 @@ runでは `status=oof_aggregation_completed` と `checks_passed=true`、checkで
 `status=validated_existing_oof` を確認する。欠損run、失敗run、不完全な試料・画素対応を無視して
 集計しない。
 
+<a id="oof-sanity"></a>
+
+### 9.1 B0・B1 OOF sanity可視化
+
+B0・B1の全5 folds×3反復のclustering・評価が完了した成果物をCPUで読み、
+[専用の表示仕様](design/oof_sanity_visualization.md)に従ってPNG 3枚とCSV 3つを生成する。
+全主条件のOOF snapshot作成や、モデルの再fitは不要である。
+
+```powershell
+# 既定の出力先が存在しない場合のみ実行できる
+uv run --no-sync python scripts/experiments/visualize_b0_b1_oof.py
+```
+
+既定の出力先は生成済みなので、再生成では`--output-dir`へ新規パスを指定する。
+以下のプレースホルダーを、まだ存在しない出力先に置き換える。
+
+```powershell
+uv run --no-sync python scripts/experiments/visualize_b0_b1_oof.py `
+    --experiment-dir outputs/experiments/production_v1 `
+    --output-dir '<新規出力先>'
+```
+
+終了code 0と保存物を確認する。B0/B1別の代表7試料図でKYOw名が各試料の下にあり、
+silhouetteに下段subplotがないことを確認する。LLA・LFR・occupancyと未定義理由はCSVで読む。
+sanity出力にはログやcompletion JSONを追加しない。
+
+<a id="artifact-records"></a>
+
 ## 10. 保存とGit
 
 `outputs/experiments/production_v1/` のconfig、manifest、数値結果、図、completion記録は保存する。
 `checkpoints/`、`weights/`、`*.pt`、`*.pth`、`*.safetensors` は `.gitignore` により
 Git管理対象外である。重みを削除する場合も、論文・再解析に必要なrunの由来とhashを数値記録に残す。
+
+各runで保存する記録は次のとおり。schemaと由来の扱いは[実験プロトコル第11.2節](design/experiment_protocol.md#execution-records)に従う。
+
+- condition、fold、repeat、seed、manifest・code・config hash
+- status、epoch、attempted/optimizer updates、AMP skips
+- 学習のepoch時間合計、clustering・評価のwall timeとGPU peak allocated/reserved、保存量
+- 再開した場合のsource pathと整合確認
+- clustering・評価のcompletionとcheck結果
+
+本番学習completionはGPU peakを保存しない。学習時の値を事後推定せず、preflightの実測値は
+工学的参考値として区別する。本番CV中にこの不足を補う記録コードの変更は行わない。
+上記は本番実験の記録規約であり、PNG・CSVだけを保存するOOF sanityとは分ける。
 
 本番CVではコード、設計条件、入力データ、manifestを固定する。
 変更が必要な場合は影響範囲と実験系列の扱いを事前に確認し、変更内容と検証結果を記録する。
