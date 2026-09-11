@@ -229,7 +229,29 @@ clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`�
 共有入力SHA-256は3反復とも
 `b443abae9970ba54dd39d5fecc03196f82b9181daf0a1e0853ee1aee68702a93`で一致した。
 
-### 5.4 B0・B1、全5 folds
+### 5.4 A0、fold 3
+
+2026-09-11から2026-09-12にかけて、A0のfold 3・repeat 1–3の学習、全7Kのclustering、
+全test評価と各checkを完了した。test対象は10試料・667,682画素である。
+
+| repeat | optimizer updates | AMP skips | training seconds | clustering wall | recorded evaluation wall |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 249,505 | 95 | 9,962.6694 | 68.59 s | 1,153.42 s |
+| 2 | 249,498 | 102 | 9,864.6774 | 66.79 s | 1,156.94 s |
+| 3 | 249,500 | 100 | 9,992.5141 | 120.63 s | 1,160.68 s |
+
+3 runとも800 epoch・249,600 attempted updatesを1回のattemptで完了し、resumeは行っていない。
+`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesはそれぞれ
+optimizer updatesより1少なかった。保存された重みの実在とcompletion記録のSHA-256一致も確認した。
+
+clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`、評価は
+`full_test_evaluation_completed`・`checks_passed=true`であり、各checkはそれぞれ
+`validated_existing_clustering`・`validated_existing_evaluation`だった。評価は3 consumerを1回のCLIでまとめて実行したため、
+表の評価時間は各consumerの個別処理時間ではなく、評価開始からそのconsumer保存までの共同経過時間である。
+共有入力SHA-256は3反復とも
+`f004c5a1934de561f4fc4f22bf8c006e4871dd741023eea89dfc3b343fbaac0d`で一致した。
+
+### 5.5 B0・B1、全5 folds
 
 2026-09-10、B1の16次元PCAを各foldの共通train画素で1回ずつ、計5回fitし、保存・再読込と由来を
 検証した。fold 1～4は39試料・319,488画素、fold 5は40試料・327,680画素を使用した。
