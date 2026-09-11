@@ -1,45 +1,46 @@
 # 修士論文の執筆計画
 
-作成日: 2026-09-11
+作成日: 2026-09-11 / 更新日: 2026-09-12
 
-執筆状況：第3章と付録A〜Cの第1稿、画像生成による解析フロー参考図を作成した。[現在の原稿](README.md)を参照。本書の以下の計画・調査範囲は構成案作成時の記録を含む。
+本書は[構成案](outline.md)を原稿にするための作業計画である。章ごとの論点は構成案、現在の本文・付録への入口は[原稿案内](README.md)に置き、ここでは執筆順、本文と付録の分担、参照資料、図表、未整備事項を扱う。
 
-[構成案](outline.md)の第3・4章と付録A〜Dを先に書くための計画。今回は設計文書、対象の実装、既存の成果物の一部をread-onlyで確認した。学習・評価・前処理・図の生成・テスト・外部文献の再調査は行っていない。実装が存在することと、全実験が完了していることは区別する。
+第3章と付録A〜Cの第1稿、画像生成による解析フロー参考図がある。第4章と付録Dは未執筆である。試料情報の整理と並行して第3・4章および対応する付録を整える方針とし、方法を記述できることと実験が完了していることを区別する。
 
 ## 1. 原稿と資料の置き場所
 
-構成案作成時にユーザーが用意したディレクトリは `thesis/` と `thesis/chapters/`。その時点では `outline.md` と本書を作成し、本文や図を執筆開始時に追加する計画とした。以下は全体の配置案であり、現在作成済みの原稿はREADMEで案内する。
+以下は現在の配置と将来の配置案を合わせた見取り図である。`[予定]`は未作成のファイル・ディレクトリを示し、執筆や資料の採用に合わせて用意する。
 
 ```text
 thesis/
+├── README.md                           # 現在の原稿への入口
 ├── outline.md
 ├── writing_plan.md
 ├── notation.md                         # 本文・付録の共通記号表
 ├── chapters/
-│   ├── introduction.md
-│   ├── materials_measurements.md
+│   ├── introduction.md                 # [予定]
+│   ├── materials_measurements.md       # [予定]
 │   ├── 3_analysis_methods/
 │   │   ├── overview.md                  # 3.1
 │   │   ├── preprocessing.md             # 3.2
 │   │   ├── spectral_augmentation.md      # 3.3
 │   │   ├── representation_learning.md   # 3.4
 │   │   └── clustering_mapping.md        # 3.5
-│   ├── evaluation_protocol/
-│   │   ├── comparison_design.md         # 4.1〜4.3、4.6
-│   │   ├── metrics_aggregation.md       # 4.4〜4.5
-│   │   └── interpretation_protocol.md   # 4.7
-│   ├── results.md
-│   ├── discussion.md
-│   └── conclusions.md
+│   ├── evaluation_protocol/            # [予定]
+│   │   ├── comparison_design.md         # [予定] 4.1〜4.3、4.6
+│   │   ├── metrics_aggregation.md       # [予定] 4.4〜4.5
+│   │   └── interpretation_protocol.md   # [予定] 4.7
+│   ├── results.md                      # [予定]
+│   ├── discussion.md                   # [予定]
+│   └── conclusions.md                  # [予定]
 ├── appendices/
 │   ├── preprocessing_diagnostics.md     # A
 │   ├── mathematical_details.md          # B
 │   ├── implementation_details.md        # C
-│   ├── evaluation_details.md            # D
-│   └── supplementary_results.md         # E
+│   ├── evaluation_details.md            # [予定] D
+│   └── supplementary_results.md         # [予定] E
 ├── figures/                            # 採用図・図の編集元
-├── tables/                             # 採用表・表の編集元
-└── references/                         # 書誌情報。形式は執筆環境に合わせる
+├── tables/                             # [予定] 採用表・表の編集元
+└── references/                         # [予定] 書誌情報。形式は執筆環境に合わせる
 ```
 
 原稿のファイル単位と論文の章単位は同じでなくてよい。長い第3・4章だけ節ごとに分ければ、見直す範囲を小さく保ちながら、完成原稿では一続きの章として読める。第3章のフォルダ名はユーザーが指定した `3_analysis_methods/` を用い、各節のファイル名は内容を表す名称とする。章の統合や掲載順を変える際は目次と参照リンクも同期する。
@@ -60,11 +61,13 @@ thesis/
 | 4.7と付録E | [全体fitと解釈](../docs/design/visualization_and_interpretation.md)、[OOF sanity](../docs/design/oof_sanity_visualization.md) | [ToDo](../ToDo.md)。OOFの[既存実装](../src/wood_degradation_map/experiments/oof_sanity.py)は全体fitの代用にしない |
 | 実施状況、最終の再現条件 | [runbook](../docs/experiment_runbook.md)、[検証履歴](../docs/verification_history.md) | 採用runのconfig・manifest・環境・source hash・完了記録 |
 
-今回のコード照合では、前処理の順序・除外規約、条件IDと固定設定、clean target、明示的なmask、全帯域可視での抽出、固定中心、共通の評価摂動、LLAの近傍対集計、試料macro集計を確認した。上表には本文執筆時の追加照合先も含む。ChemoMAE内部の数式・層構成を詳述する段階では、使用版の参照実装を改めて照合する。
+構成案作成時のコード照合では、前処理の順序・除外規約、条件IDと固定設定、clean target、明示的なmask、全帯域可視での抽出、固定中心、共通の評価摂動、LLAの近傍対集計、試料macro集計を確認した。これは設計文書・実装・既存成果物の一部のread-only確認であり、学習・評価・前処理・図の生成・テストの実行や外部文献の再調査を伴わない。上表には本文執筆時の追加照合先も含む。ChemoMAE内部の数式・層構成の照合範囲は、各原稿末尾の執筆メモに記録する。
 
 ## 3. 進める順番と各段階の完成物
 
-日数やページ数は固定せず、次の完成物を一つずつ作る。
+次の表は、Methods草稿を組み立てる順序と各段階の完成物を示す。日数やページ数は固定しない。
+現在は段階1〜3と段階4の3.5に対応する本文・付録の第1稿があり、図表の仕上げは残っている。
+既存草稿の見直しと、第4章・付録Dの執筆をこの対応に沿って進める。
 
 | 順番 | 書く範囲 | 完成物 | 後回しにできるもの |
 | --- | --- | --- | --- |
@@ -76,7 +79,8 @@ thesis/
 | 6 | 4.6〜4.7の確定部分 | 補助実験の問い、CVと全体fitの区別、スペクトル要約・表示の設計 | vMF・全体fitの実施報告、FT-IRの未確定条件 |
 | 7 | 第3・4章の通読 | 重複除去、記号統一、本文から付録への参照、未確定箇所一覧 | Materialsの情報待ちで全体を止めない |
 
-最初の着手単位は「前処理の本文草稿＋付録Aの詳細」とする。先に3.1を数段落で置き、3.2を書きながら説明のための図・表を決める。大量のサンプル画像を作り始める前に、各図が伝えることをcaptionの一文として書く。
+本文の節と対応する付録を一組として見直し、定義から詳細へ無理なく進めるかを確認する。
+図表はその説明を支えるものとして選び、各図が伝えることをcaptionの一文にしてから作成・再作図する。
 
 各節は「目的 → 入力・記号 → 操作・式 → 採用条件 → 出力・適用範囲」の順で下書きする。執筆メモには参照資料と実装箇所を残し、未確認箇所を黙って補完しない。
 
@@ -94,7 +98,8 @@ thesis/
 
 ## 5. 数式の配置計画
 
-式番号はまだ付けず、内容と置き場所を先に決める。本文では記号を式の直前・直後で説明し、何のための式かを文章でつなぐ。以下は掲載候補であり、新しい定義の採用ではない。
+既存の第1稿では仮の式番号を用いている。未執筆部分も、内容と置き場所を決めてから番号を付ける。
+本文では記号を式の直前・直後で説明し、何のための式かを文章でつなぐ。以下は本文と付録の分担表であり、新しい定義の採用ではない。最終稿ではLaTeXのlabel/refへ移す。
 
 | 対象 | 本文に残す式・説明 | 付録へ置く内容 |
 | --- | --- | --- |
@@ -120,7 +125,7 @@ IDは執筆用の仮識別子とし、最終的な図番号・表番号ではな
 
 | 仮ID | 内容と伝えること | 本文での位置 | 付録側の補足・状態 |
 | --- | --- | --- | --- |
-| F-flow | HSIから表現・マップへ進む全体像、学習と利用の違い | 3.1 | 新規の模式図を作る予定 |
+| F-flow | HSIから表現・マップへ進む全体像、学習と利用の違い | 3.1 | [参考図と作図記録](figures/analysis_workflow_notes.md)あり。最終図は再作図 |
 | F-preprocess | 入力画像、mask、前処理前後のスペクトルの対応 | 3.2。F-flowと分ける必要がある場合 | 全試料・詳細診断はA。実例の選択と出典を記録 |
 | F-augmentation | TGNとshiftで同じ観測がどう変わるか | 3.3 | 多数例・候補強度の比較はA。採用条件の説明図を用意 |
 | F-model | patch、CLS、単位潜在、decoder、target・lossの流れ | 3.4 | 内部層の詳細は表で補足 |
@@ -139,11 +144,11 @@ IDは執筆用の仮識別子とし、最終的な図番号・表番号ではな
 
 ## 7. 既存図の候補と使い方
 
-ファイルの存在を確認した候補を挙げる。画像内容まで今回確認したのはcutoff図とTGN固定角度の例図。それ以外は採用時に図と設定・captionを照合する。修論への採用や再作図はまだ行っていない。
+構成案作成時にファイルの存在を確認した候補を挙げる。その時点で画像内容まで確認したのはcutoff図とTGN固定角度の例図である。cutoff図は現在の付録Aの第1稿に掲載しており、他の候補は採用時に図・設定・captionを照合する。掲載済みの図も最終稿での体裁と出典の確認を要する。
 
 | 候補 | 出典 | 掲載案・注意点 |
 | --- | --- | --- |
-| 波長cutoffの確認 | [cutoff_decision.png](../outputs/preprocessing/production_v1/cutoff_decision.png) | 付録A。reference proxyと試料側診断が同じ図にあるため、cutoffを決めたのはreference側だけと明示 |
+| 波長cutoffの確認 | [cutoff_decision.png](../outputs/preprocessing/production_v1/cutoff_decision.png) | 付録Aの図A.1に掲載済み。reference proxyと試料側診断が同じ図にあるため、cutoffを決めたのはreference側だけと明示 |
 | 補間後の帯域分布 | [反射率](../outputs/preprocessing/production_v1/interpolated_reflectance_band_distribution.png)、[SNV](../outputs/preprocessing/production_v1/interpolated_snv_band_distribution.png) | 付録A。最終入力の記述的な確認 |
 | 前処理後の候補画素 | [final_snv_anomaly_candidates.png](../outputs/preprocessing/production_v1/final_snv_anomaly_candidates.png) | 付録Aの候補。確認用の候補選択であり、異常・劣化の正解ラベルとしない |
 | TGNの固定角度の例 | [snv_noise_exact_angles_examples.png](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_noise_exact_angles_examples.png) | 付録A。2.5・5・7.5度の比較であり、本実験の角度一様分布を示す図そのものではない |
@@ -178,7 +183,9 @@ IDは執筆用の仮識別子とし、最終的な図番号・表番号ではな
 
 この状態表は本計画作成時に読んだ資料に基づく。実験は進行し得るため、原稿確定時は最新のrun記録とToDoを参照し、完了数や実行状況を本書だけから転記しない。CV開始後の追加判断は[決定記録](../docs/design/decisions.md)に従い、すべてが開始前から決まっていたようには記述しない。
 
-## 9. 最初のMethods草稿の完了条件
+## 9. 第3・4章を合わせたMethods草稿の完了条件
+
+以下はMethods全体の見直し項目であり、第3章の草稿があることだけで完了とはしない。
 
 - [ ] 試料の未整理情報を補わずに、前処理からマップ作成までの流れが読める。
 - [ ] 提案摂動、潜在・decoder、target・lossの主要な定義が本文にある。

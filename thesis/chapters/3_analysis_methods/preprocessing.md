@@ -1,5 +1,7 @@
 # 3.2 共通前処理とSNVスペクトル
 
+前処理は、解析する画素と波長範囲を定め、各有効画素を共通の256チャネルSNVスペクトルへ変換する。試料領域の抽出、反射率変換と波長選択、共通gridへの補間と品質判定、SNVの順に記述する。処理の定義と診断図の集計は[付録A](../../appendices/preprocessing_diagnostics.md)で補足する。
+
 ## 3.2.1 試料領域の抽出
 
 解析には200 Hzで取得されたHSIと、これに対応するwhite/dark referenceを用いる。入力画像の幅は320画素、スペクトル軸は256 bandsであり、画像の高さは試料ごとに異なる。各試料について、全256 bandsの生強度の和を画素の明るさの指標とし、3-class Multi-Otsu法で三つの強度群に分ける。強度の低い群を背景候補とし、残る二群の和集合を試料領域の候補とする。この段階の群分けは背景を除くための処理であり、材組織や劣化状態の分類ではない。
@@ -79,4 +81,7 @@ $$
 
 ---
 
-執筆メモ：撮像装置・測定条件の詳細は第2章から参照する。Multi-OtsuとSNVの原典の引用を最終稿で追加する。本節の採用条件は[前処理仕様](../../../docs/design/preprocessing.md)、処理順と除外規約は[本番前処理](../../../src/wood_degradation_map/preprocessing/production_preprocessing.py)、波長gridは[実装](../../../src/wood_degradation_map/preprocessing/spectral_grid.py)と照合した。数値範囲の記録は付録Aの出典を参照する。
+## 執筆メモ（本文外）
+
+- **参照資料・照合先：** 採用条件は[前処理仕様](../../../docs/design/preprocessing.md)、処理順と除外規約は[本番前処理](../../../src/wood_degradation_map/preprocessing/production_preprocessing.py)、波長gridは[実装](../../../src/wood_degradation_map/preprocessing/spectral_grid.py)。数値範囲の記録は付録Aの出典を参照する。
+- **残る整備：** 撮像装置・測定条件の詳細は第2章から参照する。Multi-OtsuとSNVの原典の引用を最終稿で追加する。

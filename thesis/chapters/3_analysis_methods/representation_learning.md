@@ -1,5 +1,7 @@
 # 3.4 Masked denoisingによる表現学習
 
+本節では、前節の摂動を受けた入力から追加摂動前のSNVを復元するモデルを定義する。波長軸のpatch化とmask、単一の単位潜在を介する再構成、損失関数、学習後の全帯域可視抽出の順に述べる。学習で復元する対象と、クラスタリングへ渡す表現を区別する。
+
 ## 3.4.1 スペクトルpatchと可視帯域
 
 出力チャネル数を $C=256$、画素添字を $p$、その画素の追加摂動前のSNVを $\boldsymbol{x}_p$ とする。この入力スペクトルを、連続16チャネルからなる16個のpatchへ分割する。Patch数を $N_{\mathrm{patch}}=16$、patch幅を $C_{\mathrm{patch}}=C/N_{\mathrm{patch}}=16$ とする。画素 $p$ の追加摂動後の入力を $\widetilde{\boldsymbol{x}}_p=\mathcal{A}_p(\boldsymbol{x}_p)$ とすると、第 $a$ patchは
@@ -39,6 +41,8 @@ $$
 
 ## 3.4.2 単一の単位潜在と線形再構成
 
+### Encoderとdecoderの構成
+
 Encoderには、埋め込み幅256、8層、8 head、feed-forward幅1024のTransformerを用いる。ActivationはGELU、LayerNormは各blockの前に置くpre-norm構成、dropoutは0とする。最終CLS出力を線形射影して16次元へ変換し、L2正規化したベクトルを潜在表現とする。潜在次元を $d_z=16$ とする。CLSの16次元射影までを含む写像を $f_\theta$、正規化前の出力を $\boldsymbol{h}_p$、単位化後の潜在を $\boldsymbol{z}_p$ として、
 
 $$
@@ -68,13 +72,19 @@ $$
 
 とする。Decoderへは、patchごとのencoder出力や入力からのskip connectionを渡さない。また、decoder用のmask tokenを用いるTransformer decoderではない。入力由来の情報はすべて16次元のbottleneckを通じて復元に用いられる。
 
-SNV入力では、全帯域の平均とnormがすでに固定され、画素間の違いは平均ゼロの部分空間内での方向として表される。本モデルはその高次元のスペクトル形状を、16次元空間内の単位球面 $\mathbb{S}^{15}$ 上の潜在方向へ非線形に写す。潜在の単位化は、SNV入力に残るスペクトル全体の大きさを捨てる操作ではなく、圧縮後の座標でもnormを独立の情報量として用いないという設計である。入力の角度関係や情報がすべて保存されることは仮定しない。
+### 単位潜在と線形decoderの役割
+
+SNV入力では、全帯域の平均とnormがすでに固定され、画素間の違いは平均ゼロの部分空間内での方向として表される。本モデルはその高次元のスペクトル形状を、16次元空間内の単位球面 $\mathbb{S}^{15}$ 上の潜在方向へ非線形に写す。潜在の単位化は、圧縮後の座標でもnormを独立の情報量として用いないという設計である。SNV入力の時点で全帯域のnormは固定されているため、潜在の単位化を入力の絶対的な大きさの除去と同一視しない。入力の角度関係や情報がすべて保存されることも仮定しない。
 
 線形decoderを用いることで、encoderは定められた復元課題を共通のアフィン写像で解けるように潜在座標を推定する。潜在自体は単位球面上にあり、decoderの重みが列full rankの場合、その復元値は高々16次元のアフィン部分空間内にある15次元の楕円体表面に制約される。楕円体は復元空間に現れるものであり、潜在が楕円体上にあるという意味ではない。これが非線形encoderによる座標推定と、線形decoderによる復元を組み合わせる設計上の意味である。
+
+SNVの球面とdecoderの楕円体は、それぞれtargetの制約集合とモデルの復元可能集合である。観測スペクトルや使用される潜在がそれぞれの集合全体を覆う必要はなく、両者の違いだけから再構成が困難だとはいえない。全帯域誤差を平均・norm・方向へ分けた説明は[付録B.5.8](../../appendices/mathematical_details.md#reconstruction-error-components)、SVDによる復元方向・拡大率・潜在座標の読み方は[付録B.5.10](../../appendices/mathematical_details.md#svd-interpretation)に示す。
 
 この構成は、クラスタが必ず分離することや化学的な類似性が学習されることを保証しない。また、SNV targetを用いるだけでは、decoder出力の平均ゼロ・一定normや、重みの列の直交性は保証されない。潜在の自由度・復元範囲、PCAとの比較、decoderが定める距離、および出力制約の成立条件は[付録B.5](../../appendices/mathematical_details.md#latent-decoder)に示す。
 
 ## 3.4.3 復元targetと損失関数
+
+### MAE条件の損失とmaskの役割
 
 復元targetには、追加摂動前のSNVスペクトル $\boldsymbol{x}_p$ を用いる。Shiftを含む条件でもtarget自体の波長位置は変更しない。Mini-batch内の画素集合を $\mathcal{P}_{\mathrm{batch}}$、その画素数を $N_{\mathrm{batch}}$ とする。$j$ はチャネル添字、$|\mathcal{H}_p|$ は画素 $p$ の不可視チャネル数である。$\widehat{x}_{p,j}$ と $x_{p,j}$ はそれぞれ復元値とtargetの第 $j$ 成分を表す。損失 $\mathcal{L}_{\mathrm{masked}}$ は不可視チャネル上の平均二乗誤差
 
@@ -100,6 +110,8 @@ M00では可視帯域から不可視帯域を復元し、M10・M01・M11では�
 
 各stepでの損失範囲は不可視帯域に限られる一方、maskの抽選を繰り返すことで全帯域が復元対象となる機会を持つ。この意味で、学習課題は特定の固定帯域だけに限定されない。ただし、予測値自体が可視集合に依存するため、この目的関数は毎回全帯域を可視にして全帯域の誤差を計算する目的関数とは異なる。Maskに関する期待値を用いた説明を[付録B.4](../../appendices/mathematical_details.md#masked-objective)に示す。
 
+### Maskを用いない比較条件A0
+
 比較条件A0では、追加摂動とmaskを用いず、全帯域をencoderへ入力し、全256チャネルの平均二乗再構成誤差 $\mathcal{L}_{\mathrm{AE}}$
 
 $$
@@ -112,7 +124,9 @@ $$
 
 を用いる。A0とMAE条件では、maskの有無と損失対象の両方が異なる。
 
-学習にはAdamWを用い、800 epoch、batch size 1024、40 epochのwarmupとその後のcosine型学習率減衰を共通条件とする。詳細な学習・数値設定は[付録C](../../appendices/implementation_details.md)に示す。再構成損失にクラスタラベル、空間座標、空間的一貫性の評価値を含めず、クラスタリングは表現学習後に行う。
+### 共通の学習条件
+
+学習にはAdamWを用い、800 epoch、batch size 1024、40 epochのwarmupとその後のcosine型学習率減衰を共通条件とする。演算にはFP16 autocastによる混合精度を用い、parameterとtargetはFP32に保持する。詳細な学習設定は[付録C](../../appendices/implementation_details.md)、lossの演算精度と履歴の集計は[付録C.3.1](../../appendices/implementation_details.md#training-precision)に示す。再構成損失にクラスタラベル、空間座標、空間的一貫性の評価値を含めず、クラスタリングは表現学習後に行う。
 
 ## 3.4.4 全帯域可視での表現抽出
 
@@ -137,4 +151,7 @@ CVでは $\theta^\ast$ をtrain試料だけから求め、test試料で再学習
 
 ---
 
-執筆メモ：Transformer・MAE・denoisingの原典の引用は最終稿で整備する。本文は使用中のChemoMAE v0.2.2のモデル・mask生成・masked MSEと、[固定設定](../../../src/wood_degradation_map/experiments/config.py)、[学習](../../../src/wood_degradation_map/experiments/training.py)、[抽出](../../../src/wood_degradation_map/experiments/neural.py)を照合して記述した。現在の全実験の完了を報告する節ではない。
+## 執筆メモ（本文外）
+
+- **参照資料・照合先：** ChemoMAE v0.2.2のモデル・mask生成・masked MSE、[固定設定](../../../src/wood_degradation_map/experiments/config.py)、[学習](../../../src/wood_degradation_map/experiments/training.py)、[抽出](../../../src/wood_degradation_map/experiments/neural.py)。原稿作成時の読み取り照合に基づく方法の記述であり、全実験の完了報告ではない。
+- **残る整備：** Transformer・MAE・denoisingの原典の引用を最終稿で整備する。
