@@ -295,7 +295,7 @@ Cosine-KMeans・正規化helperのソース内容が一致することを、読�
 学習augmentationは、SNVの幾何的制約に基づくcorruptionとして入力側だけに適用し、
 追加摂動前の観測SNVをtargetに保つ。ランダムマスクで選ばれた帯域への復元損失を通じて、
 全帯域にわたるdenoisingを学習する。物理化学的な生成過程や実機の誤差分布を同定した設計ではなく、
-その意図と限界は[ChemoMAEの位置づけ 第1.2〜1.3節・第2.2節](../chemomae_positioning.md)を参照する。
+その意図と限界は[ChemoMAEの位置づけ 第1.2節・第2.2節・第4.1節](../chemomae_positioning.md)を参照する。
 
 [SpectraAugmenterの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/augmenter.py)
 を使用し、noise角度は$U(0,5^\circ)$、shiftおよびその他の操作設定は既定値で固定する。
