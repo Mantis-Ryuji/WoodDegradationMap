@@ -180,7 +180,9 @@ A0・M00の値は共同評価の累積時間であり、組合せ別の処理時
 `4d11b22228242221662bbeb0dbe634064963ab98e37deec3f5ef949dedc894e7`で一致した。
 これは実行・保存契約の確認であり、条件間の性能比較は全fold・反復が揃ったOOF snapshotで行う。
 
-### 5.3 M11、fold 2
+### 5.3 主ニューラル、fold 2
+
+#### M11
 
 2026-09-10から2026-09-11にかけて、M11のfold 2・repeat 1–3の学習、全7Kのclustering、
 全test評価と各checkを完了した。test対象は10試料・781,665画素である。
@@ -203,6 +205,28 @@ clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`�
 `full_test_evaluation_completed`・`checks_passed=true`であり、各checkはそれぞれ
 `validated_existing_clustering`・`validated_existing_evaluation`だった。
 評価の共有入力SHA-256は3反復とも
+`b443abae9970ba54dd39d5fecc03196f82b9181daf0a1e0853ee1aee68702a93`で一致した。
+
+#### A0
+
+2026-09-10から2026-09-11にかけて、A0のfold 2・repeat 1–3の学習、全7Kのclustering、
+全test評価と各checkを完了した。test対象はM11と同じ10試料・781,665画素である。
+
+| repeat | optimizer updates | AMP skips | training seconds | clustering wall | recorded evaluation wall |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 249,506 | 94 | 9,960.2955 | 69.67 s | 1,128.62 s |
+| 2 | 249,503 | 97 | 9,908.3479 | 73.10 s | 1,131.90 s |
+| 3 | 249,503 | 97 | 9,741.9955 | 72.85 s | 1,135.76 s |
+
+3 runとも800 epoch・249,600 attempted updatesを1回のattemptで完了し、resumeは行っていない。
+`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesはそれぞれ
+optimizer updatesより1少なかった。保存された重みの実在とcompletion記録のSHA-256一致も確認した。
+
+clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`、評価は
+`full_test_evaluation_completed`・`checks_passed=true`であり、各checkはそれぞれ
+`validated_existing_clustering`・`validated_existing_evaluation`だった。評価は3 consumerを1回のCLIでまとめて実行したため、
+表の評価時間は各consumerの個別処理時間ではなく、評価開始からそのconsumer保存までの共同経過時間である。
+共有入力SHA-256は3反復とも
 `b443abae9970ba54dd39d5fecc03196f82b9181daf0a1e0853ee1aee68702a93`で一致した。
 
 ### 5.4 B0・B1、全5 folds
