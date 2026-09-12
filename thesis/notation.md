@@ -172,4 +172,4 @@
 
 ## 図中の表記と今後の追記
 
-図3.1の旧ラベルH・W等の修正事項は[作図メモ](figures/analysis_workflow_notes.md)を参照する。第4章の残りと[幾何診断の実施計画](../docs/design/representation_geometry_diagnostics.md)で追加する記号は、定義の確定・原稿への導入時に追記する。
+図3.1の旧ラベルH・W等の修正事項は[作図メモ](figures/analysis_workflow_notes.md)を参照する。第4章の残りで追加する記号は、定義の確定・原稿への導入時に追記する。B.5の記号は数理的補足のために保持し、[未採用の幾何診断案](../docs/design/representation_geometry_diagnostics.md)を実施予定とは扱わない。

@@ -13,7 +13,7 @@
 | [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA、LFR、silhouette、ARI、occupancy、未定義値、集約、比較 |
 | [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1のPNG・CSV、fold内B0基準のmatching |
 | [全体可視化と解釈](visualization_and_interpretation.md) | Fixed / 任意責務マップ・FT-IR・正式目視評価の詳細Open | 全体fit、A0基準のmatching、代表例、スペクトル、FT-IR計画 |
-| [変動の強調・抑制の補助診断](representation_geometry_diagnostics.md) | 方針合意 / 実施詳細Open | MAE群のクラスタ平均・実画素差・摂動応答、SVD・残差との数理的対応、付録Bの改訂計画 |
+| [表現幾何の補助診断の見直し](representation_geometry_diagnostics.md) | 現行計画から除外 / 未採用候補 | 既定評価との関係、実施項目から外した理由、数理的補足と旧案 |
 | [設計上の決定記録](decisions.md) | 記録 | 決定日、CV開始後の追加事項と適用範囲 |
 
 ## 条件の参照先
@@ -49,10 +49,10 @@ CV開始後の対象拡張・追加決定は[決定記録](decisions.md)を参�
 | 任意の責務マップ | 採用する場合の表示範囲・配色・背景 | [責務マップ](visualization_and_interpretation.md#vmf-responsibility-maps) |
 | 位置対応FT-IR | 対象、位置対応、測定・反復条件、前処理・指標、解釈範囲 | [FT-IR](visualization_and_interpretation.md#ftir-interpretation) |
 | 正式な目視評価 | 評価者、rubric、条件名・提示順、意見不一致の扱い | [証拠の統合](visualization_and_interpretation.md#evidence-triangulation) |
-| 変動の強調・抑制の補助診断 | 共通分割、対象run・画素対・重み、K・draw、数値規約、保存先と負荷 | [診断計画](representation_geometry_diagnostics.md#open-items) |
 
 ライブラリの既定値でOpen事項を暗黙に埋めない。
 探索的な原因仮説は[解釈メモ](../interpretation_notes.md)で扱い、実験条件として採用したことにはしない。
+付録B.5の表現幾何診断は現行の実施項目・Open事項から外した。[判断理由と旧案](representation_geometry_diagnostics.md)を参照する。
 
 ## 評価と解釈の範囲
 

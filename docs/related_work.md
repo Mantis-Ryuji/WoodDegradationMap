@@ -73,7 +73,7 @@ Decoderの単純さは本研究の採用制約であり、固定表現の品質�
 潜在をより抽象的に保てると解釈している。([He et al., §4.1 Decoder design](https://arxiv.org/html/2111.06377v3))
 
 画像認識での結果から本decoderを深くすべきとは導けず、SimMIMの線形headもglobalな16次元bottleneckの最適性を検証していない。
-現行構成の説明と、MAE群で実際に得た表現差の診断は分ける（[補助診断計画](design/representation_geometry_diagnostics.md)）。
+現行構成の説明と、MAE群の比較結果は分ける。有用性は[既定評価](design/evaluation_metrics.md)と観測スペクトルの解釈で検討し、構成や再構成lossから保証しない。
 
 ## 2. 参考文献と確認範囲
 
