@@ -1,6 +1,6 @@
 # 修士論文ドラフト
 
-更新日: 2026-09-12
+更新日: 2026-09-13
 
 Markdownで下書きし、最終稿はLaTeXへ移す。現在は第3章、第4章のLLA・補正LLA、付録A〜Cの定義・実装に基づく草稿を収録する。原稿の存在は、実験や診断の完了を意味しない。
 
@@ -38,7 +38,7 @@ Markdownで下書きし、最終稿はLaTeXへ移す。現在は第3章、第4�
 | B | [数理的補足](appendices/mathematical_details.md) | SNV、TGN、shift、masked loss、入力差と潜在差、クラスタの分離・広がり、摂動応答と損失の関係 |
 | C | [モデル・学習・数値設定](appendices/implementation_details.md) | モデル表、条件表、学習率、抽出・クラスタリングの数値設定、再現記録 |
 
-付録B.5は、MAE群での変動の強調・抑制を調べるための数理を扱う。[補助診断の実施計画](../docs/design/representation_geometry_diagnostics.md)の詳細条件はOpenであり、診断は未実施である。付録D（評価・集計）とE（補足結果）も未執筆。
+付録B.5は、入力差・潜在差・残差と再構成損失の関係を示す数理的補足である。対応する補助診断一式は現行の実施計画から外し、式に対応する実験・結果図表を必須にしない（[判断理由と旧案](../docs/design/representation_geometry_diagnostics.md)）。付録D（評価・集計）とE（補足結果）は未執筆。
 
 ## 図と再作図用の記録
 

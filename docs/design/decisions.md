@@ -17,6 +17,7 @@
 | 2026-09-10 | 位置対応FT-IRによる解釈の計画を文書化 | CV開始後。測定・解析の詳細はOpen、結果は未確認 | [FT-IR計画](visualization_and_interpretation.md#ftir-interpretation) |
 | 2026-09-10 | 全体fit後のHungarian matching基準をB0からA0のCosine-KMeansへ変更 | B0・B1 OOF可視化後・全体fit前。mask・Aug前の再構成学習を比較の起点とする | [matching基準](visualization_and_interpretation.md#matching-reference) |
 | 2026-09-10 | B0・B1 OOF sanityの保存をlabel・silhouetteのPNGと数値CSVへ整理 | 探索的な表示仕様。fold内B0基準のmatchingを使用 | [OOF sanity](oof_sanity_visualization.md) |
-| 2026-09-12 | MAE群における変動の強調・抑制を、クラスタ単位と画素単位の両方で補助診断する方針に合意 | CV開始後の探索的な計画。A1等の学習条件は追加せず、比較集合・抽出・数値規約等はOpen。実装・診断は未実施 | [数理と補助診断の計画](representation_geometry_diagnostics.md) |
+| 2026-09-12 | MAE群における変動の強調・抑制を、クラスタ単位と画素単位の両方で補助診断する方針に合意 | CV開始後の探索的な計画。A1等の学習条件は追加せず、比較集合・抽出・数値規約等は当時Open。実装・診断は未実施で、翌日の見直しにより現行計画から除外 | [判断理由と旧案](representation_geometry_diagnostics.md) |
+| 2026-09-13 | B.5に対応する補助診断一式を現行の実施計画・ToDoから外し、関係式は数理的補足に位置づける | 既定の2×2比較・LLA・LFR等で主実験の問いを評価でき、診断一式は必須ではないと実施前に判断。選択的な強調・抑制や改善機構の実証は主張しない。主条件・指標・mask率・vMF・全体可視化・FT-IR計画は維持 | [必要性の見直し](representation_geometry_diagnostics.md) |
 
 CV開始後の追加判断を、CV開始前から固定した条件として遡及記載しない。

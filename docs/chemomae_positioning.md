@@ -65,15 +65,15 @@ Vincentらの分類実験等はこの原理を支えるが、古材NIRで化学�
 同じtargetへの復元は潜在にも間接的な制約を与えるので、view間対応より常に弱い仮定で済むわけではない。
 ここでcleanは追加摂動前の観測であり、測定ノイズのない真値ではない。
 
-研究の問いは、**MAE群のcorruption条件が、全可視で取り出す潜在においてどのスペクトル差を強調・抑制し、
-状態差の探索にどう関わるか**である。CLSは1画素の情報を単一bottleneckへ集約するtokenであり、
+研究の問いは、**MAE群のcorruption条件が、全可視の表現から得るマップの性質をどう変え、
+その領域差を状態差の探索・解釈にどう結びつけられるか**である。CLSは1画素の情報を単一bottleneckへ集約するtokenであり、
 化学成分や教師ラベルを表さない。「構造推論」も帯域間関係の推定を指し、分子構造の同定ではない。
 再構成lossはクラスタの生成・分離を直接要求しない。
 
 既定の主要比較M11対B0・B1・M00と、M00・M10・M01・M11の2×2 ablationで調べる。
-A1等は追加せず、MAEへの追加corruptionの効果を対象とする。補助診断はクラスタ単位と画素単位の両方を
-扱う方針に合意したが、対象・抽出・数値規約はOpenである
-（[補助診断計画](design/representation_geometry_diagnostics.md)）。
+A1等は追加せず、MAEへの追加corruptionの効果をLLA・LFRと既定診断で評価する。
+どの入力差が強調・抑制されたかを追う補助診断一式は、現行比較に必須ではないため実施計画から外した
+（[必要性の見直し](design/representation_geometry_diagnostics.md)）。
 
 ## 2. 実装で確認できる構成
 
@@ -171,9 +171,9 @@ $$
 同じtrainデータ・前処理・画素重みの全帯域二乗誤差では、正規化前のscoreによる厳密PCAが
 同次元以下のアフィン部分空間近似を最適化する。ただし、masked loss・未知試料・クラスタリング品質の優劣は別である。
 
-本研究の焦点は、**corruptionから座標を推定する課題が、入力差を潜在でどう強調・抑制するか**にある。
-[付録B.5](../thesis/appendices/mathematical_details.md#latent-decoder)は画素対、クラスタ平均、同一画素への摂動応答を
-SVD・残差・固定maskのlossへ結びつける。対象・抽出・実施手順は[補助診断計画](design/representation_geometry_diagnostics.md)で管理する。
+本研究では、corruptionから座標を推定する学習課題の有用性を、既定CVによるマップの性質と観測スペクトルの解釈から検討する。
+[付録B.5](../thesis/appendices/mathematical_details.md#latent-decoder)は、入力差・潜在差・残差とlossの関係を示す数理的補足である。
+関係式の成立を、TGN・shiftによる改善やその機構の実証とはしない。対応する診断一式は[未採用候補](design/representation_geometry_diagnostics.md)として残す。
 
 <a id="snv-geometry"></a>
 
@@ -208,8 +208,8 @@ $$
 前式は方向によるクラスタリングとの整合性を示す
 （[Banerjee et al., 2005](https://jmlr.org/papers/v6/banerjee05a.html)）。
 後式の $W^{\mathsf T}W$ には等方性がなく、復元とcosineで各方向の重みは異なる。
-入力角度の保存もcollapse防止も保証されない。したがって、実測入力差・潜在差・残差を併読し、
-どの差が強調・抑制されたかを調べる価値がある。PCA側の操作の読み方は
+入力角度の保存もcollapse防止も保証されない。表現内の分離と退化は既定のsilhouette・occupancy等で診断し、
+どの入力差が強調・抑制されたかは、それらの指標や式だけから結論づけない。PCA側の操作の読み方は
 [解釈メモ](interpretation_notes.md#pca-snv-geometry-note)に示す。
 
 ### 3.4 SAMとの関係: 方向によるスペクトル比較の先行例
@@ -342,9 +342,9 @@ $$
 | --- | --- |
 | 提案する設計 | SNV制約を保つTGN・shiftをmasked denoisingへ組み込み、単一16次元単位潜在へ集約する |
 | 固定表現の利用 | 学習後のencoderとtrainでfitした中心をtestへ適用する。後段fine-tuningを要しない現行pipelineの事実 |
-| 追加corruptionの効果 | MAE群の2×2比較で問う。化学状態をより安定して反映することは仮説であり、再構成lossからは保証されない |
+| 追加corruptionの効果 | MAE群の2×2比較・交互作用をLLA・LFRと既定診断で評価する。化学状態をより安定して反映することは仮説であり、指標や再構成lossからは保証されない |
 | 指定摂動への安定性 | LFRで割当の維持を測る。学習と同じ種類・強度の人工摂動への結果であり、実測誤差全般や化学情報保持へ外挿しない |
-| どの差が強調・抑制されたか | クラスタ平均と実画素による[補助診断](design/representation_geometry_diagnostics.md)で説明する計画。詳細Open・未実施 |
+| どの差が強調・抑制されたか | 現行実験の実証範囲に含めない。[補助診断の旧案](design/representation_geometry_diagnostics.md)は未採用で、付録B.5は数理的補足に留める |
 | 化学的な対応 | NIR代表・差スペクトルと位置対応FT-IRによる解釈。FT-IRの測定設計はOpen、結果未確認 |
 | 構成の最適性 | 層数・潜在次元・線形decoder・正規化の最適性や、未比較SSLへの優位性は扱わない |
 

@@ -10,7 +10,7 @@
 | 研究の論旨をつかむ | [研究概要](research_overview.md) → [ChemoMAEの位置づけ](chemomae_positioning.md) → [関連研究](related_work.md) | 問いと証拠の対応、手法の採用理由、先行研究との共通点・相違点 |
 | 条件と定義を確認する | [研究設計](design/README.md) → 対象の仕様書 → [決定記録](design/decisions.md) | 現行条件・Open事項と、それを決めた時点 |
 | 実験を進める | [ToDo](../ToDo.md) → [runbook](experiment_runbook.md) → [検証履歴](verification_history.md) | 次の作業、CLI・再開・完了判定・保存先、実施済みの確認 |
-| 途中結果を考える | [解釈メモ](interpretation_notes.md) → 対応する成果物・[補助診断計画](design/representation_geometry_diagnostics.md) | 観察範囲、説明候補、強調・抑制を調べる計画 |
+| 途中結果を考える | [解釈メモ](interpretation_notes.md) → 対応する成果物・[表現幾何診断の見直し](design/representation_geometry_diagnostics.md) | 観察範囲、説明候補、現行計画から外した診断の判断理由 |
 | 論文として読む・書く | [原稿案内](../thesis/README.md) → [構成案](../thesis/outline.md)・[執筆計画](../thesis/writing_plan.md) | 現在の本文・付録、章ごとの問い、資料と執筆作業の対応 |
 
 ## 論点の置き場所と文書間の関係
