@@ -1,6 +1,6 @@
 # 3.4 Masked denoisingによる表現学習
 
-本節では、前節の摂動を受けた入力から追加摂動前のSNVを復元するモデルを定義する。波長軸のpatch化とmask、単一の単位潜在を介する再構成、損失関数、学習後の全帯域可視抽出の順に述べる。学習で復元する対象と、クラスタリングへ渡す表現を区別する。
+波長帯域を隠した入力から追加摂動前のSNVを復元するモデルを定義する。Random maskも入力corruptionであり、TGN・shiftはそれに加えるcorruptionとして扱う。学習後は全帯域可視の潜在をクラスタリングへ渡す。
 
 ## 3.4.1 スペクトルpatchと可視帯域
 
@@ -74,13 +74,9 @@ $$
 
 ### 単位潜在と線形decoderの役割
 
-SNV入力では、全帯域の平均とnormがすでに固定され、画素間の違いは平均ゼロの部分空間内での方向として表される。本モデルはその高次元のスペクトル形状を、16次元空間内の単位球面 $\mathbb{S}^{15}$ 上の潜在方向へ非線形に写す。潜在の単位化は、圧縮後の座標でもnormを独立の情報量として用いないという設計である。SNV入力の時点で全帯域のnormは固定されているため、潜在の単位化を入力の絶対的な大きさの除去と同一視しない。入力の角度関係や情報がすべて保存されることも仮定しない。
+SNV入力の平均とnormは固定されており、画素間の形状差は方向に現れる。Encoderはこれを16次元の単位潜在へ写すが、入力の角度関係を保存する制約は課していない。したがって、学習後の表現では入力差が強調される場合も、抑制される場合もある。
 
-線形decoderを用いることで、encoderは定められた復元課題を共通のアフィン写像で解けるように潜在座標を推定する。潜在自体は単位球面上にあり、decoderの重みが列full rankの場合、その復元値は高々16次元のアフィン部分空間内にある15次元の楕円体表面に制約される。楕円体は復元空間に現れるものであり、潜在が楕円体上にあるという意味ではない。これが非線形encoderによる座標推定と、線形decoderによる復元を組み合わせる設計上の意味である。
-
-SNVの球面とdecoderの楕円体は、それぞれtargetの制約集合とモデルの復元可能集合である。観測スペクトルや使用される潜在がそれぞれの集合全体を覆う必要はなく、両者の違いだけから再構成が困難だとはいえない。全帯域誤差を平均・norm・方向へ分けた説明は[付録B.5.8](../../appendices/mathematical_details.md#reconstruction-error-components)、SVDによる復元方向・拡大率・潜在座標の読み方は[付録B.5.10](../../appendices/mathematical_details.md#svd-interpretation)に示す。
-
-この構成は、クラスタが必ず分離することや化学的な類似性が学習されることを保証しない。また、SNV targetを用いるだけでは、decoder出力の平均ゼロ・一定normや、重みの列の直交性は保証されない。潜在の自由度・復元範囲、PCAとの比較、decoderが定める距離、および出力制約の成立条件は[付録B.5](../../appendices/mathematical_details.md#latent-decoder)に示す。
+補助診断では、この変化をクラスタ平均と内部の広がり、実画素対、同一画素への摂動応答から調べる。[付録B.5](../../appendices/mathematical_details.md#latent-decoder)では、それらの比較に必要な式と、再構成損失が拘束する潜在変動の範囲を示す。MAE条件間の違いや化学的有用性は、実測結果に基づいて検討する。
 
 ## 3.4.3 復元targetと損失関数
 
@@ -126,7 +122,7 @@ $$
 
 ### 共通の学習条件
 
-学習にはAdamWを用い、800 epoch、batch size 1024、40 epochのwarmupとその後のcosine型学習率減衰を共通条件とする。演算にはFP16 autocastによる混合精度を用い、parameterとtargetはFP32に保持する。詳細な学習設定は[付録C](../../appendices/implementation_details.md)、lossの演算精度と履歴の集計は[付録C.3.1](../../appendices/implementation_details.md#training-precision)に示す。再構成損失にクラスタラベル、空間座標、空間的一貫性の評価値を含めず、クラスタリングは表現学習後に行う。
+学習にはAdamWを用い、800 epoch、batch size 1024、40 epochのwarmupとその後のcosine型学習率減衰を共通条件とする。FP16 autocastによる混合精度を用い、parameterとtargetはFP32に保持する。詳細設定とloss履歴の定義は[付録C](../../appendices/implementation_details.md)に示す。クラスタラベル・空間座標・空間的一貫性は損失に含めない。
 
 ## 3.4.4 全帯域可視での表現抽出
 
@@ -153,5 +149,5 @@ CVでは $\theta^\ast$ をtrain試料だけから求め、test試料で再学習
 
 ## 執筆メモ（本文外）
 
-- **参照資料・照合先：** ChemoMAE v0.2.2のモデル・mask生成・masked MSE、[固定設定](../../../src/wood_degradation_map/experiments/config.py)、[学習](../../../src/wood_degradation_map/experiments/training.py)、[抽出](../../../src/wood_degradation_map/experiments/neural.py)。原稿作成時の読み取り照合に基づく方法の記述であり、全実験の完了報告ではない。
+- **参照資料・照合先：** ChemoMAE v0.2.2のモデル・mask生成・masked MSE、[固定設定](../../../src/wood_degradation_map/experiments/config.py)、[学習](../../../src/wood_degradation_map/experiments/training.py)、[抽出](../../../src/wood_degradation_map/experiments/neural.py)を原稿作成時に読み取りで照合。
 - **残る整備：** Transformer・MAE・denoisingの原典の引用を最終稿で整備する。

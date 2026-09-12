@@ -31,8 +31,7 @@ SNV前の補間反射率が1帯域でも負の画素は、train・test共通で�
 | 追加加工 | clip、平滑化、微分、baseline補正、外挿を行わない |
 | スペクトルsource | 200 Hzのみ。030/200 Hz融合は行わない |
 
-`min_object_size=1`は、現行実装では追加の小領域除去を実質的に行わない設定である。
-ただし処理順序を固定し、将来の仕様変更時にも形態処理の意味が曖昧にならないよう記録する。
+`min_object_size=1`では追加の小領域除去を実質的に行わないが、第5.2節の処理順序は固定する。
 
 ## 3. 入力契約
 
@@ -172,8 +171,7 @@ $$
 とする。各$\tilde{\lambda}_j$を挟む2つの実測band間で線形補間する。
 補間区間は保持波長範囲の閉区間内に限定し、外挿、高次補間および平滑化を行わない。
 
-現在の入力では、222点の実測反射率を913.10–2305.59 nmの範囲内で256点へ補間する。
-256次元とするのは、後段で$16 \times 16$ patchとして扱えるようにするためである。
+現在の入力では222点を913.10–2305.59 nm内の256点へ補間し、後段で$16 \times 16$ patchとして扱う。
 
 補間後の標本標準偏差が非有限または0以下の画素はSNVを定義できないため除外し、理由code 2を保存する。
 
@@ -292,9 +290,8 @@ outputs/preprocessing/production_v1/
 | attributes | schema version、試料ID、元ファイル、元shape、画素数、SNR閾値、SNV定義 |
 
 HDF5は`float32`、gzip level 4、shuffleおよび画素方向chunkを使用し、1試料を1ファイルにまとめる。
-目的は圧縮率だけではなく、可変長の画素スペクトル、座標、mask、波長およびmetadataを対応付け、
-必要なdatasetや画素chunkだけを読めるようにすることである。
-完全な3次元反射率cubeは複製せず、mask内の有効画素スペクトルだけを保存する。
+有効画素スペクトルと座標・mask・波長・metadataを対応付け、必要なdatasetやchunkだけを読める構成とする。
+完全な3次元反射率cubeは複製しない。
 production_v1のstorage schemaはversion 2とし、理由code 3と対応する品質集計列を持つ。
 入力の識別にはpreprocessing IDとconfigの`negative_reflectance_policy`を使用する。
 `negative_interpolated_reflectance_excluded_pixel_count`はcode 3で除外した画素数を表す。
@@ -349,5 +346,4 @@ production_v1のstorage schemaはversion 2とし、理由code 3と対応する�
 - 反射率L2 normによる二値化では一部の晩材が欠落したため、maskには200 Hz生強度和の
   3-class Multi-Otsuを採用した。
 
-以上は確定済みの前処理仕様である。別方式を検討する場合は既存runを上書きせず、新しい研究判断と
-preprocessing IDを持つ別仕様として扱う。
+別方式は既存runを保持し、新しい研究判断とpreprocessing IDを持つ別仕様として扱う。

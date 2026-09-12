@@ -25,12 +25,11 @@ LLA、LFR、occupancyはCSVで確認する。boundary mapと代表スペクト�
 
 ## 2. 代表試料のlabel map
 
-$K_0=8$、repeat 1を使用し、[事前固定した7試料](visualization_and_interpretation.md#representative-samples)を
-クリ、ケヤキ、スギ、ツガ、ヒノキ、マツ、モミの順に並べる。
-試料ごとの図には分割せず、B0とB1を別々のPNGへ保存する。
+$K_0=8$、repeat 1で[固定7試料](visualization_and_interpretation.md#representative-samples)を
+クリ、ケヤキ、スギ、ツガ、ヒノキ、マツ、モミの順に並べ、B0・B1各1枚へ保存する。
 
 各試料の下に`KYOw...`試料IDを表示し、背景0・クラスタ1〜8の共通凡例を付ける。
-[共通描画規約](visualization_and_interpretation.md#figure-style)に従い、figure titleとaxes titleは付けない。
+[共通描画規約](visualization_and_interpretation.md#figure-style)を適用する。
 
 ## 3. fold内Hungarian matching
 

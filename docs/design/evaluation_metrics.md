@@ -7,10 +7,8 @@
 本書は指標の計算・未定義値・集計・報告を定義する。実験途中の所見と原因仮説は
 [解釈メモ](../interpretation_notes.md)、実行時の確認・記録は[実験プロトコル第11.2節](experiment_protocol.md#execution-records)を参照する。
 
-現行CVには画素単位の正解劣化ラベルや独立した劣化測定による定量評価がない。
-教師あり分類精度やIoUによる順位付けは行わず、劣化との対応は探索的解釈とする。
-別途予定する[位置対応FT-IR](visualization_and_interpretation.md#ftir-interpretation)は、測定領域の化学的な解釈を
-深めるための観測であり、本書の教師なし指標や全画素の正解ラベルとは区別する。詳細設計はOpen、結果は未確認である。
+現行CVには画素単位の正解劣化ラベルや独立した劣化測定がなく、教師あり分類精度・IoUは評価しない。
+化学的対応の探索的解釈と[位置対応FT-IR計画](visualization_and_interpretation.md#ftir-interpretation)は別に扱う。
 
 | 位置づけ | 指標 | 評価する性質 |
 | --- | --- | --- |
@@ -21,8 +19,8 @@
 | 補助診断 | 3反復間のARI | 同一test画素に対する分割の再現性 |
 | 必須併記 | 試料別・fold別occupancy、使用クラスタ数 | 単一クラスタへの集中や不均衡、指標の退化の確認 |
 
-これらを単一scoreへ合成しない。主評価の改善も、劣化検出の正確さ、化学的妥当性、境界の正確さを
-保証しない。外部評価がない状況で、これらの指標だけから総合的な「最良の表現」を決めない。
+指標を単一scoreへ合成したり、総合的な「最良の表現」を選んだりしない。
+主評価の改善が示す範囲は表の性質に限り、劣化検出・化学的対応・境界の正確さは保証しない。
 
 ## 2. 共通規約
 
@@ -69,16 +67,12 @@
 
 ## 3. cosine-silhouette
 
-表現抽出・評価は[experiment_protocol.md](experiment_protocol.md)第4.1.4節のFP32設定に従う。
-特徴抽出のautocastと評価のTF32は無効にし、離散ラベル・件数は整数のまま保持する。
+表現抽出・評価は[プロトコルの数値設定](experiment_protocol.md#evaluation-precision)に従う。
 
 ### 3.1 定義
 
-各条件のtest表現$z_i$と、train centroidsによって割り当てたラベル$c_i$を用いる。
-表現はB0では256次元SNV、B1では16次元PCA得点、ChemoMAE系では全可視encoderから
-抽出した16次元潜在とし、いずれも行ごとにL2正規化する。PCAは射影後に正規化する。
-変換順序は[experiment_protocol.md](experiment_protocol.md)第4.1.1節に従う。
-cosine距離を
+各条件のtest表現$z_i$と、固定train centroidsによるラベル$c_i$を用いる。
+表現・変換順序は[プロトコル](experiment_protocol.md#representations)に従い、cosine距離を
 
 $$
 d_{\cos}(z_i,z_j)
@@ -173,10 +167,8 @@ $$
 }
 $$
 
-と定義する。$(h_r*B_{m,k})(p)$は$p$の近傍にあるクラスタ$k$の有効画素数である。
-これを$B_{m,k}(p)$で選択して画素・クラスタについて合計すると、同じラベルを持つ有効近傍対の総数になる。
-分母では$(h_r*M_m)(p)$を有効な中心画素について合計し、すべての有効近傍対を数える。
-両者とも$(p,q)$と$(q,p)$を数えるため、中心画素ごとに近傍を列挙した定義と一致する。
+と定義する。分子は同じラベルの有効近傍対、分母は全有効近傍対を数える。
+両者とも$(p,q)$と$(q,p)$を含み、中心画素ごとに近傍を列挙する定義と一致する。
 
 境界やmask付近では有効近傍数が異なるが、ゼロ拡張と$M_m$により分子・分母から対象外の画素を除く。
 試料内で分子・分母をそれぞれ合計してから比を取り、中心画素ごとの局所一致率を単純平均しない。
@@ -188,9 +180,8 @@ $$
 | LLA-5 | 24 | 小から中スケールのまとまり |
 | LLA-9 | 80 | より広い面状・縞状構造 |
 
-LLAは高いほど局所ラベル一致が多い。ただし、クラスタ占有率が極端に偏る場合にも高くなり得るため、
-単独では解釈せずcluster occupancyを併記する。
-LLA-3/5/9は重み付き平均せず、個別に報告する。
+LLAは高いほど局所一致が多いが、占有率の偏りでも高くなるためoccupancyを併記する。
+LLA-3/5/9は平均せず個別に報告する。
 
 3、5、9は画素座標上の幅であり、物理的な長さが等しい尺度とは仮定しない。画素の実寸や走査方向の
 異方性が確認できる場合は記録する。LLAは境界の正しさや小領域の保存を直接評価しない。
@@ -247,8 +238,7 @@ $$
   その後、clean入力と同じく行ごとのL2正規化を適用する。
 - PCA、encoderとtrain centroidsを固定する。encoderは推論modeとし、dropoutやランダムmaskによる
   変動を評価摂動へ混入させない。
-- ChemoMAEは全可視maskを明示したencoder、または全可視の`Extractor`で抽出する。
-  `eval()`だけを指定して、mask引数なしの`ChemoMAE.forward()`を呼ばない。
+- 全可視抽出のAPIとmaskの指定は[プロトコル](experiment_protocol.md#representations)に従う。
 - 摂動後に再学習または再クラスタリングしない。
 - 評価時の対象augmentation適用確率は1とする。
 - ChemoMAEの`SpectraAugmenter`を評価時だけ明示的にtraining modeへ切り替えて摂動を生成する。
@@ -264,14 +254,8 @@ $$
 | shift | `noise_prob=0`, `shift_prob=1` |
 | noise + shift | `noise_prob=1`, `shift_prob=1` |
 
-shiftはChemoMAE v0.2.2の既定設定を採用し、$\delta\sim U(-2,2)$チャネル、線形補間と端点値の延長を使う。
-noiseはGaussian乱数由来の接方向への回転で、角度は$\theta\sim U(0,5^\circ)$に固定する。
-`noise_angle_deg_range=(0.0, 5.0)`を明示し、package既定の角度範囲で代用しない。
-操作順はbatchごとにランダム化し、各操作後に画素内平均を0、normを操作前の値へ戻す。
-採用値と各flagは[experiment_protocol.md](experiment_protocol.md)第4.1.3節でFixedとした。
-学習時と評価時には同じ強度分布と操作設定を用い、適用確率だけを評価時に1とする。
-LFRやCV評価値を用いた強度sweepは行わない。
-回転角や最終加算残差を正規分布$N(0,\sigma)$と記述しない。
+強度分布・補間・端点処理・操作順・再中心化・norm復元は[プロトコル第4.1.3節](experiment_protocol.md#augmentation-clustering)と共通とする。
+評価時に変更するのは表の適用確率だけであり、LFRに合わせた強度sweepは行わない。
 
 ### 5.3 摂動反復と解釈範囲
 
@@ -280,9 +264,8 @@ LFRやCV評価値を用いた強度sweepは行わない。
 同じ試料について3種類の摂動を各5回生成し、計15回分の入力を全条件・全K・全学習反復で共有する。
 同一モデルの摂動後表現はK間で再利用し、Kごとにencoder推論を繰り返さない。
 
-全有効画素での平均的な摂動安定性を、計算量を抑えて比較するための事前設定とする。
-5回で推定が十分に収束したと仮定せず、各回の値でばらつきを確認できるようにする。
-5回のMonte Carlo反復を独立な試料数や未知試料への汎化の根拠にせず、結果を見て条件別に反復数を増減しない。
+これは計算量を抑える事前設定であり、5回での収束は仮定しない。各drawのばらつきを示し、
+独立試料数に数えたり、結果を見て条件別にdraw数を変更したりしない。
 
 この評価は、学習augmentationと同じ種類・強度分布で常に摂動を加えた場合の安定性を調べる。
 摂動後に再学習しないこと、共通入力で比較することは維持するが、未経験の摂動、装置間差、
@@ -349,8 +332,6 @@ isolated label rateとsmall component mass rateは任意の形状診断とする
 connectivity・小領域の閾値・分母を結果を見る前に定義する。これらの実行定義はOpenであり、
 未定義のまま主評価や採否判定に使わない。
 
-これらによって主条件またはbest条件を事後選択しない。
-
 <a id="reporting"></a>
 
 ## 8. 結果の報告と不確実性
@@ -409,7 +390,6 @@ label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様であ�
 - K依存性とmask率依存性の診断図に補正LLA、silhouette、ARIおよびoccupancyを併記する。
 - M11 vs B0、M11 vs B1、M11 vs M00を主要比較として示し、残りの計画比較と2×2交互作用をablation表にする。
 - 指標間で結論が異なる場合は、総合順位に潰さずtrade-offとして報告する。
-- LLA=1またはLFR=0だけを良好な結果とみなさず、cluster occupancyと合わせてcollapseを確認する。
 - Hungarian matchingは表示ラベルの整列に用い、CV指標の計算には使用しない。
   [OOF sanity](oof_sanity_visualization.md)ではfold内B0基準、[全体fit後](visualization_and_interpretation.md#matching-reference)ではA0のCosine-KMeans基準とする。
 
@@ -417,28 +397,17 @@ label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様であ�
 
 ### 8.4 vMFクラスタリング補助実験への適用
 
-[実験プロトコル第5.2節](experiment_protocol.md#vmf-supplementary)のvMF補助実験にも、
-本書の有効画素・指標・未定義値・集計規約を適用する。最大posterior責務によるhard labelを
-背景0・クラスタ1〜Kへ変換し、同じtest全画素と共通の評価摂動で比較する。
-
-| 区分 | 評価・報告 |
-| --- | --- |
-| 主評価 | LLA-3/5/9、noise・shift・両方のLFR |
-| 評価摂動 | 各種類5 draws。入力側の摂動実現値・seed・画素対応をCosine-KMeansと共有 |
-| 診断 | cosine-silhouette、補正LLA、反復間ARI、occupancy、使用クラスタ数、有効対象数 |
-| 集計 | OOF試料macro、試料間SDと3反復間SDの分離、既定のpaired比較 |
-| 表示 | $K_0=8$の表と全7Kの曲線。K方向の平均・最大値による総合順位は作らない |
+[プロトコルのvMF補助実験](experiment_protocol.md#vmf-supplementary)にも、第2〜8.3節の画素・全指標・
+未定義値・集計・図表を適用する。最大posterior責務によるhard labelを背景0・クラスタ1〜Kへ変換し、
+同じtest全画素と3種類×5 drawsの摂動実現値・seed・画素対応をCosine-KMeansと共有する。
 
 cosine-silhouetteは同じ表現のcosine距離とvMFのhard labelから計算する。
 反復間ARIは各クラスタリング方法内の既存3対を使う。方法間ARIを主評価へ追加せず、
 ARIをencoderだけの再現性とも解釈しない。
 
-各方法内で、実験プロトコル第4.3節の全計画比較とaugmentationの2×2交互作用を求める。
-同一試料・K・反復での条件差をCosine-KMeansとvMFの間で併記し、
-方向・大きさ・K依存性・試料別のばらつきを比較する。同条件の方法間score差も、
-両方法で値が定義された共通試料・反復に対応づける。
-一方が未定義の場合は理由と共通対象数を示し、対象の異なる平均同士を差し引かない。
-LLAとLFRの改善方向、第8.1〜8.2節の不確実性の扱いを継承し、有意差検定や総合scoreは追加しない。
+各方法内で[全計画比較と2×2交互作用](experiment_protocol.md#planned-comparisons)を求め、
+同一試料・K・反復の条件差の方向・大きさ・K依存性・ばらつきを手法間で比較する。
+同条件の方法間score差にも共通対象のpaired規約を適用し、未定義理由と対象数を示す。
 
 両方法で傾向が一致すれば、検討した二つの球面クラスタリング方法に対して結論が保たれたと述べる。
 異なる場合は、成分の広がりや混合比のモデル化によって、表現の読み取りが変わった可能性を検討する。

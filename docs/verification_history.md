@@ -96,6 +96,18 @@ test 10試料・906,428画素・7種類のKを処理し、700 score rowsは全�
 
 ## 5. 本番CV実行記録
 
+以下の完了runでは、共通して次を確認した。個別の時間・更新数・中断経緯は各節に記す。
+
+| 工程 | 確認済みの状態 |
+| --- | --- |
+| NN学習 | 800 epoch。attempted updatesはfold 1–4で249,600、fold 5で256,000。optimizer updatesとAMP skipsの和は試行数に一致し、nonzero LR updatesはoptimizer updatesより1少ない。重みの実在とcompletionのSHA-256を照合済み |
+| clustering | `clean_test_maps_completed`・`checks_passed=true`。保存物checkは`validated_existing_clustering` |
+| 評価 | `full_test_evaluation_completed`・`checks_passed=true`。保存物checkは`validated_existing_evaluation` |
+
+`training_seconds`はepoch処理時間の合計で、CLI全体のwall timeではない。本番学習completionにGPU peakはなく、
+preflight値で補わない。評価の`wall_seconds`はsource検証を除く評価開始からconsumer保存までの時間で、
+共同評価では組合せ別の処理時間を表さない。性能比較は全fold・反復が揃ったOOF snapshotで行う。
+
 ### 5.1 主ニューラル5条件、fold 1
 
 2026-09-06から2026-09-10にかけて、A0・M00・M10・M01・M11のfold 1・repeat 1–3、計15 runの学習と
@@ -119,10 +131,6 @@ completion、training history、重み・checkpointのSHA-256を照合した。
 | M11 | 1 | 249,503 | 97 | 9,822.4305 | 102.69 s |
 | M11 | 2 | 249,503 | 97 | 9,985.8211 | 87.41 s |
 | M11 | 3 | 249,501 | 99 | 9,959.2961 | 100.91 s |
-
-15 runすべてで`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesは
-optimizer updatesより1少なかった。`training_seconds`は各epochの処理時間の合計であり、CLI全体の
-wall timeではない。本番学習のcompletionはGPU peakを保存しないため、第4.1節のpreflight値で補わない。
 
 `AMP skip`は有限なlossに対するscaled backward後、動的GradScalerが非有限勾配を検出し、
 そのbatchの`optimizer.step()`を呼ばずにloss scaleを下げた回数である。モデル初期値・画素順・mask・
@@ -149,16 +157,11 @@ M11・repeat 2はepoch 487の途中で`KeyboardInterrupt`により中断し、�
 
 ### 5.2 clean test map・全test評価
 
-15組合せすべてでfold 1のtest 10試料・906,428画素と
-$K\in\{2,4,6,8,10,12,14\}$を処理した。clusteringは各runで
-`clean_test_maps_completed`・`checks_passed=true`、保存済み成果物は
-`validated_existing_clustering`だった。GPU peak allocated / reservedは全runで
-255.81 / 388.00 MiBだった。
+15組合せすべてでfold 1のtest 10試料・906,428画素と$K\in\{2,4,6,8,10,12,14\}$を処理した。
+clusteringのGPU peak allocated / reservedは全runで255.81 / 388.00 MiBだった。
 
 2026-09-08から2026-09-10にかけて、A0・M00の6組合せはまとめて、M10・M01・M11の各3組合せは
-個別に、同じ固定configと共通摂動で評価した。各runで
-`full_test_evaluation_completed`・`checks_passed=true`、保存済み成果物は
-`validated_existing_evaluation`だった。保存記録の実測値は次のとおり。
+個別に、同じ固定configと共通摂動で評価した。
 
 | 対象 | 評価単位 | `wall_seconds` | peak allocated | peak reserved |
 | --- | --- | ---: | ---: | ---: |
@@ -173,12 +176,8 @@ $K\in\{2,4,6,8,10,12,14\}$を処理した。clusteringは各runで
 | M11、repeat 2 | 1組合せ | 546.94 s | 374.90 MiB | 564.00 MiB |
 | M11、repeat 3 | 1組合せ | 575.82 s | 374.90 MiB | 564.00 MiB |
 
-`wall_seconds`はsource検証を除く評価開始から対象consumer保存までの経過時間である。
-A0・M00の値は共同評価の累積時間であり、組合せ別の処理時間ではない。
-
 共有入力SHA-256は15組合せとも
 `4d11b22228242221662bbeb0dbe634064963ab98e37deec3f5ef949dedc894e7`で一致した。
-これは実行・保存契約の確認であり、条件間の性能比較は全fold・反復が揃ったOOF snapshotで行う。
 
 ### 5.3 主ニューラル、fold 2
 
@@ -193,17 +192,10 @@ A0・M00の値は共同評価の累積時間であり、組合せ別の処理時
 | 2 | 249,494 | 106 | 10,193.7247 | 115.95 s | 435.66 s |
 | 3 | 249,502 | 98 | 9,926.3471 | 67.60 s | 420.52 s |
 
-3 runとも800 epoch・249,600 attempted updatesを完了し、
-`optimizer_updates + amp_skips == attempted_updates`が成立した。nonzero LR updatesはそれぞれ
-optimizer updatesより1少なかった。保存された重みの実在とcompletion記録のSHA-256一致も確認した。
-
 repeat 2はepoch 225の途中で`KeyboardInterrupt`により中断し、224 epoch完了時の`last.pt`を
 明示して同runを再開した。中断したepochを先頭から再実行し、最終的に800 epochまで完了した。
 失敗attemptと完了attemptは両方保存されている。
 
-clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`、評価は
-`full_test_evaluation_completed`・`checks_passed=true`であり、各checkはそれぞれ
-`validated_existing_clustering`・`validated_existing_evaluation`だった。
 評価の共有入力SHA-256は3反復とも
 `b443abae9970ba54dd39d5fecc03196f82b9181daf0a1e0853ee1aee68702a93`で一致した。
 
@@ -219,13 +211,7 @@ clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`�
 | 3 | 249,503 | 97 | 9,741.9955 | 72.85 s | 1,135.76 s |
 
 3 runとも800 epoch・249,600 attempted updatesを1回のattemptで完了し、resumeは行っていない。
-`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesはそれぞれ
-optimizer updatesより1少なかった。保存された重みの実在とcompletion記録のSHA-256一致も確認した。
-
-clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`、評価は
-`full_test_evaluation_completed`・`checks_passed=true`であり、各checkはそれぞれ
-`validated_existing_clustering`・`validated_existing_evaluation`だった。評価は3 consumerを1回のCLIでまとめて実行したため、
-表の評価時間は各consumerの個別処理時間ではなく、評価開始からそのconsumer保存までの共同経過時間である。
+評価は3 consumerを1回のCLIでまとめて実行した。表の評価時間は各consumer保存までの共同経過時間である。
 共有入力SHA-256は3反復とも
 `b443abae9970ba54dd39d5fecc03196f82b9181daf0a1e0853ee1aee68702a93`で一致した。
 
@@ -241,13 +227,7 @@ clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`�
 | 3 | 249,500 | 100 | 9,992.5141 | 120.63 s | 1,160.68 s |
 
 3 runとも800 epoch・249,600 attempted updatesを1回のattemptで完了し、resumeは行っていない。
-`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesはそれぞれ
-optimizer updatesより1少なかった。保存された重みの実在とcompletion記録のSHA-256一致も確認した。
-
-clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`、評価は
-`full_test_evaluation_completed`・`checks_passed=true`であり、各checkはそれぞれ
-`validated_existing_clustering`・`validated_existing_evaluation`だった。評価は3 consumerを1回のCLIでまとめて実行したため、
-表の評価時間は各consumerの個別処理時間ではなく、評価開始からそのconsumer保存までの共同経過時間である。
+評価は3 consumerを1回のCLIでまとめて実行した。表の評価時間は各consumer保存までの共同経過時間である。
 共有入力SHA-256は3反復とも
 `f004c5a1934de561f4fc4f22bf8c006e4871dd741023eea89dfc3b343fbaac0d`で一致した。
 
@@ -263,17 +243,27 @@ test対象は10試料・750,105画素である。
 | 3 | 249,512 | 88 | 9,923.7343 | 72.73 s | 1,097.28 s |
 
 3 runとも800 epoch・249,600 attempted updatesを1回のattemptで完了し、resumeは行っていない。
-`optimizer_updates + amp_skips == attempted_updates`が成立し、nonzero LR updatesはそれぞれ
-optimizer updatesより1少なかった。保存された重みの実在とcompletion記録のSHA-256一致も確認した。
-
-clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`、評価は
-`full_test_evaluation_completed`・`checks_passed=true`であり、各checkはそれぞれ
-`validated_existing_clustering`・`validated_existing_evaluation`だった。評価は3 consumerを1回のCLIでまとめて実行したため、
-表の評価時間は各consumerの個別処理時間ではなく、評価開始からそのconsumer保存までの共同経過時間である。
+評価は3 consumerを1回のCLIでまとめて実行した。表の評価時間は各consumer保存までの共同経過時間である。
 共有入力SHA-256は3反復とも
 `f2031be45cf584a9410770fdfdeef48b1d0298e95f2b463466a999f89581d917`で一致した。
 
-### 5.6 B0・B1、全5 folds
+### 5.6 A0、fold 5
+
+2026-09-12、A0のfold 5・repeat 1–3の学習、全7Kのclustering、全test評価と各checkを完了した。
+test対象は9試料・796,370画素である。
+
+| repeat | optimizer updates | AMP skips | training seconds | clustering wall | recorded evaluation wall |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 255,904 | 96 | 10,039.6633 | 73.35 s | 1,231.48 s |
+| 2 | 255,900 | 100 | 10,532.9782 | 73.73 s | 1,235.46 s |
+| 3 | 255,904 | 96 | 10,204.7269 | 104.51 s | 1,240.07 s |
+
+3 runとも800 epoch・256,000 attempted updatesを1回のattemptで完了し、resumeは行っていない。
+評価は3 consumerを1回のCLIでまとめて実行した。表の評価時間は各consumer保存までの共同経過時間である。
+共有入力SHA-256は3反復とも
+`b237eb9bcba6482f3cf3723b7b24aa604057cb43913713e6436b6dc16cc09df2`で一致した。
+
+### 5.7 B0・B1、全5 folds
 
 2026-09-10、B1の16次元PCAを各foldの共通train画素で1回ずつ、計5回fitし、保存・再読込と由来を
 検証した。fold 1～4は39試料・319,488画素、fold 5は40試料・327,680画素を使用した。
@@ -281,14 +271,10 @@ clusteringは3組合せとも`clean_test_maps_completed`・`checks_passed=true`�
 probe最大絶対誤差は全foldで$2.50\times10^{-7}$以下だった。同じfoldのB1 repeat 1～3は、この
 repeat 1のPCAを共有する。B0はfitするパラメータを持たない。
 
-`fit_baselines.py fit`と`results/baselines/`はB0・B1をまとめて検証する工程名・保存先であるが、
-ここで実質的にfitされるのはB1 PCAだけである。保存先の契約は[runbookのPCA fit](experiment_runbook.md#5-b1-pca-fitとbaseline変換の検証)を参照する。
+工程名と保存先の契約は[runbookのPCA fit](experiment_runbook.md#5-b1-pca-fitとbaseline変換の検証)を参照する。
 
 続いてB0・B1の各5 folds × 3 repeats、計30組合せについて全7Kのclusteringと全test評価を完了した。
-各condition・repeatで5 foldsを合わせると49試料・3,902,250有効画素を1回ずつ覆う。全30組合せで
-clusteringは`clean_test_maps_completed`・`checks_passed=true`、評価は
-`full_test_evaluation_completed`・`checks_passed=true`であり、各checkはそれぞれ
-`validated_existing_clustering`・`validated_existing_evaluation`だった。
+各condition・repeatで5 foldsを合わせると49試料・3,902,250有効画素を1回ずつ覆う。
 
 評価は各foldでB0・B1の3反復、計6 consumerをまとめ、同じfold内では共有入力SHA-256が全consumerで
 一致した。最終consumer保存までの共同評価実測値は次のとおりである。

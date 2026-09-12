@@ -2,18 +2,15 @@
 
 ## 1. 役割
 
-この文書は、固定済みの研究設計を `production_v1` で実行する手順をまとめる。
-研究条件の定義は[design/README.md](design/README.md)以下を正とし、この文書のコマンドを使って
-条件、seed、split、評価方法を変更しない。現在の進捗は[../ToDo.md](../ToDo.md)、実行済みの
-工学的確認は[verification_history.md](verification_history.md)を参照する。
+固定設計を`production_v1`で実行する手順を示す。条件・seed・split・評価方法の定義は
+[研究設計](design/README.md)、現在の進捗は[ToDo](../ToDo.md)、実行済みの確認は
+[検証履歴](verification_history.md)を参照する。
 
 [vMF補助実験](design/experiment_protocol.md#vmf-supplementary)は、
 数値検証・設定確定とpipeline実装が必要であり、CLIはまだない。本書のclustering・評価・OOFコマンドは
 Cosine-KMeansの主実験・mask率補助実験用である。vMFの実施順序は第8.1節を参照する。
 
-実行環境はChemoMAE v0.2.2とする。
-
-すべてのコマンドはリポジトリrootからPowerShellで実行し、Python環境には `uv` を使用する。
+ChemoMAE v0.2.2の環境で、リポジトリrootからPowerShellで実行する。
 本番実行例は`uv run --no-sync`とし、環境構築・更新をrun開始時の処理から分ける。
 
 - [入力確認](#input-preparation)・[manifest](#3-本番manifest)
@@ -72,7 +69,7 @@ uv run --no-sync python scripts/experiments/prepare_manifests.py check --experim
 if ($LASTEXITCODE -ne 0) { throw 'manifest check failed' }
 ```
 
-以後は `create` を再実行しない。既存manifestの確認には `check` だけを使用する。
+既存manifestの確認:
 
 ```powershell
 uv run --no-sync python scripts/experiments/prepare_manifests.py check --experiment-id production_v1
@@ -82,13 +79,13 @@ uv run --no-sync python scripts/experiments/prepare_manifests.py check --experim
 
 ## 4. ニューラルネットの1 run
 
-対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はA0・fold 5・repeat 1の例である。
+対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はM00・fold 2・repeat 1の例である。
 完了済みrunは再学習せず、保存済み成果物の確認には各工程の`check`を使う。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'A0'
-$fold = 5
+$condition = 'M00'
+$fold = 2
 $repeat = 1
 
 uv run --no-sync python scripts/experiments/train_neural.py train `
@@ -99,13 +96,13 @@ uv run --no-sync python scripts/experiments/train_neural.py train `
 ```
 
 同一foldの未着手repeatを連続実行する場合も、CLIは1 runずつ呼び出す。
-以下はA0・fold 5・repeat 1–3を並列化せずに順次実行する例である。
+以下はM00・fold 2・repeat 1–3を並列化せずに順次実行する例である。
 実行時は`$repeats`に未着手runだけを列挙し、完了済みrunや中断したrunを含めない。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'A0'
-$fold = 5
+$condition = 'M00'
+$fold = 2
 $repeats = 1..3
 
 foreach ($repeat in $repeats) {
@@ -204,13 +201,9 @@ run identity、config、manifest、source hashの検証を省略しない。同�
 
 ## 5. B1 PCA fitとbaseline変換の検証
 
-B0は学習済み変換を必要とせず、fitするパラメータを持たない。B1はfoldごとにtrain集合が異なるため、
-各foldのtrain画素だけでPCAを1回ずつ、5 foldsで計5回fitする。同じfold内では決定的なPCA変換を
-repeat 1～3で共有し、PCAを15回fitしない。KMeansはPCAを共有してもrepeatごとにfitする。
-
-CLI名の`fit_baselines.py fit`と保存先`results/baselines/`は、B0・B1をまとめて検証する工程を表す。
-本書でいう「baseline fit」の実質はB1 PCA fitであり、B0について行うのは無パラメータ変換の仕様保存と
-probe検証だけである。完了済みのfoldで`fit`を再実行しない。
+B1 PCAは各foldのtrain画素だけで1回ずつ、計5回fitする。同じfold内のrepeat 1～3でPCAを共有し、
+KMeansはrepeatごとにfitする。`fit_baselines.py fit`では、パラメータを持たないB0の変換仕様保存と
+probe検証も行う。完了済みfoldで`fit`を再実行しない。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
@@ -239,11 +232,11 @@ fit由来とB0・B1のprobe診断である。実際のPCAパラメータは
 
 ニューラル学習、またはB1で必要なfold別PCA fitが完了したcondition・fold・repeatについて、
 全事前固定KのKMeansとclean test mapを作成し、CPUの`check`で保存物を検証する。
-B0には前段のfitはない。
+B0には前段のfitはない。以下は第4節と同じM00・fold 2・repeat 1の例である。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M11'
+$condition = 'M00'
 $fold = 2
 $repeat = 1
 
@@ -272,7 +265,7 @@ clean test mapが揃った組合せを評価する。 `run` はGPUを使用し�
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M11'
+$condition = 'M00'
 $fold = 2
 $repeat = 1
 
@@ -305,27 +298,25 @@ KMeans、評価処理はこの数に含めない。3反復はseed選別に使わ
 
 ### 8.1 vMF補助実験の準備と実施
 
-1. 実験プロトコル第5.2.3節の数値仕様を確定し、v0.2.2の修正内容と小規模CPU・GPU動作を検証する。
-2. 元の成果物の検証、独立した保存先、fit・評価・check・OOFを実装する。具体的なCLIは実装時に追記する。
-3. 本番CV後、同じ表現・train画素・Kを使って735 fitsを行い、同じtest全画素・共通摂動で評価する。
-4. 完了・失敗・未定義値を保持し、全組合せの完全性を確認して独立にOOF集計・報告する。
+数値仕様の確定・v0.2.2の検証 → 専用pipeline実装 → 本番CV後の735 fits・評価 → 独立OOF集計の順に進める。
+NN学習・PCA fitは追加せず、既存の表現・train画素・Kと同じtest全画素・共通摂動を使う。
+設定・結果・完了記録は主実験から分け、元成果物との対応とsource hash、失敗・未定義値を保持する。
 
-ニューラル学習とPCA fitは追加しない。研究条件は[実験プロトコル第5.2節](design/experiment_protocol.md#vmf-supplementary)、
-指標と比較の定義は[評価指標第8.4節](design/evaluation_metrics.md#vmf-evaluation)に従う。
-vMF用の設定・結果・完了記録は主実験から分け、元の成果物との対応とsource hashを保存する。
+条件は[実験プロトコル](design/experiment_protocol.md#vmf-supplementary)、比較は
+[評価規約](design/evaluation_metrics.md#vmf-evaluation)、実装の残作業は[ToDo第3節](../ToDo.md#3-vmf補助実験)を参照する。
+CLIは実装後に追記する。
 
 <a id="global-fit-pipeline"></a>
 
 ### 8.2 全体fitと解釈（未実装）
 
-全体解釈はB0・B1・A0・M00・M11の5条件を対象とする。全49試料の共通抽出画素でPCAをfitし、
-A0・M00・M11を各1回、計3回学習する。この3学習はCVの105学習とは別に行う。
-得られた各条件の同じ表現に、$K_0=8$でCosine-KMeansとvMFを各1回fitする。
-vMFはCV補助実験と同じ数値仕様の確定・検証後に実施し、全体学習用のPCA・encoder・共通抽出座標を再利用する。
-全体解釈用のvMF 5 fitsは、CV補助実験の735 fitsとは別枠で管理する。
-fitと表示の規約は[全体可視化設計](design/visualization_and_interpretation.md)に従い、成果物をCVのOOF集計へ含めない。
-全体解釈pipelineと具体的なCLIは未実装であり、実装時に実行手順を追記する。
-既存の`train_neural.py`は`--fold`を必須とするCV用CLIであり、そのまま全体学習には使用できない。
+[全体可視化設計](design/visualization_and_interpretation.md)に従い、全49試料の共通抽出画素で
+B1 PCAとA0・M00・M11をfitする。B0を加えた5条件の表現で、$K_0=8$のCosine-KMeansとvMFを各5 fits行う。
+vMFは数値仕様の確定・検証後、同じPCA・encoder・抽出座標を再利用する。
+全体学習の3 runsとvMFの5 fitsは、CVの105学習・735 fitsとは別枠であり、OOF集計に含めない。
+
+実装の残作業は[ToDo第5節](../ToDo.md#5-全体fitと解釈)を参照する。
+pipelineとCLIは未実装のため、実装後に手順を追記する。既存の`train_neural.py`は`--fold`必須のCV用である。
 
 <a id="oof-aggregation"></a>
 
