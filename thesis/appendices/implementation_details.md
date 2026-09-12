@@ -1,8 +1,6 @@
 # 付録C モデル・学習・数値設定
 
-本付録は、[第3.4節](../chapters/3_analysis_methods/representation_learning.md)と[第3.5節](../chapters/3_analysis_methods/clustering_mapping.md)で定義した方法を、モデル構成、学習条件、抽出・クラスタリングの数値規約、再現記録の順に具体化する。本文が方法の定義と設計上の意味を担い、本付録は採用値と実装上の扱いを記録する。
-
-条件は現行の研究設計に従い、全runが完了したことや最適な設定であることを意味しない。試料分割・比較・評価の規約は第4章で記述する。
+[第3.4節](../chapters/3_analysis_methods/representation_learning.md)と[第3.5節](../chapters/3_analysis_methods/clustering_mapping.md)の採用値・数値規約・再現情報を記す。試料分割・比較・評価は第4章で扱い、runの完了と最終環境は実行記録から確認する。
 
 ## C.1 モデル構成
 
@@ -97,7 +95,7 @@ $$
 
 学習履歴のtrain lossは、更新中の各batchで計算したMSEを、epoch内のbatch数で割った平均である。端数batchを除き、同一条件ではbatch sizeと対象チャネル数が固定される。これは固定した最終重みを用いて全train画素を再評価したlossでも、未学習試料のlossでもない。AMP scaleや更新が省略されたstep数は別の履歴項目として保存する。
 
-FP16の表現間隔をMSEへ直接読み替えず、数値精度の限界と再構成誤差の関係は[付録B.6](mathematical_details.md#numerical-geometry)の区別に従う。学習と、次節のFP32での表現抽出・評価の演算条件を混同しない。
+FP16の表現間隔をMSEの下限へ読み替えない。幾何に関する恒等式の数値照合では[付録B.6](mathematical_details.md#numerical-geometry)に従い、次節のFP32での表現抽出・評価と学習時の演算条件を区別する。
 
 ## C.4 表現抽出とCosine-KMeans
 
@@ -111,7 +109,7 @@ FP16の表現間隔をMSEへ直接読み替えず、数値精度の限界と再�
 | B0・PCAとクラスタリングの単位化 | 微小値 $10^{-6}$。数値的に単位化できない表現は記録して停止 |
 | PCA | 16成分、train平均中心化、追加autoscalingなし、whiten=False、solver=auto |
 
-通常のマップ作成では追加摂動を用いない。摂動安定性の評価では、定めた摂動を加えた入力に対して同じ固定encoderを全帯域可視で用いる。CVではPCA・encoder・クラスタ中心をtrain試料から求め、test試料で再fitしない。
+摂動安定性の評価でも、摂動入力へ同じ固定encoderを全帯域可視で適用する。CVのfit範囲はtrain試料に限定する。
 
 ### C.4.2 クラスタ中心の推定と停止条件
 
@@ -140,5 +138,5 @@ Runごとのconfig、manifest、環境、source hash、seed、重みと完了記
 ## 執筆メモ（本文外）
 
 - **参照資料・照合先：** [config.py](../../src/wood_degradation_map/experiments/config.py)、[モデル構築・抽出・schedule](../../src/wood_degradation_map/experiments/neural.py)、[学習](../../src/wood_degradation_map/experiments/training.py)、[クラスタリング](../../src/wood_degradation_map/experiments/clustering.py)。再現情報の定義先は[実験プロトコル](../../docs/design/experiment_protocol.md)と[runbook](../../docs/experiment_runbook.md)。
-- **記述の根拠：** 原稿作成時の読み取り照合に基づく。本ドラフト作成時に学習・検証コードは実行していない。FP16・FP32の演算経路の説明も、実行時tensorのdtype計測結果ではない。
+- **記述の根拠：** 原稿作成時の読み取り照合であり、学習・検証コードは実行していない。演算経路とdtype計測の区別はC.3.1に記載。
 - **残る整備：** 採用runのGPU機種、driver・CUDA・packageの実際の版と完了状況を、各runの記録から確認して最終稿に記載する。

@@ -2,7 +2,7 @@
 
 ## 3.3.1 摂動の目的と定義域
 
-Masked reconstructionで用いる入力にTGNおよびFractional Shiftを加え、追加摂動前の観測を復元する課題を構成する。狙いは、不可視帯域の補完と追加摂動からの復元を通じて、状態差の探索に有用なスペクトル表現を学ぶことである。摂動の設計には、前節で定義したSNVスペクトルの平均ゼロ・一定normという制約を用いる。以下では二つの操作を定義し、学習時の組合せと、その設計が保証する範囲を整理する。
+Masked reconstructionの入力にTGNおよびFractional Shiftを加え、追加摂動前の観測を復元する。不可視帯域の補完と追加corruptionからの復元を通じて、状態差の探索に有用な表現を学ぶことを狙う。二つの摂動はSNVの平均ゼロ・一定normという制約に沿って定義する。
 
 以下では画素添字を省略し、SNV入力を $\boldsymbol{x}\in\mathbb{R}^{C}$、チャネル数を $C=256$、そのnormを $\rho=\sqrt{C-1}$ とする。全成分が1のベクトルを $\boldsymbol{1}$ とし、平均を除く射影行列を
 
@@ -97,4 +97,3 @@ $$
 
 - **参照資料・照合先：** 採用強度と条件の正は[実験プロトコル](../../../docs/design/experiment_protocol.md)、式の説明は[既存の位置づけ](../../../docs/chemomae_positioning.md#spectral-augmentation)。原稿作成時にChemoMAE v0.2.2のSpectraAugmenterと[呼出し側](../../../src/wood_degradation_map/experiments/neural.py)を読み取りで照合した。
 - **残る整備：** 原典・関連手法の引用を最終稿で整備する。
-- **記号の規約：** モデルparameterには $\theta$、TGN角度には $\alpha$ を用い、同じ記号の兼用を避ける。

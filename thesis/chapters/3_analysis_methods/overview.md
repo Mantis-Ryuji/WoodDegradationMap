@@ -31,4 +31,4 @@ Encoderは可視帯域の情報を統合し、スペクトル全体を単一の1
 ## 執筆メモ（本文外）
 
 - **参照資料：** [研究概要](../../../docs/research_overview.md)、[実験プロトコル](../../../docs/design/experiment_protocol.md)。第4章はLLA・補正LLAのみ執筆済みで、比較条件等の本文は未執筆。
-- **図の整備：** 図3.1は画像生成による構成検討用の参考図であり、最終稿では著者による作図に差し替える。生成条件と確認事項は[図の記録](../../figures/analysis_workflow_notes.md)を参照する。図のWは第3.2節のwhite referenceの記号と重なるため、入力形状を「行数 × 列数 × 256 bands」という語句に置き換える。
+- **図の整備：** 図3.1は最終稿で著者による作図に差し替える。生成promptとラベル・経路の修正事項は[図の記録](../../figures/analysis_workflow_notes.md)に集約する。

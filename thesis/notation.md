@@ -1,29 +1,20 @@
 # 本文・付録の共通記号表
 
-この表は第3章、第4章のLLA・補正LLAと付録A〜Cの記号をそろえるための執筆用資料である。記号は、添字・集合、前処理、摂動、表現学習と復元、クラスタリング、評価指標、共通演算の順に整理する。記号の説明は各節の初出にも置く。本文と付録で同じ量を別名にせず、別の量には別の記号、または対象が分かる添字を用いる。
+第3章、第4章のLLA・補正LLA、付録A〜Cの記号を対応づける。各節の初出でも意味を説明し、同じ量には同じ記号、異なる量には別の記号または対象を示す添字を用いる。
 
 画素の添字を省略した $\boldsymbol{x},\mu,s,\boldsymbol{h},\boldsymbol{z},\mathcal{A},\mathcal{H}$ は、それぞれ一つの画素の $\boldsymbol{x}_p,\mu_p,s_p,\boldsymbol{h}_p,\boldsymbol{z}_p,\mathcal{A}_p,\mathcal{H}_p$ と同じ意味である。省略する節ではその旨を明記する。ベクトルの第 $j$ 成分は、例えば $\boldsymbol{x}_p$ に対して $x_{p,j}$ と書く。
-
-平均・norm・方向は、どの空間で、どの成分を対象にした量かを区別する。付録B.5を読む際の対応を先に示す。
-
-| 対象 | 平均・normの意味 | 主な説明箇所 |
-| --- | --- | --- |
-| SNV入力 $\boldsymbol{x}_p$ | 一画素の全チャネルで平均0、norm $\rho=\sqrt{C-1}$。理想演算での制約 | B.1、B.5.4 |
-| PCAのfit平均 $\overline{\boldsymbol{x}}_{\mathrm{fit}}$ とscore $\boldsymbol{\psi}_p$ | 平均はfit画素を集計したスペクトル。Scoreのnormは、その平均からのずれの射影成分の大きさ | B.5.2、B.5.4 |
-| 単位潜在 $\boldsymbol{z}_p$ | 非ゼロのencoder出力を正規化した16次元座標。Normは1 | B.5.1 |
-| 復元値 $\widehat{\boldsymbol{x}}_p$ | 出力の平均・normはSNV targetだけからは保証されない。誤差分解では全チャネル平均 $\mu_{\mathrm{rec}}$ と中心化後のnorm $\rho_{\mathrm{rec}}$ を使う | B.5.6〜B.5.8 |
 
 ## 添字・次元・集合
 
 | 記号 | 意味・範囲 | 主な説明箇所 |
 | --- | --- | --- |
-| $p,p_1,p_2$ | 画素の添字。$p_1,p_2$ は比較する二画素。複数試料では試料との対応も保持する | 3.2、3.4、3.5、B.5.5 |
+| $p,q$ | 画素の添字。比較する二画素を $p,q$ とし、複数試料では試料との対応も保持する | 3.2、3.4、3.5、B.5 |
 | $(u,v)$ | 元画像の行・列座標 | 3.2、A.1 |
 | $b$ | 元の測定bandの添字。0始まり | 3.2、A.1〜A.3 |
 | $j$ | 補間後の出力チャネルの添字。0〜255 | 3.2、3.4、B.3 |
 | $a$ | スペクトルpatchの添字。0〜15 | 3.4 |
-| $k,K$ | クラスタの添字とクラスタ数。$k=1,\ldots,K$ | 3.5 |
-| $i$ | Decoderの特異値・特異ベクトルの添字。1〜16 | B.5.1 |
+| $k,l,K$ | クラスタの添字とクラスタ数。比較する二群を $k,l$ とし、$k=1,\ldots,K$ | 3.5、B.5.3 |
+| $i$ | Decoderの特異値・特異ベクトルの添字。1〜16 | B.5.2 |
 | $C_{\mathrm{src}}$ | 元の測定band数。256 | A.1 |
 | $C_{\mathrm{keep}}$ | 保持する測定band数。現行記録では222 | 3.2、A.3 |
 | $C$ | 補間後のチャネル数。256 | 3.2 |
@@ -66,7 +57,7 @@
 
 | 記号 | 意味 | 主な説明箇所 |
 | --- | --- | --- |
-| $\boldsymbol{n}$ | SNV入力の単位方向 $\boldsymbol{x}/\rho$ | 3.3、B.2 |
+| $\boldsymbol{n},\boldsymbol{n}_p$ | SNV入力の単位方向 $\boldsymbol{x}/\rho$ と、画素を明示した表記 | 3.3、B.2、B.5.1 |
 | $\boldsymbol{\epsilon}$ | 接方向を作るための標準正規乱数ベクトル | 3.3、B.2 |
 | $\boldsymbol{q}_{\mathrm{raw}},\boldsymbol{q}$ | 射影直後の接方向ベクトルと、その単位化後の方向 | 3.3、B.2 |
 | $\mathcal{T}_{\boldsymbol{n}}$ | 入力方向 $\boldsymbol{n}$ における接空間 | B.2 |
@@ -99,39 +90,39 @@
 | $\mathcal{L}_{\mathrm{masked}},\mathcal{L}_{\mathrm{AE}}$ | Mini-batchについて集計した不可視チャネルMSEと全チャネルMSE | 3.4 |
 | $\mathcal{L}_{\mathrm{one}}$ | 一画素の不可視チャネルMSE | B.4 |
 
-### Decoderの幾何とSVD
+### 入力差・潜在差・残差の対応
 
 | 記号 | 意味 | 主な説明箇所 |
 | --- | --- | --- |
 | $W_{\mathrm{dec}},\boldsymbol{b}_{\mathrm{dec}}$ | 線形decoderの重み行列とbias | 3.4、B.5 |
-| $G_{\mathrm{dec}}$ | Decoder重みの列間内積行列 $W_{\mathrm{dec}}^{\mathsf T}W_{\mathrm{dec}}$。復元距離の方向別の重みを定める | B.5.5、B.5.7 |
-| $\Delta\boldsymbol{z}$ | 同じモデルから得た二画素の潜在の差 $\boldsymbol{z}_{p_1}-\boldsymbol{z}_{p_2}$ | B.5.5 |
 | $\widehat{\boldsymbol{x}}_p$ | Decoderが出力する復元スペクトル | 3.4、B.4、B.5 |
-| $\mathbb{S}^{15}$ | 16次元空間内の単位球面 | B.5.1 |
-| $U_{\mathrm{dec}},\Sigma_{\mathrm{dec}},V_{\mathrm{dec}},\sigma_{\mathrm{dec},i}$ | Decoder重みの左特異ベクトル行列、対角特異値行列、右特異ベクトル行列、第 $i$ 特異値 | B.5.1 |
-| $\boldsymbol{z}_{\mathrm{rot}}$ | 右特異ベクトルの座標系へ回転した潜在 | B.5.1 |
-| $\boldsymbol{u}_{\mathrm{dec},i}$ | 左特異ベクトル行列 $U_{\mathrm{dec}}$ の第 $i$ 列 | B.5.10 |
-| $\boldsymbol{z}_{\mathrm{rot},p},z_{\mathrm{rot},p,i}$ | 画素 $p$ の回転後の潜在と、その第 $i$ 成分 | B.5.10 |
+| $F$ | 固定モデルを全帯域可視で用い、単位潜在を返す写像。B.5では $\boldsymbol{z}_p=F(\boldsymbol{x}_p)=\boldsymbol{z}^{\mathrm{full}}_p$ と省略する | B.5.1 |
+| $\boldsymbol{e}_p$ | 入力から全帯域可視の復元値を引いた残差 $\boldsymbol{x}_p-\widehat{\boldsymbol{x}}_p$ | B.5.2 |
+| $d_{\mathrm{in}}(p,q),d_{\mathrm{lat}}(p,q),g_{pq}$ | 入力・潜在のcosine不類似度と、潜在／入力の弦距離比 | B.5.1 |
+| $\Delta\boldsymbol{x},\Delta\boldsymbol{z},\Delta\boldsymbol{e}$ | 同じ画素対の入力差・潜在差・残差差 | B.5.2 |
+| $U_{\mathrm{dec}},\Sigma_{\mathrm{dec}},V_{\mathrm{dec}},\sigma_{\mathrm{dec},i}$ | Decoder重みの左特異ベクトル行列、対角特異値行列、右特異ベクトル行列、第 $i$ 特異値 | B.5.2 |
+| $\boldsymbol{u}_{\mathrm{dec},i},\boldsymbol{v}_{\mathrm{dec},i}$ | 左・右特異ベクトル行列の第 $i$ 列 | B.5.2 |
 
-### 再構成誤差と条件付き平均
-
-この表の量は[付録B.5.8〜B.5.9](appendices/mathematical_details.md#reconstruction-diagnostics)の数理的な記述に用いる。全チャネル誤差の分解と、制約なしの予測についての条件付き平均を、実際のmasked lossやモデル出力と同一視しない。
+### クラスタ平均と摂動応答
 
 | 記号 | 意味 | 主な説明箇所 |
 | --- | --- | --- |
-| $\mu_{\mathrm{rec}}$ | 復元値の全チャネル平均。SNV前の反射率平均 $\mu_p$ とは異なる | B.5.8 |
-| $\rho_{\mathrm{rec}}$ | 平均を除いた復元値のnorm。中心化前の出力normとは異なる | B.5.8 |
-| $\varphi$ | Targetと中心化復元値の角度。両者が非ゼロの場合に定義する | B.5.8 |
-| $\mathcal{O}$ | モデルへ与える可視帯域の値・位置などの観測情報 | B.5.9 |
-| $\boldsymbol{m}(\mathcal{O})$ | 観測情報に条件づけたSNV targetの平均。チャネル平均やPCAのfit平均とは異なる | B.5.9 |
+| $\mathcal{P}_k,n_k,w_{kp}$ | 診断対象の第 $k$ 群の画素集合、その画素数、群内で和が1の非負重み | B.5.3 |
+| $\overline{\boldsymbol{x}}_k,\overline{\boldsymbol{z}}_k,\overline{\boldsymbol{e}}_k$ | 同じ画素と重みによる入力・潜在・残差の算術平均。潜在平均は再単位化しない | B.5.3 |
+| $a_k,\boldsymbol{c}^{\mathrm{emp}}_k$ | 潜在平均のnormと、そのnormが正の場合の単位平均方向 | B.5.3 |
+| $\boldsymbol{z}_{p,\mathcal{A}}$ | 同一画素に追加摂動 $\mathcal{A}$ を与え、全帯域可視で得た単位潜在 | B.5.4 |
+| $\boldsymbol{\mu}_p,\Gamma_p$ | 指定した摂動分布に関する潜在の平均と共分散。SNV前のスカラー平均 $\mu_p$ とは異なる | B.5.4 |
+| $D$ | 摂動応答を推定するdraw数 | B.5.4 |
+| $W_{\mathcal{H}},\boldsymbol{b}_{\mathcal{H}}$ | 固定した不可視チャネル集合 $\mathcal{H}$ に対応するdecoderの行・bias成分 | B.5.5 |
+| $\boldsymbol{z}_{p,\mathcal{H},\mathcal{A}},\mathcal{L}_{p,\mathcal{H},\mathcal{A}}$ | 固定画素・固定maskに追加摂動を与えたときの単位潜在と、一画素のmasked MSE | B.5.5 |
+| $\boldsymbol{\mu}_{p,\mathcal{H}},\Gamma_{p,\mathcal{H}}$ | 固定画素・固定maskのもとで、追加摂動に関して求めた潜在の平均と共分散 | B.5.5 |
 
 ### PCAとクラスタリング
 
 | 記号 | 意味 | 主な説明箇所 |
 | --- | --- | --- |
-| $\overline{\boldsymbol{x}}_{\mathrm{fit}},U_{\mathrm{PCA}}$ | PCAのfit対象画素の平均と、主成分方向を列に持つ行列 | 3.5、B.5.2 |
-| $\boldsymbol{\psi}_p,\boldsymbol{\xi}_p$ | クラスタリングに渡す前の表現と、その単位化後の表現。B1の $\boldsymbol{\psi}_p$ はPCA score | 3.5、B.5.2〜B.5.3 |
-| $\widehat{\boldsymbol{x}}_{\mathrm{PCA},p}$ | 単位化前のPCA scoreからの復元値 | B.5.2 |
+| $\overline{\boldsymbol{x}}_{\mathrm{fit}},U_{\mathrm{PCA}}$ | PCAのfit対象画素の平均と、主成分方向を列に持つ行列 | 3.5 |
+| $\boldsymbol{\psi}_p,\boldsymbol{\xi}_p$ | クラスタリングに渡す前の表現と、その単位化後の表現。B1の $\boldsymbol{\psi}_p$ はPCA score | 3.5 |
 | $\boldsymbol{c}_k,\boldsymbol{g}_k$ | 単位クラスタ中心と、更新に使う所属fit画素の表現の和 | 3.5 |
 | $d_{\cos},J$ | 単位表現間のcosine不類似度と、fit画素で平均した目的関数 | 3.5 |
 | $\ell_p,\operatorname{Label}(u,v)$ | 画素のクラスタラベルと、元座標へ配置したラベルマップ | 3.5 |
@@ -165,23 +156,20 @@
 | 記号 | 意味 | 主な説明箇所 |
 | --- | --- | --- |
 | $\mathbb{R}^{C}$ | 実数の $C$ 次元ベクトルの空間。行列は行数×列数で示す | 3.2 |
-| $\boldsymbol{1},\boldsymbol{0}$ | 全成分1の $C$ 次元ベクトル、対象空間のゼロベクトル。ゼロベクトルの次元は各式の説明に従う | 3.2、B.1、B.5.6〜B.5.7 |
-| $I_C,I_{d_z}$ | 入力チャネル数 $C$ と潜在次元 $d_z$ に対応する単位行列 | 3.3、B.1、B.5.7 |
+| $\boldsymbol{1},\boldsymbol{0}$ | 全成分1の $C$ 次元ベクトル、対象空間のゼロベクトル。ゼロベクトルの次元は各式の説明に従う | 3.2、B.1 |
+| $I_C$ | 入力チャネル数 $C$ に対応する単位行列 | 3.3、B.1 |
 | $\mathsf T,\lVert\cdot\rVert_2$ | 転置、L2 norm | 3.2、B.1 |
 | $\pi$ | 円周率。位置埋め込みは対象の添字を付けたベクトル $\boldsymbol{\pi}_a$ | 3.3、B.2 |
 | $\mathcal{N},\mathcal{U}$ | 正規分布と、指定区間の連続一様分布 | 3.3、B.2、C.2 |
 | $\sim$ | 指定した分布に従って抽選することを表す | 3.3 |
-| $\operatorname{Ind},\Pr,\mathbb{E}$ | 指示関数、確率、期待値。$\mathbb{E}[\cdot\mid\mathcal{O}]$ は観測情報に条件づけた期待値 | 4.4.1、B.4、B.5.9 |
+| $\operatorname{Ind},\Pr,\mathbb{E}$ | 指示関数、確率、期待値。期待値の添字は抽選対象を表す | 4.4.1、B.4、B.5 |
 | $\mathbb{Z}^{2},\lVert\cdot\rVert_\infty$ | 二次元整数格子と、成分の絶対値の最大値を取るnorm | 4.4.1 |
 | $*,\langle f,g\rangle$ | 二次元離散畳み込みと、画素上の内積。対象関数は有限範囲の外で0とする | 4.4.1 |
-| $\operatorname{Var}$ | 明示した画素集合上の分散。同じ固定モデルで求めた座標に対して用いる | B.5.10 |
+| $\operatorname{tr}$ | 行列の対角成分の和 | B.5.4〜B.5.5 |
 | $\lfloor\cdot\rfloor$ | その値以下の最大の整数を返す床関数 | B.3 |
-| $\operatorname{col},\operatorname{rank},\operatorname{diag}$ | 列空間、行列のrank、対角行列を作る操作 | B.5 |
 | $\operatorname{arg\,max}$ | 対象の値が最大になる添字を選ぶ操作 | 3.5 |
 | $\ominus,\mathrm{RemoveSmall}$ | 二値erosion、小連結領域の除去 | A.1 |
 
 ## 図中の表記と今後の追記
 
-図3.1は最終作図のための生成参考図であり、画像内の旧ラベルH・Wは行数・列数を意味する。Wとwhite referenceの兼用を最終図へ持ち越さないよう、「行数 × 列数 × 256 bands」へ置き換える方針を[第3.1節末の執筆メモ](chapters/3_analysis_methods/overview.md)と[作図メモ](figures/analysis_workflow_notes.md)に記録した。生成当時のpromptは履歴として保持する。
-
-今後の第4章で学習反復、評価draw、集計などの記号を追加する際は、この表と照合する。未執筆の量について、この表だけで研究上の定義を先に確定しない。
+図3.1の旧ラベルH・W等の修正事項は[作図メモ](figures/analysis_workflow_notes.md)を参照する。第4章の残りと[幾何診断の実施計画](../docs/design/representation_geometry_diagnostics.md)で追加する記号は、定義の確定・原稿への導入時に追記する。
