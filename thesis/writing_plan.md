@@ -110,16 +110,25 @@ IDは執筆用の仮識別子とし、最終的な図番号・表番号ではな
 
 | 候補 | 出典 | 掲載案・注意点 |
 | --- | --- | --- |
-| 波長cutoffの確認 | [cutoff_decision.png](../outputs/preprocessing/production_v1/cutoff_decision.png) | 付録Aの図A.1に掲載済み。reference proxyと試料側診断が同じ図にあるため、cutoffを決めたのはreference側だけと明示 |
+| 波長cutoffの確認 | [cutoff_decision.png](../outputs/preprocessing/production_v1/cutoff_decision.png) | 付録Aの図A.1。reference SNR proxy・閾値・保持／除外範囲だけを単一panelで示す |
 | 補間後の帯域分布 | [反射率](../outputs/preprocessing/production_v1/interpolated_reflectance_band_distribution.png)、[SNV](../outputs/preprocessing/production_v1/interpolated_snv_band_distribution.png) | 付録A。最終入力の記述的な確認 |
 | 前処理後の候補画素 | [final_snv_anomaly_candidates.png](../outputs/preprocessing/production_v1/final_snv_anomaly_candidates.png) | 付録Aの候補。確認用の候補選択であり、異常・劣化の正解ラベルとしない |
-| TGNの固定角度の例 | [snv_noise_exact_angles_examples.png](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_noise_exact_angles_examples.png) | 付録A。2.5・5・7.5度の比較であり、本実験の角度一様分布を示す図そのものではない |
-| Shiftの固定幅の例 | [snv_shift_exact_endpoints_examples.png](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_shift_exact_endpoints_examples.png) | 付録A。候補幅と採用した分布をcaptionで区別 |
-| 摂動の候補分布 | [noise](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_noise_uniform_ranges_distributions.png)、[shift](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_shift_uniform_ranges_distributions.png) | 付録A。強度のsanity checkであり、CV指標による最適化とは書かない |
+| TGNの固定角度の例 | [snv_noise_exact_angles_examples.png](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_noise_exact_angles_examples.png) | 付録A。共通の実測train SNV 3例を3行×2列で示す。2.5・5・7.5度の比較であり、本実験の角度一様分布を示す図そのものではない |
+| Shiftの固定幅の例 | [snv_shift_exact_endpoints_examples.png](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_shift_exact_endpoints_examples.png) | 付録A。TGNと同じ3例を使い、Example 1（＋）、Example 2（−）、Example 3（＋）の3行×2列。TGN図と同じサイズとし、候補幅と採用した分布をcaptionで区別 |
+| 摂動の候補分布 | [metrics.csv](../outputs/sanity_checks/augmentation_strengths_train_fold1/metrics.csv)、[summary.json](../outputs/sanity_checks/augmentation_strengths_train_fold1/summary.json) | 一様分布の範囲と応答の数値要約を記録し、箱ひげ図は掲載しない。強度のsanity checkであり、CV指標による最適化とは書かない |
 | B0・B1のOOFマップ | [B0](../outputs/sanity_checks/b0_b1_oof_visualization/labels/B0_representatives_k8_repeat1.png)、[B1](../outputs/sanity_checks/b0_b1_oof_visualization/labels/B1_representatives_k8_repeat1.png) | 付録Eの途中確認資料候補。fold内B0基準であり、全体fitのA0基準の最終図とは別 |
 | B0・B1のsilhouette | [silhouette_k_sweep.png](../outputs/sanity_checks/b0_b1_oof_visualization/silhouette_k_sweep.png) | 付録Eの候補。全主条件の性能比較として提示しない |
 
-摂動sanityの元は[スクリプト](../scripts/experiments/sanity_check_augmentation_strengths.py)と[summary](../outputs/sanity_checks/augmentation_strengths_train_fold1/summary.json)にある。fold 1のtrainから8試料×128画素を確認する設計で、outer-testや学習モデルの評価を使う処理ではない。採用していない強度も含むので、単なる「学習augmentationの例」として全図を本文に貼らない。
+摂動sanityの元は[スクリプト](../scripts/experiments/sanity_check_augmentation_strengths.py)と[summary](../outputs/sanity_checks/augmentation_strengths_train_fold1/summary.json)にある。数値指標と要約はfold 1のtrainから8試料×128画素を確認する設計で、outer-testや学習モデルの評価を使う処理ではない。採用していない強度も含むので、単なる「学習augmentationの例」として全図を本文に貼らない。
+
+説明用の図には、保存済み`selection.csv`が指定する8試料×128画素から実測SNVを3画素選ぶ。
+各試料で波長ごとの中央値にRMS距離が最も近い実測画素を1つ選び、得られた8候補から
+画素間の最小RMS距離が最大となる3試料の組を選ぶ。同点は距離の和、試料順で決める。
+各試料の中心付近から形の異なる例を選ぶ可視化上の選定であり、データ品質や外れ値の判定には使わない。
+保存済みHDF5のSNV値を平滑化・平均化・再標準化せずclean入力に使い、noiseとshiftで同じ3画素・例順を共有する。
+試料IDを図に示し、`summary.json`の可視化記録に選定方法・試料ID・HDF5行・画素座標を残す。
+例図だけの再生成では上記train画素の数値指標と要約を更新しない。
+両図とも左列をSNV、右列を摂動後 − cleanの残差とし、SNVは`[-2, 2]`・目盛間隔`0.5`、残差は`[-0.5, 0.5]`・目盛間隔`0.1`に固定する。
 
 採用図の執筆メモには、caption・掲載先、元ファイルと生成コード／config／manifestの版、試料・画素・fold・反復・K・条件・手法・fit範囲、図の種類（実測・要約・摂動・模式図）、単位・凡例・整列基準、選択根拠と整備状況を残す。採用時に `figures/`・`tables/` へ配置し、`outputs/` の原本は保持する。
 

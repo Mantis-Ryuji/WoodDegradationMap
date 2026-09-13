@@ -3,10 +3,84 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 import pandas as pd
+
+
+def configure_spectrum_axis(
+    axis: plt.Axes,
+    *,
+    representation: Literal["reflectance", "snv"],
+) -> None:
+    """Apply the shared display scale without changing the plotted values."""
+
+    if representation == "reflectance":
+        limits, ticks, label = (0.0, 1.0), np.linspace(0.0, 1.0, 6), "Reflectance"
+    elif representation == "snv":
+        limits, ticks, label = (-2.0, 2.0), np.linspace(-2.0, 2.0, 9), "SNV"
+    else:
+        raise ValueError(f"Unknown spectral representation: {representation}")
+    axis.set_yticks(ticks)
+    axis.set_ylim(*limits)
+    axis.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+    axis.set_ylabel(label)
+
+
+def configure_wavelength_axis(axis: plt.Axes, wavelength: np.ndarray) -> None:
+    """Show both grid endpoints and 200 nm ticks without horizontal padding."""
+
+    if (
+        wavelength.ndim != 1
+        or wavelength.size < 2
+        or not np.isfinite(wavelength).all()
+        or not np.all(np.diff(wavelength) > 0.0)
+    ):
+        raise ValueError("Wavelengths must be a finite, strictly increasing vector")
+    left, right = float(wavelength[0]), float(wavelength[-1])
+    interior = np.arange(1000.0, right, 200.0)
+    interior = interior[interior > left]
+    ticks = np.concatenate(([left], interior, [right]))
+    labels = [f"{left:.2f}", *(f"{value:.0f}" for value in interior), f"{right:.2f}"]
+    axis.set_xticks(ticks, labels=labels)
+    axis.margins(x=0)
+    axis.set_xlim(left, right)
+    axis.tick_params(
+        axis="both", which="both", direction="out",
+        bottom=True, left=True, top=False, right=False, pad=5,
+    )
+    axis.tick_params(axis="x", labelsize=9)
+    # Keep the endpoint text clear of the nearby regular ticks in two-column figures.
+    visible_labels = axis.get_xticklabels()
+    if visible_labels:
+        visible_labels[0].set_horizontalalignment("right")
+        visible_labels[-1].set_horizontalalignment("left")
+
+
+def _mark_outside_limits(
+    axis: plt.Axes,
+    wavelength: np.ndarray,
+    values: np.ndarray,
+    *,
+    color: str,
+) -> None:
+    """Mark hidden values at the display boundary rather than clipping the data."""
+
+    lower, upper = axis.get_ylim()
+    for mask, boundary, marker in (
+        (values < lower, lower, "v"),
+        (values > upper, upper, "^"),
+    ):
+        if np.any(mask):
+            axis.scatter(
+                wavelength[mask], np.full(np.count_nonzero(mask), boundary),
+                marker=marker, s=13, color=color, linewidths=0, clip_on=False, zorder=4,
+            )
 
 
 def shared_robust_display_limits(
@@ -116,9 +190,16 @@ def plot_band_distribution(
         label="Median sample median",
     )
     axis.set_xlabel("Wavelength [nm]")
-    axis.set_ylabel(y_label)
+    if y_label.lower() in ("reflectance", "snv"):
+        configure_spectrum_axis(
+            axis, representation="snv" if y_label.lower() == "snv" else "reflectance",
+        )
+        for values in (lower, median, upper):
+            _mark_outside_limits(axis, wavelength, values, color="#0072B2")
+    else:
+        axis.set_ylabel(y_label)
+    configure_wavelength_axis(axis, wavelength)
     axis.grid(True, which="major", alpha=0.3)
-    axis.tick_params(direction="in", top=True, right=True)
     axis.legend(frameon=False)
     fig.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
@@ -157,95 +238,45 @@ def plot_snr_cutoff_decision(
         )
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig, axes = plt.subplots(4, 1, figsize=(8.0, 9.0), dpi=180, sharex=True)
-    for axis_index, axis in enumerate(axes):
-        if cutoff_boundary_nm is None:
-            axis.axvspan(
-                wavelength_edges[0],
-                wavelength_edges[-1],
-                color="#009E73",
-                alpha=0.08,
-                linewidth=0,
-                label="Retained" if axis_index == 0 else None,
-            )
-        else:
-            axis.axvspan(
-                wavelength_edges[0],
-                cutoff_boundary_nm,
-                color="#009E73",
-                alpha=0.08,
-                linewidth=0,
-                label="Retained" if axis_index == 0 else None,
-            )
-            axis.axvspan(
-                cutoff_boundary_nm,
-                wavelength_edges[-1],
-                color="#D55E00",
-                alpha=0.10,
-                linewidth=0,
-                label="Excluded" if axis_index == 0 else None,
-            )
-            axis.axvline(
-                cutoff_boundary_nm,
-                color="#D55E00",
-                linewidth=1.1,
-                linestyle=":",
-                label="Cut boundary" if axis_index == 0 else None,
-            )
+    fig, axis = plt.subplots(figsize=(8.0, 4.0), dpi=180)
+    axis.axvspan(
+        wavelength_edges[0],
+        wavelength_edges[-1] if cutoff_boundary_nm is None else cutoff_boundary_nm,
+        color="#009E73", alpha=0.08, linewidth=0, label="Retained",
+    )
+    if cutoff_boundary_nm is not None:
+        axis.axvspan(
+            cutoff_boundary_nm, wavelength_edges[-1],
+            color="#D55E00", alpha=0.10, linewidth=0, label="Excluded",
+        )
+        axis.axvline(
+            cutoff_boundary_nm, color="#D55E00", linewidth=1.1, linestyle=":",
+            label=f"Cut boundary = {cutoff_boundary_nm:.2f} nm",
+        )
 
     snr = reference["snr_proxy"].to_numpy(dtype=np.float64)
-    axes[0].plot(
+    axis.plot(
         wavelength,
         np.where(np.isfinite(snr) & (snr > 0.0), snr, np.nan),
         color="black",
         linewidth=1.2,
         label="Reference SNR proxy",
     )
-    axes[0].axhline(
+    axis.axhline(
         snr_threshold,
         color="#0072B2",
         linewidth=1.0,
         linestyle="--",
         label=f"Threshold = {snr_threshold:g}",
     )
-    axes[0].set_yscale("log")
-    axes[0].set_ylabel("SNR proxy")
-    axes[0].legend(frameon=False)
-
-    reflectance_span = (
-        reflectance["median_sample_q99"].to_numpy(dtype=np.float64)
-        - reflectance["median_sample_q01"].to_numpy(dtype=np.float64)
+    axis.set_yscale("log")
+    axis.set_ylabel("SNR proxy")
+    axis.set_xlabel("Wavelength [nm]")
+    configure_wavelength_axis(axis, wavelength)
+    axis.legend(
+        frameon=False, fontsize=8.5, loc="lower center", bbox_to_anchor=(0.5, 1.02), ncol=3,
     )
-    axes[1].plot(wavelength, reflectance_span, color="#0072B2", linewidth=1.2)
-    axes[1].set_ylabel("Reflectance\n1–99% span")
-
-    fraction_series = (
-        ("max_nonfinite_fraction", "Non-finite", "#CC79A7"),
-        ("max_negative_fraction", "Reflectance < 0", "#D55E00"),
-        ("max_above_one_fraction", "Reflectance > 1", "#0072B2"),
-    )
-    for column, label, color in fraction_series:
-        axes[2].plot(
-            wavelength,
-            reflectance[column],
-            color=color,
-            linewidth=1.0,
-            label=label,
-        )
-    axes[2].set_ylabel("Maximum sample\nfraction")
-    axes[2].set_ylim(bottom=0.0)
-    axes[2].legend(frameon=False)
-
-    snv_span = (
-        snv["median_sample_q99"].to_numpy(dtype=np.float64)
-        - snv["median_sample_q01"].to_numpy(dtype=np.float64)
-    )
-    axes[3].plot(wavelength, snv_span, color="#0072B2", linewidth=1.2)
-    axes[3].set_xlabel("Wavelength [nm]")
-    axes[3].set_ylabel("SNV\n1–99% span")
-    for axis in axes:
-        axis.grid(True, which="major", alpha=0.3)
-        axis.tick_params(direction="in", top=True, right=True)
+    axis.grid(True, which="major", alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)
@@ -257,61 +288,76 @@ def plot_ranked_snv_spectra(
     snv_summary: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Compare reflectance and SNV spectra for ranked anomaly candidates."""
+    """Show each ranked SNV candidate separately on the common display scale.
 
+    The reflectance summary argument is retained for existing report callers;
+    individual panels now focus on the SNV quantity used for ranking.
+    """
+
+    if spectra.empty:
+        raise ValueError("At least one ranked spectrum is required")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig, axes = plt.subplots(2, 1, figsize=(8.0, 6.0), dpi=180, sharex=True)
-    _shade_low_snr_bands(axes[0], reflectance_summary)
-    _shade_low_snr_bands(axes[1], snv_summary)
-    metric_names = spectra["metric_name"].dropna().unique()
-    candidate_count = spectra["candidate_id"].nunique()
-    candidate_label = (
-        f"Top {candidate_count} spike candidates"
-        if len(metric_names) == 1 and metric_names[0] == "max_abs_second_difference"
-        else f"Top {candidate_count} ranked candidates"
+    groups = list(spectra.sort_values("rank", kind="stable").groupby("candidate_id", sort=False))
+    columns = min(4, len(groups))
+    rows = (len(groups) + columns - 1) // columns
+    fig, axes = plt.subplots(
+        rows, columns, figsize=(4.0 * columns, 2.5 * rows + 0.6),
+        dpi=180, sharex=True, sharey=True, squeeze=False,
     )
-    for index, (_, group) in enumerate(spectra.groupby("candidate_id", sort=False)):
+    summary = snv_summary.sort_values("band_index")
+    wavelength = summary["wavelength_nm"].to_numpy(dtype=np.float64)
+    for index, (_, group) in enumerate(groups):
+        axis = axes.flat[index]
         ordered = group.sort_values("band_index")
-        line_label = candidate_label if index == 0 else None
-        axes[0].plot(
-            ordered["wavelength_nm"],
-            ordered["reflectance"],
-            color="#D55E00",
-            linewidth=0.7,
-            alpha=0.25,
-            label=line_label,
+        candidate_wavelength = ordered["wavelength_nm"].to_numpy(dtype=np.float64)
+        values = ordered["snv"].to_numpy(dtype=np.float64)
+        record = ordered.iloc[0]
+        _shade_low_snr_bands(axis, summary)
+        axis.fill_between(
+            wavelength, summary["median_sample_q01"], summary["median_sample_q99"],
+            color="#0072B2", alpha=0.12, linewidth=0,
         )
-        axes[1].plot(
-            ordered["wavelength_nm"],
-            ordered["snv"],
-            color="#D55E00",
-            linewidth=0.7,
-            alpha=0.25,
-            label=line_label,
+        axis.plot(
+            wavelength, summary["median_sample_median"],
+            color="0.25", linewidth=1.0, linestyle="--",
         )
-    ordered_reflectance = reflectance_summary.sort_values("band_index")
-    ordered_summary = snv_summary.sort_values("band_index")
-    axes[0].plot(
-        ordered_reflectance["wavelength_nm"],
-        ordered_reflectance["median_sample_median"],
-        color="black",
-        linewidth=1.5,
-        label="Median of sample medians",
-    )
-    axes[1].plot(
-        ordered_summary["wavelength_nm"],
-        ordered_summary["median_sample_median"],
-        color="black",
-        linewidth=1.5,
-        label="Median of sample medians",
-    )
-    axes[0].set_ylabel("Reflectance")
-    axes[1].set_xlabel("Wavelength [nm]")
-    axes[1].set_ylabel("SNV")
-    axes[0].legend(frameon=False)
-    for axis in axes:
+        axis.plot(candidate_wavelength, values, color="#D55E00", linewidth=1.0)
+        configure_spectrum_axis(axis, representation="snv")
+        _mark_outside_limits(axis, candidate_wavelength, values, color="#D55E00")
+        axis.text(
+            0.98, 0.96,
+            f"#{int(record['rank'])}  {record['sample_id']}\n"
+            f"pixel ({int(record['row'])}, {int(record['column'])})",
+            transform=axis.transAxes, ha="right", va="top", fontsize=8,
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.85, "pad": 2},
+        )
+        if np.any((values < -2.0) | (values > 2.0)):
+            axis.text(
+                0.03, 0.04, f"min {values.min():.2f} / max {values.max():.2f}",
+                transform=axis.transAxes, fontsize=8, color="#A54400",
+                bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.85, "pad": 2},
+            )
+        if index % columns:
+            axis.set_ylabel("")
+        if index // columns == rows - 1:
+            axis.set_xlabel("Wavelength [nm]")
+        configure_wavelength_axis(axis, wavelength)
         axis.grid(True, which="major", alpha=0.3)
-        axis.tick_params(direction="in", top=True, right=True)
-    fig.tight_layout()
+        axis.tick_params(labelsize=8)
+        # Endpoint labels and the first regular tick are close in these small panels.
+        axis.tick_params(axis="x", labelrotation=45)
+        for label in axis.get_xticklabels():
+            label.set_horizontalalignment("right")
+    for axis in axes.flat[len(groups):]:
+        axis.set_visible(False)
+    fig.legend(
+        handles=[
+            Line2D([], [], color="#D55E00", label="Ranked SNV candidate"),
+            Line2D([], [], color="0.25", linestyle="--", label="Median of sample medians"),
+            Patch(facecolor="#0072B2", alpha=0.12, label="Median sample 1–99% range"),
+        ],
+        loc="upper center", ncol=3, frameon=False, fontsize=9,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.97))
     fig.savefig(output_path, bbox_inches="tight")
     plt.close(fig)

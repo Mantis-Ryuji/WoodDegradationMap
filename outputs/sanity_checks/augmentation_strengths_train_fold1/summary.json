@@ -434,33 +434,7 @@
       "KYOw16750"
     ],
     "sample_count": 8,
-    "pixel_count": 1024,
-    "examples_in_row_order": [
-      {
-        "sample_id": "KYOw02702",
-        "hdf5_row": 31575,
-        "pixel_row": 255,
-        "pixel_col": 223
-      },
-      {
-        "sample_id": "KYOw02759",
-        "hdf5_row": 37959,
-        "pixel_row": 246,
-        "pixel_col": 206
-      },
-      {
-        "sample_id": "KYOw02777",
-        "hdf5_row": 60975,
-        "pixel_row": 333,
-        "pixel_col": 121
-      },
-      {
-        "sample_id": "KYOw16750",
-        "hdf5_row": 29930,
-        "pixel_row": 289,
-        "pixel_col": 98
-      }
-    ]
+    "pixel_count": 1024
   },
   "wavelength_grid": {
     "start_nm": 913.1,
@@ -472,10 +446,8 @@
     "norm_absolute": 3.2480304916759906e-06
   },
   "captions": {
-    "snv_noise_exact_angles_examples.png": "Four fixed fold-1 train pixels, one per row. Left: clean SNV and exact 2.5°, 5°, and 7.5° tangent-direction rotations. Right: perturbed-minus-clean residuals on one common vertical scale. The random tangent direction is shared across the three angles within each pixel.",
-    "snv_noise_uniform_ranges_distributions.png": "Noise sampled independently per spectrum from U(0, 2.5°), U(0, 5°), or U(0, 7.5°) over 1,024 fixed fold-1 train pixels. Panels from left to right show spectral angle, per-spectrum RMS difference, and maximum absolute single-band difference.",
-    "snv_shift_exact_endpoints_examples.png": "Four fixed fold-1 train pixels, one per row. Columns from left to right show clean SNV with negative endpoints, clean SNV with positive endpoints, and residuals. Dashed residuals are negative shifts and solid residuals are positive.",
-    "snv_shift_uniform_ranges_distributions.png": "Shift sampled independently per spectrum from U(-1, 1), U(-2, 2), or U(-3, 3) channels over 1,024 fixed fold-1 train pixels. Panels from left to right show spectral angle, per-spectrum RMS difference, and maximum absolute single-band difference."
+    "snv_noise_exact_angles_examples.png": "Three measured fold-train SNV pixels, one per row, shared with the shift figure. Sample IDs and image coordinates identify the unmodified saved spectra. Left: clean SNV and exact 2.5°, 5°, and 7.5° tangent-direction rotations; right: perturbed-minus-clean residuals. The random tangent direction is shared across the three angles within each example. SNV axes: [-2, 2], step 0.5; residual axes: [-0.5, 0.5], step 0.1. Boundary triangles mark values outside the display range; stored values are unchanged.",
+    "snv_shift_exact_endpoints_examples.png": "The same three measured fold-train SNV pixels as the noise figure, with the same figure size and three-row layout. Rows show Example 1 (+1, +2, +3 channels), Example 2 (-1, -2, -3 channels), and Example 3 (+1, +2, +3 channels). Left: clean and shifted SNV; right: shifted-minus-clean residuals. SNV axes: [-2, 2], step 0.5; residual axes: [-0.5, 0.5], step 0.1. Sample IDs and image coordinates identify the unmodified saved spectra. Boundary triangles mark values outside the display range; stored values are unchanged."
   },
   "source": {
     "experiment_dir": "C:\\Users\\PC_User\\Python\\WoodDegradationMap\\outputs\\experiments\\production_v1",
@@ -488,9 +460,80 @@
   "artifacts_sha256": {
     "selection.csv": "f1b09790054193fa139e687ed036a0bc4b041bac2403852a4dd18b03946eda37",
     "metrics.csv": "28c878d79d1d6eb62dd481ca41a6aa98c789b5010c9f0f317be13c49ed053c52",
-    "snv_noise_exact_angles_examples.png": "0d22f0baabe327f75398c622260c95034463819da330d823e92bb50e49624c5d",
-    "snv_noise_uniform_ranges_distributions.png": "293d7763d66d21e6c1b75282492842b67d1e05b3ff09898e449afb86bf9b9da3",
-    "snv_shift_exact_endpoints_examples.png": "dcbe5c14e03deb772548538541865598e4e38db33bdb33532129e1edb6e32b75",
-    "snv_shift_uniform_ranges_distributions.png": "a6bca4e0450c1e891d037df92933269e399340ff1b7c5f2d48e50e852d300df6"
+    "snv_noise_exact_angles_examples.png": "f4a24c1ed0cee0a1d36e20cd148d8d28c3e5ce821e7782cb99c6b18f17b3e794",
+    "snv_shift_exact_endpoints_examples.png": "506d56d6c51e1b6598a07b35792e08c5e7aeec1b93768302fea6fabce9d04023"
+  },
+  "visualization": {
+    "example_source": "measured SNV pixels from the existing fixed fold-train selection",
+    "examples_in_row_order": [
+      {
+        "subset_index": 329,
+        "sample_id": "KYOw02759",
+        "hdf5_row": 43297,
+        "pixel_row": 270,
+        "pixel_col": 215,
+        "distance_to_sample_median_rms": 0.016630010118118984
+      },
+      {
+        "subset_index": 465,
+        "sample_id": "KYOw02768",
+        "hdf5_row": 41777,
+        "pixel_row": 313,
+        "pixel_col": 133,
+        "distance_to_sample_median_rms": 0.02772904037079573
+      },
+      {
+        "subset_index": 696,
+        "sample_id": "KYOw02789",
+        "hdf5_row": 54810,
+        "pixel_row": 262,
+        "pixel_col": 244,
+        "distance_to_sample_median_rms": 0.02312371123881387
+      }
+    ],
+    "example_selection": {
+      "algorithm": "Within each sample, choose the measured pixel nearest its bandwise median by RMS distance. Among these sample representatives, choose three maximizing the minimum pairwise RMS distance, then the sum of pairwise distances. Ties follow sorted sample IDs and saved selection row order.",
+      "scope": "Illustrative selection only; no data quality exclusion or metric changes",
+      "candidate_pixel_count": 1024,
+      "candidate_sample_count": 8,
+      "minimum_pairwise_rms": 0.22712563165901756
+    },
+    "source_selection_sha256": "f1b09790054193fa139e687ed036a0bc4b041bac2403852a4dd18b03946eda37",
+    "normalization": "saved production SNV (ddof=1); no re-SNV, smoothing, or averaging",
+    "same_clean_spectra_for_noise_and_shift": true,
+    "metric_summary_population": "All existing exact_examples_summary and uniform_distribution_summary values describe the full fixed fold-train subset, not only the three displayed pixels.",
+    "snv_limits": [
+      -2.0,
+      2.0
+    ],
+    "snv_tick_step": 0.5,
+    "residual_limits": [
+      -0.5,
+      0.5
+    ],
+    "residual_tick_step": 0.1,
+    "tick_direction": "out",
+    "tick_sides": [
+      "bottom",
+      "left"
+    ],
+    "wavelength_axis": {
+      "limits": "wavelength grid endpoints; no horizontal padding",
+      "endpoint_decimal_places": 2,
+      "interior_tick_start_nm": 1000.0,
+      "interior_tick_step_nm": 200.0
+    },
+    "noise_layout": "3 rows x 2 columns; spectrum and residual",
+    "shift_layout": "3 rows x 2 columns; Example 1 (+), Example 2 (-), Example 3 (+)",
+    "shift_signs_in_row_order": [
+      1.0,
+      -1.0,
+      1.0
+    ],
+    "seed": 20260907,
+    "source_script_sha256": "cc565901d6f27b113c23ce6603661929840618a9b4930d8f79c6b274bc20a3bc",
+    "chemomae": "0.2.2",
+    "torch": "2.13.0+cu130",
+    "numpy": "2.4.4"
   }
 }
