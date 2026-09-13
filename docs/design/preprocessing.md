@@ -313,21 +313,32 @@ production_v1のstorage schemaはversion 2とし、理由code 3と対応する�
 
 ### 7.2 確認用可視化
 
-- `cutoff_decision.png`: reference SNR、反射率分布、異常値率およびSNV分布を同じcutoff境界で表示
+- `cutoff_decision.png`: reference由来SNR proxy、固定閾値、保持・除外範囲とcutoff境界を単一panelで表示
 - `interpolated_reflectance_band_distribution.png`: 補間後反射率のband別分布
 - `interpolated_snv_band_distribution.png`: 最終SNVのband別分布
-- `final_snv_anomaly_candidates.png`: 最大二次差分が大きい上位20画素の反射率とSNV
+- `final_snv_anomaly_candidates.png`: 最大二次差分が大きい上位20画素のSNVを、5行×4列の個別panelで表示
 - `reflectance_l2_norm/<sample_id>.png`: 木材領域の空間的な反射率強度分布
 
-`final_snv_anomaly_candidates.png`の橙線は、最終SNVで最大二次差分が大きい上位20画素である。
-上段は同じ画素のSNV前反射率、下段はSNV、黒線は各bandの試料別中央値を全試料で中央値化した
-代表線を示す。この図は最悪例におけるspikeの増幅を確認するための順位図であり、異常の発生率を
-表すものではない。また、順位だけを根拠に画素を追加除外しない。
+`final_snv_anomaly_candidates.png`は、最終SNVで最大二次差分が大きい順に候補画素を並べ、
+各panelに1画素のSNVを橙線で表示する。各bandの試料別中央値を全試料で中央値化した黒線と、
+試料別1%点・99%点をそれぞれ試料間で中央値化した帯を共通の参照として重ねる。
+Panel内には順位・試料ID・画素座標を注記する。縦軸の表示範囲を超える値は上下端の三角印で示し、
+その候補の実際の最小値・最大値を併記する。
+範囲外を示す三角印の説明は本文で扱い、凡例には含めない。
+この図はspike候補を個別に確認するための順位図であり、異常の発生率を表すものではない。
+また、順位だけを根拠に画素を追加除外しない。
 
 ## 8. 可視化規約
 
 [共通描画規約](visualization_and_interpretation.md#figure-style)に従い、figure title・axes titleは付けない。
-前処理図の意味、試料ID、条件、panel説明はcaptionまたはファイル名で管理する。
+前処理図の意味、条件、panel説明はcaptionまたはファイル名で管理する。
+候補画素の個別panelでは、対応を追跡するため順位・試料ID・画素座標を注記する。
+
+スペクトル本体の縦軸は、反射率を`[0, 1]`・目盛間隔`0.2`、SNVを`[-2, 2]`・目盛間隔`0.5`で統一する。
+これは表示範囲の規約であり、前処理値のclipや品質判定条件の変更ではない。
+横軸は共通描画規約に従い、波長の両端を小数点以下2桁、内側を1000 nmから200 nm刻みで表示し、
+両端にデータ範囲の余白を加えない。
+`cutoff_decision.png`はSNR proxyの対数軸を維持し、試料スペクトルの分布幅・異常値率の下段panelは設けない。
 
 反射率L2 norm mapは次で統一する。
 

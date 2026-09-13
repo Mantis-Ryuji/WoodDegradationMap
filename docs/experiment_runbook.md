@@ -47,6 +47,25 @@ smokeやpreflightの成果物を本番rootへコピーしない。本番開始�
 uv run --no-sync python scripts/preprocess/run_production_preprocessing.py
 ```
 
+既存結果の確認図だけを更新する場合は、次を実行する。前者は保存済みの品質表から前処理のPNG 4枚を
+上書きし、`reflectance_l2_norm/`は読み書きしない。後者は既存のaugmentation出力にある例図2枚と
+`summary.json`の可視化記録を更新し、noise・shiftの箱ひげ図PNGを取り除く。
+後者は保存済み`selection.csv`が指定するtrain画素（8試料×128画素）だけをHDF5から読み、
+各試料の波長ごとの中央値にRMS距離が最も近い実測画素を1つずつ選ぶ。その8候補から、
+画素間の最小RMS距離が最大となる3試料の組を選ぶ。同点は距離の和、試料順で決める。
+noise・shiftは同じ3画素・例順を共有し、描画するclean値には平滑化・平均化・再標準化を行わない。
+選定方法と試料ID・HDF5行・画素座標を`summary.json`の可視化記録に残す。
+前処理データ、train画素の`selection.csv`・`metrics.csv`と数値要約は再生成しない。
+
+```powershell
+.venv\Scripts\python.exe scripts/preprocess/redraw_production_reports.py
+.venv\Scripts\python.exe scripts/experiments/sanity_check_augmentation_strengths.py --plots-only
+```
+
+終了code 0と、[共通の縦軸規約](design/visualization_and_interpretation.md#figure-style)を確認する。
+CutoffはSNR proxyだけ、候補画素図は個別のSNV panelであることを確認する。
+Shift例はExample 1（＋）、Example 2（−）、Example 3（＋）の3行×2列とし、noise図と同じサイズであることを確認する。
+
 既存の品質表から、各試料で8192画素の非復元抽出が可能か確認する場合は次を使う。
 スペクトルやHDF5は読み込まず、データ・manifestを変更しない。
 

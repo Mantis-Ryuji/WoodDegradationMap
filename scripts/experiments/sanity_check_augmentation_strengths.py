@@ -1,4 +1,4 @@
-"""Plot maximum examples and sampled augmentation ranges on fixed train SNV pixels."""
+"""Illustrate SNV augmentation and summarize its effect on fixed train pixels."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 from importlib.metadata import version
+from itertools import combinations
 from pathlib import Path
 
 import h5py
@@ -18,14 +19,25 @@ from chemomae.training.augmenter import SpectraAugmenter, SpectraAugmenterConfig
 from wood_degradation_map.experiments.config import experiment_config
 from wood_degradation_map.experiments.input_validation import load_input_inventory
 from wood_degradation_map.experiments.manifests import load_manifest_bundle
+from wood_degradation_map.preprocessing.visualization import (
+    _mark_outside_limits,
+    configure_spectrum_axis,
+    configure_wavelength_axis,
+)
 
 
 NOISE_ANGLES = (2.5, 5.0, 7.5)
 SHIFT_MAGNITUDES = (1.0, 2.0, 3.0)
 SAMPLE_COUNT = 8
 PIXELS_PER_SAMPLE = 128
-EXAMPLE_COUNT = 4
+EXAMPLE_COUNT = 3
+EXAMPLE_FIGSIZE = (14.5, 8.4)
+SHIFT_EXAMPLE_SIGNS = (1.0, -1.0, 1.0)
 COLORS = ("#0072B2", "#E69F00", "#CC79A7")
+OBSOLETE_PLOTS = (
+    "snv_noise_uniform_ranges_distributions.png",
+    "snv_shift_uniform_ranges_distributions.png",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -33,6 +45,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fold", type=int, choices=range(1, 6), default=1)
     parser.add_argument("--seed", type=int, default=20260907)
+    parser.add_argument(
+        "--plots-only",
+        action="store_true",
+        help="Refresh existing example figures and plot metadata without recomputing train metrics.",
+    )
     parser.add_argument(
         "--experiment-dir",
         type=Path,
@@ -70,9 +87,88 @@ def _spaced_indices(size: int, count: int) -> np.ndarray:
     return np.linspace(0, size - 1, count, dtype=np.int64)
 
 
-def _example_indices() -> np.ndarray:
-    starts = np.arange(SAMPLE_COUNT, dtype=np.int64) * PIXELS_PER_SAMPLE
-    return starts[_spaced_indices(SAMPLE_COUNT, EXAMPLE_COUNT)] + PIXELS_PER_SAMPLE // 2
+def _select_measured_examples(
+    spectra: np.ndarray,
+    selection: pd.DataFrame,
+) -> tuple[np.ndarray, pd.DataFrame, dict[str, object]]:
+    """Choose varied measured pixels near the center of their own sample."""
+    if spectra.ndim != 2 or len(spectra) != len(selection) or not np.isfinite(spectra).all():
+        raise ValueError("Finite spectra must align with the saved selection rows")
+    representatives: list[int] = []
+    median_distances: list[float] = []
+    for positions in selection.groupby("sample_id", sort=True).indices.values():
+        block = spectra[positions].astype(np.float64)
+        center = np.median(block, axis=0)
+        distances = np.sqrt(np.mean((block - center) ** 2, axis=1))
+        local_index = int(np.argmin(distances))
+        representatives.append(int(positions[local_index]))
+        median_distances.append(float(distances[local_index]))
+    if len(representatives) < EXAMPLE_COUNT:
+        raise ValueError(f"At least {EXAMPLE_COUNT} measured samples are required")
+    values = spectra[representatives].astype(np.float64)
+    pairwise = np.sqrt(np.mean((values[:, None] - values[None, :]) ** 2, axis=2))
+
+    def diversity(indices: tuple[int, ...]) -> tuple[float, float]:
+        distances = [pairwise[first, second] for first, second in combinations(indices, 2)]
+        return float(min(distances)), float(sum(distances))
+
+    chosen = max(combinations(range(len(representatives)), EXAMPLE_COUNT), key=diversity)
+    indices = [representatives[index] for index in chosen]
+    examples = selection.iloc[indices][[
+        "subset_index", "sample_id", "hdf5_row", "pixel_row", "pixel_col",
+    ]].copy()
+    examples["distance_to_sample_median_rms"] = [median_distances[index] for index in chosen]
+    details: dict[str, object] = {
+        "algorithm": (
+            "Within each sample, choose the measured pixel nearest its bandwise median "
+            "by RMS distance. Among these sample representatives, choose three maximizing "
+            "the minimum pairwise RMS distance, then the sum of pairwise distances. "
+            "Ties follow sorted sample IDs and saved selection row order."
+        ),
+        "scope": "Illustrative selection only; no data quality exclusion or metric changes",
+        "candidate_pixel_count": len(selection),
+        "candidate_sample_count": len(representatives),
+        "minimum_pairwise_rms": diversity(chosen)[0],
+    }
+    return spectra[indices], examples.reset_index(drop=True), details
+
+
+def _load_saved_subset(
+    output: Path,
+    processed: Path,
+) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
+    """Read only the previously selected train rows, preserving their order."""
+    selection_path = output / "selection.csv"
+    selection = pd.read_csv(selection_path)
+    if not np.array_equal(selection["subset_index"], np.arange(len(selection))):
+        raise ValueError("selection.csv must retain contiguous subset_index order")
+    spectra = np.empty((len(selection), 256), dtype=np.float32)
+    wavelength: np.ndarray | None = None
+    for sample_id, group in selection.groupby("sample_id", sort=False):
+        rows, inverse = np.unique(group["hdf5_row"].to_numpy(dtype=np.int64), return_inverse=True)
+        sample_path = (processed / "samples" / f"{sample_id}.h5").resolve()
+        if not sample_path.is_relative_to((processed / "samples").resolve()):
+            raise ValueError(f"Invalid saved sample ID: {sample_id}")
+        with h5py.File(sample_path, "r") as handle:
+            if rows[0] < 0 or rows[-1] >= len(handle["snv"]):
+                raise ValueError(f"{sample_id}: saved HDF5 rows are out of bounds")
+            values = handle["snv"][rows][inverse]
+            coordinates = handle["pixel_row_col"][rows][inverse]
+            current_wavelength = handle["wavelength_nm"][:]
+        if values.dtype != np.float32 or values.shape != (len(group), 256):
+            raise ValueError(f"{sample_id}: unexpected saved SNV shape or dtype")
+        if not np.isfinite(values).all():
+            raise ValueError(f"{sample_id}: non-finite saved SNV")
+        if not np.array_equal(coordinates, group[["pixel_row", "pixel_col"]].to_numpy()):
+            raise ValueError(f"{sample_id}: saved pixel coordinates differ from selection.csv")
+        if wavelength is None:
+            wavelength = current_wavelength
+        elif not np.array_equal(wavelength, current_wavelength):
+            raise ValueError(f"{sample_id}: wavelength grid differs")
+        spectra[group.index] = values
+    if wavelength is None:
+        raise ValueError("Saved train selection is empty")
+    return spectra, wavelength, selection
 
 
 def _load_train_subset(
@@ -193,35 +289,46 @@ def _plot_noise_examples(
     wavelength: np.ndarray,
     clean: np.ndarray,
     variants: dict[float, np.ndarray],
+    examples: pd.DataFrame,
 ) -> None:
-    indices = _example_indices()
-    residual_limit = max(
-        float(np.max(np.abs(values[indices] - clean[indices])))
-        for values in variants.values()
-    ) * 1.08
     figure, axes = plt.subplots(
-        EXAMPLE_COUNT, 2, figsize=(14.5, 11.0), dpi=180, sharex=True,
+        EXAMPLE_COUNT, 2, figsize=EXAMPLE_FIGSIZE, dpi=180, sharex=True,
         constrained_layout=True,
     )
-    for row, spectrum_index in enumerate(indices):
+    for row, spectrum in enumerate(clean):
         left, right = axes[row]
-        left.plot(wavelength, clean[spectrum_index], color="0.15", linewidth=1.35, label="clean")
+        configure_spectrum_axis(left, representation="snv")
+        right.set_ylim(-0.5, 0.5)
+        left.plot(wavelength, spectrum, color="0.15", linewidth=1.35, label="clean")
+        _mark_outside_limits(left, wavelength, spectrum, color="0.15")
         for color, (angle, values) in zip(COLORS, variants.items(), strict=True):
             label = f"{angle:g}°"
-            left.plot(wavelength, values[spectrum_index], color=color, linewidth=0.95, label=label)
+            left.plot(wavelength, values[row], color=color, linewidth=0.95, label=label)
             right.plot(
                 wavelength,
-                values[spectrum_index] - clean[spectrum_index],
+                values[row] - spectrum,
                 color=color,
                 linewidth=0.95,
                 label=label,
             )
-        left.set_ylabel("SNV")
+            _mark_outside_limits(left, wavelength, values[row], color=color)
+            _mark_outside_limits(right, wavelength, values[row] - spectrum, color=color)
+        left.set_ylabel(f"Example {row + 1}\nSNV")
+        record = examples.iloc[row]
+        left.text(
+            0.02, 0.05,
+            f"{record['sample_id']}  /  pixel ({int(record['pixel_row'])}, "
+            f"{int(record['pixel_col'])})",
+            transform=left.transAxes, fontsize=9,
+        )
         left.grid(alpha=0.18)
         right.axhline(0.0, color="0.4", linewidth=0.7)
-        right.set_ylim(-residual_limit, residual_limit)
+        right.set_ylim(-0.5, 0.5)
+        right.set_yticks(np.linspace(-0.5, 0.5, 11))
         right.set_ylabel("Perturbed - clean (SNV)")
         right.grid(alpha=0.18)
+        for axis in (left, right):
+            configure_wavelength_axis(axis, wavelength)
     axes[0, 0].legend(frameon=False, ncol=2, fontsize=8)
     axes[-1, 0].set_xlabel("Wavelength (nm)")
     axes[-1, 1].set_xlabel("Wavelength (nm)")
@@ -234,99 +341,62 @@ def _plot_shift_examples(
     wavelength: np.ndarray,
     clean: np.ndarray,
     variants: dict[float, np.ndarray],
+    examples: pd.DataFrame,
 ) -> None:
-    indices = _example_indices()
-    residual_limit = max(
-        float(np.max(np.abs(values[indices] - clean[indices])))
-        for values in variants.values()
-    ) * 1.08
     figure, axes = plt.subplots(
-        EXAMPLE_COUNT, 3, figsize=(18.0, 11.0), dpi=180, sharex=True,
+        EXAMPLE_COUNT, 2, figsize=EXAMPLE_FIGSIZE, dpi=180, sharex=True,
         constrained_layout=True,
     )
-    for row, spectrum_index in enumerate(indices):
-        negative, positive, residual = axes[row]
-        for axis in (negative, positive):
-            axis.plot(
-                wavelength,
-                clean[spectrum_index],
-                color="0.15",
-                linewidth=1.35,
-                label="clean",
-            )
+    for row, (spectrum, sign) in enumerate(zip(clean, SHIFT_EXAMPLE_SIGNS, strict=True)):
+        left, right = axes[row]
+        configure_spectrum_axis(left, representation="snv")
+        right.set_ylim(-0.5, 0.5)
+        left.plot(
+            wavelength,
+            spectrum,
+            color="0.15",
+            linewidth=1.35,
+            label="clean",
+        )
+        _mark_outside_limits(left, wavelength, spectrum, color="0.15")
         for color, magnitude in zip(COLORS, SHIFT_MAGNITUDES, strict=True):
-            negative.plot(
+            delta = sign * magnitude
+            shifted = variants[delta][row]
+            left.plot(
                 wavelength,
-                variants[-magnitude][spectrum_index],
+                shifted,
                 color=color,
                 linewidth=0.95,
-                label=f"{-magnitude:+g} channels",
+                label=f"{delta:+g} channels",
             )
-            positive.plot(
+            right.plot(
                 wavelength,
-                variants[magnitude][spectrum_index],
+                shifted - spectrum,
                 color=color,
                 linewidth=0.95,
-                label=f"{magnitude:+g} channels",
             )
-            for delta, style in ((-magnitude, "--"), (magnitude, "-")):
-                residual.plot(
-                    wavelength,
-                    variants[delta][spectrum_index] - clean[spectrum_index],
-                    color=color,
-                    linestyle=style,
-                    linewidth=0.9,
-                    label=f"{delta:+g}" if row == 0 else None,
-                )
-        negative.set_ylabel("SNV")
-        negative.grid(alpha=0.18)
-        positive.set_ylabel("SNV")
-        positive.grid(alpha=0.18)
-        residual.axhline(0.0, color="0.4", linewidth=0.7)
-        residual.set_ylim(-residual_limit, residual_limit)
-        residual.set_ylabel("Shifted - clean (SNV)")
-        residual.grid(alpha=0.18)
-    axes[0, 0].legend(frameon=False, fontsize=8)
-    axes[0, 1].legend(frameon=False, fontsize=8)
-    axes[0, 2].legend(frameon=False, ncol=2, fontsize=8)
+            _mark_outside_limits(left, wavelength, shifted, color=color)
+            _mark_outside_limits(right, wavelength, shifted - spectrum, color=color)
+        direction = "+" if sign > 0 else "−"
+        left.set_ylabel(f"Example {row + 1} ({direction})\nSNV")
+        record = examples.iloc[row]
+        left.text(
+            0.02, 0.05,
+            f"{record['sample_id']}  /  pixel ({int(record['pixel_row'])}, "
+            f"{int(record['pixel_col'])})",
+            transform=left.transAxes, fontsize=9,
+        )
+        left.grid(alpha=0.18)
+        right.axhline(0.0, color="0.4", linewidth=0.7)
+        right.set_ylim(-0.5, 0.5)
+        right.set_yticks(np.linspace(-0.5, 0.5, 11))
+        right.set_ylabel("Shifted - clean (SNV)")
+        right.grid(alpha=0.18)
+        for axis in (left, right):
+            configure_wavelength_axis(axis, wavelength)
+        left.legend(frameon=False, ncol=2, fontsize=8)
     for axis in axes[-1]:
         axis.set_xlabel("Wavelength (nm)")
-    figure.savefig(output, bbox_inches="tight")
-    plt.close(figure)
-
-
-def _plot_distribution(
-    output: Path,
-    metrics: pd.DataFrame,
-    *,
-    kind: str,
-    strengths: tuple[float, ...],
-    labels: list[str],
-) -> None:
-    columns = (
-        ("spectral_angle_deg", "Spectral angle from clean (degrees)"),
-        ("rms_difference_snv", "RMS difference (SNV)"),
-        ("max_abs_difference_snv", "Maximum absolute band difference (SNV)"),
-    )
-    subset = metrics.loc[metrics["kind"] == kind]
-    color_by_magnitude = dict(zip(SHIFT_MAGNITUDES, COLORS, strict=True))
-    colors = COLORS if kind.startswith("noise") else tuple(
-        color_by_magnitude[abs(strength)] for strength in strengths
-    )
-    figure, axes = plt.subplots(
-        1, 3, figsize=(14.5, 4.2), dpi=180, constrained_layout=True
-    )
-    for axis, (column, y_label) in zip(axes, columns, strict=True):
-        series = [
-            subset.loc[subset["strength"] == strength, column].to_numpy()
-            for strength in strengths
-        ]
-        artists = axis.boxplot(series, tick_labels=labels, patch_artist=True, showfliers=False)
-        for patch, color in zip(artists["boxes"], colors, strict=True):
-            patch.set_facecolor(color)
-            patch.set_alpha(0.62)
-        axis.set_ylabel(y_label)
-        axis.grid(axis="y", alpha=0.22)
     figure.savefig(output, bbox_inches="tight")
     plt.close(figure)
 
@@ -356,9 +426,137 @@ def _summary(metrics: pd.DataFrame, kind: str) -> dict[str, object]:
     }
 
 
+def _write_example_figures(
+    output: Path,
+    wavelength: np.ndarray,
+    seed: int,
+    clean: np.ndarray,
+    examples: pd.DataFrame,
+) -> dict[str, str]:
+    noise_variants = {
+        angle: _apply(clean, seed, noise_range=(angle, angle))
+        for angle in NOISE_ANGLES
+    }
+    shift_variants = {
+        sign * magnitude: _apply(
+            clean, seed, shift_range=(sign * magnitude, sign * magnitude)
+        )
+        for sign in (1.0, -1.0)
+        for magnitude in SHIFT_MAGNITUDES
+    }
+    _plot_noise_examples(
+        output / "snv_noise_exact_angles_examples.png", wavelength, clean, noise_variants, examples
+    )
+    _plot_shift_examples(
+        output / "snv_shift_exact_endpoints_examples.png", wavelength, clean, shift_variants, examples
+    )
+    return {
+        "snv_noise_exact_angles_examples.png": (
+            "Three measured fold-train SNV pixels, one per row, shared with the shift figure. "
+            "Sample IDs and image coordinates identify the unmodified saved spectra. Left: clean SNV "
+            "and exact 2.5°, 5°, and 7.5° tangent-direction rotations; right: "
+            "perturbed-minus-clean residuals. The random tangent direction is shared "
+            "across the three angles within each example. SNV axes: [-2, 2], step 0.5; "
+            "residual axes: [-0.5, 0.5], step 0.1. Boundary triangles mark values outside "
+            "the display range; stored values are unchanged."
+        ),
+        "snv_shift_exact_endpoints_examples.png": (
+            "The same three measured fold-train SNV pixels as the noise figure, with the "
+            "same figure size and three-row layout. Rows show Example 1 (+1, +2, +3 channels), "
+            "Example 2 (-1, -2, -3 channels), and Example 3 (+1, +2, +3 channels). "
+            "Left: clean and shifted SNV; "
+            "right: shifted-minus-clean residuals. SNV axes: [-2, 2], step 0.5; "
+            "residual axes: [-0.5, 0.5], step 0.1. Sample IDs and image coordinates "
+            "identify the unmodified saved spectra. Boundary triangles mark values "
+            "outside the display range; stored values are unchanged."
+        ),
+    }
+
+
+def _visualization_metadata(
+    seed: int,
+    examples: pd.DataFrame,
+    selection_details: dict[str, object],
+    output: Path,
+) -> dict[str, object]:
+    return {
+        "example_source": "measured SNV pixels from the existing fixed fold-train selection",
+        "examples_in_row_order": examples.to_dict(orient="records"),
+        "example_selection": selection_details,
+        "source_selection_sha256": _digest(output / "selection.csv"),
+        "normalization": "saved production SNV (ddof=1); no re-SNV, smoothing, or averaging",
+        "same_clean_spectra_for_noise_and_shift": True,
+        "metric_summary_population": (
+            "All existing exact_examples_summary and uniform_distribution_summary "
+            "values describe the full fixed fold-train subset, not only the three displayed pixels."
+        ),
+        "snv_limits": [-2.0, 2.0],
+        "snv_tick_step": 0.5,
+        "residual_limits": [-0.5, 0.5],
+        "residual_tick_step": 0.1,
+        "tick_direction": "out",
+        "tick_sides": ["bottom", "left"],
+        "wavelength_axis": {
+            "limits": "wavelength grid endpoints; no horizontal padding",
+            "endpoint_decimal_places": 2,
+            "interior_tick_start_nm": 1000.0,
+            "interior_tick_step_nm": 200.0,
+        },
+        "noise_layout": "3 rows x 2 columns; spectrum and residual",
+        "shift_layout": "3 rows x 2 columns; Example 1 (+), Example 2 (-), Example 3 (+)",
+        "shift_signs_in_row_order": list(SHIFT_EXAMPLE_SIGNS),
+        "seed": seed,
+        "source_script_sha256": _digest(Path(__file__)),
+        "chemomae": version("chemomae"),
+        "torch": torch.__version__,
+        "numpy": np.__version__,
+    }
+
+
+def _refresh_existing_plots(output: Path, processed: Path) -> None:
+    summary_path = output / "summary.json"
+    report = json.loads(summary_path.read_text(encoding="utf-8"))
+    if _digest(output / "selection.csv") != report["artifacts_sha256"]["selection.csv"]:
+        raise ValueError("selection.csv differs from the saved sanity report")
+    spectra, wavelength, selection = _load_saved_subset(output, processed)
+    if len(selection) != report["selection"]["pixel_count"]:
+        raise ValueError("Saved selection size differs from the sanity report")
+    if not (selection["fold"] == report["fold"]).all():
+        raise ValueError("Saved selection belongs to a different fold")
+    if set(selection["sample_id"]) != set(report["selection"]["sample_ids"]):
+        raise ValueError("Saved sample IDs differ from the sanity report")
+    recorded_grid = report["wavelength_grid"]
+    if not np.allclose(
+        [wavelength[0], wavelength[-1], np.mean(np.diff(wavelength))],
+        [recorded_grid["start_nm"], recorded_grid["end_nm"], recorded_grid["mean_step_nm"]],
+        rtol=0.0,
+        atol=1e-8,
+    ):
+        raise ValueError("Processed wavelength grid differs from the existing sanity report")
+    seed = int(report["seed"])
+    clean, examples, selection_details = _select_measured_examples(spectra, selection)
+    captions = _write_example_figures(output, wavelength, seed, clean, examples)
+    for name in OBSOLETE_PLOTS:
+        (output / name).unlink(missing_ok=True)
+        report["artifacts_sha256"].pop(name, None)
+    report["captions"] = captions
+    report["selection"].pop("examples_in_row_order", None)
+    report["visualization"] = _visualization_metadata(seed, examples, selection_details, output)
+    for name in captions:
+        report["artifacts_sha256"][name] = _digest(output / name)
+    summary_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
+    print(json.dumps({"output_dir": str(output), "updated_figures": list(captions)}))
+
+
 def main() -> int:
     args = parse_args()
     output = args.output_dir.resolve()
+    if args.plots_only:
+        _refresh_existing_plots(output, args.processed_dir.resolve())
+        return 0
     if output.exists():
         raise FileExistsError(f"Refusing to overwrite existing output: {output}")
     output.mkdir(parents=True)
@@ -415,58 +613,8 @@ def main() -> int:
 
     selection.to_csv(output / "selection.csv", index=False)
     metrics.to_csv(output / "metrics.csv", index=False)
-    _plot_noise_examples(
-        output / "snv_noise_exact_angles_examples.png",
-        wavelength,
-        clean,
-        noise_exact_variants,
-    )
-    _plot_shift_examples(
-        output / "snv_shift_exact_endpoints_examples.png",
-        wavelength,
-        clean,
-        shift_exact_variants,
-    )
-    _plot_distribution(
-        output / "snv_noise_uniform_ranges_distributions.png",
-        metrics,
-        kind="noise_uniform",
-        strengths=NOISE_ANGLES,
-        labels=[f"U(0, {angle:g}°)" for angle in NOISE_ANGLES],
-    )
-    _plot_distribution(
-        output / "snv_shift_uniform_ranges_distributions.png",
-        metrics,
-        kind="shift_uniform",
-        strengths=SHIFT_MAGNITUDES,
-        labels=[f"U(-{magnitude:g}, {magnitude:g})" for magnitude in SHIFT_MAGNITUDES],
-    )
-
-    captions = {
-        "snv_noise_exact_angles_examples.png": (
-            "Four fixed fold-1 train pixels, one per row. Left: clean SNV and exact "
-            "2.5°, 5°, and 7.5° tangent-direction rotations. Right: perturbed-minus-clean "
-            "residuals on one common vertical scale. The random tangent direction is shared "
-            "across the three angles within each pixel."
-        ),
-        "snv_noise_uniform_ranges_distributions.png": (
-            "Noise sampled independently per spectrum from U(0, 2.5°), U(0, 5°), or "
-            "U(0, 7.5°) over 1,024 fixed fold-1 train pixels. Panels from left to right "
-            "show spectral angle, per-spectrum RMS difference, and maximum absolute "
-            "single-band difference."
-        ),
-        "snv_shift_exact_endpoints_examples.png": (
-            "Four fixed fold-1 train pixels, one per row. Columns from left to right show "
-            "clean SNV with negative endpoints, clean SNV with positive endpoints, and "
-            "residuals. Dashed residuals are negative shifts and solid residuals are positive."
-        ),
-        "snv_shift_uniform_ranges_distributions.png": (
-            "Shift sampled independently per spectrum from U(-1, 1), U(-2, 2), or "
-            "U(-3, 3) channels over 1,024 fixed fold-1 train pixels. Panels from left to "
-            "right show spectral angle, per-spectrum RMS difference, and maximum absolute "
-            "single-band difference."
-        ),
-    }
+    example_spectra, examples, selection_details = _select_measured_examples(clean, selection)
+    captions = _write_example_figures(output, wavelength, args.seed, example_spectra, examples)
     artifacts = (
         "selection.csv",
         "metrics.csv",
@@ -513,9 +661,6 @@ def main() -> int:
             "sample_ids": list(dict.fromkeys(selection["sample_id"])),
             "sample_count": int(selection["sample_id"].nunique()),
             "pixel_count": len(selection),
-            "examples_in_row_order": selection.iloc[_example_indices()][[
-                "sample_id", "hdf5_row", "pixel_row", "pixel_col"
-            ]].to_dict(orient="records"),
         },
         "wavelength_grid": {
             "start_nm": float(wavelength[0]),
@@ -527,6 +672,7 @@ def main() -> int:
             "norm_absolute": float(metrics["norm_absolute_error"].max()),
         },
         "captions": captions,
+        "visualization": _visualization_metadata(args.seed, examples, selection_details, output),
         "source": {
             "experiment_dir": str(experiment),
             "processed_dir": str(processed),
