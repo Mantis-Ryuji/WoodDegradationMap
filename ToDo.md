@@ -76,14 +76,14 @@ B0・B1 OOF sanityは生成済みだが、以下の最終報告用図表pipeline
 ## 5. 全体fitと解釈
 
 対象はB0・B1・A0・M00・M11の5条件×Cosine-KMeans・vMFの2手法。
-共通の表示番号は**A0＋Cosine-KMeans**を基準にする。[全体可視化設計](docs/design/visualization_and_interpretation.md)に従う。
+共通の表示番号は**M00＋Cosine-KMeans**を基準にし、観測SNV代表線のcosine類似度によるHungarian matchingで直接整列する。[全体可視化設計](docs/design/visualization_and_interpretation.md)に従う。
 全体解釈pipelineは未実装で、既存のCV用CLIをそのまま全体fitへ使わない。
 
 - [ ] 全49試料の画素抽出・manifest・seed適用・実行記録・保存先・CLIを実装する。
 - [ ] PCAの全体fit、A0・M00・M11の各1回（計3回）の全体学習を実装・実施する。モデル・学習条件は既存実装を再利用する。
 - [ ] 同じ表現・抽出座標・$K_0=8$でCosine-KMeansを5 fits行う。
 - [ ] 数値仕様確定・検証後、同じ表現を再利用してvMFを5 fits行う。CV補助実験の735 fitsとは分ける。
-- [ ] 全49試料のhard label map、A0基準のmatching・overlap、occupancy、使用クラスタ数、潜在空間図を保存する。
+- [ ] 全49試料のhard label map、M00基準のSNV代表線cosine類似度行列・matching対応表、確認用contingency・overlap、occupancy、使用クラスタ数、潜在空間図を保存する。
 - [ ] 観測反射率・SNVの代表線を試料内中央値→試料間中央値・四分位範囲で要約し、寄与試料・画素数と差スペクトルの引き算の向きを保存する。Decoderの復元値はこの観測スペクトル集計へ混ぜない。
 - [ ] 固定7代表試料を本文表示に使い、行をCosine-KMeans・vMF、列をB0・B1・A0・M00・M11とする比較図、KYOw試料ID、共通の表示規約を確認する。
 - [ ] 劣化との対応を探索的に記述し、CVの指標改善と化学的な対応を区別する。

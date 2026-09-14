@@ -116,7 +116,7 @@ IDは執筆用の仮識別子とし、最終的な図番号・表番号ではな
 | TGNの固定角度の例 | [snv_noise_exact_angles_examples.png](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_noise_exact_angles_examples.png) | 付録A。共通の実測train SNV 3例を3行×2列で示す。2.5・5・7.5度の比較であり、本実験の角度一様分布を示す図そのものではない |
 | Shiftの固定幅の例 | [snv_shift_exact_endpoints_examples.png](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_shift_exact_endpoints_examples.png) | 付録A。TGNと同じ3例を使い、Example 1（＋）、Example 2（−）、Example 3（＋）の3行×2列。TGN図と同じサイズとし、候補幅と採用した分布をcaptionで区別 |
 | 摂動の候補分布 | [metrics.csv](../outputs/sanity_checks/augmentation_strengths_train_fold1/metrics.csv)、[summary.json](../outputs/sanity_checks/augmentation_strengths_train_fold1/summary.json) | 一様分布の範囲と応答の数値要約を記録し、箱ひげ図は掲載しない。強度のsanity checkであり、CV指標による最適化とは書かない |
-| B0・B1のOOFマップ | [B0](../outputs/sanity_checks/b0_b1_oof_visualization/labels/B0_representatives_k8_repeat1.png)、[B1](../outputs/sanity_checks/b0_b1_oof_visualization/labels/B1_representatives_k8_repeat1.png) | 付録Eの途中確認資料候補。fold内B0基準であり、全体fitのA0基準の最終図とは別 |
+| B0・B1のOOFマップ | [B0](../outputs/sanity_checks/b0_b1_oof_visualization/labels/B0_representatives_k8_repeat1.png)、[B1](../outputs/sanity_checks/b0_b1_oof_visualization/labels/B1_representatives_k8_repeat1.png) | 付録Eの途中確認資料候補。fold内B0基準・一致画素数最大化であり、全体fitのM00基準・観測SNV類似度で整列する最終図とは別 |
 | B0・B1のsilhouette | [silhouette_k_sweep.png](../outputs/sanity_checks/b0_b1_oof_visualization/silhouette_k_sweep.png) | 付録Eの候補。全主条件の性能比較として提示しない |
 
 摂動sanityの元は[スクリプト](../scripts/experiments/sanity_check_augmentation_strengths.py)と[summary](../outputs/sanity_checks/augmentation_strengths_train_fold1/summary.json)にある。数値指標と要約はfold 1のtrainから8試料×128画素を確認する設計で、outer-testや学習モデルの評価を使う処理ではない。採用していない強度も含むので、単なる「学習augmentationの例」として全図を本文に貼らない。

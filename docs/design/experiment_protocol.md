@@ -695,7 +695,7 @@ CV開始後のA0・vMF追加等の経緯は[決定記録](decisions.md)に示す
 6. pairedな条件差、K依存性、mask率依存性および反復間安定性を集計する。
 7. B0、B1、A0、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$K_0$で
    Cosine-KMeansとvMFを各1回fitする。vMFは第5.2.3節の数値仕様の確定・検証後に実施する。
-8. A0のCosine-KMeansを共通基準にラベルを整列し、5条件 × 2手法のマップとスペクトル、潜在空間を解釈する。
+8. 観測SNV代表線のcosine類似度によるHungarian matchingでM00のCosine-KMeansを共通基準にラベルを直接整列し、類似度行列・確認用contingency/overlapとともに5条件 × 2手法のマップとスペクトル、潜在空間を解釈する。
 
 vMFのCV補助実験735 fitsの実施順序は第5.2.4節に従い、手順7の全体解釈用5 fitsとは分けて記録する。
 
