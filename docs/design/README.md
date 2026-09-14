@@ -12,7 +12,7 @@
 | [実験プロトコル](experiment_protocol.md) | 主条件Fixed / vMF数値仕様Open | 条件、split、seed、共通画素、学習、クラスタリング、実行記録 |
 | [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA、LFR、silhouette、ARI、occupancy、未定義値、集約、比較 |
 | [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1のPNG・CSV、fold内B0基準のmatching |
-| [全体可視化と解釈](visualization_and_interpretation.md) | Fixed / 任意責務マップ・FT-IR・正式目視評価の詳細Open | 全体fit、A0基準のmatching、代表例、スペクトル、FT-IR計画 |
+| [全体可視化と解釈](visualization_and_interpretation.md) | Fixed / 任意責務マップ・FT-IR・正式目視評価の詳細Open | 全体fit、M00基準・観測SNV類似度のmatching、代表例、スペクトル、FT-IR計画 |
 | [表現幾何の補助診断の見直し](representation_geometry_diagnostics.md) | 現行計画から除外 / 未採用候補 | 既定評価との関係、実施項目から外した理由、数理的補足と旧案 |
 | [設計上の決定記録](decisions.md) | 記録 | 決定日、CV開始後の追加事項と適用範囲 |
 
@@ -35,7 +35,7 @@
 | 全体解釈 | B0、B1、A0、M00、M11を全49試料でfit・学習 | 3回 | $K_0=8$、各手法5 fits |
 
 CVは105学習、全体解釈を含めると108学習。PCA、KMeans、vMF、表現抽出、評価摂動はこの学習数に含めない。
-全体fitの表示番号はA0のCosine-KMeansへ直接整列する。B0・B1 OOF sanityはfold内B0基準とする。
+全体fitの表示番号は、観測SNV代表線のcosine類似度によるHungarian matchingでM00のCosine-KMeansへ直接整列する。画素overlapは確認用に残す。B0・B1 OOF sanityはfold内B0基準・一致画素数最大化を維持する。
 CV開始後の対象拡張・追加決定は[決定記録](decisions.md)を参照する。
 
 <a id="open-items"></a>

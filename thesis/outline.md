@@ -99,7 +99,7 @@ Mask率25%・50%・75%の感度解析と、vMFによるクラスタリング方�
 
 ### 4.7 全体fitによる可視化と化学的解釈【設計と実施状況を区別】
 
-[可視化・解釈設計](../docs/design/visualization_and_interpretation.md)に従い、全49試料の共通fit、B0・B1・A0・M00・M11、K=8、Cosine-KMeans・vMFを扱う。A0のCosine-KMeansを表示整列基準とし、固定7代表試料と全試料マップを示す。
+[可視化・解釈設計](../docs/design/visualization_and_interpretation.md)に従い、全49試料の共通fit、B0・B1・A0・M00・M11、K=8、Cosine-KMeans・vMFを扱う。M00のCosine-KMeansを表示整列基準とし、観測SNV代表線のcosine類似度によるHungarian matchingで各組を直接対応づける。類似度行列・確認用contingency/overlapと、固定7代表試料・全試料のマップを示す。この方式はOOF途中結果の確認後・全体fit前に決定したものとして記す。
 
 観測反射率・SNVの代表線は試料内中央値から試料間中央値・四分位範囲を求め、寄与試料数を併記する。差スペクトルと位置対応FT-IRで化学的対応を探索する。CVの未知試料評価と証拠の役割を分け、fold内B0基準のOOF sanityを全体fit図へ流用しない。
 

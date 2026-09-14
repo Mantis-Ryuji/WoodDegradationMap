@@ -39,7 +39,7 @@ $K_0=8$、repeat 1で[固定7試料](visualization_and_interpretation.md#represe
 
 対応は表示用mapのコピーに適用する。保存済みCVラベル・指標は変更せず、occupancyのcluster別画素数はraw ID順とする。
 fold間の同じ色が同じ状態を表すとは限らない。overlapが0または弱い対応はCSVで確認する。
-全体fit後の[共通基準A0＋Cosine-KMeans](visualization_and_interpretation.md#matching-reference)とは適用範囲が異なる。
+全体fit後の[M00＋Cosine-KMeans基準・観測SNV類似度によるmatching](visualization_and_interpretation.md#matching-reference)とは適用範囲・目的関数が異なる。本OOF sanityの方式は変更しない。
 
 ## 4. 数値集計とsilhouette
 

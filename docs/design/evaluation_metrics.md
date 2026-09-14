@@ -391,7 +391,7 @@ label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様であ�
 - M11 vs B0、M11 vs B1、M11 vs M00を主要比較として示し、残りの計画比較と2×2交互作用をablation表にする。
 - 指標間で結論が異なる場合は、総合順位に潰さずtrade-offとして報告する。
 - Hungarian matchingは表示ラベルの整列に用い、CV指標の計算には使用しない。
-  [OOF sanity](oof_sanity_visualization.md)ではfold内B0基準、[全体fit後](visualization_and_interpretation.md#matching-reference)ではA0のCosine-KMeans基準とする。
+  [OOF sanity](oof_sanity_visualization.md)ではfold内B0基準で一致画素数を最大化する。[全体fit後](visualization_and_interpretation.md#matching-reference)ではM00のCosine-KMeansを表示基準に、観測SNV代表線のcosine類似度の合計を最大化する。全体fitの画素overlapは確認用とする。
 
 <a id="vmf-evaluation"></a>
 

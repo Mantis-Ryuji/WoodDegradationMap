@@ -10,7 +10,7 @@ CV開始後のvMF・A0追加、FT-IR計画、matching基準の変更時点は[�
 実行記録は[プロトコル](experiment_protocol.md#execution-records)に従う。
 
 - [全体fit条件](#global-fit)
-- [A0基準のmatching](#matching-reference)
+- [M00基準のmatching](#matching-reference)
 - [共通描画規約](#figure-style)・[代表試料](#representative-samples)
 - [手法間比較](#vmf-global-maps)・[FT-IR計画](#ftir-interpretation)・[解釈に用いる証拠の統合](#evidence-triangulation)
 
@@ -64,43 +64,77 @@ source hashとの対応、vMFの成分診断と完了・失敗の状態を残す
 - クラスタ番号に順序または劣化度の意味を持たせない。
 - ラベル整列前後でクラスタ所属そのものは変更しない。
 
-## 3. Hungarian matching
+## 3. 観測SNV代表スペクトルによるHungarian matching
 
 <a id="matching-reference"></a>
 
 ### 3.1 基準条件
 
-A0（AE、mask率0%）の表現をCosine-KMeansで分割したpartitionを、全10組の共通基準とする。
-Cosine-KMeansのB0・B1・M00・M11と、vMFのB0・B1・A0・M00・M11の計9組を、
+M00（追加augmentationなしの標準MAE）の表現をCosine-KMeansで分割したpartitionを、全10組の表示番号の共通基準とする。
+Cosine-KMeansのB0・B1・A0・M11と、vMFのB0・B1・A0・M00・M11の計9組を、
 それぞれ独立にこの基準へ直接matchingする。
 
-mask・augmentation導入前の再構成学習を比較の起点とする。
-これは表示番号の基準であり、A0の劣化検出性能・解釈可能性やクラスタの順序を保証しない。
-[2026-09-10の決定](decisions.md)として全体fit後へ適用し、[OOF sanityのfold内B0基準](oof_sanity_visualization.md#3-fold内hungarian-matching)とは区別する。
+標準MAEを比較の起点とし、M00からM11への領域分割の変化を読むための表示基準とする。
+M00の安定性が最良と確認されたことを採用理由にはせず、劣化検出性能・解釈可能性やクラスタの順序も保証しない。
+[2026-09-14の決定](decisions.md)として、OOF途中結果の確認後・全体fit前に、従来のA0基準・一致画素数最大化から変更した。
+[OOF sanityのfold内B0基準](oof_sanity_visualization.md#3-fold内hungarian-matching)とCV指標の計算は変更しない。
 
 試料ごとのmatching、および別の条件や手法を経由する連鎖matchingは行わない。
+B0・B1間だけ一致画素数に基づく別方式を使わず、全10組に同じ規約を適用する。
 
-### 3.2 contingency matrix
+### 3.2 共通の観測SNV空間と類似度
 
 全試料について全10組に共通して有効な木材画素だけを使用する。
-共通基準のラベルを$i$、比較対象（表現条件$c$・クラスタリング手法$a$）のhard labelを$j$として、
+各条件・各手法で得たhard labelの所属を固定し、第4.1節の規約に従って、クラスタごとに所属画素の
+観測SNVをband別に試料内中央値、次に試料間中央値で要約する。この256波長の代表線を比較用ベクトルとする。
+クラスタが存在しない試料を0で補完せず、寄与試料数・試料ID・画素数と試料間四分位範囲を保存する。
+全画素を直接poolした中央値に置き換えず、大きい試料の画素数が代表線を支配することを避ける。
+
+比較用ベクトルは、各モデルの潜在クラスタ中心、PCAの逆変換、decoderの再構成値ではない。
+異なるモデルの16次元潜在を直接比較したり、A0またはM00のencoderで共通空間へ写したりしない。
+表示番号の基準はM00、類似性の物差しは全条件に共通する観測SNV空間とする。
+
+基準クラスタ$i$の代表線を$r_i^{(\mathrm{ref})}$、比較対象（表現条件$c$・クラスタリング手法$a$）の
+クラスタ$j$の代表線を$r_j^{(c,a)}$として、全256波長のcosine類似度行列を求める。
+
+$$
+S_{ij}
+=\frac{\left(r_i^{(\mathrm{ref})}\right)^\top r_j^{(c,a)}}
+{\left\|r_i^{(\mathrm{ref})}\right\|_2\left\|r_j^{(c,a)}\right\|_2}
+$$
+
+代表線の集約後にcosine類似度を計算し、表示用の縦軸範囲で値をclipしない。
+背景0は代表線・matrix・割当から除外する。代表線が欠損、非有限またはゼロnormで類似度を定義できない場合は、
+理由を記録し、0補完やoverlap方式への自動切替で対応を作らない。
+
+Hungarian algorithmにより、合計類似度を最大にする。
+
+$$
+\max_{\pi}\sum_{i=1}^{K_0}S_{i,\pi(i)}
+$$
+
+この1対1対応$\pi$を比較対象ごとに求め、比較対象のクラスタ$\pi(i)$を表示番号$i$へ置換する。
+クラスタ所属、学習済みモデル、クラスタリング中心は変更しない。
+
+### 3.3 対応の確認用contingency・overlap
+
+同じ共通有効画素について、基準と比較対象のhard labelからcontingency matrixも求める。
 
 $$
 C_{ij}
 =\sum_p\mathbf{1}[y_p^{(\mathrm{ref})}=i\land y_p^{(c,a)}=j]
 $$
 
-を作る。背景0はmatrixおよび割当から除外する。
+類似度行列全体、選ばれた対応とその類似度、contingency matrix、およびスペクトル類似度で決めた
+対応における一致画素数・overlapを保存する。overlapは対応の確認用であり、割当の目的関数には加えない。
+全体のoverlapは$\sum_i C_{i,\pi(i)}/\sum_{i,j}C_{ij}$とし、全共通画素数に基づくため大きい試料の寄与が大きいことを明記する。
 
-Hungarian algorithmにより
+類似度が低い対応や候補間の類似度が拮抗する対応を明示し、同じ色だけで強い対応と解釈しない。
+同率の最適割当を一意の対応根拠とはみなさない。代表線が似ていても、スペクトルの分布・領域の位置・
+化学的意味まで同じとは限らず、クラスタの分割・統合の違いは1対1対応だけでは表せない。
+スペクトル類似度と画素overlapの不一致も、そのまま解釈資料として残す。
 
-$$
-\max_{\pi}\sum_{i=1}^{K_0}C_{i,\pi(i)}
-$$
-
-となる1対1対応$\pi$を比較対象ごとに求め、比較対象のラベルを共通基準のラベル番号へ置換する。
-
-### 3.3 適用範囲
+### 3.4 適用範囲
 
 得られた対応は全試料で共通とし、次へ一貫して適用する。
 
@@ -111,9 +145,8 @@ $$
 
 元の成分番号と表示番号の対応を保存し、vMFの成分別診断にも同じ対応を適用する。
 matchingは表示と対応関係の確認を目的とし、異なる条件・手法のクラスタが同一の意味を持つことを保証しない。
-contingency matrixまたはmatching後のoverlapを併記し、対応の弱いクラスタを可視化上の同一色だけで解釈しない。
-このmatchingは全共通画素数に基づくため、大きい試料の寄与が大きい。表示ラベルの整列として用い、
-試料macroの定量評価や共通基準を正解とした精度評価には転用しない。
+類似度行列とcontingency・overlapを併記し、対応の弱いクラスタを可視化上の同一色だけで解釈しない。
+表示ラベルの整列として用い、CV指標の計算や共通基準を正解とした精度評価には転用しない。
 
 条件・手法間の比較には、本番前処理HDF5の`pixel_row_col`で同一と確認できる画素だけを使用する。
 条件・手法ごとに画素集合を変更したり、label mapを位置補正したりしない。
@@ -146,7 +179,8 @@ contingency matrixまたはmatching後のoverlapを併記し、対応の弱い�
 | 項目 | 目的 |
 | --- | --- |
 | label map | 条件・手法間でクラスタの試料表面の空間分布を比較する |
-| contingency/overlap matrix | 共通基準に対するクラスタ対応の強さを確認する |
+| SNV cosine similarity matrix | M00基準への割当と、スペクトル形状による対応の強さ・曖昧さを確認する |
+| contingency/overlap matrix | スペクトル類似度で対応づけたクラスタの空間的な重なりを確認する |
 | representative spectra | 各クラスタのNIRスペクトル形状を確認する |
 | difference spectra | クラスタ差が大きい波長帯を確認する |
 | cluster size distribution / occupancy | collapse、過小クラスタ、不均衡を確認する |
@@ -209,7 +243,7 @@ CVの49試料、split、学習画素集合、評価対象は変更しない。�
 全体fitの手法間比較図は、行をCosine-KMeans・vMF、列をB0・B1・A0・M00・M11の順とする2行5列で構成する。
 両手法で第4.2節の固定7代表試料を共用し、第4節の描画規約を適用する。
 
-hard label mapと併せて、共通基準へのcontingency/overlap、試料別occupancyと使用クラスタ数、
+hard label mapと併せて、共通基準へのSNV類似度行列・対応表・contingency/overlap、試料別occupancyと使用クラスタ数、
 第4.1節に従う代表・差スペクトルを両手法について保存する。領域の広がり、境界の位置、
 分割・統合の違いを、クラスタ対応の強さと占有率を踏まえて記述する。
 同一色の領域が増えたことや境界が減ったことだけを改善とせず、単一クラスタへの集中も確認する。
