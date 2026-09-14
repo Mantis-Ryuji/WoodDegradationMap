@@ -1,4 +1,4 @@
-"""Render B0/B1 OOF sanity figures from existing CV artifacts only (CPU)."""
+"""Render OOF sanity figures aligned to B0 from existing CV artifacts only (CPU)."""
 
 from __future__ import annotations
 
@@ -22,12 +22,15 @@ def parse_args() -> argparse.Namespace:
                         default=root / "outputs/sanity_checks/b0_b1_oof_visualization",
                         help="Must not already exist; CV artifacts are never overwritten")
     parser.add_argument("--dpi", type=int, default=240)
+    parser.add_argument("--conditions", nargs="+", choices=("B0", "B1", "A0", "M00"),
+                        default=("B0", "B1"), help="B0 first, followed by comparison conditions")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    output = render_sanity(args.experiment_dir, args.output_dir, dpi=args.dpi)
+    output = render_sanity(args.experiment_dir, args.output_dir, dpi=args.dpi,
+                           conditions=tuple(args.conditions))
     print(json.dumps({"output_dir": str(output)}, ensure_ascii=False, indent=2))
     return 0
 
