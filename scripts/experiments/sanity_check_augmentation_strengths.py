@@ -313,7 +313,7 @@ def _plot_noise_examples(
             )
             _mark_outside_limits(left, wavelength, values[row], color=color)
             _mark_outside_limits(right, wavelength, values[row] - spectrum, color=color)
-        left.set_ylabel(f"Example {row + 1}\nSNV")
+        left.set_ylabel(f"Example {row + 1}\nSNV spectra")
         record = examples.iloc[row]
         left.text(
             0.02, 0.05,
@@ -325,7 +325,7 @@ def _plot_noise_examples(
         right.axhline(0.0, color="0.4", linewidth=0.7)
         right.set_ylim(-0.5, 0.5)
         right.set_yticks(np.linspace(-0.5, 0.5, 11))
-        right.set_ylabel("Perturbed - clean (SNV)")
+        right.set_ylabel("Perturbed - clean (SNV spectra)")
         right.grid(alpha=0.18)
         for axis in (left, right):
             configure_wavelength_axis(axis, wavelength)
@@ -378,7 +378,7 @@ def _plot_shift_examples(
             _mark_outside_limits(left, wavelength, shifted, color=color)
             _mark_outside_limits(right, wavelength, shifted - spectrum, color=color)
         direction = "+" if sign > 0 else "−"
-        left.set_ylabel(f"Example {row + 1} ({direction})\nSNV")
+        left.set_ylabel(f"Example {row + 1} ({direction})\nSNV spectra")
         record = examples.iloc[row]
         left.text(
             0.02, 0.05,
@@ -390,7 +390,7 @@ def _plot_shift_examples(
         right.axhline(0.0, color="0.4", linewidth=0.7)
         right.set_ylim(-0.5, 0.5)
         right.set_yticks(np.linspace(-0.5, 0.5, 11))
-        right.set_ylabel("Shifted - clean (SNV)")
+        right.set_ylabel("Shifted - clean (SNV spectra)")
         right.grid(alpha=0.18)
         for axis in (left, right):
             configure_wavelength_axis(axis, wavelength)

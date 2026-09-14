@@ -8,7 +8,7 @@ from typing import Literal
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
-from matplotlib.ticker import FormatStrFormatter
+from matplotlib.ticker import FormatStrFormatter, NullLocator, ScalarFormatter
 import numpy as np
 import pandas as pd
 
@@ -23,7 +23,7 @@ def configure_spectrum_axis(
     if representation == "reflectance":
         limits, ticks, label = (0.0, 1.0), np.linspace(0.0, 1.0, 6), "Reflectance"
     elif representation == "snv":
-        limits, ticks, label = (-2.0, 2.0), np.linspace(-2.0, 2.0, 9), "SNV"
+        limits, ticks, label = (-2.0, 2.0), np.linspace(-2.0, 2.0, 9), "SNV spectra"
     else:
         raise ValueError(f"Unknown spectral representation: {representation}")
     axis.set_yticks(ticks)
@@ -187,7 +187,7 @@ def plot_band_distribution(
         median,
         color="#0072B2",
         linewidth=1.4,
-        label="Median sample median",
+        label="Median spectrum (across samples)",
     )
     axis.set_xlabel("Wavelength [nm]")
     if y_label.lower() in ("reflectance", "snv"):
@@ -239,18 +239,13 @@ def plot_snr_cutoff_decision(
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig, axis = plt.subplots(figsize=(8.0, 4.0), dpi=180)
-    axis.axvspan(
-        wavelength_edges[0],
-        wavelength_edges[-1] if cutoff_boundary_nm is None else cutoff_boundary_nm,
-        color="#009E73", alpha=0.08, linewidth=0, label="Retained",
-    )
     if cutoff_boundary_nm is not None:
         axis.axvspan(
             cutoff_boundary_nm, wavelength_edges[-1],
-            color="#D55E00", alpha=0.10, linewidth=0, label="Excluded",
+            color="#08F557", alpha=0.30, linewidth=0, label="Excluded",
         )
         axis.axvline(
-            cutoff_boundary_nm, color="#D55E00", linewidth=1.1, linestyle=":",
+            cutoff_boundary_nm, color="red", linewidth=1.1, linestyle=":",
             label=f"Cut boundary = {cutoff_boundary_nm:.2f} nm",
         )
 
@@ -258,24 +253,31 @@ def plot_snr_cutoff_decision(
     axis.plot(
         wavelength,
         np.where(np.isfinite(snr) & (snr > 0.0), snr, np.nan),
-        color="black",
+        color="#0072B2",
         linewidth=1.2,
         label="Reference SNR proxy",
     )
     axis.axhline(
         snr_threshold,
-        color="#0072B2",
+        color="black",
         linewidth=1.0,
         linestyle="--",
         label=f"Threshold = {snr_threshold:g}",
     )
     axis.set_yscale("log")
+    axis.set_yticks([10, 30, 50, 70])
+    snr_formatter = ScalarFormatter(useMathText=True)
+    snr_formatter.set_powerlimits((1, 1))
+    axis.yaxis.set_major_formatter(snr_formatter)
+    axis.yaxis.set_minor_locator(NullLocator())
     axis.set_ylabel("SNR proxy")
     axis.set_xlabel("Wavelength [nm]")
     configure_wavelength_axis(axis, wavelength)
-    axis.legend(
-        frameon=False, fontsize=8.5, loc="lower center", bbox_to_anchor=(0.5, 1.02), ncol=3,
+    legend = axis.legend(
+        frameon=True, facecolor="white", edgecolor="0.5", framealpha=1.0,
+        fontsize=8.5, loc="lower left",
     )
+    legend.set_zorder(10)
     axis.grid(True, which="major", alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
