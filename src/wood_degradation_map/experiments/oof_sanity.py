@@ -1,4 +1,4 @@
-"""Read saved B0/B1 CV artifacts and render exploratory, title-free sanity figures."""
+"""Read saved CV artifacts and render exploratory, title-free sanity figures."""
 
 from __future__ import annotations
 
@@ -31,6 +31,8 @@ LABEL_COLORS = (
     "#56b4e9", "#d55e00", "#f0e442", "#332288",
 )
 CONDITION_COLORS = ("#0072b2", "#d55e00")
+SUPPORTED_CONDITIONS = ("B0", "B1", "A0", "M00")
+ALL_CONDITION_COLORS = ("#0072b2", "#d55e00", "#009e73", "#cc79a7")
 @dataclass
 class SanityData:
     expected_test_folds: dict[str, int]
@@ -39,6 +41,7 @@ class SanityData:
     maps: dict[tuple[str, str], np.ndarray]
     matching: list[dict[str, object]]
     sources: list[dict[str, object]]
+    conditions: tuple[str, ...] = CONDITIONS
 
 
 class SourceReader:
@@ -147,8 +150,9 @@ def _run(
 
 def match_fold_maps(
     maps: dict[tuple[str, str], np.ndarray], expected_test_folds: dict[str, int],
+    *, target_condition: str = "B1",
 ) -> tuple[dict[tuple[str, str], np.ndarray], list[dict[str, object]]]:
-    """Align B1 to B0 once per fold, pooling ALL test samples at K=8/repeat 1.
+    """Align a target to B0 once per fold, pooling ALL test samples at K=8/repeat 1.
 
     The mapping maximizes total overlap and is shared by every sample in the fold.
     No source labels or metric records are changed. Zero-overlap assignments have
@@ -161,13 +165,13 @@ def match_fold_maps(
         contingency = np.zeros((DISPLAY_K, DISPLAY_K), dtype=np.int64)
         sample_counts = {}
         for sample in sample_ids:
-            reference, target = maps["B0", sample], maps["B1", sample]
+            reference, target = maps["B0", sample], maps[target_condition, sample]
             if (reference.shape != target.shape or reference.ndim != 2
                     or reference.dtype.kind not in "iu" or target.dtype.kind not in "iu"
                     or np.any(reference < 0) or np.any(reference > DISPLAY_K)
                     or np.any(target < 0) or np.any(target > DISPLAY_K)
                     or not np.array_equal(reference > 0, target > 0)):
-                raise ValueError(f"Invalid B0/B1 label maps or different valid masks: {sample}")
+                raise ValueError(f"Invalid B0/{target_condition} maps or different valid masks: {sample}")
             valid = reference > 0
             pairs = (reference[valid].astype(np.int64) - 1) * DISPLAY_K + target[valid] - 1
             counts = np.bincount(pairs, minlength=DISPLAY_K ** 2).reshape(DISPLAY_K, DISPLAY_K)
@@ -182,13 +186,15 @@ def match_fold_maps(
         matched = int(contingency[reference_ids, target_ids].sum())
         matching.append({
             "fold": fold, "repeat": DISPLAY_REPEAT, "k": DISPLAY_K,
-            "reference": "B0", "target": "B1", "sample_ids": sample_ids,
+            "reference": "B0", "target": target_condition, "sample_ids": sample_ids,
             "scope": "all test pixels pooled within this fold; one mapping shared by all samples",
-            "contingency_rows": "B0 raw IDs 1..8", "contingency_columns": "B1 raw IDs 1..8",
+            "contingency_rows": "B0 raw IDs 1..8",
+            "contingency_columns": f"{target_condition} raw IDs 1..8",
             "contingency": contingency.tolist(), "target_to_display_including_background": lookup.tolist(),
             "valid_pixels": total, "matched_pixels": matched, "overlap_fraction": matched / total,
             "assignments": [{
-                "b1_raw_id": int(target + 1), "b0_display_id": int(reference + 1),
+                f"{target_condition.lower()}_raw_id": int(target + 1),
+                "b0_display_id": int(reference + 1),
                 "overlap_pixels": int(contingency[reference, target]),
                 "zero_overlap": bool(contingency[reference, target] == 0),
             } for reference, target in zip(reference_ids, target_ids, strict=True)],
@@ -201,18 +207,22 @@ def match_fold_maps(
         for sample in sample_ids:
             if sample in representatives:
                 display["B0", sample] = maps["B0", sample]
-                display["B1", sample] = lookup[maps["B1", sample]]
+                display[target_condition, sample] = lookup[maps[target_condition, sample]]
     return display, matching
 
 
-def load_sanity_data(experiment: Path) -> SanityData:
-    """Require 30-run coverage; use saved scores/counts and all 98 repeat-1 maps."""
+def load_sanity_data(experiment: Path, *, conditions: tuple[str, ...] = CONDITIONS) -> SanityData:
+    """Require complete runs; use saved scores/counts and all repeat-1 maps."""
+    if (len(conditions) < 2 or conditions[0] != "B0"
+            or len(set(conditions)) != len(conditions)
+            or not set(conditions) <= set(SUPPORTED_CONDITIONS)):
+        raise ValueError("Expected unique supported conditions starting with B0 and at least one target")
     reader = SourceReader(experiment)
     frame, hashes = _manifest(reader)
     expected = {row.sample_id: int(row.test_fold) for row in frame.itertuples(index=False)}
     samples = frame.set_index("sample_id").to_dict("index")
     occupancy, records, maps = [], [], {}
-    for condition in CONDITIONS:
+    for condition in conditions:
         for fold in FOLDS:
             test_ids = sorted(sample for sample, test in expected.items() if test == fold)
             for repeat in REPEATS:
@@ -266,14 +276,18 @@ def load_sanity_data(experiment: Path) -> SanityData:
                                or row.status not in ("defined", "undefined") for row in selected)):
                     raise ValueError(f"Metric score coverage/identity mismatch: {suffix}")
                 records.extend(selected)
-    display, matching = match_fold_maps(maps, expected)
+    display, matching = {}, []
+    for condition in conditions[1:]:
+        aligned, assignments = match_fold_maps(maps, expected, target_condition=condition)
+        display.update(aligned)
+        matching.extend(assignments)
     summaries = tuple(aggregate_scores(
         [row for row in records if row.condition_id == condition and row.k == k and row.metric == metric],
         expected_test_folds=expected, condition_id=condition, metric=metric, k=k,
-    ) for metric in REPEATED_METRICS for condition in CONDITIONS for k in CLUSTER_COUNTS)
+    ) for metric in REPEATED_METRICS for condition in conditions for k in CLUSTER_COUNTS)
     reader.verify_unchanged()
     return SanityData(expected, pd.DataFrame(occupancy), summaries, display, matching,
-                      [reader.ledger[name] for name in sorted(reader.ledger)])
+                      [reader.ledger[name] for name in sorted(reader.ledger)], conditions)
 
 
 def _save_figure(figure: plt.Figure, output: Path, stem: str, dpi: int) -> None:
@@ -288,7 +302,7 @@ def _plot_maps(data: SanityData, output: Path, dpi: int) -> None:
     directory.mkdir()
     cmap = ListedColormap(LABEL_COLORS)
     norm = BoundaryNorm(np.arange(-0.5, DISPLAY_K + 1.5), cmap.N)
-    for condition in CONDITIONS:
+    for condition in data.conditions:
         fig, axes = plt.subplots(1, len(REPRESENTATIVES), figsize=(15, 4.8), squeeze=False)
         for axis, (_, sample) in zip(axes[0], REPRESENTATIVES, strict=True):
             labels = data.maps[condition, sample]
@@ -306,7 +320,8 @@ def _plot_maps(data: SanityData, output: Path, dpi: int) -> None:
 
 def _plot_silhouette(data: SanityData, output: Path, dpi: int) -> None:
     fig, axis = plt.subplots(figsize=(8, 5), layout="constrained")
-    for condition, color in zip(CONDITIONS, CONDITION_COLORS, strict=True):
+    for condition in data.conditions:
+        color = ALL_CONDITION_COLORS[SUPPORTED_CONDITIONS.index(condition)]
         summaries = [row for row in data.summaries
                      if row.expression == condition and row.metric == "silhouette"]
         means = np.array([np.nan if row.mean is None else row.mean for row in summaries])
@@ -356,21 +371,23 @@ def _summary_frame(data: SanityData) -> pd.DataFrame:
 
 
 def _matching_frame(data: SanityData) -> pd.DataFrame:
-    # Each row is an assigned B1 ID, with its overlap against all B0 IDs. This
+    # Each row is an assigned target ID, with its overlap against all B0 IDs. This
     # retains the complete contingency matrix without extra diagnostic files.
     return pd.DataFrame([{
         "fold": fold["fold"], "repeat": DISPLAY_REPEAT, "k": DISPLAY_K,
-        "reference": "B0", "target": "B1", **assignment,
+        "reference": "B0", "target": fold["target"], **assignment,
         "fold_valid_pixels": fold["valid_pixels"],
         "fold_overlap_fraction": fold["overlap_fraction"],
         "fold_sample_ids": json.dumps(fold["sample_ids"]),
-        **{f"overlap_b0_id_{index + 1}": counts[assignment["b1_raw_id"] - 1]
+        **{f"overlap_b0_id_{index + 1}": counts[assignment[f"{fold['target'].lower()}_raw_id"] - 1]
            for index, counts in enumerate(fold["contingency"])},
     } for fold in data.matching for assignment in fold["assignments"]])
 
 
-def render_sanity(experiment: Path, output: Path, *, dpi: int = 240) -> Path:
-    """Save two condition-wise map sheets, a silhouette PNG and three CSV tables."""
+def render_sanity(
+    experiment: Path, output: Path, *, dpi: int = 240, conditions: tuple[str, ...] = CONDITIONS,
+) -> Path:
+    """Save condition-wise map sheets, a silhouette PNG and three CSV tables."""
     experiment, output = experiment.resolve(), output.resolve()
     if output.is_relative_to(experiment) or experiment.is_relative_to(output):
         raise ValueError("Sanity output must be separate from the CV experiment directory")
@@ -378,7 +395,7 @@ def render_sanity(experiment: Path, output: Path, *, dpi: int = 240) -> Path:
         raise FileExistsError(f"Sanity output already exists: {output}")
     if type(dpi) is not int or not 100 <= dpi <= 600:
         raise ValueError("DPI must be an integer between 100 and 600")
-    data = load_sanity_data(experiment)
+    data = load_sanity_data(experiment, conditions=conditions)
     output.mkdir(parents=True, exist_ok=False)
     data.occupancy.to_csv(output / "occupancy.csv", index=False)
     _matching_frame(data).to_csv(output / "matching.csv", index=False)

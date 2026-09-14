@@ -33,7 +33,7 @@ def test_occupancy_excludes_background_and_keeps_single_cluster_samples() -> Non
 
 
 @pytest.fixture
-def saved_sources(tmp_path: Path) -> Path:
+def saved_sources(tmp_path: Path, request: pytest.FixtureRequest) -> Path:
     experiment = tmp_path / "cv"
     (experiment / "manifests").mkdir(parents=True)
     (experiment / "config").mkdir()
@@ -51,7 +51,8 @@ def saved_sources(tmp_path: Path) -> Path:
         "manifests/inputs.json", "manifests/folds.parquet", "config/experiment.json",
     )}
     _write_json(experiment / "manifests/complete.json", {"status": "complete", "artifact_sha256": hashes})
-    for condition in sanity.CONDITIONS:
+    conditions = getattr(request, "param", sanity.CONDITIONS)
+    for condition in conditions:
         for fold in FOLDS:
             test_ids = sorted(row["sample_id"] for row in rows if row["test_fold"] == fold)
             for repeat in REPEATS:
@@ -74,7 +75,7 @@ def saved_sources(tmp_path: Path) -> Path:
                     map_file = f"maps/{sample}.npz"
                     if repeat == 1:
                         labels = np.array([[0, 0, 0, 0], [0, 1, 1, 1], [0, 1, 2, 2]], dtype=np.int16)
-                        if condition == "B1":
+                        if condition != "B0":
                             labels = np.array([0, 2, 1], dtype=np.int16)[labels]
                         np.savez_compressed(cluster / map_file, labels_k8=labels)
                     reports.append({
@@ -84,7 +85,7 @@ def saved_sources(tmp_path: Path) -> Path:
                                       + [0] * (k - 2) for k in CLUSTER_COUNTS},
                     })
                     value = (ADOPTED_SAMPLE_IDS.index(sample) / 100 + repeat / 10
-                             + sanity.CONDITIONS.index(condition) / 20)
+                             + conditions.index(condition) / 20)
                     scores.extend(asdict(ScoreRecord(sample, fold, condition, k, metric,
                                                      repeat, "defined", value / (index + 1)))
                                   for k in CLUSTER_COUNTS
@@ -255,3 +256,32 @@ def test_figure_writer_saves_png_only(tmp_path: Path) -> None:
     axis.plot([0, 1], [0, 1])
     sanity._save_figure(figure, tmp_path, "metric", 100)
     assert [path.name for path in tmp_path.iterdir()] == ["metric.png"]
+
+
+@pytest.mark.parametrize("saved_sources", [sanity.SUPPORTED_CONDITIONS], indirect=True)
+def test_four_conditions_share_b0_reference_and_keep_source_labels(
+    saved_sources: Path, tmp_path: Path,
+) -> None:
+    data = sanity.load_sanity_data(saved_sources, conditions=sanity.SUPPORTED_CONDITIONS)
+    assert len(data.summaries) == 280
+    assert len(data.occupancy) == 49 * 4 * 3 * 7
+    assert len(data.maps) == 28
+    assert len(data.matching) == 15
+    for condition in ("B1", "A0", "M00"):
+        for _, sample in sanity.REPRESENTATIVES:
+            np.testing.assert_array_equal(data.maps["B0", sample], data.maps[condition, sample])
+    output = sanity.render_sanity(saved_sources, tmp_path / "four", dpi=100,
+                                  conditions=sanity.SUPPORTED_CONDITIONS)
+    assert len(list((output / "labels").glob("*.png"))) == 4
+    matching = pd.read_csv(output / "matching.csv")
+    assert len(matching) == 120
+    for condition in ("B1", "A0", "M00"):
+        rows = matching[matching["target"] == condition]
+        assert rows[f"{condition.lower()}_raw_id"].notna().all()
+        assert (rows["fold_overlap_fraction"] == 1).all()
+
+
+@pytest.mark.parametrize("conditions", [("A0", "M00"), ("B0", "A0", "A0"), ("B0", "M11")])
+def test_invalid_conditions_fail_before_reading(tmp_path: Path, conditions: tuple[str, ...]) -> None:
+    with pytest.raises(ValueError, match="supported conditions"):
+        sanity.load_sanity_data(tmp_path, conditions=conditions)
