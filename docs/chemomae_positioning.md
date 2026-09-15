@@ -1,7 +1,7 @@
 # ChemoMAEの特徴とケモメトリクスにおける位置づけ
 
 本書はChemoMAE v0.2.2の採用理由と、構成から言えること・評価で確かめることを整理する。
-固定条件は[実験プロトコル](design/experiment_protocol.md)、導出は[修論付録B](../thesis/appendices/mathematical_details.md)、
+固定条件は[実験プロトコル](design/experiment_protocol.md)、導出は[数理的補足](mathematical_notes.md)、
 文献の確認範囲は[関連研究](related_work.md)、観察は[解釈メモ](interpretation_notes.md)を参照する。
 
 - [MAEと追加corruptionの採用理由](#1-この構成をどう捉えるか)
@@ -71,7 +71,7 @@ Vincentらの分類実験等はこの原理を支えるが、古材NIRで化学�
 再構成lossはクラスタの生成・分離を直接要求しない。
 
 既定の主要比較M11対B0・B1・M00と、M00・M10・M01・M11の2×2 ablationで調べる。
-A1等は追加せず、MAEへの追加corruptionの効果をLLA・LFRと既定診断で評価する。
+A1等は追加せず、MAEへの追加corruptionの効果を補正前LLA・LFRと既定診断で評価する。
 どの入力差が強調・抑制されたかを追う補助診断一式は、現行比較に必須ではないため実施計画から外した
 （[必要性の見直し](design/representation_geometry_diagnostics.md)）。
 
@@ -172,7 +172,7 @@ $$
 同次元以下のアフィン部分空間近似を最適化する。ただし、masked loss・未知試料・クラスタリング品質の優劣は別である。
 
 本研究では、corruptionから座標を推定する学習課題の有用性を、既定CVによるマップの性質と観測スペクトルの解釈から検討する。
-[付録B.5](../thesis/appendices/mathematical_details.md#latent-decoder)は、入力差・潜在差・残差とlossの関係を示す数理的補足である。
+[数理的補足B.5](mathematical_notes.md#latent-decoder)は、入力差・潜在差・残差とlossの関係を示す数理的補足である。
 関係式の成立を、TGN・shiftによる改善やその機構の実証とはしない。対応する診断一式は[未採用候補](design/representation_geometry_diagnostics.md)として残す。
 
 <a id="snv-geometry"></a>
@@ -298,7 +298,7 @@ $\lVert y\rVert_2>0$ ならSNV制約へ戻るが、同じshift幅でも角度変
 
 M11は各操作を画素ごとに確率0.5で適用し、順序をbatchごとにランダム化する。
 固定順序で常に両操作を行う構成ではない。角度制御・制約保存の導出は
-[付録B](../thesis/appendices/mathematical_details.md)を参照する。
+[数理的補足](mathematical_notes.md)を参照する。
 現行ablationには加法noiseや再投影なしshiftとの比較がなく、幾何保存そのものの優位性は単独に検証しない。
 
 <a id="augmentation-vicinity"></a>
@@ -342,14 +342,14 @@ $$
 | --- | --- |
 | 提案する設計 | SNV制約を保つTGN・shiftをmasked denoisingへ組み込み、単一16次元単位潜在へ集約する |
 | 固定表現の利用 | 学習後のencoderとtrainでfitした中心をtestへ適用する。後段fine-tuningを要しない現行pipelineの事実 |
-| 追加corruptionの効果 | MAE群の2×2比較・交互作用をLLA・LFRと既定診断で評価する。化学状態をより安定して反映することは仮説であり、指標や再構成lossからは保証されない |
+| 追加corruptionの効果 | MAE群の2×2比較・交互作用を補正前LLA・LFRと既定診断で評価する。化学状態をより安定して反映することは仮説であり、指標や再構成lossからは保証されない |
 | 指定摂動への安定性 | LFRで割当の維持を測る。学習と同じ種類・強度の人工摂動への結果であり、実測誤差全般や化学情報保持へ外挿しない |
-| どの差が強調・抑制されたか | 現行実験の実証範囲に含めない。[補助診断の旧案](design/representation_geometry_diagnostics.md)は未採用で、付録B.5は数理的補足に留める |
+| どの差が強調・抑制されたか | 現行実験の実証範囲に含めない。[補助診断の旧案](design/representation_geometry_diagnostics.md)は未採用で、数理的補足B.5は数理的補足に留める |
 | 化学的な対応 | NIR代表・差スペクトルと位置対応FT-IRによる解釈。FT-IRの測定設計はOpen、結果未確認 |
 | 構成の最適性 | 層数・潜在次元・線形decoder・正規化の最適性や、未比較SSLへの優位性は扱わない |
 
 5-fold・3反復のマップ評価は[評価指標](design/evaluation_metrics.md)に従う。
-LLA・LFRだけでなくoccupancy・反復間ARI等を併読し、単一クラスタ化等の退化を区別する。
+補正前LLA・LFRだけでなくoccupancy・反復間ARI等を併読し、単一クラスタ化等の退化を区別する。
 Cosine-silhouetteは各表現内の幾何診断であり、化学的妥当性の共通尺度ではない。
 化学的な対応は[FT-IR計画](design/visualization_and_interpretation.md#ftir-interpretation)に基づき別途検討する。
 

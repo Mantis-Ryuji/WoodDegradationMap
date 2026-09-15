@@ -19,9 +19,9 @@ PCA・KMeansのfit、表現抽出、評価を再実行しない。実行方法�
 | `silhouette_k_sweep.png` | 単一axesのK-sweep。下段subplotなし |
 | `occupancy.csv` | 条件・試料・fold・repeat・K別のcluster画素数、使用数、最大占有率、単一cluster flag |
 | `matching.csv` | foldごとのB1 raw IDからB0表示IDへの対応、contingency、overlap |
-| `metrics_summary.csv` | silhouette、LLA-3/5/9、補正LLA-3/5/9、LFR noise・shift・両方の集計 |
+| `metrics_summary.csv` | silhouette、補正前LLA-3/5/9、LLA-3/5/9、LFR noise・shift・両方の集計 |
 
-LLA、LFR、occupancyはCSVで確認する。boundary mapと代表スペクトルは、この可視化の対象に含めない。
+補正前LLA、LFR、occupancyはCSVで確認する。boundary mapと代表スペクトルは、この可視化の対象に含めない。
 
 ## 2. 代表試料のlabel map
 

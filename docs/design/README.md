@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | [前処理](preprocessing.md) | Fixed | 200 Hz入力、mask、負値除外、256点補間、SNV、保存schema |
 | [実験プロトコル](experiment_protocol.md) | 主条件Fixed / vMF数値仕様Open | 条件、split、seed、共通画素、学習、クラスタリング、実行記録 |
-| [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA、LFR、silhouette、ARI、occupancy、未定義値、集約、比較 |
+| [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | 補正前LLA、LFR、silhouette、ARI、occupancy、未定義値、集約、比較 |
 | [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1のPNG・CSV、fold内B0基準のmatching |
 | [全体可視化と解釈](visualization_and_interpretation.md) | Fixed / 任意責務マップ・FT-IR・正式目視評価の詳細Open | 全体fit、M00基準・観測SNV類似度のmatching、代表例、スペクトル、FT-IR計画 |
 | [表現幾何の補助診断の見直し](representation_geometry_diagnostics.md) | 現行計画から除外 / 未採用候補 | 既定評価との関係、実施項目から外した理由、数理的補足と旧案 |
