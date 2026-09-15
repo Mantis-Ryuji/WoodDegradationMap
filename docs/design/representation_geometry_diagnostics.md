@@ -4,7 +4,7 @@
 
 ## 1. 現在の判断と適用範囲
 
-**B.5に対応する補助診断一式は現行の実施計画・ToDoから外す。診断は未実装・未実施であり、完了扱いにはしない。付録B.5の関係式は数理的補足として残す。**
+**B.5に対応する補助診断一式は現行の実施計画・ToDoから外す。診断は未実装・未実施であり、完了扱いにはしない。数理的補足B.5の関係式は数理的補足として残す。**
 
 2026-09-12にはクラスタ単位・画素単位の診断方針に合意したが、2026-09-13に現行実験設計との関係を見直した。
 診断実施前に、現行の問いに対する必要性・主張範囲・追加負担から判断した。今回、実験・成果物の再評価は行っていない。
@@ -17,7 +17,7 @@ TGN・shiftの単独・追加・併用によってマップの性質がどう変
 
 | 問い | 現行設計の証拠 | B.5が追加できることと限界 |
 | --- | --- | --- |
-| 空間的一貫性が変わるか | LLA-3/5/9、補正LLA、occupancy、マップ | 一般の画素対の距離変化は、空間近傍のラベル一致を直接説明しない |
+| 空間的一貫性が変わるか | 補正前LLA-3/5/9、LLA、occupancy、マップ | 一般の画素対の距離変化は、空間近傍のラベル一致を直接説明しない |
 | 指定摂動への割当安定性が変わるか | noise・shift・両方のLFR、cleanと摂動後のoccupancy | B.5.4は潜在の連続的な移動を測れる。ただし移動量だけでは割当境界との関係やLFR改善の原因は決まらない |
 | 分離・再現性・退化がどう変わるか | 各表現のcosine-silhouette、反復間ARI、occupancy・使用クラスタ数 | B.5.1・B.5.3は同じ画素集合で距離や広がりを詳しく記述できるが、分離の診断と重なる部分があり、独立した有用性の尺度にはならない |
 | 領域差を化学的に解釈できるか | 代表・差スペクトル、試料情報、位置対応FT-IRの計画 | SVD・残差・潜在距離だけでは化学的対応や劣化情報の保持を同定できない |
@@ -30,8 +30,8 @@ B.5.2・B.5.5の恒等式は、再構成lossと潜在のcosine幾何が異なる
 ### 1.2 論文と今後の扱い
 
 - 研究の実証範囲は、既定CVによるマップの性質の比較と、観測スペクトル等に基づく化学的解釈とする。
-  「どの入力差を選択的に強調・抑制したかを解明した」「その変化がLLA・LFR改善を引き起こした」とは主張しない。
-- 付録B.5は条件付きの数理的関係を補足する。式を掲載したことを理由に、各式に対応する補助実験や結果図表を必須にしない。
+  「どの入力差を選択的に強調・抑制したかを解明した」「その変化が補正前LLA・LFR改善を引き起こした」とは主張しない。
+- 数理的補足B.5は条件付きの数理的関係を補足する。式を掲載したことを理由に、各式に対応する補助実験や結果図表を必須にしない。
 - 潜在の摂動応答を明示的に主張するなど、既存指標で答えられない具体的な問いが生じた場合だけ、対応する最小の解析を再検討する。
   追加を自動化せず、採用する問い・対象・集計・報告範囲を別途決める。結果を見た後の追加は探索的と明記し、反例や効果のない範囲も報告する。
 - 主比較、mask率・vMF補助実験、既定のPCA/UMAPを含む全体可視化、FT-IR計画は変更しない。Attention mapは追加しない。
@@ -234,7 +234,7 @@ $$
 
 第2項は $h^{-1}\sum_i\sigma_{H,i}^2\operatorname{Var}_a(\boldsymbol{v}_{H,i}^{\mathsf T}\boldsymbol{z}_{p,H,a})$ であり、方向ごとに異なる重みで潜在のばらつきが損失へ現れる。
 
-以下の上界は必要性を判断する任意候補とし、現付録には掲載しない。$a,a'$ を独立な摂動抽出とすると、単位潜在と列full rankの $W_H$ について、
+以下の上界は必要性を判断する任意候補とし、現行の数理的補足には掲載しない。$a,a'$ を独立な摂動抽出とすると、単位潜在と列full rankの $W_H$ について、
 
 $$
 \mathbb{E}_{a,a'}[1-\boldsymbol{z}_{p,H,a}^{\mathsf T}\boldsymbol{z}_{p,H,a'}]
@@ -253,7 +253,7 @@ $$
 
 ### 5.5 潜在の変化とlabel flipの接続
 
-境界marginは必要性を判断する任意候補とし、現付録には掲載しない。
+境界marginは必要性を判断する任意候補とし、現行の数理的補足には掲載しない。
 
 全可視clean潜在 $\boldsymbol{z}_p$ の割当先を $k$、固定した単位KMeans中心を $\boldsymbol{c}_j$ とする。異なる中心間で
 
@@ -293,18 +293,18 @@ $$
 
 主評価の有効画素・K・反復を変更しない。診断用の部分抽出を行う場合は、主評価の母集団と区別して対象数・重みを示す。計算はbatch集計を基本案とし、全対距離行列や全maskの生成を避ける。既存表現の再利用可否、復元・摂動forwardの必要数、メモリ・GPU負荷は実装前に見積もる。
 
-改訂した付録との対応は次のとおり。数理の記載は診断の実装・実行済みを意味しない。
+数理的補足との対応は次のとおり。数理の記載は診断の実装・実行済みを意味しない。
 
-| 付録の箇所 | 数理と診断の対応 |
+| 数理的補足の箇所 | 数理と診断の対応 |
 | --- | --- |
-| [B.5.1](../../thesis/appendices/mathematical_details.md#pairwise-gain) | 同じ画素対の入力・潜在距離と有限差分の拡大率（本計画§5.1） |
-| [B.5.2](../../thesis/appendices/mathematical_details.md#svd-interpretation) | 入力差・潜在差・残差差のSVD対応（§5.2） |
-| [B.5.3](../../thesis/appendices/mathematical_details.md#cluster-mean-geometry) | 共通重みのクラスタ平均、方向差と集中度（§4） |
-| [B.5.4](../../thesis/appendices/mathematical_details.md#perturbation-response) | 固定画素への摂動応答をばらつきとcleanからの平均のずれに分ける（§5.3） |
-| [B.5.5](../../thesis/appendices/mathematical_details.md#masked-loss-variation) | 固定maskのlossを平均予測誤差とdecoderで重み付けされた変動へ分ける（§5.4） |
-| [B.6](../../thesis/appendices/mathematical_details.md#numerical-geometry) | 単位化・有限精度・rank等の照合条件。精度比較は自動追加しない |
+| [B.5.1](../mathematical_notes.md#pairwise-gain) | 同じ画素対の入力・潜在距離と有限差分の拡大率（本計画§5.1） |
+| [B.5.2](../mathematical_notes.md#svd-interpretation) | 入力差・潜在差・残差差のSVD対応（§5.2） |
+| [B.5.3](../mathematical_notes.md#cluster-mean-geometry) | 共通重みのクラスタ平均、方向差と集中度（§4） |
+| [B.5.4](../mathematical_notes.md#perturbation-response) | 固定画素への摂動応答をばらつきとcleanからの平均のずれに分ける（§5.3） |
+| [B.5.5](../mathematical_notes.md#masked-loss-variation) | 固定maskのlossを平均予測誤差とdecoderで重み付けされた変動へ分ける（§5.4） |
+| [B.6](../mathematical_notes.md#numerical-geometry) | 単位化・有限精度・rank等の照合条件。精度比較は自動追加しない |
 
-本文に定義・前提・主要結果、付録Bに導出と成立条件、評価方法に診断手順、補足結果に実測図表を置く。数理的に計算可能なことと、実測が解釈を支持したことを区別する。
+本文に定義・前提・主要結果、数理的補足に導出と成立条件、評価方法に診断手順、補足結果に実測図表を置く。数理的に計算可能なことと、実測が解釈を支持したことを区別する。
 
 <a id="open-items"></a>
 
@@ -325,9 +325,9 @@ $$
 
 ## 9. 関連文書
 
-- [付録B.5以降](../../thesis/appendices/mathematical_details.md#latent-decoder)：画素対とクラスタ平均、入力差・残差・摂動応答、固定maskのlossと数値条件。
-- [モデルとloss](../../thesis/chapters/3_analysis_methods/representation_learning.md)：clean target、不可視帯域loss、全可視での抽出。
-- [クラスタリング](../../thesis/chapters/3_analysis_methods/clustering_mapping.md)：単位中心、fit対象とtestへの固定適用。
+- [数理的補足B.5以降](../mathematical_notes.md#latent-decoder)：画素対とクラスタ平均、入力差・残差・摂動応答、固定maskのlossと数値条件。
+- [モデルとloss](../chemomae_positioning.md)：clean target、不可視帯域loss、全可視での抽出。
+- [クラスタリング](experiment_protocol.md#augmentation-clustering)：単位中心、fit対象とtestへの固定適用。
 - [全体可視化のスペクトル集計](visualization_and_interpretation.md)：第4.1節の中央値による代表線とCVとの区別。
 - [解釈メモ第8節](../interpretation_notes.md#decoder-residual-discussion)：既存の残差・SVD確認候補と、現行計画から外した診断の位置づけ。
 

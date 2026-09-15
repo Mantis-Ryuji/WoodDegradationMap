@@ -395,7 +395,7 @@ uv run --no-sync python scripts/experiments/visualize_b0_b1_oof.py `
 ```
 
 終了code 0と保存物を確認する。B0/B1別の代表7試料図でKYOw名が各試料の下にあり、
-silhouetteに下段subplotがないことを確認する。LLA・LFR・occupancyと未定義理由はCSVで読む。
+silhouetteに下段subplotがないことを確認する。補正前LLA・LFR・occupancyと未定義理由はCSVで読む。
 sanity出力にはログやcompletion JSONを追加しない。
 
 <a id="artifact-records"></a>

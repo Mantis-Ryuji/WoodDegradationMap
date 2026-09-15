@@ -1,6 +1,6 @@
-# 付録B 数理的補足
+# 数理的補足
 
-第3章の定義から導かれる性質を、入力の制約、学習課題、復元モデルの順に示す。有限な入力と非ゼロの正規化分母を仮定する理想演算を扱い、数値保護はB.6で補足する。性能や化学的妥当性は実験で検討する。
+[前処理](design/preprocessing.md)と[モデル・摂動](chemomae_positioning.md)の定義から導かれる性質を、入力の制約、学習課題、復元モデルの順に示す。有限な入力と非ゼロの正規化分母を仮定する理想演算を扱い、数値保護はB.6で補足する。性能や化学的妥当性は実験で検討する。
 
 | 論点 | 導出する内容 | 対応節 |
 | --- | --- | --- |
@@ -9,7 +9,7 @@
 | 表現と復元 | 入力差の拡大・縮小、クラスタ内外の変動、SVD・残差とmasked lossの対応 | [B.5](#latent-decoder) |
 | 数値実装 | 理想式の照合と退化条件 | [B.6](#numerical-geometry) |
 
-記号の対応は[共通記号表](../notation.md)を参照する。
+2026-09-16に旧論文草稿から、研究文書が参照する導出を保存した。節・式のB番号とアンカーは既存記録との照合用に保持する。記号は各節で定義し、論文側の章番号・記号とは別に管理する。
 
 <a id="snv-geometry"></a>
 
@@ -17,7 +17,7 @@
 
 ### B.1.1 平均とnorm
 
-以下では一つの有効画素に注目し、第3.2節の画素添字 $p$ を省略する。補間後のチャネル数を $C=256$、チャネル添字を $j=0,\ldots,C-1$、補間反射率を $\widetilde{\boldsymbol{R}}\in\mathbb{R}^{C}$、その第 $j$ 成分を $\widetilde{R}_j$ とする。その画素内平均 $\mu$ と標本標準偏差 $s>0$ は、本文の $\mu_p,s_p$ と同じ量である。$\boldsymbol{1}$ は全成分1の $C$ 次元ベクトル、上付き $\mathsf T$ は転置、$\|\cdot\|_2$ はL2 normを表す。SNVスペクトルを $\boldsymbol{x}=(\widetilde{\boldsymbol{R}}-\mu\boldsymbol{1})/s$ とすると、
+以下では一つの有効画素に注目し、画素添字 $p$ を省略する。補間後のチャネル数を $C=256$、チャネル添字を $j=0,\ldots,C-1$、補間反射率を $\widetilde{\boldsymbol{R}}\in\mathbb{R}^{C}$、その第 $j$ 成分を $\widetilde{R}_j$ とする。その画素内平均 $\mu$ と標本標準偏差 $s>0$ は、画素ごとの $\mu_p,s_p$ と同じ量である。$\boldsymbol{1}$ は全成分1の $C$ 次元ベクトル、上付き $\mathsf T$ は転置、$\|\cdot\|_2$ はL2 normを表す。SNVスペクトルを $\boldsymbol{x}=(\widetilde{\boldsymbol{R}}-\mu\boldsymbol{1})/s$ とすると、
 
 $$
 \boldsymbol{1}^{\mathsf T}\boldsymbol{x}
@@ -289,7 +289,7 @@ $$
 
 ## B.5 表現幾何と再構成損失の関係
 
-本節では、単位潜在と線形decoderのもとで、入力差・潜在差・再構成残差の関係を、画素対、クラスタ平均、同一画素への摂動について示す。これらは条件付きの数理的関係であり、TGN・shiftによって実際に何が強調・抑制されたか、またそれが指標改善を引き起こしたかを示す結果ではない。関係式ごとの補助実験を現行の実施計画には含めず、条件間の効果は第4章の既定比較・評価で検討する。
+本節では、単位潜在と線形decoderのもとで、入力差・潜在差・再構成残差の関係を、画素対、クラスタ平均、同一画素への摂動について示す。これらは条件付きの数理的関係であり、TGN・shiftによって実際に何が強調・抑制されたか、またそれが指標改善を引き起こしたかを示す結果ではない。関係式ごとの補助実験を現行の実施計画には含めず、条件間の効果は[既定比較](design/experiment_protocol.md)・[評価](design/evaluation_metrics.md)で検討する。
 
 <a id="pairwise-gain"></a>
 
@@ -433,12 +433,12 @@ $$
 
 以上は単位normなどの制約を満たす理想式である。実装で照合する際は入力・潜在の実測norm、残差、平均と内積の計算誤差を確認する。零平均の方向、零入力距離の比、ゼロ特異値での除算は定義せず、極小距離・数値rankの扱いは診断前に固定する。
 
-正規化の保護とFP16学習・FP32抽出の設定は[付録C](implementation_details.md)に従う。FP16の値の間隔をMSEの下限とは扱わない。固定重みでのAMP・FP32比較は別の診断候補であり、本節の恒等式の照合に自動的に追加するものではない。
+正規化の保護とFP16学習・FP32抽出の設定は[数値実装の記録](numerical_implementation_notes.md)に従う。FP16の値の間隔をMSEの下限とは扱わない。固定重みでのAMP・FP32比較は別の診断候補であり、本節の恒等式の照合に自動的に追加するものではない。
 
 ---
 
-## 執筆メモ・論点の出典
+## 記述の根拠と確認範囲
 
-B.1〜B.4は第3章と[現行プロトコル](../../docs/design/experiment_protocol.md)の定義を補う。ChemoMAE v0.2.2のaugmentation・モデル・masked MSEと[呼出し側](../../src/wood_degradation_map/experiments/neural.py)は、既存の執筆時に読み取りで照合した。
+B.1〜B.4は[モデル・摂動の説明](chemomae_positioning.md)と[現行プロトコル](design/experiment_protocol.md)の定義を補う。ChemoMAE v0.2.2のaugmentation・モデル・masked MSEと[呼出し側](../src/wood_degradation_map/experiments/neural.py)は、既存の執筆時に読み取りで照合した。
 
-B.5は2026-09-12の[会話](https://chatgpt.com/c/6aa41285-9758-83ee-9d0f-8ca3daa23ff6)に沿って、入力差・潜在差・残差の関係式へ改訂した。一般的な楕円体・PCA・出力制約の導出は削除した。2026-09-13の[必要性の見直し](../../docs/design/representation_geometry_diagnostics.md)で、対応する補助診断一式を現行の実施計画から外し、本節は数理的補足に位置づけた。診断は未実装・未実施であり、本節の掲載を実験・結果図表の追加理由にしない。学習条件・主評価は変更せず、A1等は追加しない。Lossの概数と過去の説明候補は[解釈メモ](../../docs/interpretation_notes.md#decoder-residual-discussion)に残す。
+B.5は2026-09-12の[会話](https://chatgpt.com/c/6aa41285-9758-83ee-9d0f-8ca3daa23ff6)に沿って、入力差・潜在差・残差の関係式へ改訂した。一般的な楕円体・PCA・出力制約の導出は削除した。2026-09-13の[必要性の見直し](design/representation_geometry_diagnostics.md)で、対応する補助診断一式を現行の実施計画から外し、本節は数理的補足に位置づけた。診断は未実装・未実施であり、本節の掲載を実験・結果図表の追加理由にしない。学習条件・主評価は変更せず、A1等は追加しない。Lossの概数と過去の説明候補は[解釈メモ](interpretation_notes.md#decoder-residual-discussion)に残す。

@@ -46,7 +46,7 @@ KYOw単位の5-fold splitにtrain/testの試料重複はない。異なるKYOw�
 | 学習・再開 | 16 passed | epoch/update、checkpoint、同一run再開、失敗記録 |
 | clustering | 15 passed | train限定fit、固定center、全test行と座標復元 |
 | clustering pipeline | 20 passed | 全K map、重み由来、破損・中断・上書き拒否 |
-| spatial metrics | 33 passed | LLA、補正、近傍・境界、未定義値、入力契約 |
+| spatial metrics | 33 passed | 補正前LLA、LLA、近傍・境界、未定義値、入力契約 |
 | LFR | 27 passed | 共通摂動、連続乱数stream、flip集計、全可視推論 |
 | diagnostic metrics | 33 passed | cosine-silhouette、ARI、degenerate case、完全性 |
 | aggregation | 34 passed | 試料macro、2種類のSD、paired差、欠損の可視化 |
@@ -288,7 +288,7 @@ repeat 1のPCAを共有する。B0はfitするパラメータを持たない。
 | 5 | 9 | 796,370 | 795.86 s | 3,931.75 MiB | 3,962.00 MiB |
 
 B0は10,290 score rowsが全件definedだった。B1は10,290 rows中10,281 rowsがdefinedで、残る9 rowsは
-fold 2のKYOw02789・$K=2$における補正LLA（窓3・5・9、3反復）が`single_cluster`のためundefinedだった。
+fold 2のKYOw02789・$K=2$におけるLLA（窓3・5・9、3反復）が`single_cluster`のためundefinedだった。
 これは理由付き未定義値として保持し、0で補完しない。B0・B1だけを用いた性能順位は確定せず、
 主7条件の全fold・反復が揃ったOOF snapshotで計画比較する。
 
