@@ -1,11 +1,11 @@
-# 研究・実装・執筆 ToDo
+# 研究・実装 ToDo
 
-更新日: 2026-09-15。実験の状態は2026-09-15までに確認・共有された記録に基づく。
+更新日: 2026-09-16。実験の状態は2026-09-15までに確認・共有された記録に基づく。
 今回の文書整理では学習・評価・成果物checkを再実行していない。
 
 本書は残作業を管理する。[文書案内](docs/README.md)から、
 [固定設計](docs/design/README.md)、[実行手順](docs/experiment_runbook.md)、[検証履歴](docs/verification_history.md)へ進む。
-原稿と資料の対応は[修論ドラフト](thesis/README.md)・[執筆計画](thesis/writing_plan.md)を参照する。
+論文は外部で執筆する。研究資料との対応と注意点は[執筆への引き継ぎ](docs/manuscript_handoff.md)を参照する。
 
 ## 現在の状態と次のrun
 
@@ -65,9 +65,9 @@
 この節と次節の実装はAstraへ切り替えて進める予定（ユーザー指定）。
 作業時のモデル選択であり、研究条件や成果物の再現性要件には含めない。
 B0・B1 OOF sanityは生成済みだが、以下の最終報告用図表pipelineは未実装。
-修論の結果章5.2〜5.4と付録Eへ渡す成果物として、[執筆計画の図表対応](thesis/writing_plan.md)と照合する。
+論文へ渡す成果物は[評価指標の必須図表](docs/design/evaluation_metrics.md#reporting)と[引き継ぎ時の確認](docs/manuscript_handoff.md)に従う。
 
-- [ ] OOF snapshotを入力に、代表$K_0=8$の主表と、補正LLA・silhouette・ARI・occupancy・有効対象数の診断表を生成するpipelineを実装する。
+- [ ] OOF snapshotを入力に、代表$K_0=8$の主表と、LLA・silhouette・ARI・occupancy・有効対象数の診断表を生成するpipelineを実装する。
 - [ ] 全7Kの主指標・主要contrast・反復別曲線、mask率依存性、paired差、2×2交互作用の図表を実装する。主要比較はM11対B0・B1・M00とし、残りの計画比較も保持する。
 - [ ] 未定義理由と共通対象数を保持し、試料間SD・反復間SD・ARIの集計を[報告規約](docs/design/evaluation_metrics.md#reporting)に合わせる。
 - [ ] 元snapshotと図表のsource hash、条件・K・反復・集計対象、captionに必要な定義を保存し、原稿の図表から根拠をたどれるようにする。
@@ -88,7 +88,7 @@ B0・B1 OOF sanityは生成済みだが、以下の最終報告用図表pipeline
 - [ ] 固定7代表試料を本文表示に使い、行をCosine-KMeans・vMF、列をB0・B1・A0・M00・M11とする比較図、KYOw試料ID、共通の表示規約を確認する。
 - [ ] 劣化との対応を探索的に記述し、CVの指標改善と化学的な対応を区別する。
 
-これらは修論の結果章5.5と付録Eに対応する。
+これらは全体マップと観測スペクトルの解釈資料として外部原稿へ渡す。
 
 ## 6. 既定計画に残るOpen事項
 
@@ -99,19 +99,12 @@ B0・B1 OOF sanityは生成済みだが、以下の最終報告用図表pipeline
 実行ごとの記録と保存は[runbook](docs/experiment_runbook.md#artifact-records)に従う。
 全体fit対象の拡張やmatching基準などの決定時点は[決定記録](docs/design/decisions.md)に残す。
 
-付録B.5に対応する表現幾何の補助診断一式は、2026-09-13の見直しで実施項目から外した。
+数理的補足B.5に対応する表現幾何の補助診断一式は、2026-09-13の見直しで実施項目から外した。
 既定CVの比較に必須ではなく、未実装・未実施の候補として[判断理由と旧案](docs/design/representation_geometry_diagnostics.md)に残す。
-補正LLA・silhouette・ARI・occupancy等の既定診断は第4節に含まれる。
+LLA・silhouette・ARI・occupancy等の既定診断は第4節に含まれる。
 
-## 7. 論文原稿と図表の整備
+## 7. 外部執筆への資料提供
 
-章ごとの論点は[構成案](thesis/outline.md)、資料・実装・図表の対応は[執筆計画](thesis/writing_plan.md)を正とする。
-ここでは執筆の残作業と、実験・実装への依存を管理する。
-
-- [x] 第3章と付録A〜Cの第1稿を作成し、`docs/`・`thesis/`の論点、本文・付録・執筆メモ、記号・参照を整理した（2026-09-12）。
-- [ ] 第4章の比較条件・CV・反復・K・評価・集計と、付録Dを固定仕様に基づいて執筆する。vMFとFT-IRのOpen部分は未確定として残す。
-- [ ] 解析フロー参考図を最終作図へ移し、摂動・モデル・CV・指標の説明図と条件表を整える。Caption・記号・図の出典を本文と照合する。
-- [ ] 第1章の背景・関連研究・採用理由を、主張できる範囲と引用根拠が対応する文章へ整える。標準手法の原典・書誌を確認する。
-- [ ] 第2章に必要な試料由来・採取関係・状態・撮像装置・測定条件を整理する。FT-IRは詳細決定・実施後に対応する記載を整える。
-- [ ] 本書の第4〜5節の成果物と実行記録を確認して、第5章・付録Eの結果、第6章の考察、第7章の結論を執筆する。
-- [ ] 採用runの環境・重み・source hashと図表の出典、共通記号、引用、提出書式を照合し、LaTeXの最終稿へ移す。
+論文の章立て・本文・図の体裁・引用・執筆進捗は `C:\Users\PC_User\Python\Thesis` で管理する。
+2026-09-12に作成した第3章・付録A〜C等の旧草稿から、研究に必要な情報を2026-09-16に[引き継ぎ資料](docs/manuscript_handoff.md)とその参照先へ整理した。
+本リポジトリで行う実験・図表生成の残作業は第4〜6節、操作と出典の記録はrunbookに集約する。
