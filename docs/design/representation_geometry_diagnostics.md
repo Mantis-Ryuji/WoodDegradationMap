@@ -110,7 +110,7 @@ $$
 
 平均スペクトルをencoderへ再入力しない。非線形写像では一般に $F(\overline{\boldsymbol{x}}_k)\neq\overline{\boldsymbol{z}}_k$ であり、SNVの平均スペクトルも一定normを満たすとは限らない。上の等式に用いる平均潜在は単位化しない。平均方向の計算は別に行う。
 
-診断用の算術平均は[既定の中央値による代表線](visualization_and_interpretation.md)と区別する。試料をまたぐ場合も三つの量に共通重みを使い、試料内集計・試料macro比較を基本案として第8節で確定する。
+[可視化用の代表線](visualization_and_interpretation.md#representative-spectra)は試料内平均→試料間の等重み平均とする。診断でも入力・潜在・残差の三つの量で対象画素と重みを揃え、可視化の代表線を用いる場合はその集計対象・重みとの一致を確認する。診断用の試料内集計・試料macro比較の詳細は、採用する場合に第8節で確定する。
 
 ### 4.2 中心方向の分離とクラスタ内の広がり
 
@@ -328,7 +328,7 @@ $$
 - [数理的補足B.5以降](../mathematical_notes.md#latent-decoder)：画素対とクラスタ平均、入力差・残差・摂動応答、固定maskのlossと数値条件。
 - [モデルとloss](../chemomae_positioning.md)：clean target、不可視帯域loss、全可視での抽出。
 - [クラスタリング](experiment_protocol.md#augmentation-clustering)：単位中心、fit対象とtestへの固定適用。
-- [全体可視化のスペクトル集計](visualization_and_interpretation.md)：第4.1節の中央値による代表線とCVとの区別。
+- [全体可視化のスペクトル集計](visualization_and_interpretation.md)：第4.1節の2段階平均による代表線・SG二次微分とCVとの区別。
 - [解釈メモ第8節](../interpretation_notes.md#decoder-residual-discussion)：既存の残差・SVD確認候補と、現行計画から外した診断の位置づけ。
 
 計画時点では文書照合と代数的確認のみ実施し、コード・学習済み重み・実画素・追加forward・テストは未実行。
