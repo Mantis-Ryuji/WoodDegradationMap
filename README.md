@@ -32,7 +32,9 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 B0・B1の[OOF sanity可視化](docs/design/oof_sanity_visualization.md)は生成済みです。
 全主条件の最終報告用図表、vMF補助実験、全体fitのpipelineは未実装です。
 vMFの数値仕様にはOpen事項があります。全体解釈では5条件×2手法を比較し、
-表示番号はA0のCosine-KMeansへ整列します。
+表示番号はM00のCosine-KMeansを基準に、観測SNV代表スペクトルのcosine類似度で整列します。
+代表スペクトルは試料内平均→試料間の等重み平均で集計し、表示と対応付けに同じSNV平均線を使います。
+反射率・SNV・疑似吸光度の二次微分を比較する[集計設計](docs/design/visualization_and_interpretation.md#representative-spectra)は確定済みです。
 
 ## 主な配置
 
