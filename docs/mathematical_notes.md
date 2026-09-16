@@ -356,7 +356,7 @@ $$
 \tag{B.20}
 $$
 
-したがって、群間の平均スペクトル差にも式(B.19)を適用できる。一般に $F(\overline{\boldsymbol{x}}_k)\neq\overline{\boldsymbol{z}}_k$ なので、平均スペクトルをencoderへ入力して代用しない。この線形対応に使う平均潜在は単位化せず、既定の中央値による代表スペクトルとも区別する。
+したがって、群間の平均スペクトル差にも式(B.19)を適用できる。一般に $F(\overline{\boldsymbol{x}}_k)\neq\overline{\boldsymbol{z}}_k$ なので、平均スペクトルをencoderへ入力して代用しない。この線形対応に使う平均潜在は単位化しない。[可視化用の代表線](design/visualization_and_interpretation.md#representative-spectra)は試料内平均→試料間の等重み平均であり、この関係式に用いる場合も入力・潜在・残差で対象画素と重みを揃える。
 
 二集合から上記の重みで独立に画素を選ぶと、内積の双線形性より、
 

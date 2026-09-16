@@ -19,6 +19,7 @@
 | 2026-09-10 | B0・B1 OOF sanityの保存をlabel・silhouetteのPNGと数値CSVへ整理 | 探索的な表示仕様。fold内B0基準のmatchingを使用 | [OOF sanity](oof_sanity_visualization.md) |
 | 2026-09-12 | MAE群における変動の強調・抑制を、クラスタ単位と画素単位の両方で補助診断する方針に合意 | CV開始後の探索的な計画。A1等の学習条件は追加せず、比較集合・抽出・数値規約等は当時Open。実装・診断は未実施で、翌日の見直しにより現行計画から除外 | [判断理由と旧案](representation_geometry_diagnostics.md) |
 | 2026-09-13 | B.5に対応する補助診断一式を現行の実施計画・ToDoから外し、関係式は数理的補足に位置づける | 既定の2×2比較・補正前LLA・LFR等で主実験の問いを評価でき、診断一式は必須ではないと実施前に判断。選択的な強調・抑制や改善機構の実証は主張しない。主条件・指標・mask率・vMF・全体可視化・FT-IR計画は維持 | [必要性の見直し](representation_geometry_diagnostics.md) |
-| 2026-09-14 | 全体fit後の表示基準をM00＋Cosine-KMeansへ変更し、観測SNV代表線のcosine類似度によるHungarian matchingを採用 | OOF途中結果の確認後・全体fit前にユーザーが確定。標準MAEを比較の起点とし、全9組を直接整列する。代表線は試料内中央値→試料間中央値とし、寄与試料と類似度行列・確認用contingency/overlapを保存する。M00の安定性が最良と確認されたことは理由にせず、共通encoder空間やB0–B1だけの別方式は採用しない。CV・OOF sanityは変更しない | [matching基準と方法](visualization_and_interpretation.md#matching-reference) |
+| 2026-09-14 | 全体fit後の表示基準をM00＋Cosine-KMeansへ変更し、観測SNV代表線のcosine類似度によるHungarian matchingを採用 | OOF途中結果の確認後・全体fit前にユーザーが確定。標準MAEを比較の起点とし、全9組を直接整列する。当時の代表線は試料内中央値→試料間中央値とした（集計方法は2026-09-17の決定で更新）。寄与試料と類似度行列・確認用contingency/overlapを保存する。M00の安定性が最良と確認されたことは理由にせず、共通encoder空間やB0–B1だけの別方式は採用しない。CV・OOF sanityは変更しない | [matching基準と方法](visualization_and_interpretation.md#matching-reference) |
+| 2026-09-17 | 全体fit後の代表線を試料内平均→試料間の等重み平均へ変更し、反射率・SNV・疑似吸光度の二次微分を比較する | 論文執筆中のユーザー合意。画素別SNV・対数変換後に平均し、疑似吸光度の平均線へSciPy SG（窓幅7点、次数2、二次微分、実波長間隔、interp）を適用する。対数変換不能画素は疑似吸光度・二次微分の集計だけから除外する。試料別平均線から四分位範囲と寄与数を示す。matchingも観測SNVの平均線へ更新し、基準M00・CV・OOF sanityは維持。設計確定であり実装・実施完了の記録ではない | [代表スペクトルの集計と比較](visualization_and_interpretation.md#representative-spectra) |
 
 CV開始後の追加判断を、CV開始前から固定した条件として遡及記載しない。
