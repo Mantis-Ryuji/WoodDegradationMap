@@ -98,13 +98,13 @@ uv run --no-sync python scripts/experiments/prepare_manifests.py check --experim
 
 ## 4. ニューラルネットの1 run
 
-対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はM10・fold 2・repeat 1の例である。
+対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はM11・fold 3・repeat 1の例である。
 完了済みrunは再学習せず、保存済み成果物の確認には各工程の`check`を使う。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M10'
-$fold = 2
+$condition = 'M11'
+$fold = 3
 $repeat = 1
 
 uv run --no-sync python scripts/experiments/train_neural.py train `
@@ -115,13 +115,13 @@ uv run --no-sync python scripts/experiments/train_neural.py train `
 ```
 
 同一foldの未着手repeatを連続実行する場合も、CLIは1 runずつ呼び出す。
-以下はM10・fold 2・repeat 1–3を並列化せずに順次実行する例である。
+以下はM11・fold 3・repeat 1–3を並列化せずに順次実行する例である。
 実行時は`$repeats`に未着手runだけを列挙し、完了済みrunや中断したrunを含めない。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M10'
-$fold = 2
+$condition = 'M11'
+$fold = 3
 $repeats = 1..3
 
 foreach ($repeat in $repeats) {
@@ -251,12 +251,12 @@ fit由来とB0・B1のprobe診断である。実際のPCAパラメータは
 
 ニューラル学習、またはB1で必要なfold別PCA fitが完了したcondition・fold・repeatについて、
 全事前固定KのKMeansとclean test mapを作成し、CPUの`check`で保存物を検証する。
-B0には前段のfitはない。以下は第4節と同じM00・fold 2・repeat 1の例である。
+B0には前段のfitはない。以下は第4節と同じM11・fold 3・repeat 1の例である。
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M00'
-$fold = 2
+$condition = 'M11'
+$fold = 3
 $repeat = 1
 
 uv run --no-sync python scripts/experiments/cluster_representations.py run `
@@ -284,8 +284,8 @@ clean test mapが揃った組合せを評価する。 `run` はGPUを使用し�
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
-$condition = 'M00'
-$fold = 2
+$condition = 'M11'
+$fold = 3
 $repeat = 1
 
 uv run --no-sync python scripts/experiments/evaluate_representations.py run `

@@ -366,6 +366,43 @@ fold 3が10試料・667,682画素、fold 4が10試料・750,105画素、fold 5�
 | 4 | `f2031be45cf584a9410770fdfdeef48b1d0298e95f2b463466a999f89581d917` |
 | 5 | `b237eb9bcba6482f3cf3723b7b24aa604057cb43913713e6436b6dc16cc09df2` |
 
+### 5.10 M10、fold 2–5
+
+2026-09-17、M10のfold 2–5・repeat 1–3、計12組合せの学習、全7Kのclustering、
+全test評価と各checkの完了を確認した。これによりM10はfold 1を含む15/15 runが完了した。
+
+| fold | repeat | optimizer updates | AMP skips | training seconds | clustering wall | recorded evaluation wall |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2 | 1 | 249,504 | 96 | 9,432.7098 | 76.05 s | 1,172.13 s |
+| 2 | 2 | 249,496 | 104 | 8,705.1411 | 72.12 s | 1,175.77 s |
+| 2 | 3 | 249,499 | 101 | 8,792.5585 | 108.59 s | 1,179.75 s |
+| 3 | 1 | 249,507 | 93 | 9,248.8606 | 114.90 s | 962.28 s |
+| 3 | 2 | 249,510 | 90 | 9,431.5130 | 66.63 s | 964.79 s |
+| 3 | 3 | 249,504 | 96 | 8,896.5257 | 70.50 s | 967.70 s |
+| 4 | 1 | 249,505 | 95 | 8,830.6084 | 71.93 s | 1,180.22 s |
+| 4 | 2 | 249,500 | 100 | 9,246.1360 | 114.13 s | 1,183.35 s |
+| 4 | 3 | 249,501 | 99 | 9,998.3883 | 113.76 s | 1,186.85 s |
+| 5 | 1 | 255,901 | 99 | 9,586.9037 | 73.94 s | 1,151.18 s |
+| 5 | 2 | 255,900 | 100 | 9,076.5430 | 73.81 s | 1,154.51 s |
+| 5 | 3 | 255,901 | 99 | 9,145.0563 | 72.74 s | 1,158.43 s |
+
+fold 2–4は各run 249,600、fold 5は各run 256,000 attempted updatesで、全runが800 epochを
+単一attempt・resumeなしで完了した。全runで`optimizer_updates + amp_skips == attempted_updates`が成立し、
+nonzero LR updatesはoptimizer updatesより1少なかった。保存された12個の重みは実在し、
+SHA-256が各completion記録と一致した。
+
+clusteringは全12組合せで`clean_test_maps_completed`・`checks_passed=true`、評価は
+`full_test_evaluation_completed`・`checks_passed=true`だった。test対象はfold 2が10試料・781,665画素、
+fold 3が10試料・667,682画素、fold 4が10試料・750,105画素、fold 5が9試料・796,370画素である。
+評価は各foldの3 consumerを1回のCLIでまとめたため、表の評価時間は各consumer保存までの共同経過時間である。
+
+| fold | 3反復で一致した共有入力SHA-256 |
+| ---: | --- |
+| 2 | `b443abae9970ba54dd39d5fecc03196f82b9181daf0a1e0853ee1aee68702a93` |
+| 3 | `f004c5a1934de561f4fc4f22bf8c006e4871dd741023eea89dfc3b343fbaac0d` |
+| 4 | `f2031be45cf584a9410770fdfdeef48b1d0298e95f2b463466a999f89581d917` |
+| 5 | `b237eb9bcba6482f3cf3723b7b24aa604057cb43913713e6436b6dc16cc09df2` |
+
 ## 6. 本文代表試料とOOF sanity
 
 代表試料は2026-09-06に、各樹種で保存有効画素数が最大の7試料へ固定した。
