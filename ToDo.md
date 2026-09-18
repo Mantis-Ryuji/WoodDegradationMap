@@ -1,6 +1,6 @@
 # 研究・実装 ToDo
 
-更新日: 2026-09-17。実験の状態は2026-09-17までに確認・共有された記録に基づく。
+更新日: 2026-09-19。実験の状態は2026-09-19までに確認・共有された記録に基づく。
 今回の文書整理では学習・評価・成果物checkを再実行していない。
 
 本書は残作業を管理する。[文書案内](docs/README.md)から、
@@ -15,17 +15,17 @@
 | 本番root | `outputs/experiments/production_v1/` |
 | manifest | split・共通train座標・augmentation contractは現行仕様で確定済み |
 | baseline | B1 PCAの5 fits、B0・B1の全5 folds×3反復のclustering・評価・checkが完了 |
-| 主ニューラル条件 | A0・M00・M10・M01の全5 folds、M11のfold 1–2の各repeat 1–3で学習・clustering・評価・checkが完了 |
-| 主実験の完了数 | NN学習・clustering・評価は各66/75。B0・B1を含むclustering・評価は各96/105組合せ |
+| 主ニューラル条件 | A0・M00・M10・M01・M11の全5 folds・各repeat 1–3で学習・clustering・評価・checkが完了 |
+| 主実験の完了数 | NN学習・clustering・評価は各75/75。B0・B1を含むclustering・評価は各105/105組合せ |
 | OOF sanity | B0・B1のPNG 3枚・CSV 3つを生成済み。[表示仕様](docs/design/oof_sanity_visualization.md) |
 | 実行中 | なし（最終確認時点） |
-| 次のrun | M11・fold 3–5・repeat 1–3。各foldで3反復の学習 → clean test map → clustering checkを順次実行し、3反復をまとめて全test評価 → evaluation checkまで完了する |
+| 次のrun | 主7条件の完全性をOOF pipelineで確認し、`main_oof_v1`を作成 → OOF checkする。[OOF集計手順](docs/experiment_runbook.md#oof-aggregation)を使用する。snapshotは未作成 |
 | 実行環境 | ChemoMAE v0.2.2。固定設定と環境確認は[runbook](docs/experiment_runbook.md)・[検証履歴](docs/verification_history.md) |
 
 前処理・入力照合、学習と再開、clustering、評価、OOF数値集計の実装とpreflightは完了済み。
 本文の代表7試料も固定済み。詳細な完了記録を本書へ重複掲載しない。
 
-## 1. 主ニューラルCVの残り
+## 1. 主ニューラルCVの完了とOOF集計
 
 各runは800 epochとし、正常完了した重みからclean test mapと評価を作り、各checkまで完了する。
 [1 runの手順](docs/experiment_runbook.md#neural-run)を使用する。
@@ -34,7 +34,7 @@
 - [x] M00の全5 folds・repeat 1–3を完了した（15/15 runs、2026-09-14）。
 - [x] M10の全5 folds・repeat 1–3を完了した（15/15 runs、2026-09-17）。
 - [x] M01の全5 folds・repeat 1–3を完了した（15/15 runs、2026-09-15）。
-- [ ] M11のfold 3–5・repeat 1–3を完了する（6/15 runs完了。fold 1–2は完了）。
+- [x] M11の全5 folds・repeat 1–3を完了した（15/15 runs、2026-09-19確認）。
 - [ ] 主7条件の5 folds×3反復の完全性を確認し、`main_oof_v1`を作成・checkする。
 - [ ] 欠損・失敗・中断・未定義指標と理由がOOF集計に保持されていることを確認する。
 
