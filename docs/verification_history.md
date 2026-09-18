@@ -403,6 +403,46 @@ fold 3が10試料・667,682画素、fold 4が10試料・750,105画素、fold 5�
 | 4 | `f2031be45cf584a9410770fdfdeef48b1d0298e95f2b463466a999f89581d917` |
 | 5 | `b237eb9bcba6482f3cf3723b7b24aa604057cb43913713e6436b6dc16cc09df2` |
 
+### 5.11 M11、fold 3–5と主条件CVの完了
+
+2026-09-19、M11のfold 3–5・repeat 1–3、計9組合せの学習、全7Kのclustering、
+全test評価と各checkの完了を確認した。これによりM11はfold 1–2を含む15/15 runが完了した。
+今回の確認はユーザーの完了報告と保存済み記録のread-only照合によるもので、学習・評価・各checkは再実行していない。
+
+| fold | repeat | optimizer updates | AMP skips | training seconds | clustering wall | recorded evaluation wall |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 3 | 1 | 249,501 | 99 | 10,197.8608 | 126.37 s | 964.43 s |
+| 3 | 2 | 249,505 | 95 | 9,857.5440 | 120.98 s | 967.65 s |
+| 3 | 3 | 249,504 | 96 | 10,003.2567 | 75.43 s | 971.18 s |
+| 4 | 1 | 249,496 | 104 | 9,440.6748 | 72.33 s | 1,303.85 s |
+| 4 | 2 | 249,502 | 98 | 9,472.6525 | 72.83 s | 1,307.73 s |
+| 4 | 3 | 249,494 | 106 | 9,736.6398 | 107.57 s | 1,310.81 s |
+| 5 | 1 | 255,901 | 99 | 9,943.2502 | 70.95 s | 1,382.99 s |
+| 5 | 2 | 255,899 | 101 | 9,947.8471 | 70.44 s | 1,387.44 s |
+| 5 | 3 | 255,898 | 102 | 10,319.9846 | 109.54 s | 1,391.98 s |
+
+fold 3–4は各run 249,600、fold 5は各run 256,000 attempted updatesで、全9 runが800 epochを
+単一attempt・resumeなしで完了した。全runで`optimizer_updates + amp_skips == attempted_updates`が成立し、
+nonzero LR updatesはoptimizer updatesより1少なかった。重みとcheckpointは実在し、学習completion、
+clustering・評価のsource記録にある重みSHA-256は一致した。今回、重みファイルのhashは再計算していない。
+
+clusteringは全9組合せで`clean_test_maps_completed`・`checks_passed=true`、評価は
+`full_test_evaluation_completed`・`checks_passed=true`だった。全7Kと各test試料のmapファイルが揃い、
+test対象はfold 3が10試料・667,682画素、fold 4が10試料・750,105画素、fold 5が9試料・796,370画素だった。
+評価は各foldの3 consumerをまとめて実行したため、表の評価時間は各consumer保存までの共同経過時間である。
+保存runtimeはChemoMAE v0.2.2、NVIDIA GeForce RTX 4070 Ti SUPERだった。
+
+| fold | 3反復で一致した共有入力SHA-256 |
+| ---: | --- |
+| 3 | `f004c5a1934de561f4fc4f22bf8c006e4871dd741023eea89dfc3b343fbaac0d` |
+| 4 | `f2031be45cf584a9410770fdfdeef48b1d0298e95f2b463466a999f89581d917` |
+| 5 | `b237eb9bcba6482f3cf3723b7b24aa604057cb43913713e6436b6dc16cc09df2` |
+
+主7条件の全5 folds×3反復についてcompletion記録を確認し、主ニューラルの学習・clustering・評価は
+各75/75、B0・B1を含むclustering・評価は各105/105組合せで完了していた。
+この時点で`results/oof/main_oof_v1/`は存在せず、OOF snapshotの作成・checkとARI集計は未実行である。
+Mask率補助実験、vMF補助実験、最終報告用図表、全体fitの完了を意味するものではない。
+
 ## 6. 本文代表試料とOOF sanity
 
 代表試料は2026-09-06に、各樹種で保存有効画素数が最大の7試料へ固定した。

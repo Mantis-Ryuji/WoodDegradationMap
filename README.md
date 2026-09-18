@@ -26,8 +26,10 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 ## 現在の段階
 
 本番入力は`data/processed/production_v1/`、実験rootは`outputs/experiments/production_v1/`です。
-前処理、Cosine-KMeansを使うCVの学習・評価・OOF数値集計とpreflightを終え、
-本番CVを順次進めています。確認済みのrunと次のrunは[ToDo](ToDo.md)に集約しています。
+前処理と、Cosine-KMeansを使うCVの学習・評価・OOF数値集計の実装とpreflightは完了しています。
+主ニューラル5条件のCV学習と、B0・B1を含む主7条件の全5 folds×3反復のclustering・評価・checkは完了しました。
+主条件のOOF snapshotは未作成です。
+確認済みのrunと次のrunは[ToDo](ToDo.md)に集約しています。
 
 B0・B1の[OOF sanity可視化](docs/design/oof_sanity_visualization.md)は生成済みです。
 全主条件の最終報告用図表、vMF補助実験、全体fitのpipelineは未実装です。
