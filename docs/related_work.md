@@ -1,7 +1,6 @@
 # 関連研究・参考文献
 
 本書は[ChemoMAEの採用理由](chemomae_positioning.md)を支える文献の対応と書誌を記録する。
-調査日は2026-09-06〜07、追加確認は2026-09-10。今回の整理で再調査はしていない。
 確認した版・箇所は第2節に示す。網羅的な新規性調査は未完了である。
 
 ## 1. 関連研究の対応
@@ -162,7 +161,7 @@ Decoderの単純さは本研究の採用制約であり、固定表現の品質�
     本研究の潜在正規化やSNV後の角度の妥当性を検証した資料ではない。
 19. Mantis-Ryuji.
     [分光データ拡張の著者解説、§3.2 Tangent Gaussian Noise・§3.3 Fractional Shift](https://zenn.dev/mantis_ryuji/articles/e17b4d223cd7da).
-    2026-09-10確認。提案者自身の操作説明であり、第三者による優先性・有用性の検証ではない。
+    提案者自身の操作説明であり、第三者による優先性・有用性の検証ではない。
     SNVの分母、noise強度の抽選、入力軸の違いは[ChemoMAEの位置づけ第4.2節](chemomae_positioning.md#spectral-augmentation)に記載した。
 
 ### 2.5 測定noiseと波長方向の変動
@@ -180,10 +179,3 @@ Decoderの単純さは本研究の採用制約であり、固定表現の品質�
     [Glucose induced variation of water structure from temperature dependent near infrared spectra](https://pubs.rsc.org/en/content/articlehtml/2016/ra/c6ra18912a).
     *RSC Advances*, 6, 105729–105736。§3.1の温度依存の見かけのピーク移動と、重なった帯域の
     相対強度による解釈を参照。古材の劣化や一様な波長shiftの物理モデルを検証した研究ではない。
-
-### 2.6 確認作業の記録
-
-2026-09-06〜10の調査では、固定config、利用側コード、導入済みChemoMAEのソースを読み取って実装を確認した。
-2026-09-10には追加文献・記事とaugmentation実装を照合し、入力だけを摂動して元の観測をtargetにする点と
-masked lossの関係を確認した。文献調査のための学習・評価・ベンチマークは実行していない。
-FT-IRのデータ・結果と網羅的な新規性評価は確認範囲に含めない。

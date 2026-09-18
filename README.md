@@ -21,22 +21,12 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 | 固定条件・評価・可視化の設計 | [研究設計](docs/design/README.md) |
 | 現在の進捗と残作業 | [ToDo](ToDo.md) |
 | 実行・再開・完了確認 | [実験runbook](docs/experiment_runbook.md) |
-| 採用理由・関連研究・所見を含む全体案内 | [ドキュメント案内](docs/README.md) |
+| 採用理由・関連研究・解釈の全体案内 | [ドキュメント案内](docs/README.md) |
 
 ## 現在の段階
 
-本番入力は`data/processed/production_v1/`、実験rootは`outputs/experiments/production_v1/`です。
-前処理と、Cosine-KMeansを使うCVの学習・評価・OOF数値集計の実装とpreflightは完了しています。
-主ニューラル5条件のCV学習と、B0・B1を含む主7条件の全5 folds×3反復のclustering・評価・checkは完了しました。
-主条件のOOF snapshotは未作成です。
-確認済みのrunと次のrunは[ToDo](ToDo.md)に集約しています。
-
-B0・B1の[OOF sanity可視化](docs/design/oof_sanity_visualization.md)は生成済みです。
-全主条件の最終報告用図表、vMF補助実験、全体fitのpipelineは未実装です。
-vMFの数値仕様にはOpen事項があります。全体解釈では5条件×2手法を比較し、
-表示番号はM00のCosine-KMeansを基準に、観測SNV代表スペクトルのcosine類似度で整列します。
-代表スペクトルは試料内平均→試料間の等重み平均で集計し、表示と対応付けに同じSNV平均線を使います。
-反射率・SNV・疑似吸光度の二次微分を比較する[集計設計](docs/design/visualization_and_interpretation.md#representative-spectra)は確定済みです。
+主7条件の5-fold・3反復の学習・クラスタリング・評価は完了し、次はOOF集計です。
+完了範囲、補助実験、図表生成・全体fitの残作業は[ToDo](ToDo.md)で管理します。
 
 ## 主な配置
 
@@ -47,7 +37,7 @@ outputs/preprocessing/production_v1/    前処理確認図
 outputs/experiments/preflight_v1/       動作確認の成果物
 outputs/experiments/production_v1/      本番manifest・結果・checkpoint
 outputs/sanity_checks/                 探索的な確認図・数値
-docs/                                  設計・手順・研究説明・記録
+docs/                                  設計・手順・研究説明
 src/wood_degradation_map/               実装
 scripts/                               CLI
 tests/                                 テスト

@@ -1,8 +1,7 @@
-# 数値実装の記録
+# 数値実装の補足
 
-2026-09-16に旧論文草稿から保存した、ChemoMAE 0.2.2と呼出し側の読み取り照合に基づく記録。
-設定の正は[実験プロトコル](design/experiment_protocol.md)、実行済みの事実は[検証履歴](verification_history.md)と各runの記録に置く。
-今回の文書整理ではプログラムを実行しておらず、実行時tensor dtypeの実測結果を追加したものではない。
+ChemoMAE 0.2.2と呼出し側のソースに基づき、混合精度・train loss・inertiaの意味を補足する。
+設定は[実験プロトコル](design/experiment_protocol.md)、実行環境と実測値は各runの成果物を参照する。
 
 <a id="training-precision"></a>
 
@@ -18,7 +17,7 @@
 
 学習履歴のtrain lossは、更新中の各batchで計算したMSEを、epoch内のbatch数で割った平均である。端数batchを除き、同一条件ではbatch sizeと対象チャネル数が固定される。これは固定した最終重みを用いて全train画素を再評価したlossでも、未学習試料のlossでもない。AMP scaleや更新が省略されたstep数は別の履歴項目として保存する。
 
-FP16の表現間隔をMSEの下限へ読み替えない。幾何に関する恒等式の数値照合では[数理的補足B.6](mathematical_notes.md#numerical-geometry)に従い、既定のFP32での表現抽出・評価と学習時の演算条件を区別する。
+FP16の表現間隔をMSEの下限へ読み替えない。幾何に関する恒等式の数値照合では[数理的補足第6節](mathematical_notes.md#numerical-geometry)に従い、既定のFP32での表現抽出・評価と学習時の演算条件を区別する。
 
 ## 2. クラスタ中心とinertiaの記録
 

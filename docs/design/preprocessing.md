@@ -4,9 +4,6 @@
 
 **Fixed**
 
-SNV前の補間反射率が1帯域でも負の画素は、train・test共通で背景とする。
-2026-09-06の決定と再生成は[決定記録](decisions.md)・[入力の確認結果](../verification_history.md#production-inputs)に記録する。
-
 本書は、後段の解析と可視化に渡す200 Hz NIR-HSIの本番前処理を定義する。
 前処理は全試料および全実験で共通とし、cross-validationやモデルの結果を見て変更しない。
 
@@ -295,7 +292,7 @@ HDF5は`float32`、gzip level 4、shuffleおよび画素方向chunkを使用し�
 production_v1のstorage schemaはversion 2とし、理由code 3と対応する品質集計列を持つ。
 入力の識別にはpreprocessing IDとconfigの`negative_reflectance_policy`を使用する。
 `negative_interpolated_reflectance_excluded_pixel_count`はcode 3で除外した画素数を表す。
-既存の`pixels_with_any_negative_interpolated_reflectance`は保存対象についての件数を維持し、新版では0になる。
+`pixels_with_any_negative_interpolated_reflectance`は保存対象の負値画素数を表し、この品質条件では0になる。
 
 圧縮率は反射率分布に依存する。`manifest.parquet`へ試料別の実ファイル容量と、反射率・SNVを非圧縮
 `float32`で保持した場合の容量を保存する。`preprocessing_summary.json`には全試料合計とその比を保存する。
