@@ -2,7 +2,7 @@
 
 本書はChemoMAE v0.2.2の採用理由と、構成から言えること・評価で確かめることを整理する。
 固定条件は[実験プロトコル](design/experiment_protocol.md)、導出は[数理的補足](mathematical_notes.md)、
-文献の確認範囲は[関連研究](related_work.md)、観察は[解釈メモ](interpretation_notes.md)を参照する。
+文献の確認範囲は[関連研究](related_work.md)、結果の読み方は[解釈メモ](interpretation_notes.md)を参照する。
 
 - [MAEと追加corruptionの採用理由](#1-この構成をどう捉えるか)
 - [モデルと損失](#2-実装で確認できる構成)
@@ -31,11 +31,11 @@ ChemoMAEは、状態の区分や正解ラベルをあらかじめ定めにくい
 ### 1.1 MAEを選んだ理由: view間で何を不変にするかを定める難しさ
 
 古材では劣化・樹種・表面性状などに関わる変動が重なり、どの情報を状態差として残し、何に不変な
-表現を求めるかが自明でない。今回のTGN・shiftは、同じ化学状態を保つ十分に多様なviewの族として
+表現を求めるかが自明でない。本研究のTGN・shiftは、同じ化学状態を保つ十分に多様なviewの族として
 妥当性を確立したものではない。問題は摂動幅だけでなく、保持する情報、変換の多様性、組合せ・強度・確率の根拠にある。
 
 本研究は対象固有のviewレシピ探索を中心に置かず、可視帯域から元の不可視帯域を予測するMAEを基礎とする。
-SimCLR・BYOL・DINOは今回比較しない。これは研究範囲の判断であり、それらに対するMAEの優位性ではない。
+SimCLR・BYOL・DINOは比較対象に含めない。これは研究範囲の判断であり、それらに対するMAEの優位性ではない。
 
 | 学習方法 | viewの役割と必要な設計 |
 | --- | --- |
@@ -71,9 +71,7 @@ Vincentらの分類実験等はこの原理を支えるが、古材NIRで化学�
 再構成lossはクラスタの生成・分離を直接要求しない。
 
 既定の主要比較M11対B0・B1・M00と、M00・M10・M01・M11の2×2 ablationで調べる。
-A1等は追加せず、MAEへの追加corruptionの効果を補正前LLA・LFRと既定診断で評価する。
-どの入力差が強調・抑制されたかを追う補助診断一式は、現行比較に必須ではないため実施計画から外した
-（[必要性の見直し](design/representation_geometry_diagnostics.md)）。
+MAEへの追加corruptionの効果を補正前LLA・LFRと既定診断で評価する。
 
 ## 2. 実装で確認できる構成
 
@@ -172,8 +170,8 @@ $$
 同次元以下のアフィン部分空間近似を最適化する。ただし、masked loss・未知試料・クラスタリング品質の優劣は別である。
 
 本研究では、corruptionから座標を推定する学習課題の有用性を、既定CVによるマップの性質と観測スペクトルの解釈から検討する。
-[数理的補足B.5](mathematical_notes.md#latent-decoder)は、入力差・潜在差・残差とlossの関係を示す数理的補足である。
-関係式の成立を、TGN・shiftによる改善やその機構の実証とはしない。対応する診断一式は[未採用候補](design/representation_geometry_diagnostics.md)として残す。
+[数理的補足第5節](mathematical_notes.md#latent-decoder)は、入力差・潜在差・残差とlossの関係を示す。
+関係式の成立を、TGN・shiftによる改善やその機構の実証とはしない。
 
 <a id="snv-geometry"></a>
 
@@ -240,10 +238,10 @@ SAMは方向比較の前例として引用し、潜在正規化の必要性・�
 
 ### 4.1 augmentationの仮定: 幾何的制約と実際のスペクトル変動を分ける
 
-今回のcorruptionは**SNVの平均ゼロ・一定norm制約に基づく設計**であり、装置の誤差分布や
+本研究のcorruptionは**SNVの平均ゼロ・一定norm制約に基づく設計**であり、装置の誤差分布や
 物理化学的生成過程から導いたものではない。TGNの角度とshift幅は事前固定条件である。
 
-| 実測での変動 | 文献の例と今回のcorruptionとの違い |
+| 実測での変動 | 文献の例と本研究のcorruptionとの違い |
 | --- | --- |
 | 測定noise | 光子・暗電流のshot noiseや読み出しnoiseがある。低SNRはnoiseの相対寄与を表す。本TGNは帯域別SNR・信号依存性を再現しない（[Hamamatsu Photonics §1.2–1.3](https://hub.hamamatsu.com/us/en/technical-notes/image-sensors/image-sensors-product-selection.html)） |
 | 装置由来の波長位置ずれ | HISUIのspectral smileは検出器列・波長に依存する。本shiftは画素内で一様な軸方向移動であり、その依存性や応答幅を再現しない（[Yamamoto et al., 2022 §I](https://doi.org/10.1109/TGRS.2022.3190486)） |
@@ -306,7 +304,7 @@ M11は各操作を画素ごとに確率0.5で適用し、順序をbatchごとに
 ### 4.3 VRM的な解釈: 表現の幾何に沿って学習信号を広げる
 
 観測点の周囲に、SNVに即した近傍と復元targetを定める設計としても読める。
-これは2026-09-11の事後的な解釈であり、VRMから採用条件を導いたという記録ではない。
+VRMはこの設計の解釈に用い、採用条件の導出根拠とはしない。
 
 Mask前の追加corruption分布を $\nu(\tilde{x}\mid x_i)$（操作しない確率を含む）、
 encoder・decoder全体を $h_\psi$、隠した帯域のMSEを $\ell_M$ とすれば、
@@ -344,7 +342,7 @@ $$
 | 固定表現の利用 | 学習後のencoderとtrainでfitした中心をtestへ適用する。後段fine-tuningを要しない現行pipelineの事実 |
 | 追加corruptionの効果 | MAE群の2×2比較・交互作用を補正前LLA・LFRと既定診断で評価する。化学状態をより安定して反映することは仮説であり、指標や再構成lossからは保証されない |
 | 指定摂動への安定性 | LFRで割当の維持を測る。学習と同じ種類・強度の人工摂動への結果であり、実測誤差全般や化学情報保持へ外挿しない |
-| どの差が強調・抑制されたか | 現行実験の実証範囲に含めない。[補助診断の旧案](design/representation_geometry_diagnostics.md)は未採用で、数理的補足B.5は数理的補足に留める |
+| どの差が強調・抑制されたか | 現行実験の実証範囲に含めない。[数理的補足第5節](mathematical_notes.md#latent-decoder)の関係式だけでは改善機構を同定できない |
 | 化学的な対応 | NIR代表・差スペクトルと位置対応FT-IRによる解釈。FT-IRの測定設計はOpen、結果未確認 |
 | 構成の最適性 | 層数・潜在次元・線形decoder・正規化の最適性や、未比較SSLへの優位性は扱わない |
 
@@ -390,4 +388,3 @@ Raman SMAEのmask・クラスタリング、LeafVAEの空間マッピングを�
 
 実装の根拠は本書のコード参照とChemoMAE v0.2.2の参照ソースである。
 文献の書誌・確認箇所・未照合範囲は[関連研究 §2](related_work.md#2-参考文献と確認範囲)に残す。
-今回の文書整理で学習・評価・文献再調査を行ったものではない。

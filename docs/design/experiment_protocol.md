@@ -9,7 +9,7 @@ vMF補助実験は範囲・利用版・退化成分の扱いをFixedとし、第
 前処理とraw SNVの定義は[前処理仕様](preprocessing.md)に従う。
 
 実行環境はChemoMAE v0.2.2とする。各runの設定・環境・source hashを成果物に記録する。
-実施済みの確認と環境変更の経緯は[検証履歴](../verification_history.md)で管理する。
+進捗は[ToDo](../../ToDo.md)、成果物の確認方法は[runbook](../experiment_runbook.md)を参照する。
 
 - [CV・seed・画素抽出](#cv-design)
 - [条件・表現・学習設定](#conditions)と[計画比較](#planned-comparisons)
@@ -46,7 +46,7 @@ CV指標は化学的な表現品質や劣化検出精度を直接測らない。
 - 画素を独立なsplit単位として使用しない。
 - metadataの参照元は `data/metadata/古材メタデータ.csv` とする。
 
-2026-09-05のユーザー確認により、本番前処理済み49試料をKYOw単位で分割する。
+本番前処理済み49試料をKYOw単位で分割する。
 異なるKYOw間の同一原材関係は不明であり、由来的な独立性を仮定しない。同一KYOwがtrain/testの
 両方に含まれないことを検証し、上位の依存関係が判明した場合はsplit作成前に扱いを決める。
 樹種・由来・測定条件の確認できた構成を報告し、未知樹種・未知産地・別装置への汎化は主張しない。
@@ -80,7 +80,7 @@ test試料は、trainで得た変換器、encoder、クラスタ中心を固定�
 CVのニューラルネット学習は合計105回となる。Kの数だけ表現学習を繰り返さず、同一fold・条件・反復の
 表現を全Kで共有する。PCA、KMeansおよび全体可視化用の学習はこの105回に含めない。
 
-2026-09-05実装時のCV用seed計画は基準値 `20260905` に事前固定した。
+CV用seed計画の基準値は `20260905` とする。
 `["wood-degradation-map-seeds-v1", 基準値, 用途, ...文脈]` を空白なしのASCII JSONへ変換し、
 SHA-256の先頭4 byteをbig-endianの符号なし32 bit整数として用いる。
 用途間でseed値が衝突した場合は停止し、暗黙に別seedを選ばない。
@@ -112,11 +112,8 @@ seed計画は乱数管理の契約であり、後続の学習・共通評価摂�
   実行前に$q$の設定を見直す。
 - test評価は抽出せず、各test試料の全有効画素を用いる。背景・品質条件による除外は本番前処理に従う。
 
-2026-09-06に再生成した
-`data/processed/production_v1/sample_quality.parquet` の49試料・3,902,250有効画素に対し、
-49/49試料で$q=8192$の非復元抽出が可能だった。
-補間後・SNV前の負の反射率496画素は、この抽出候補とtest評価対象から除外済みである。
-現行49試料では、trainは39または40試料となり、
+本番入力の49試料はすべて$q=8192$の非復元抽出が可能である。
+品質条件は[前処理仕様](preprocessing.md)に従う。trainは39または40試料となり、
 319,488または327,680画素/fold、312または320 batch/epoch、
 800 epochで249,600または256,000予定更新/runとなる。
 1024の倍数なので、この$q$では`drop_last=True`でも端数除外が発生しない。
@@ -227,7 +224,7 @@ silhouetteを各表現空間の診断とする方針は維持する。SNV入力�
 
 #### 4.1.2 ChemoMAEの構成と初期化（Fixed）
 
-ユーザー指定のencoderと線形1層decoderを共通構成とし、初期化はChemoMAE v0.2.2の既定動作を採用する。
+Encoderと線形1層decoderを共通構成とし、初期化はChemoMAE v0.2.2の既定動作を採用する。
 
 | 設定 | 採用値 |
 | --- | --- |
@@ -276,9 +273,7 @@ dropout=0.0の最適性は検証していない。
 
 参照版はプロジェクトが固定するChemoMAE v0.2.2、commit
 [`4ec7f6acecb82035c85001f5aee508910d40adac`](https://github.com/Mantis-Ryuji/ChemoMAE/commit/4ec7f6acecb82035c85001f5aee508910d40adac)
-とする。導入済みpackageと同commitのモデル・augmentation・抽出・optimizer・Trainer・
-Cosine-KMeans・正規化helperのソース内容が一致することを、読み取りによって確認した。
-これは実験pipelineの動作検証を意味しない。
+とする。モデル・augmentation・抽出・optimizer・Trainer・Cosine-KMeans・正規化helperは同版を参照する。
 
 Random maskもdenoisingのcorruptionである。学習augmentationはSNV制約を保つ追加corruptionとして
 入力側だけに適用し、追加摂動前の観測SNVをtargetに保つ。ランダムに不可視となる帯域への復元損失を通じて
@@ -286,7 +281,7 @@ Random maskもdenoisingのcorruptionである。学習augmentationはSNV制約�
 
 [SpectraAugmenterの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/augmenter.py)
 を使用し、noise角度は$U(0,5^\circ)$、shiftおよびその他の操作設定は既定値で固定する。
-以下は参照用の候補ではなく、主比較・mask率補助実験・全体学習に共通の採用設定である。
+主比較・mask率補助実験・全体学習に共通の設定は次のとおり。
 
 | 項目 | 採用設定（Fixed） |
 | --- | --- |
@@ -351,7 +346,7 @@ GPUの並列reductionによる微小な非決定性まで消えたとは主張�
 学習設定は、[MAE論文](https://arxiv.org/pdf/2111.06377)のTable 8およびTable 1のablationに対応する
 事前学習recipeを採用する。公式PyTorch実装はcommit
 [`efb2a8062c206524e35e47d04501ed4f544c0ae8`](https://github.com/facebookresearch/mae/commit/efb2a8062c206524e35e47d04501ed4f544c0ae8)
-を参照する。batch sizeはユーザー指定の1024、勾配蓄積はなしとする。
+を参照する。batch sizeは1024、勾配蓄積はなしとする。
 
 | 設定 | 採用値 |
 | --- | --- |
@@ -393,7 +388,6 @@ $$
 
 とする。原論文のeffective batch size 4096を勾配蓄積で再現する設定ではない。
 複数GPUへ移行する場合は、GPU数・effective batch size・学習率を一体として再指定する。
-batch size 1024での実行記録は[検証履歴](../verification_history.md)に残す。
 メモリ不足を理由に実装がbatch sizeやaccumulationを暗黙に変更しない。
 
 epoch進捗を$u=e+j/S_f$（$e$は0始まりのepoch、$j$は0始まりのbatch index）として、
@@ -510,8 +504,7 @@ Gaussian noiseのみ、shiftのみの条件ではmask率sweepを行わない。
 第4.3節の条件間比較の結論が保たれるか**を調べることである。主実験ではCosine-KMeansを使い、
 vMFはクラスタリング方法への感度を調べる補助実験として報告する。encoderの再学習は行わない。
 
-範囲・利用版・退化成分の扱いは2026-09-07に確定した。
-[決定記録](decisions.md)のとおりCV開始後の追加であり、vMFのtest結果を見る前に残る数値仕様を確定する。
+範囲・利用版・退化成分の扱いはFixedとし、vMFのtest結果を見る前に残る数値仕様を確定する。
 
 #### 5.2.1 実施範囲と共有する入力（Fixed）
 
@@ -527,7 +520,6 @@ vMFはクラスタリング方法への感度を調べる補助実験として�
 
 第4.3節の全比較を扱い、M11-25・M11-75は含めない。
 [全体解釈のvMF 5 fits](visualization_and_interpretation.md#global-fit)は、本節のCV補助実験735 fitsと別枠で扱う。
-対象拡張の決定時点は[決定記録](decisions.md)に示す。
 
 追加restart、最良seed選択、既存KMeansの最終中心からのwarm startは行わない。
 条件間でseedを共有しても、異なるアルゴリズム間で初期方向や乱数消費が一致するとは仮定しない。
@@ -567,11 +559,11 @@ hard labelは最大posterior責務の成分とし、背景0・クラスタ1〜K�
 | 数値計算 | 安定な`logC`、集中度更新、許容誤差、内部dtype・device。16次元・256次元で参照値と比較 |
 | EM設定 | 集中度の初期値・範囲、最大反復、停止基準、尤度減少・未収束の扱い |
 | 初期化の実装 | CPU乱数方針とdevice整合、chunkによる初期化集合への影響。seed・初期化回数は第5.2.1節を維持 |
-| 修正版の検証 | 数値関数・公開helper・初期化・最終尤度・保存復元・退化成分の修正確認、CPU小規模・chunk・GPU最小検証 |
+| 実装の検証 | 数値関数・公開helper・初期化・最終尤度・保存復元・退化成分の確認、CPU小規模・chunk・GPU最小検証 |
 | 永続化・CLI | 独立した保存root・schema、元の成果物の検証、fit・評価・check・OOFのインターフェース |
 
 未決定の数値条件をライブラリの既定値で暗黙に埋めて実行しない。
-修正検証とユーザー確認を経て本節に値を固定し、別途実装・実行へ進む。
+数値・動作検証とユーザー確認を経て本節に値を固定し、実装・実行へ進む。
 評価と比較の読み方は[評価指標第8.4節](evaluation_metrics.md#vmf-evaluation)を正とし、
 新しい研究仮説・条件・指標を数値仕様の確定に混ぜない。
 
@@ -671,7 +663,6 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 - 解釈・可視化結果を用いて主条件を事後選択しない。
 
 全体解釈の対象・fit条件は[可視化設計](visualization_and_interpretation.md)に従い、CV順位で選ばない。
-CV開始後のA0・vMF追加等の経緯は[決定記録](decisions.md)に示す。
 
 ## 9. 実行しない探索
 
@@ -724,8 +715,8 @@ vMFのCV補助実験735 fitsの実施順序は第5.2.4節に従い、手順7の�
 中断再開ではrun記録全体が同じであることを要求する。
 
 表示例は[可視化設計](visualization_and_interpretation.md#representative-samples)、任意の形状診断は[評価規約](evaluation_metrics.md#occupancy)に従う。
-実装・preflightの結果は[検証履歴](../verification_history.md)、手順は[runbook](../experiment_runbook.md)に記録する。本番開始時は専用
-ディレクトリへmanifestを新規生成し、preflightとconfig・seed・split・抽出画素の一致を検証する。
+手順と成果物の確認方法は[runbook](../experiment_runbook.md)に従う。本番開始時は専用ディレクトリへ
+manifestを新規生成し、preflightとconfig・seed・split・抽出画素の一致を検証する。
 
 更新回数は第4.2節に従い、fold間の更新回数を揃えるために800 epochを変更しない。
 mask率で計算量・実行時間が異なるため等計算量の比較とは記述せず、実行時間を併記する。

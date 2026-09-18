@@ -1,24 +1,25 @@
-# B0・B1 OOF sanity可視化
+# B0・B1・A0・M00 OOF sanity可視化
 
-**Fixed / 実装・生成済み（2026-09-10）**
+**Fixed / 実装済み**
 
-B0・B1の全CV完了後に、既存のclean OOF mapと評価成果物から探索的な確認図を作る。
+B0・B1・A0・M00の全CV完了後に、既存のclean OOF mapと評価成果物から探索的な確認図を作る。
 PCA・KMeansのfit、表現抽出、評価を再実行しない。実行方法は[runbook](../experiment_runbook.md#oof-sanity)、
-観察した所見は[解釈メモ](../interpretation_notes.md#b0-b1-observations)を参照する。
+結果の読み方は[解釈メモ](../interpretation_notes.md)を参照する。
 
 ## 1. 保存物
 
-出力先は `outputs/sanity_checks/b0_b1_oof_visualization/`。
-保存物は次の3枚のPNGと3つのCSVだけとし、sanity用のログやrun/completion/failure JSONは作らない。
-過去の表示形式との互換性は持たせない。
+出力先は `outputs/sanity_checks/a0_m00_oof_visualization/`。
+保存物は次の5枚のPNGと3つのCSVだけとし、sanity用のログやrun/completion/failure JSONは作らない。
 
 | ファイル | 内容 |
 | --- | --- |
 | `labels/B0_representatives_k8_repeat1.png` | B0の代表7試料を1行に並べたlabel map |
 | `labels/B1_representatives_k8_repeat1.png` | 同じ7試料・順序のB1 label map |
+| `labels/A0_representatives_k8_repeat1.png` | 同じ7試料・順序のA0 label map |
+| `labels/M00_representatives_k8_repeat1.png` | 同じ7試料・順序のM00 label map |
 | `silhouette_k_sweep.png` | 単一axesのK-sweep。下段subplotなし |
 | `occupancy.csv` | 条件・試料・fold・repeat・K別のcluster画素数、使用数、最大占有率、単一cluster flag |
-| `matching.csv` | foldごとのB1 raw IDからB0表示IDへの対応、contingency、overlap |
+| `matching.csv` | fold・比較条件ごとのraw IDからB0表示IDへの対応、contingency、overlap |
 | `metrics_summary.csv` | silhouette、補正前LLA-3/5/9、LLA-3/5/9、LFR noise・shift・両方の集計 |
 
 補正前LLA、LFR、occupancyはCSVで確認する。boundary mapと代表スペクトルは、この可視化の対象に含めない。
@@ -26,20 +27,20 @@ PCA・KMeansのfit、表現抽出、評価を再実行しない。実行方法�
 ## 2. 代表試料のlabel map
 
 $K_0=8$、repeat 1で[固定7試料](visualization_and_interpretation.md#representative-samples)を
-クリ、ケヤキ、スギ、ツガ、ヒノキ、マツ、モミの順に並べ、B0・B1各1枚へ保存する。
+クリ、ケヤキ、スギ、ツガ、ヒノキ、マツ、モミの順に並べ、B0・B1・A0・M00各1枚へ保存する。
 
 各試料の下に`KYOw...`試料IDを表示し、背景0・クラスタ1〜8の共通凡例を付ける。
 [共通描画規約](visualization_and_interpretation.md#figure-style)を適用する。
 
 ## 3. fold内Hungarian matching
 
-各foldの全test試料について、B0・B1の共通有効画素のcontingencyを合算し、一致画素数を最大にする
-1対1対応を求める。B0を基準にB1を整列し、同じfoldの全試料で同じ対応を使う。
+各foldの全test試料について、B0と各比較条件の共通有効画素のcontingencyを合算し、一致画素数を最大にする
+1対1対応を求める。B1・A0・M00をそれぞれB0へ直接整列し、同じfold・比較条件の全試料で同じ対応を使う。
 代表7試料だけでmatchingしたり、試料ごとに別の対応を使ったりしない。
 
 対応は表示用mapのコピーに適用する。保存済みCVラベル・指標は変更せず、occupancyのcluster別画素数はraw ID順とする。
 fold間の同じ色が同じ状態を表すとは限らない。overlapが0または弱い対応はCSVで確認する。
-全体fit後の[M00＋Cosine-KMeans基準・観測SNV類似度によるmatching](visualization_and_interpretation.md#matching-reference)とは適用範囲・目的関数が異なる。本OOF sanityの方式は変更しない。
+全体fit後の[M00＋Cosine-KMeans基準・観測SNV類似度によるmatching](visualization_and_interpretation.md#matching-reference)とは適用範囲・目的関数が異なる。
 
 ## 4. 数値集計とsilhouette
 

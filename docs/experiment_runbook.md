@@ -3,8 +3,7 @@
 ## 1. 役割
 
 固定設計を`production_v1`で実行する手順を示す。条件・seed・split・評価方法の定義は
-[研究設計](design/README.md)、現在の進捗は[ToDo](../ToDo.md)、実行済みの確認は
-[検証履歴](verification_history.md)を参照する。
+[研究設計](design/README.md)、現在の進捗は[ToDo](../ToDo.md)を参照する。
 
 [vMF補助実験](design/experiment_protocol.md#vmf-supplementary)は、
 数値検証・設定確定とpipeline実装が必要であり、CLIはまだない。本書のclustering・評価・OOFコマンドは
@@ -16,7 +15,7 @@ ChemoMAE v0.2.2の環境で、リポジトリrootからPowerShellで実行する
 - [入力確認](#input-preparation)・[manifest](#3-本番manifest)
 - [NNの1 runと再開](#neural-run)・[PCA](#5-b1-pca-fitとbaseline変換の検証)
 - [clean test map](#6-clean-test-map)・[評価](#7-評価)
-- [OOF集計](#oof-aggregation)・[B0/B1 sanity図](#oof-sanity)
+- [OOF集計](#oof-aggregation)・[OOF sanity図](#oof-sanity)
 - [未実装の全体fit](#global-fit-pipeline)・[保存規約](#artifact-records)
 
 各CLIの終了後に `$LASTEXITCODE -eq 0` を確認し、非0なら後続工程へ進まない。JSONのstatus確認は
@@ -31,7 +30,7 @@ ChemoMAE v0.2.2の環境で、リポジトリrootからPowerShellで実行する
 | preflight | `outputs/experiments/preflight_v1/` |
 | 本番実験 | `outputs/experiments/production_v1/` |
 | metadata | `data/metadata/古材メタデータ.csv` |
-| B0・B1 OOF sanity | `outputs/sanity_checks/b0_b1_oof_visualization/` |
+| B0・B1・A0・M00 OOF sanity | `outputs/sanity_checks/a0_m00_oof_visualization/` |
 
 smokeやpreflightの成果物を本番rootへコピーしない。本番開始後はmanifestを作り直さず、
 `outputs/experiments/production_v1/manifests/` を同じ実験系列の固定入力として扱う。
@@ -99,7 +98,6 @@ uv run --no-sync python scripts/experiments/prepare_manifests.py check --experim
 ## 4. ニューラルネットの1 run
 
 対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はmask率補助条件M11-25・fold 1・repeat 1の例である。
-主条件M11を含む主ニューラルCVは完了済みであり、この例は補助実験の開始順序を指定するものではない。
 完了済みrunは再学習せず、保存済み成果物の確認には各工程の`check`を使う。
 
 ```powershell
@@ -240,9 +238,8 @@ foreach ($fold in 1..5) {
 ```
 
 各foldで`fit`は`status=fitted_and_roundtrip_checked`、`pca_reusable_across_repeats=true`、
-`check`は`status=validated_existing_baselines`を確認する。production_v1では5 foldsすべてで
-repeat間再利用可否が`true`だったため、B1のrepeat 2・3では`cluster_representations.py run`へ
-`--pca-repeat 1`を明示する。
+`check`は`status=validated_existing_baselines`を確認する。PCAを共有するB1のrepeat 2・3では、
+`cluster_representations.py run`へ`--pca-repeat 1`を明示する。
 
 `results/baselines/fold_<fold>/repeat_1/b0.json`はB0変換仕様、同じ場所の`fit.json`は主にB1 PCAの
 fit由来とB0・B1のprobe診断である。実際のPCAパラメータは
@@ -324,7 +321,6 @@ NN学習・PCA fitは追加せず、既存の表現・train画素・Kと同じte
 
 条件は[実験プロトコル](design/experiment_protocol.md#vmf-supplementary)、比較は
 [評価規約](design/evaluation_metrics.md#vmf-evaluation)、実装の残作業は[ToDo第3節](../ToDo.md#3-vmf補助実験)を参照する。
-CLIは実装後に追記する。
 
 <a id="global-fit-pipeline"></a>
 
@@ -336,7 +332,7 @@ vMFは数値仕様の確定・検証後、同じPCA・encoder・抽出座標を�
 全体学習の3 runsとvMFの5 fitsは、CVの105学習・735 fitsとは別枠であり、OOF集計に含めない。
 
 実装の残作業は[ToDo第5節](../ToDo.md#5-全体fitと解釈)を参照する。
-pipelineとCLIは未実装のため、実装後に手順を追記する。既存の`train_neural.py`は`--fold`必須のCV用である。
+pipelineとCLIは未実装。既存の`train_neural.py`は`--fold`必須のCV用である。
 
 <a id="oof-aggregation"></a>
 
@@ -375,27 +371,23 @@ runでは `status=oof_aggregation_completed` と `checks_passed=true`、checkで
 
 <a id="oof-sanity"></a>
 
-### 9.1 B0・B1 OOF sanity可視化
+### 9.1 B0・B1・A0・M00 OOF sanity可視化
 
-B0・B1の全5 folds×3反復のclustering・評価が完了した成果物をCPUで読み、
-[専用の表示仕様](design/oof_sanity_visualization.md)に従ってPNG 3枚とCSV 3つを生成する。
+B0・B1・A0・M00の全5 folds×3反復のclustering・評価が完了した成果物をCPUで読み、
+[専用の表示仕様](design/oof_sanity_visualization.md)に従ってPNG 5枚とCSV 3つを生成する。
 全主条件のOOF snapshot作成や、モデルの再fitは不要である。
 
-```powershell
-# 既定の出力先が存在しない場合のみ実行できる
-uv run --no-sync python scripts/experiments/visualize_b0_b1_oof.py
-```
-
-既定の出力先は生成済みなので、再生成では`--output-dir`へ新規パスを指定する。
-以下のプレースホルダーを、まだ存在しない出力先に置き換える。
+保存済み図は`outputs/sanity_checks/a0_m00_oof_visualization/`を参照する。
+再生成時は4条件と新規出力先を明示する。以下のプレースホルダーを、まだ存在しない出力先に置き換える。
 
 ```powershell
 uv run --no-sync python scripts/experiments/visualize_b0_b1_oof.py `
+    --conditions B0 B1 A0 M00 `
     --experiment-dir outputs/experiments/production_v1 `
     --output-dir '<新規出力先>'
 ```
 
-終了code 0と保存物を確認する。B0/B1別の代表7試料図でKYOw名が各試料の下にあり、
+終了code 0と保存物を確認する。条件別の代表7試料図でKYOw名が各試料の下にあり、
 silhouetteに下段subplotがないことを確認する。補正前LLA・LFR・occupancyと未定義理由はCSVで読む。
 sanity出力にはログやcompletion JSONを追加しない。
 
