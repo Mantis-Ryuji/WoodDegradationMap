@@ -315,23 +315,27 @@ KMeans、評価処理はこの数に含めない。3反復はseed選別に使わ
 
 ### 8.1 vMF補助実験の準備と実施
 
-数値仕様の確定・v0.2.2の検証 → 専用pipeline実装 → 本番CV後の735 fits・評価 → 独立OOF集計の順に進める。
+主条件のOOF集計・図表生成と全体fit・可視化・解釈を先に完了する。
+数値仕様の確定・v0.2.2の検証と共通fit処理の実装は、第8.2節の全体fit用vMF 5 fitsのために先行する。
+その後、CV専用pipeline実装 → 735 fits・評価 → 独立OOF集計・比較図表の順に進める。
 NN学習・PCA fitは追加せず、既存の表現・train画素・Kと同じtest全画素・共通摂動を使う。
 設定・結果・完了記録は主実験から分け、元成果物との対応とsource hash、失敗・未定義値を保持する。
 
 条件は[実験プロトコル](design/experiment_protocol.md#vmf-supplementary)、比較は
-[評価規約](design/evaluation_metrics.md#vmf-evaluation)、実装の残作業は[ToDo第3節](../ToDo.md#3-vmf補助実験)を参照する。
+[評価規約](design/evaluation_metrics.md#vmf-evaluation)、実装の残作業は[ToDo第5節](../ToDo.md#5-vmf補助実験)を参照する。
 
 <a id="global-fit-pipeline"></a>
 
 ### 8.2 全体fitと解釈（未実装）
+
+主条件の図表生成に続いて、mask率・vMFのCV補助実験より先に実装・実施する。
 
 [全体可視化設計](design/visualization_and_interpretation.md)に従い、全49試料の共通抽出画素で
 B1 PCAとA0・M00・M11をfitする。B0を加えた5条件の表現で、$K_0=8$のCosine-KMeansとvMFを各5 fits行う。
 vMFは数値仕様の確定・検証後、同じPCA・encoder・抽出座標を再利用する。
 全体学習の3 runsとvMFの5 fitsは、CVの105学習・735 fitsとは別枠であり、OOF集計に含めない。
 
-実装の残作業は[ToDo第5節](../ToDo.md#5-全体fitと解釈)を参照する。
+実装の残作業は[ToDo第3節](../ToDo.md#3-全体fitと解釈)を参照する。
 pipelineとCLIは未実装。既存の`train_neural.py`は`--fold`必須のCV用である。
 
 <a id="oof-aggregation"></a>
@@ -352,7 +356,7 @@ uv run --no-sync python scripts/experiments/aggregate_oof.py check `
     --experiment-dir outputs/experiments/production_v1
 ```
 
-mask率補助実験は別snapshotにする。
+mask率補助実験は主条件の図表生成・全体fit・解釈を終えてから実施し、別snapshotにする。
 
 ```powershell
 uv run --no-sync python scripts/experiments/aggregate_oof.py run `

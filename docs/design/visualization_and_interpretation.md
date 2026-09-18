@@ -7,7 +7,9 @@
 本書は全49試料を使った全体fit後の記述的解析を定義する。
 [OOF sanity可視化](oof_sanity_visualization.md)は、foldモデルの既存予測を読む別の工程である。
 実行記録は[プロトコル](experiment_protocol.md#execution-records)に従う。
-全体fitのpipelineは未実装。実装・実施の残作業は[ToDo](../../ToDo.md#5-全体fitと解釈)で管理する。
+全体fitのpipelineは未実装。実装・実施の残作業は[ToDo](../../ToDo.md#3-全体fitと解釈)で管理する。
+主条件のOOF図表生成に続き、mask率・vMFのCV補助実験より先に全体fit・可視化・探索的解釈を進める。
+全体fit用vMFの数値仕様の確定・検証と共通処理の実装はこの段階で行い、CV補助実験735 fitsの完了は前提としない。
 
 - [全体fit条件](#global-fit)
 - [M00基準のmatching](#matching-reference)

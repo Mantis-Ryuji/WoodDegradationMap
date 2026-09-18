@@ -387,7 +387,10 @@ $$
 
 ### 8.3 必須の表・図
 
-本節は全CV完了後の報告図表に適用する。B0・B1だけを扱う[OOF sanity可視化](oof_sanity_visualization.md)は、
+本節は対象条件の全fold・全反復のCVとOOF集計が完了した報告図表に適用する。
+まず主7条件のOOF snapshotから主条件の図表を生成する。mask率依存性とvMF比較の図表は、
+主条件の図表生成・全体fit・解釈を終えてから行う各補助実験のOOF集計完了後に追加する。
+[OOF sanity可視化](oof_sanity_visualization.md)は、
 label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様である。
 
 - $K_0$について、主評価のmacro平均、試料間SD、3反復間SDおよび主要なpaired contrastを表にする。
