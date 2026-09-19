@@ -2,13 +2,17 @@
 
 ## 1. ステータス
 
-**Fixed / 任意の責務マップ・FT-IR・正式な目視評価の詳細設計はOpen**
+**研究条件・全体fit seed契約Fixed / 任意の責務マップ・FT-IR・正式な目視評価の詳細設計はOpen**
 
 本書は全49試料を使った全体fit後の記述的解析を定義する。
 [OOF sanity可視化](oof_sanity_visualization.md)は、foldモデルの既存予測を読む別の工程である。
 実行記録は[プロトコル](experiment_protocol.md#execution-records)に従う。
-全体fitのpipelineは未実装。実装・実施の残作業は[ToDo](../../ToDo.md#3-全体fitと解釈)で管理する。
-主条件のOOF図表生成に続き、mask率・vMFのCV補助実験より先に全体fit・可視化・探索的解釈を進める。
+主条件のOOF集計とPNG 3枚・CSV 11個の図表生成・出力確認は完了した。
+全体fitのmanifest・B0/PCA・3条件一括学習・再開・check用CLIは実装し、合成データでCPU検証した。
+本番manifestは作成・check済み。PCAは保存復元の配列配置不一致を修正して再fit待ちであり、
+GPU smoke・全体学習は未実行、全体クラスタリング以降のpipelineは未実装である。
+実装・実施の残作業は[ToDo](../../ToDo.md#3-全体fitと解釈)、具体的な順序は[runbook](../experiment_runbook.md#global-fit-pipeline)で管理する。
+mask率・vMFのCV補助実験より先に全体fit・可視化・探索的解釈を進める。
 全体fit用vMFの数値仕様の確定・検証と共通処理の実装はこの段階で行い、CV補助実験735 fitsの完了は前提としない。
 
 - [全体fit条件](#global-fit)
@@ -46,7 +50,13 @@ fit後はモデルを固定して全試料の全有効画素へ推論し、マ�
 
 ### 1.3 反復・seed・クラスタリング
 
-CVの反復ID 1に対応する事前固定seedで、各変換器・クラスタリングを1回fitする。
+反復ID 1の事前固定seedで、各変換器・クラスタリングを1回fitする。
+2026-09-19のユーザー確認により、ROOT_SEED=20260905と既存のSHA-256方式を使用し、
+seed導出のfold位置を文字列`global`へ置換する。用途は既存と同じで、抽出は`(sampling, global, sample_id)`、
+初期化・画素順・mask・augmentation・PCAは`(purpose, global, 1)`、クラスタリングは`(kmeans, global, 1, 8)`とする。
+条件名・手法名をseedへ含めず共通化し、55個のseed一覧を`config/seeds.json`へ保存する。
+保存rootは`outputs/experiments/global_v1/`、config・manifestのschemaは1、NN run記録は既存のcontract/execution方式のschema 2とする。
+共通抽出座標は`manifests/fit_pixels.parquet`へ保存し、fold列を持たせない。CVのsplit・seed・成果物は変更しない。
 A0・M00・M11はCVと同じmask・loss・augmentation・800 epoch recipeで各1回、計3回学習する。
 同じ表現を両手法で共有し、Cosine-KMeans・vMFを各5 fits行う。CVの105学習・[vMF補助735 fits](experiment_protocol.md#vmf-supplementary)とは別枠で記録する。
 CVで良好なseedへの変更は行わず、反復間の再現性はCVのARIで報告する。

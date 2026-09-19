@@ -10,9 +10,9 @@
 | --- | --- | --- |
 | [前処理](preprocessing.md) | Fixed | 200 Hz入力、mask、負値除外、256点補間、SNV、保存schema |
 | [実験プロトコル](experiment_protocol.md) | 主条件Fixed / vMF数値仕様Open | 条件、split、seed、共通画素、学習、クラスタリング、実行記録 |
-| [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | 補正前LLA、LFR、silhouette、ARI、occupancy、未定義値、集約、比較 |
+| [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA（補正後）、LFR、ARI、silhouette、occupancy、補正前LLA、未定義値、集約、比較・報告 |
 | [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1・A0・M00のPNG・CSV、fold内B0基準のmatching |
-| [全体可視化と解釈](visualization_and_interpretation.md) | Fixed / 任意責務マップ・FT-IR・正式目視評価の詳細Open | 全体fit、M00基準・観測SNV類似度のmatching、代表例、スペクトル、FT-IR計画 |
+| [全体可視化と解釈](visualization_and_interpretation.md) | 研究条件・全体fit seed契約Fixed / 任意責務マップ・FT-IR・正式目視評価の詳細Open | 全体fit、M00基準・観測SNV類似度のmatching、代表例、スペクトル、FT-IR計画 |
 
 ## 条件の参照先
 

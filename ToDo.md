@@ -14,21 +14,25 @@
 | 主ニューラルCV | A0・M00・M10・M01・M11の5 folds×3反復、計75学習が完了 |
 | baseline | B1 PCAは5 foldsでfit済み。B0はfit不要 |
 | 主7条件のclustering・評価 | 全5 folds×3反復、計105組合せのclustering・評価・checkが完了 |
-| OOF集計 | pipelineの実装・preflightは完了。主条件snapshotは未作成 |
+| OOF集計 | `main_oof_v1`の作成・check完了（checkはユーザー完了報告）。完了記録は49試料・105 source runs・72,030 score records |
+| 主条件の図表 | `results/figures/main_oof_v1/`にPNG 3枚・CSV 11個と出典・完了記録を生成済み。主指標・分布・pairedの全図が2行3列 |
 | OOF sanity | B0・B1・A0・M00のPNG 5枚・CSV 3つを`outputs/sanity_checks/a0_m00_oof_visualization/`に保存済み |
-| 未実装 | vMF補助実験、最終報告用図表、全体fitのpipeline |
+| 全体fit準備 | 共通manifestの本番作成・check完了。PCA保存復元時の配列配置変更による不一致を修正し、PCA再fit待ち。合成データCPU検証済み。GPU smoke・学習は未実行 |
+| 未実装 | 全体クラスタリング・マップ・スペクトル集計、vMF・mask率補助実験の図表生成対応、vMF補助実験pipeline |
 
-**次の作業は主7条件の`main_oof_v1`の作成・check。**
-[OOF集計手順](docs/experiment_runbook.md#oof-aggregation)を使用する。
+**次の作業はPCAの再fit・check、GPU smoke確認、A0・M00・M11の一括学習。**
+[全体fit手順](docs/experiment_runbook.md#global-fit-pipeline)の専用CLIを使用する。保存先は`outputs/experiments/global_v1/`。
+主条件図表は[再生成手順](docs/experiment_runbook.md#oof-reporting)から更新できる。
 
 2026-09-19のユーザー指定により、作業順は**主条件のOOF集計 → 主条件の図表生成 → 全体fit・可視化・解釈 → 補助実験**とする。
 図表・可視化の実装と出力確認を先に固める。補助実験の完了を主条件図表・全体fitの着手条件にはしない。
-研究条件・比較範囲は維持し、mask率・vMFのCV補助実験とその図表は第4〜5節で追加する。
+この作業順では学習条件・比較範囲を維持し、mask率・vMFのCV補助実験とその図表は第4〜5節で追加する。
+主条件の代表指標・表示構成については第2節に今回のユーザー指定を反映する。
 
 ## 1. 主条件のOOF集計
 
-- [ ] 主7条件の5 folds×3反復の完全性を確認し、`main_oof_v1`を作成・checkする。
-- [ ] 反復間ARI、欠損・失敗・中断、未定義指標と理由が集計に保持されていることを確認する。
+- [x] 主7条件の5 folds×3反復の完全性を確認し、`main_oof_v1`を作成・checkする。
+- [x] 反復間ARI・未定義指標と理由を保持し、欠損・失敗・中断した入力を黙って除外しない処理を確認する。
 
 ## 2. 主条件CV完了後の図表生成
 
@@ -37,11 +41,18 @@
 主7条件の`main_oof_v1`から図表生成・可視化の実装と出力確認を先に固める。
 mask率・vMFの補助実験に依存する図表は、それぞれのOOF集計完了後に追加する。
 
-- [ ] OOF snapshotから、代表$K_0=8$の主表と診断表を生成するpipelineを実装する。
-- [ ] 全7Kの指標・計画contrast・反復別曲線、paired差、2×2交互作用の図表を実装する。
-- [ ] 未定義理由・共通対象数、試料間SD・反復間SD、ARI・occupancy等の必須診断を照合する。
-- [ ] 元snapshotと図表のsource hash、条件・K・反復・集計対象、captionに必要な定義を保存する。
-- [ ] `main_oof_v1`から主条件の必須図表を生成し、数値・表示・原稿の掲載候補を照合する。
+- [x] OOF snapshotから、代表$K_0=8$と全7Kの指標・paired比較・交互作用のCSV表を生成するpipelineを実装する。
+- [x] 主指標サマリ・$K_0=8$の試料別分布・主要3比較のpaired K依存図を、各2行3列のPNGとして生成する。
+- [x] 未定義理由・共通対象数、試料間SD・反復間SD、ARIの退化情報、clean testのoccupancyを保存し、集計契約を合成データで検証する。
+- [x] 元snapshotと図表のsource hash、条件・K・反復・集計対象、captionに必要な定義を保存する。
+- [x] `main_oof_v1`から本番のPNG 3枚・CSV 11個を生成し、図の表示を確認する。
+
+2026-09-19のユーザー指定により、表示はLLA（補正後）、LFR(TGN+FS)、ARI、Cosine-Silhouette、
+Cluster Occupancyの優先順とする。LLAの窓3・5・9は個別に残す。Occupancyと交互作用はCSVのみ。
+LFRは図ではTGN+FSのみ、CSVではLFR(TGN+FS)・LFR(TGN)・LFR(FS)の3種類を保存する。
+PNGは`01_main_metrics_k_sweep.png`、`02_k8_distributions.png`、`03_paired_k_sweep.png`の連番とし、旧PNGは削除済み。
+補正後LLAの交互作用と試料単位のpaired ARIは報告pipelineで算出し、元OOF snapshotを保持する。
+原稿への採用・captionの最終調整は第7節の執筆側で管理する。
 
 ## 3. 全体fitと解釈
 
@@ -50,8 +61,13 @@ M00＋Cosine-KMeans基準のmatching、代表スペクトルの平均集計、SG
 CV用CLIをそのまま全体fitへ使わない。
 全体fit用のvMF 5 fitsに必要な数値仕様・共通処理の検証はこの段階で先行し、CV補助実験の735 fitsは第5節で行う。
 
-- [ ] 全49試料の共通画素抽出・manifest・seed適用・実行記録・保存先・CLIを実装する。
-- [ ] PCAの全体fitと、A0・M00・M11の各1回（計3回）の全体学習を実装・実施する。
+- [x] ROOT_SEED=20260905・SHA-256方式でfoldを`global`へ置換し、反復ID 1を使用するseed対応と、独立root `global_v1`をユーザー確認する（2026-09-19）。
+- [x] 全49試料×8,192画素（401,408画素）の共通manifest・実行記録・保存先・CLIを実装する。
+- [x] B0/PCAの準備・保存復元と、A0・M00・M11の各1回を順次実行する学習・明示的再開・完了checkを実装し、合成データのCPU検証を行う。
+- [x] 本番manifestを作成・checkする（49試料・401,408画素、ユーザー実行ログ確認）。
+- [ ] B0/PCAの準備・全体fit・checkを完了する。初回の復元不一致は修正済み、途中出力を退避して再fit待ち。
+- [ ] 実寸model・batch size 1024のGPU smokeで、全3条件の保存復元・全可視抽出・epoch境界再開を確認する。
+- [ ] A0・M00・M11を各800 epochで1回、計3回学習し、`training-check`で確認する。
 - [ ] 同じ表現・抽出座標・$K_0=8$でCosine-KMeansを5 fits行う。
 - [ ] v0.2.2の数値関数・公開helper・初期化・最終尤度・保存復元・退化成分を検証する。16次元・256次元の参照値比較、CPU小規模、chunk、GPU最小確認を含む。
 - [ ] [実験プロトコル第5.2.3節](docs/design/experiment_protocol.md#vmf-supplementary)に従い、数値精度・EM停止条件・集中度設定を検証・ユーザー確認のうえ固定する。全体fitと後続のCV補助実験で共用する。

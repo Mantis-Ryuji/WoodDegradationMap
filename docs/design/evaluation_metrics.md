@@ -14,14 +14,19 @@
 数式ではそれぞれ$\mathrm{LLA}^{\mathrm{raw}}$、$\mathrm{LLA}$と表す。実装・保存データのキーは、
 `lla`が補正前LLA、`adjusted_lla`がLLAに対応する。
 
+2026-09-19のOOF集計完了後のユーザー指定により、代表指標は次の優先順で報告する。
+**LLA（補正後） → LFR(TGN+FS) → ARI → Cosine-Silhouette → Cluster Occupancy**。
+これは報告指標・図表構成の更新であり、保存済みのCV評価値とOOF snapshotを出典として使用する。
+
 | 位置づけ | 指標 | 評価する性質 |
 | --- | --- | --- |
-| 主評価 | 補正前LLA-3、補正前LLA-5、補正前LLA-9 | ラベルの空間的一貫性 |
-| 主評価 | noise、shift、noise + shiftのlabel flip rate | 指定したスペクトル摂動に対する安定性 |
-| 幾何学的診断 | 各表現空間のcosine-silhouette | その表現・cosine距離でのクラスタ分離 |
-| 補助診断 | LLA-3/5/9 | 占有率を保ったランダム配置を超える空間的一致 |
+| 主評価・代表表示 | LLA-3/5/9 | 占有率を保ったランダム配置を超える空間的一致 |
+| 主評価・代表表示 | LFR(TGN+FS)：noise + shiftのlabel flip rate | 指定した複合摂動に対する安定性 |
 | 補助診断 | 3反復間のARI | 同一test画素に対する分割の再現性 |
+| 幾何学的診断 | 各表現空間のCosine-Silhouette | その表現・cosine距離でのクラスタ分離 |
 | 必須併記 | 試料別・fold別occupancy、使用クラスタ数 | 単一クラスタへの集中や不均衡、指標の退化の確認 |
+| CSV併記 | LFR(TGN)、LFR(FS) | TGN単独・Fractional Shift単独への安定性。条件別・paired・交互作用・試料別値をCSVへ保存 |
+| 補足・保存済み評価 | 補正前LLA-3/5/9 | 補正前の一致率。元の評価・OOF snapshotに保持 |
 
 指標を単一scoreへ合成したり、総合的な「最良の表現」を選んだりしない。
 主評価の改善が示す範囲は表の性質に限り、劣化検出・化学的対応・境界の正確さは保証しない。
@@ -208,7 +213,7 @@ $$
 =\frac{\mathrm{LLA}^{\mathrm{raw}}_{r,m}-P_m}{1-P_m}
 $$
 
-をLLAとして補助報告する。0は帰無配置の期待値と同じ、正値はそれを上回る一致、負値はそれを
+をLLAとして代表報告する。0は帰無配置の期待値と同じ、正値はそれを上回る一致、負値はそれを
 下回る一致を表す。負値を0へclipしない。これは本研究で明示した帰無配置に対する補正であり、
 劣化の正解や正しい空間構造への一致率ではない。
 
@@ -375,9 +380,17 @@ $$
 $$
 
 として保存する。両条件・3反復で値が定義された共通試料集合を使い、反復平均後の試料別差、
-差のmacro平均および反復別のmacro差を報告する。補正前LLAは正、LFRは負が各指標上の改善方向となる。
+差のmacro平均および反復別のmacro差を報告する。LLAは正、LFRは負が各指標上の改善方向となる。
 主表と対応するpaired plotで、平均だけでなく改善・悪化が試料によって異なるかを示す。
-反復間ARIにはこの反復別contrastを適用せず、試料内で3対を平均した分割再現性の診断として示す。
+ARIのpaired比較は、各条件で試料内の3反復対を平均した値どうしの差として定義する。
+両条件でこの試料平均が定義された共通試料を使い、差のmacro平均と試料間SD、対象数・未定義理由を保存する。
+反復対を独立反復として扱わず、ARI差の反復別曲線や反復間SDは作らない。
+
+現行の報告pipelineでは、2×2交互作用をLLA-3/5/9とLFR(TGN+FS)・LFR(TGN)・LFR(FS)について、
+同一試料・K・反復の保存済みscoreから求める。4条件・3反復すべてで定義された共通試料を用いる。
+`main_oof_v1/interaction/`には旧報告規約の補正前LLAと3種類のLFRが保存されているため、
+補正後LLAの交互作用は報告pipelineで算出してCSVへ保存する。旧交互作用をLLAへ改名して流用しない。
+paired ARIも報告pipelineで算出し、元OOF snapshotのscore・集約値・出典記録は保持する。
 
 本計画では有意差検定やp値による採否判定を行わず、効果の大きさ、試料別の差、K依存性および
 3反復での傾向を記述する。5つのfoldは学習集合が重なり、silhouetteはtest試料間でも距離計算を
@@ -393,14 +406,29 @@ $$
 [OOF sanity可視化](oof_sanity_visualization.md)は、
 label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様である。
 
-- $K_0$について、主評価のmacro平均、試料間SD、3反復間SDおよび主要なpaired contrastを表にする。
-- 同じ$K_0$のLLA、cosine-silhouette、反復間ARI、occupancyおよび有効対象数を診断表にする。
-- $K\in\mathcal{K}$について、補正前LLA-3/5/9、3種類のLFRと主要contrastを曲線で示す。各反復の曲線も保存する。
-- K依存性とmask率依存性の診断図にLLA、silhouette、ARIおよびoccupancyを併記する。
-- M11 vs B0、M11 vs B1、M11 vs M00を主要比較として示し、残りの計画比較と2×2交互作用をablation表にする。
+- 表はCSV形式とし、代表指標の優先順に保存する。$K_0=8$と全7Kについて、平均・試料間SD・
+  反復間SD・対象数・未定義理由を区別する。ARIとそのpaired差には反復間SDを付けない。
+  LFRはTGN+FS・TGN単独・FS単独の3種類を保存する。図ではTGN+FSのみを表示する。
+  保存キー`lfr_both`・`lfr_noise`・`lfr_shift`の表示名は、それぞれLFR(TGN+FS)・LFR(TGN)・LFR(FS)とする。
+- 主指標サマリは2行3列とし、上段にLLAの窓3・5・9、下段にLFR(TGN+FS)・ARI・Cosine-Silhouetteを置く。
+  横軸は全7K、各panelに主7条件のmacro平均を表示する。ARI以外では同じ共通試料集合による反復別曲線も表示する。
+- $K_0=8$の試料別分布図も同じ2行3列・指標順とする。各点は試料ごとの3反復平均
+  （ARIでは3反復対平均）、黒線はmacro平均、`n`は定義済み共通試料数を表す。
+- paired図はK依存図1枚とし、主指標サマリと同じ2行3列に、M11−B0・M11−B1・M11−M00の主要3比較を重ねる。
+  ARI差には第8.2節の試料単位の定義を用いる。
+- 各図内のLLA 3・5・9は縦軸範囲を揃える。全点・反復曲線と余白を含む共通範囲とし、値を切り落とさない。
+  主指標サマリと試料別分布図の縦軸目盛りは全パネル0.1刻みとする。
+  異なる指標の縦軸範囲は個別とする。pairedのLLAは先頭パネルの既存の目盛り間隔を保って統一する。
+- Cluster Occupancyと2×2交互作用はCSV表のみとし、単独PNGや分布panelを作らない。
+  現行のoccupancy表はclean testが対象で、試料別の使用クラスタ数・最大占有率・単一クラスタ化と、
+  fold・反復ごとの分布を保持する。未整列の番号をfold・反復間で平均しない。
+- 残りの計画比較もCSVへ保存する。mask率・vMFの図表は各補助実験後に専用pipelineを拡張する。
 - 指標間で結論が異なる場合は、総合順位に潰さずtrade-offとして報告する。
 - Hungarian matchingは表示ラベルの整列に用い、CV指標の計算には使用しない。
   [OOF sanity](oof_sanity_visualization.md)ではfold内B0基準で一致画素数を最大化する。[全体fit後](visualization_and_interpretation.md#matching-reference)ではM00のCosine-KMeansを表示基準に、観測SNV代表線のcosine類似度の合計を最大化する。全体fitの画素overlapは確認用とする。
+
+主条件の実装済み成果物はPNG 3枚・CSV 11個である。ファイル名・保存先・再生成方法は
+[runbook](../experiment_runbook.md#oof-reporting)を参照する。PNGは01〜03の連番とし、再生成時は旧PNGを整理する。
 
 <a id="vmf-evaluation"></a>
 
