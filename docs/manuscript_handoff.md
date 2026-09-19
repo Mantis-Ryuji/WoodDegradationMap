@@ -38,6 +38,10 @@
 | TGN・shiftの例 | [TGN](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_noise_exact_angles_examples.png)・[shift](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_shift_exact_endpoints_examples.png)。同じ実測train SNV 3画素による説明図 |
 | 摂動の数値要約 | [metrics.csv](../outputs/sanity_checks/augmentation_strengths_train_fold1/metrics.csv)・[summary.json](../outputs/sanity_checks/augmentation_strengths_train_fold1/summary.json)。fold 1のtrain 8試料×128画素による強度確認。CV指標による最適化ではない |
 | B0・B1・A0・M00のOOF確認 | `outputs/sanity_checks/a0_m00_oof_visualization/`のPNG・CSV。[OOF sanity仕様](design/oof_sanity_visualization.md)に従う。全主条件の最終比較には代用しない |
+| 主7条件のK依存性 | [01_main_metrics_k_sweep.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/01_main_metrics_k_sweep.png)。上段LLA 3・5・9、下段LFR(TGN+FS)・ARI・Cosine-Silhouetteの2行3列 |
+| 主7条件の試料別分布 | [02_k8_distributions.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/02_k8_distributions.png)。$K_0=8$、試料別平均・macro平均・共通対象数 |
+| 主要3比較のpaired差 | [03_paired_k_sweep.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/03_paired_k_sweep.png)。M11−B0・M11−B1・M11−M00。ARI差は試料内3反復対平均同士の差 |
+| 主条件の表・出典 | `outputs/experiments/production_v1/results/figures/main_oof_v1/`のCSV 11個と[report.json](../outputs/experiments/production_v1/results/figures/main_oof_v1/report.json)。Occupancyと交互作用は表のみ。内容一覧・再生成は[runbook](experiment_runbook.md#oof-reporting) |
 
 摂動例の選定・再生成は[runbook](experiment_runbook.md#input-preparation)を参照する。
 TGNの固定例は2.5・5・7.5度で採用上限5度を超える例を含み、shiftの符号は順に＋・−・＋である。
@@ -60,6 +64,9 @@ Cutoffのproxyはreferenceの検出器列間のばらつきに基づき、試料
 - vMF数値仕様、FT-IR、正式な目視評価の[Open事項](design/README.md#open-items)と実施状況。
 - 採用runの実行環境・完了状況、図表の出典、提出書式。
 - 指標名と保存キーの対応：補正前LLA（$\mathrm{LLA}^{\mathrm{raw}}$）は`lla`、LLA（$\mathrm{LLA}$）は`adjusted_lla`。
+- 代表指標はLLA、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyの優先順。
+  OOF集計完了後の2026-09-19のユーザー指定による報告規約であり、元snapshotと報告CSVの対応を
+  [評価仕様](design/evaluation_metrics.md#reporting)で確認する。補正後LLAの交互作用は報告CSVを参照する。
 - 記号を初出と添字省略時に定義する。SNVと潜在のnorm、中心化行列$P$と偶然一致確率$P_m$、学習時潜在と全可視潜在を区別する。
 
 CVは未知試料でのマップの性質を比較する。全体fit・観測スペクトル・位置対応FT-IRは化学的対応を探索する。

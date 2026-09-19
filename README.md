@@ -25,9 +25,15 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 
 ## 現在の段階
 
-主7条件の5-fold・3反復の学習・クラスタリング・評価は完了し、次はOOF集計です。
-OOF集計後は主条件の図表生成と全体fit・可視化・解釈を先に進め、実装と出力確認を固めてから
-mask率・vMFのCV補助実験へ移ります。全体fit用vMFの数値仕様・共通処理の検証は先行します。
+主7条件の5-fold・3反復の学習・クラスタリング・評価、`main_oof_v1`のOOF集計、
+主条件の図表生成・出力確認まで完了しました。図は2行3列のPNG 3枚、表はCSV 11個で、
+再生成方法と保存先は[主条件OOF図表](docs/experiment_runbook.md#oof-reporting)を参照してください。
+代表指標の優先順はLLA（補正後）、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyです。
+
+全体fitのmanifest・B0/PCA・A0/M00/M11一括学習CLIを実装しました。本番manifestの作成・checkは完了し、PCA再fit・GPU smoke・学習が次の実行対象です。
+[全体fit手順](docs/experiment_runbook.md#global-fit-pipeline)の準備・GPU smoke確認後、3条件を順次学習します。
+その後に全体クラスタリング・可視化・探索的解釈、mask率・vMFのCV補助実験へ進みます。
+全体fit用vMFの数値仕様・共通処理の検証は全体fitの段階で行います。
 完了範囲と作業順、図表生成・全体fit・補助実験の残作業は[ToDo](ToDo.md)で管理します。
 
 ## 主な配置
@@ -38,6 +44,7 @@ data/processed/production_v1/           前処理済み入力
 outputs/preprocessing/production_v1/    前処理確認図
 outputs/experiments/preflight_v1/       動作確認の成果物
 outputs/experiments/production_v1/      本番manifest・結果・checkpoint
+outputs/experiments/global_v1/          全体fit専用manifest・結果・checkpoint
 outputs/sanity_checks/                 探索的な確認図・数値
 docs/                                  設計・手順・研究説明
 src/wood_degradation_map/               実装

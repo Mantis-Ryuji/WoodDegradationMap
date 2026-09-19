@@ -39,7 +39,7 @@ Random maskもdenoisingのcorruptionと捉え、欠落に変形を追加する�
 | --- | --- | --- |
 | 表現を学ぶための提案 | SNV制約を保つTGN・shiftとmasked denoising | 帯域補完と追加摂動からの復元を学ぶことで、利用時の表現とマップがどう変わるか |
 | 表現を領域へ対応づける | CLS由来の単一単位潜在、cosineクラスタリング、空間マップ | 学習したスペクトル群が試料表面のどこに分布するか。vMFは分割手法への依存性も調べる |
-| マップの性質を比較する | 試料単位CV、baseline・ablation、補正前LLA・LFR・ARI・occupancy等 | 未知試料でどの程度空間的にまとまり、指定摂動や学習反復でどう変わるか。退化やtrade-offはあるか |
+| マップの性質を比較する | 試料単位CV、baseline・ablation、LLA（補正後）・LFR(TGN+FS)・ARI・Cosine-Silhouette・Cluster Occupancy | 未知試料でどの程度空間的にまとまり、指定摂動や学習反復でどう変わるか。退化やtrade-offはあるか |
 | 化学的な意味を検討する | NIRの代表・差スペクトル、試料情報、位置対応FT-IRの計画 | 分割された領域の差を化学状態とどう対応づけられるか。劣化以外の説明は何か |
 
 TGN・shiftの効果は、主要比較とMAE4条件の2×2比較・交互作用を既定指標で評価する。

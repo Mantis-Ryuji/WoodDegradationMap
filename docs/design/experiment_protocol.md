@@ -468,14 +468,17 @@ M00 vs A0ではmaskの有無とloss対象が同時に異なるため、mask率�
 augmentation付きAEは本計画に含めず、augmentationとmask modelingの組合せに固有の優位性は主張しない。
 
 M00、M10、M01、M11は、Gaussian noiseの有無とshiftの有無による2×2要因計画として扱う。
-各主評価指標について、同じ試料・K・反復における次の交互作用contrastを報告する。
+現行の報告ではLLA-3/5/9（補正後）とLFR(TGN+FS)・LFR(TGN)・LFR(FS)について、
+同じ試料・K・反復における次の交互作用contrastをCSV表で報告する。
 
 $$
 (M11-M10)-(M01-M00)
 $$
 
-補正前LLAとLFRは改善方向が逆である。contrastは指標の元の尺度で示し、正負の意味を明記する。
+LLAとLFRは改善方向が逆である。contrastは指標の元の尺度で示し、正負の意味を明記する。
 交互作用はこの指標・この強度設定に対する記述であり、augmentationの一般的な相乗効果とは断定しない。
+OOF集計完了後の2026-09-19の報告指標変更と、元snapshot・報告CSVの対応は
+[評価指標第8.2節](evaluation_metrics.md#reporting)に記録する。主条件の学習・評価を再実行したことにはしない。
 
 ## 5. 補助実験
 
@@ -658,8 +661,10 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 ## 8. 条件選択の方針
 
 - CV結果から単一の「best条件」を選定しない。
-- 主評価は補正前LLAとlabel flip rateとし、cosine-silhouetteは各表現空間の幾何学的診断とする。
-- LLA、occupancyおよび反復間ARIを補助診断として報告する。どの指標も劣化精度の代用にしない。
+- 主評価の代表表示はLLA（補正後）とLFR(TGN+FS)とする。代表指標の優先順は
+  LLA、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyとする。
+- ARIは反復間再現性、Cosine-Silhouetteは表現空間内の幾何、occupancyは退化の診断として報告する。
+  補正前LLAとLFR noise・shiftも保存済み評価に保持する。どの指標も劣化精度の代用にしない。
 - 各指標を恣意的に合成した総合scoreを作らない。
 - 計画比較ごとに、各指標の方向とKに対する傾向を報告する。
 - 解釈・可視化結果を用いて主条件を事後選択しない。
@@ -692,7 +697,9 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 9. 第5.2.4節に従ってvMFのCV補助実験735 fitsを行い、独立したOOF集計とCosine-KMeansとの比較図表を追加する。
 
 2026-09-19のユーザー指定により、図表生成・全体fit・解釈の実装と出力確認を補助実験より先に進める。
-研究条件・比較範囲は変更しない。vMFのCV補助実験735 fitsと、手順6の全体解釈用5 fitsは分けて記録する。
+この実行順序の変更では学習条件・比較範囲を変更しない。主条件の図表生成時に更新した代表指標・表示構成は
+[評価の報告規約](evaluation_metrics.md#reporting)を参照する。
+vMFのCV補助実験735 fitsと、手順6の全体解釈用5 fitsは分けて記録する。
 位置対応FT-IRと正式な目視評価の詳細設計は引き続きOpenとして別途扱う。
 
 ## 11. 実験条件の確定状況と実行記録
