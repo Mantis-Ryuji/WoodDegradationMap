@@ -23,8 +23,9 @@ from wood_degradation_map.experiments.manifests import _digest, _read_json, _wri
 def _summary(condition: str, metric: str, k: int, expected: dict[str, int]) -> dict:
     values = {"B0": 0.0, "B1": 0.1, "A0": 0.2, "M00": 0.2,
               "M10": 0.3, "M01": 0.4, "M11": 0.8}
+    scale = {"lfr_noise": 0.25, "lfr_shift": 0.5}.get(metric, 1.0)
     records = [ScoreRecord(sample, fold, condition, k, metric, repeat, "defined",
-                           values[condition] + repeat / 100)
+                           (values[condition] + repeat / 100) * scale)
                for sample, fold in expected.items() for repeat in REPEATS]
     return asdict(aggregate_scores(records, expected_test_folds=expected, condition_id=condition,
                                    metric=metric, k=k))
@@ -233,6 +234,9 @@ def test_csv_and_figure_contract(
             report.LABELS[metric] + (" difference" if stem == "03_paired_k_sweep" else "")
             for metric in report.SUMMARY_METRICS
         ]
+        assert figure.axes[3].get_ylabel() == "LFR(TGN+FS)" + (
+            " difference" if stem == "03_paired_k_sweep" else ""
+        )
         if stem == "03_paired_k_sweep":
             assert len(figure.axes[4].get_lines()) == 4  # Three ARI differences and zero line.
         layouts[stem] = len(figure.axes)
@@ -249,12 +253,32 @@ def test_csv_and_figure_contract(
     assert note.read_text(encoding="utf-8") == "keep"
     table = pd.read_csv(output / "metrics_k8.csv")
     assert table.priority.tolist() == sorted(table.priority)
-    assert len(table) == 7 * 9
+    assert len(table) == 7 * 11
     assert table.loc[table.metric == "LLA", "label"].str.startswith("LLA (").all()
     assert _read_json(output / "completion.json")["status"] == "oof_figures_completed"
     assert "user_note.txt" not in _read_json(output / "completion.json")["artifact_sha256"]
-    assert set(pd.read_csv(output / "paired_k8.csv").source_metric) == set(report.SUMMARY_METRICS)
+    assert set(pd.read_csv(output / "paired_k8.csv").source_metric) == set(report.TABLE_METRICS)
+    variants = {"lfr_both": ("LFR(TGN+FS)", 1.0), "lfr_noise": ("LFR(TGN)", 0.25),
+                "lfr_shift": ("LFR(FS)", 0.5)}
+    for name in ("metrics_all_k", "metrics_k8", "paired_all_k", "paired_k8",
+                 "interaction_all_k", "interaction_k8", "sample_values", "availability"):
+        csv = pd.read_csv(output / f"{name}.csv")
+        for metric, (label, scale) in variants.items():
+            selected = csv[csv.source_metric == metric]
+            assert not selected.empty
+            assert set(selected.metric) == set(selected.label) == {label}
+            assert set(selected.priority) == {2}
+            if name.startswith(("metrics_", "paired_", "interaction_")):
+                expression, value = (
+                    ("M11", 0.82) if name.startswith("metrics_") else
+                    ("M11 - M00", 0.6) if name.startswith("paired_") else
+                    ("(M11 - M10) - (M01 - M00)", 0.3)
+                )
+                assert selected.loc[selected.expression == expression, "mean"].to_numpy() == (
+                    pytest.approx(value * scale)
+                )
     assert not pd.read_csv(output / "occupancy_samples.csv").empty
     manifest = _read_json(output / "report.json")
-    assert manifest["metric_order"] == ["LLA", "LFR (both)", "ARI", "Cosine-Silhouette", "Cluster Occupancy"]
+    assert manifest["metric_order"] == ["LLA", "LFR(TGN+FS)", "ARI", "Cosine-Silhouette", "Cluster Occupancy"]
+    assert all(label in manifest["table_metric_order"] for label, _ in variants.values())
     assert not any(item["path"].endswith((".npz", ".h5", ".pt")) for item in manifest["sources"])
