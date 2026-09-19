@@ -32,6 +32,10 @@
 | OOF sanity | 完了済みB0・B1・A0・M00のOOF map・指標 | 0回 | 既存成果物のみ |
 | 全体解釈 | B0、B1、A0、M00、M11を全49試料でfit・学習 | 3回 | $K_0=8$、各手法5 fits |
 
+2026-09-20の指定により、全体解釈はまずCosine-KMeansの5条件で、潜在空間・空間map・観測スペクトルの
+対応と化学的解釈を優先する。mask率sweepとvMF（数値検証・全体fit用5 fits・CV補助735 fitsを含む）は
+低優先度で計画に残し、先行する解析・図表・解釈の整理を一通り終えた後に回す。
+
 CVは105学習、全体解釈を含めると108学習。PCA、KMeans、vMF、表現抽出、評価摂動はこの学習数に含めない。
 全体fitの表示番号は、観測SNV代表線のcosine類似度によるHungarian matchingでM00のCosine-KMeansへ直接整列する。画素overlapは確認用に残す。OOF sanityはfold内B0基準・一致画素数最大化を用いる。
 

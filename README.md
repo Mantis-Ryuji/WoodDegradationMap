@@ -32,8 +32,9 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 
 全体fitのmanifest・B0/PCA・A0/M00/M11一括学習CLIを実装しました。本番manifestの作成・checkは完了し、PCA再fit・GPU smoke・学習が次の実行対象です。
 [全体fit手順](docs/experiment_runbook.md#global-fit-pipeline)の準備・GPU smoke確認後、3条件を順次学習します。
-その後に全体クラスタリング・可視化・探索的解釈、mask率・vMFのCV補助実験へ進みます。
-全体fit用vMFの数値仕様・共通処理の検証は全体fitの段階で行います。
+その後はCosine-KMeansの5条件で、潜在空間・空間map・観測スペクトルの対応と化学的解釈を優先します。
+2026-09-20の指定により、mask率sweepとvMFは低優先度で計画に残し、この解析と図表・解釈の整理を一通り終えた後に回します。
+vMFの数値仕様・共通処理の検証と全体fit用5 fitsも後回しとし、先行する可視化の前提にはしません。
 完了範囲と作業順、図表生成・全体fit・補助実験の残作業は[ToDo](ToDo.md)で管理します。
 
 ## 主な配置
