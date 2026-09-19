@@ -14,7 +14,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
+from matplotlib.ticker import MultipleLocator
 
 from .aggregation import Availability, SummaryRow, UnavailableScore, _summarize
 from .config import CLUSTER_COUNTS, CONDITIONS, FOLDS, REPEATS
@@ -25,11 +27,14 @@ from .oof_sanity import SourceReader, _manifest, _run, occupancy_values
 MAIN_CONDITIONS = tuple(item.condition_id for item in CONDITIONS if item.experiment == "main")
 K0 = 8
 LLA_METRICS = ("adjusted_lla_3", "adjusted_lla_5", "adjusted_lla_9")
-REPEATED = (*LLA_METRICS, "lfr_both", "silhouette")
-CONTRAST_METRICS = (*LLA_METRICS, "lfr_both")
+LFR_METRICS = ("lfr_both", "lfr_noise", "lfr_shift")
+REPEATED = (*LLA_METRICS, *LFR_METRICS, "silhouette")
+CONTRAST_METRICS = (*LLA_METRICS, *LFR_METRICS)
 OCCUPANCY_METRICS = ("used_clusters", "max_occupancy", "single_cluster")
+# The six figure panels are a subset of the complete CSV metrics.
 SUMMARY_METRICS = (*LLA_METRICS, "lfr_both", "ari", "silhouette")
-DISPLAY_ORDER = (*SUMMARY_METRICS, *OCCUPANCY_METRICS)
+TABLE_METRICS = (*LLA_METRICS, *LFR_METRICS, "ari", "silhouette")
+DISPLAY_ORDER = (*TABLE_METRICS, *OCCUPANCY_METRICS)
 FIGURE_NAMES = (
     "01_main_metrics_k_sweep", "02_k8_distributions", "03_paired_k_sweep",
 )
@@ -47,7 +52,8 @@ COLORS = dict(zip(MAIN_CONDITIONS, (
 ), strict=True))
 LABELS = {
     **{f"adjusted_lla_{w}": f"LLA ({w} x {w})" for w in (3, 5, 9)},
-    "lfr_both": "LFR (both)", "ari": "ARI", "silhouette": "Cosine-Silhouette",
+    "lfr_both": "LFR(TGN+FS)", "lfr_noise": "LFR(TGN)", "lfr_shift": "LFR(FS)",
+    "ari": "ARI", "silhouette": "Cosine-Silhouette",
     "used_clusters": "Cluster Occupancy: used clusters",
     "max_occupancy": "Cluster Occupancy: maximum fraction",
     "single_cluster": "Cluster Occupancy: single-cluster fraction",
@@ -67,7 +73,7 @@ class ReportData:
 
 
 def _identity(metric: str, expression: str, k: int, kind: str) -> dict:
-    priority = (1 if metric in LLA_METRICS else 2 if metric == "lfr_both" else
+    priority = (1 if metric in LLA_METRICS else 2 if metric in LFR_METRICS else
                 3 if metric == "ari" else 4 if metric == "silhouette" else 5)
     return {
         "priority": priority, "metric": "LLA" if metric in LLA_METRICS else
@@ -381,6 +387,22 @@ def _save(figure: plt.Figure, output: Path, stem: str, dpi: int) -> None:
         plt.close(figure)
 
 
+def _align_lla_axes(axes: tuple[Axes, ...], *, tick_step: float | None) -> None:
+    """Share the complete LLA extent, including repeat curves and plot margins."""
+    if not axes:
+        return
+    if tick_step is None:
+        # Paired plots keep the first LLA panel's existing automatic tick interval.
+        ticks = axes[0].get_yticks()
+        tick_step = float(ticks[1] - ticks[0])
+    lower = min(axis.get_ylim()[0] for axis in axes)
+    upper = max(axis.get_ylim()[1] for axis in axes)
+    limits = (np.floor(lower / tick_step) * tick_step, np.ceil(upper / tick_step) * tick_step)
+    for axis in axes:
+        axis.set_ylim(limits)
+        axis.yaxis.set_major_locator(MultipleLocator(tick_step))
+
+
 def _curve_figure(
     data: ReportData, output: Path, stem: str, metrics: tuple[str, ...], dpi: int,
     *, kind: str = "condition", expressions: tuple[str, ...] = MAIN_CONDITIONS,
@@ -405,7 +427,11 @@ def _curve_figure(
             axis.axhline(0, color="0.4", linewidth=0.8)
         axis.set(xlabel="K", ylabel=LABELS[metric] + (" difference" if kind != "condition" else ""),
                  xticks=CLUSTER_COUNTS)
+        if kind == "condition":
+            axis.yaxis.set_major_locator(MultipleLocator(0.1))
         axis.grid(alpha=0.2)
+    _align_lla_axes(tuple(axis for axis, metric in zip(axes.flat, metrics, strict=True)
+                          if metric in LLA_METRICS), tick_step=0.1 if kind == "condition" else None)
     handles, labels = axes[0, 0].get_legend_handles_labels()
     if any(metric != "ari" for metric in metrics):
         handles += [Line2D([], [], color="0.5", linestyle=style) for style in STYLES]
@@ -436,7 +462,9 @@ def _dot_figure(data: ReportData, output: Path, dpi: int) -> None:
         axis.set_ylabel(LABELS[metric])
         axis.set_xticks(range(len(MAIN_CONDITIONS)), MAIN_CONDITIONS)
         axis.margins(y=0.16)
+        axis.yaxis.set_major_locator(MultipleLocator(0.1))
         axis.grid(axis="y", alpha=0.2)
+    _align_lla_axes(tuple(axes[0]), tick_step=0.1)
     fig.text(0.5, 0.005, "K = 8; dots: sample means; black bars: sample macro means; n: common samples",
              ha="center", fontsize=9)
     fig.tight_layout(rect=(0, 0.035, 1, 1))
@@ -491,18 +519,23 @@ def render_report(experiment: Path, snapshot: str, output: Path, *, dpi: int = 2
     _write_json(output / "report.json", {
         "snapshot": snapshot, "experiment_dir": str(experiment), "conditions": list(MAIN_CONDITIONS),
         "K0": K0, "cluster_counts": list(CLUSTER_COUNTS), "repeats": list(REPEATS),
-        "metric_order": ["LLA", "LFR (both)", "ARI", "Cosine-Silhouette", "Cluster Occupancy"],
+        "metric_order": ["LLA", "LFR(TGN+FS)", "ARI", "Cosine-Silhouette", "Cluster Occupancy"],
+        "table_metric_order": [LABELS[metric] for metric in DISPLAY_ORDER],
         "figure_layouts": {
-            "01_main_metrics_k_sweep": "2x3; top: LLA 3/5/9; bottom: LFR(both), ARI, Cosine-Silhouette",
+            "01_main_metrics_k_sweep": "2x3; top: LLA 3/5/9; bottom: LFR(TGN+FS), ARI, Cosine-Silhouette",
             "02_k8_distributions": "2x3; same metric order as the main summary",
-            "03_paired_k_sweep": "2x3; top: LLA 3/5/9; bottom: LFR(both), ARI, Cosine-Silhouette; "
+            "03_paired_k_sweep": "2x3; top: LLA 3/5/9; bottom: LFR(TGN+FS), ARI, Cosine-Silhouette; "
             "each panel shows M11-B0, M11-B1, M11-M00",
             "Cluster Occupancy": "CSV tables only",
             "interaction": "CSV tables only",
         },
         "definitions": {
             "LLA": "adjusted_lla_3/5/9; occupancy-corrected; three separate windows; higher is better",
-            "LFR (both)": "saved five-perturbation mean; lower is better; contrasts retain condition-reference",
+            "LFR(TGN+FS)": "lfr_both; TGN and Fractional Shift; figures and CSV",
+            "LFR(TGN)": "lfr_noise; TGN only; CSV only",
+            "LFR(FS)": "lfr_shift; Fractional Shift only; CSV only",
+            "LFR averaging": "saved five-perturbation mean; lower is better; "
+            "contrasts retain condition-reference",
             "ARI": "three repeat-pair mean within sample, then sample macro; no repeat SD",
             "paired ARI": "condition-reference difference of each sample's three-pair mean, "
             "then macro mean and sample SD over samples defined in both conditions; no repeat SD",
@@ -512,12 +545,17 @@ def render_report(experiment: Path, snapshot: str, output: Path, *, dpi: int = 2
             "averaging": "equal sample weights; common samples across all three repeats and compared conditions; "
             "sample SD and repeat SD have ddof=1; neither is a confidence interval",
             "missing": "undefined remains blank in CSV; reasons and availability retained; no zero imputation",
-            "interaction": "derived from saved adjusted LLA and LFR(both) per-sample/repeat scores; "
+            "interaction": "derived from saved adjusted LLA and all three LFR variants "
+            "per-sample/repeat scores; "
             "intersection of all four conditions and all three repeats",
             "curves": "solid=macro mean, dashed/dotted/dash-dot=repeat 1/2/3; gaps=undefined; "
             "common sample membership may differ with K; see CSV",
             "k8_dots": "each dot is a common sample's repeat mean (ARI: three-pair mean); "
             "black bar=macro mean; n=defined/common sample count",
+            "y_axes": "LLA windows share limits within each figure, including all points/repeat curves; "
+            "main/distribution ticks=0.1 for all panels; "
+            "paired LLA keeps the first panel's original tick interval; "
+            "different metrics keep independent ranges",
         },
         "source_verification": "hashes of consumed snapshot and source metadata, manifest and coverage; "
         "does not rerun the full OOF check, spectra, maps, training, or inference",
