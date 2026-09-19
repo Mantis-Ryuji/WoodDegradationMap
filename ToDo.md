@@ -3,7 +3,7 @@
 現状と残作業を管理する。研究条件は[研究設計](docs/design/README.md)、
 操作と成果物の確認方法は[runbook](docs/experiment_runbook.md)を参照する。
 状態は2026-09-19までに確認・共有された実行記録に基づく。
-2026-09-20に全体fit後のUMAP・連続スペクトル指標mapの可視化案を追記した。実装・実行状況の更新ではない。
+2026-09-20に全体fit後の可視化案を追記し、mask率sweep・vMFの優先順位を下げた。実装・実行状況の更新ではない。
 
 ## 現在の状態
 
@@ -25,9 +25,10 @@
 [全体fit手順](docs/experiment_runbook.md#global-fit-pipeline)の専用CLIを使用する。保存先は`outputs/experiments/global_v1/`。
 主条件図表は[再生成手順](docs/experiment_runbook.md#oof-reporting)から更新できる。
 
-2026-09-19のユーザー指定により、作業順は**主条件のOOF集計 → 主条件の図表生成 → 全体fit・可視化・解釈 → 補助実験**とする。
-図表・可視化の実装と出力確認を先に固める。補助実験の完了を主条件図表・全体fitの着手条件にはしない。
-この作業順では学習条件・比較範囲を維持し、mask率・vMFのCV補助実験とその図表は第4〜5節で追加する。
+2026-09-20のユーザー指定により、作業順は**主条件のOOF図表 → 全体fit → Cosine-KMeansの5条件による潜在空間・空間map・観測スペクトルの解析 → 図表・化学的解釈の整理 → 低優先度の補助実験**とする。
+mask率sweepとvMFは計画に残し、先行する解析・図表・解釈を一通り終えるまで着手しない。
+vMFの数値検証・共通処理実装・全体fit用5 fitsも第5節へ移し、先行する可視化・解釈の前提にしない。
+学習条件・比較範囲は維持する。第4〜5節へ着手する時点で必要性と工数を再確認する。
 主条件の代表指標・表示構成については第2節に今回のユーザー指定を反映する。
 
 ## 1. 主条件のOOF集計
@@ -57,10 +58,10 @@ PNGは`01_main_metrics_k_sweep.png`、`02_k8_distributions.png`、`03_paired_k_s
 
 ## 3. 全体fitと解釈
 
-[全体可視化設計](docs/design/visualization_and_interpretation.md)に従い、B0・B1・A0・M00・M11の5条件×2手法を比較する。
+[全体可視化設計](docs/design/visualization_and_interpretation.md)に従い、B0・B1・A0・M00・M11の5条件を、まずCosine-KMeansで比較する。
 M00＋Cosine-KMeans基準のmatching、代表スペクトルの平均集計、SG二次微分はFixedであり、以下は実装・実施の残作業である。
 CV用CLIをそのまま全体fitへ使わない。
-全体fit用のvMF 5 fitsに必要な数値仕様・共通処理の検証はこの段階で先行し、CV補助実験の735 fitsは第5節で行う。
+本節では潜在空間・空間map・観測スペクトルの対応と化学的解釈を優先する。vMFとの手法間比較は第5節で後から追加する。
 
 - [x] ROOT_SEED=20260905・SHA-256方式でfoldを`global`へ置換し、反復ID 1を使用するseed対応と、独立root `global_v1`をユーザー確認する（2026-09-19）。
 - [x] 全49試料×8,192画素（401,408画素）の共通manifest・実行記録・保存先・CLIを実装する。
@@ -70,22 +71,19 @@ CV用CLIをそのまま全体fitへ使わない。
 - [ ] 実寸model・batch size 1024のGPU smokeで、全3条件の保存復元・全可視抽出・epoch境界再開を確認する。
 - [ ] A0・M00・M11を各800 epochで1回、計3回学習し、`training-check`で確認する。
 - [ ] 同じ表現・抽出座標・$K_0=8$でCosine-KMeansを5 fits行う。
-- [ ] v0.2.2の数値関数・公開helper・初期化・最終尤度・保存復元・退化成分を検証する。16次元・256次元の参照値比較、CPU小規模、chunk、GPU最小確認を含む。
-- [ ] [実験プロトコル第5.2.3節](docs/design/experiment_protocol.md#vmf-supplementary)に従い、数値精度・EM停止条件・集中度設定を検証・ユーザー確認のうえ固定する。全体fitと後続のCV補助実験で共用する。
-- [ ] 確定・検証した数値仕様で全体fit用のvMF処理を実装し、同じ表現で5 fitsを行う。CV補助実験の735 fitsとは分ける。
 - [ ] 全49試料のhard label map、SNV類似度行列・matching対応表、確認用contingency・overlap、occupancy・使用クラスタ数、潜在空間図を保存する。
 - [ ] [代表スペクトルの仕様](docs/design/visualization_and_interpretation.md#representative-spectra)に従い、反射率・SNV・疑似吸光度の平均集計、SG二次微分、四分位範囲、差スペクトルを実装する。寄与試料・画素数と追加除外数も保存する。
 - [x] [UMAP・連続スペクトル指標mapの案](docs/design/visualization_and_interpretation.md#latent-spectral-maps)を文書化する（2026-09-20）。PNG・CSV、cosine UMAP、クラスタ所属を使わない空間平滑化の方針を記録する。実装は全体fit待ち。
 - [ ] 全体fit後のクラスタ平均二次微分曲線・試料間変動を確認し、候補帯域・選択理由を記録する。平滑化方式・数値設定、積分端点・符号・計算法、共通color scaleを確定する。
 - [ ] UMAPの共通表示画素・数値設定・seedを確定し、5条件でクラスタ・metadata・同一帯域指標を色分けしたPNGと元数値CSVを生成する。
 - [ ] クラスタに依存しない連続スペクトル指標mapと、UMAP・空間位置・観測スペクトルの対応を示す詳細PNGを生成し、ChemoMAEとbaselineで探索できる領域差を比較する。
-- [ ] 固定7代表試料について、行をCosine-KMeans・vMF、列を5条件とする比較図を作り、試料IDと共通描画規約を確認する。
+- [ ] 固定7代表試料について、Cosine-KMeansの5条件の比較図を作り、試料IDと共通描画規約を確認する。
 - [ ] マップと観測スペクトルから領域差を探索的に解釈し、CV指標の改善と化学的対応を区別する。
-- [ ] 第2節の主条件図表と本節の全体fit・可視化・探索的解釈を確認し、実装上の残件と解釈の限界を記録してから補助実験へ移る。第6節のFT-IR・正式な目視評価は未確定事項として別途扱う。
+- [ ] 第2節の主条件図表と本節の全体fit・可視化・探索的解釈を一通り完了し、図表・知見・解釈の限界を整理する。低優先度の補助実験はその後に扱う。第6節のFT-IR・正式な目視評価は未確定事項として別途扱う。
 
 ## 4. Mask率補助実験
 
-第2〜3節の図表生成・全体fit・解釈を終えてから着手する。
+**低優先度。計画は維持し、第2〜3節の解析・図表・解釈の整理を一通り終えた後に回す。**
 [1 runの手順](docs/experiment_runbook.md#neural-run)に従い、各runを800 epochで学習し、clustering・評価・checkまで完了する。
 
 - [ ] M11-25の5 folds×3反復を完了する（15 runs）。
@@ -97,12 +95,15 @@ CV用CLIをそのまま全体fitへ使わない。
 
 ## 5. vMF補助実験
 
-第2〜3節の図表生成・全体fit・解釈を終えてから着手する。
-主7条件×5 folds×3反復×7Kの735 fits。範囲・利用版・退化成分の扱いはFixed、数値仕様と専用pipelineは未完了。
+**低優先度。数値検証・実装・全体fit用5 fitsを含め、第2〜3節の解析・図表・解釈の整理を一通り終えた後に回す。**
+全体fit用5 fitsと、主7条件×5 folds×3反復×7KのCV用735 fitsを計画に残す。範囲・利用版・退化成分の扱いはFixed、数値仕様と専用pipelineは未完了。
 [実験プロトコル](docs/design/experiment_protocol.md#vmf-supplementary)と[評価規約](docs/design/evaluation_metrics.md#vmf-evaluation)に従う。
-第3節で確定・検証する数値仕様と共通処理を再利用する。
+数値仕様と共通処理を本節で確定・検証し、全体fitとCV補助実験で共用する。
 
-- [ ] 第3節の数値仕様・検証記録を確認し、vMFのtest結果を見る前に固定した設定をCV補助実験でも使用する。
+- [ ] v0.2.2の数値関数・公開helper・初期化・最終尤度・保存復元・退化成分を検証する。16次元・256次元の参照値比較、CPU小規模、chunk、GPU最小確認を含む。
+- [ ] [実験プロトコル第5.2.3節](docs/design/experiment_protocol.md#vmf-supplementary)に従い、数値精度・EM停止条件・集中度設定を検証・ユーザー確認のうえ固定する。vMFのtest結果を見る前に固定し、全体fitとCV補助実験で共用する。
+- [ ] 確定・検証した数値仕様で全体fit用のvMF処理を実装し、同じ表現で5 fitsを行う。CV補助実験の735 fitsとは分ける。
+- [ ] 全49試料のvMF map・matching・スペクトル要約を保存し、固定7代表試料の2手法×5条件の比較図を追加する。先行するUMAP座標と帯域指標を共用する。
 - [ ] CV専用のfit・評価・check・OOFと独立した出力先を設計・実装する。
 - [ ] 既存の主7条件の重み・PCAと共通train画素で735 fitsを実施する。NN学習・PCA fitは追加しない。
 - [ ] 同じtest全画素・共通摂動で評価し、完了・失敗・未定義値を保持してOOF集計する。

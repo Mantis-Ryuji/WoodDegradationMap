@@ -317,9 +317,11 @@ KMeans、評価処理はこの数に含めない。3反復はseed選別に使わ
 
 ### 8.1 vMF補助実験の準備と実施
 
-主条件のOOF集計・図表生成と全体fit・可視化・解釈を先に完了する。
-数値仕様の確定・v0.2.2の検証と共通fit処理の実装は、第8.2節の全体fit用vMF 5 fitsのために先行する。
-その後、CV専用pipeline実装 → 735 fits・評価 → 独立OOF集計・比較図表の順に進める。
+2026-09-20の指定により低優先度とし、主条件のOOF図表と、第8.2節のCosine-KMeansによる
+潜在空間・空間map・観測スペクトルの解析・図表・解釈の整理を一通り終えた後に回す。
+その後、数値仕様の確定・v0.2.2の検証・共通fit処理実装 → 全体fit用5 fits・手法間比較 →
+CV専用pipeline実装 → 735 fits・評価 → 独立OOF集計・比較図表の順に進める。
+数値検証・実装も第8.2節の先行解析の前提にはしない。
 NN学習・PCA fitは追加せず、既存の表現・train画素・Kと同じtest全画素・共通摂動を使う。
 設定・結果・完了記録は主実験から分け、元成果物との対応とsource hash、失敗・未定義値を保持する。
 
@@ -331,12 +333,12 @@ NN学習・PCA fitは追加せず、既存の表現・train画素・Kと同じte
 ### 8.2 全体fitと解釈
 
 主条件のOOF集計・図表生成と出力確認は完了し、次の着手対象は本節のpipelineである。
-mask率・vMFのCV補助実験より先に実装・実施する。
+mask率sweepとvMF（数値検証・全体fit用5 fitsを含む）より先に、本節の解析・図表・解釈を一通り完了する。
 
 [全体可視化設計](design/visualization_and_interpretation.md)に従い、全49試料の共通抽出画素で
-B1 PCAとA0・M00・M11をfitする。B0を加えた5条件の表現で、$K_0=8$のCosine-KMeansとvMFを各5 fits行う。
-vMFは数値仕様の確定・検証後、同じPCA・encoder・抽出座標を再利用する。
-全体学習の3 runsとvMFの5 fitsは、CVの105学習・735 fitsとは別枠であり、OOF集計に含めない。
+B1 PCAとA0・M00・M11をfitする。B0を加えた5条件の表現で、$K_0=8$のCosine-KMeansを5 fits行う。
+vMFの5 fitsは第8.1節の後続解析へ回し、数値仕様の確定・検証後に同じPCA・encoder・抽出座標を再利用する。
+全体学習の3 runsと全体クラスタリングは、CVの105学習・vMF 735 fitsとは別枠であり、OOF集計に含めない。
 
 実装の残作業は[ToDo第3節](../ToDo.md#3-全体fitと解釈)を参照する。
 `global_fit.py`にmanifest・B0/PCA・A0/M00/M11の一括学習・再開・checkを実装した。
@@ -358,16 +360,16 @@ PCAは初回の保存復元checkで停止し、配列配置を保持する修正
    最終重み・実際の更新回数・実行環境・seed・所要時間を保存する。学習は合計3 runs。
 5. **Cosine-KMeansを5 fits行う。** 各条件の共通fit画素の表現で$K_0=8$をfitし、
    モデル・中心を固定して全49試料の全有効画素を予測する。試料ごとの再fitは行わない。
-6. **vMFの数値仕様を検証・固定し、5 fits行う。** 第8.1節とプロトコル第5.2.3節に従い、
-   16次元・256次元の数値関数、初期化・集中度・EM停止条件・保存復元・退化成分を検証する。
-   Openの設定はユーザー確認後に固定し、同じ全体fit表現・座標で$K_0=8$をfitする。
-   この数値検証は手順2以降に先行して進められ、PCA・NNの再fitは不要である。
-7. **matching・スペクトル集計・可視化を行う。** 観測SNVの試料等重み平均線で
+6. **matching・スペクトル集計・可視化を行う。** 観測SNVの試料等重み平均線で
    M00＋Cosine-KMeansへ直接Hungarian matchingする。全49試料のマップ、対応表・類似度・overlap・occupancyと、
    反射率・SNV・疑似吸光度のSG二次微分の代表線・四分位範囲・寄与数を保存する。
-   固定7代表試料は、行を2手法・列を5条件とした比較図で確認する。
+   固定7代表試料はCosine-KMeansの5条件の比較図で確認する。
+7. **潜在空間・連続map・観測スペクトルの対応を詳しく解析する。**
+   [可視化案](design/visualization_and_interpretation.md#latent-spectral-maps)に従い、代表二次微分曲線から
+   帯域を選び、残る数値設定を確定する。共通画素のcosine UMAP・連続スペクトル指標map・対応の詳細図をPNGで保存する。
+   図表の元数値はCSVに残し、B0・B1・A0・M00・M11で読み取れる領域差と化学的解釈を比較する。
 8. **探索的解釈と残件を記録する。** CVの未知試料評価と、全体fitの記述的なマップ・スペクトルを区別する。
-   出力確認後にmask率補助実験、続いてvMFのCV補助735 fitsへ進む。
+   解析・図表・知見・限界を一通り整理した後に、低優先度のmask率sweep・vMFの必要性と工数を再確認する。
 
 vMF数値仕様は引き続きOpen。5条件・共通画素数・各1回・800 epoch・$K_0=8$の方針は維持する。
 
@@ -466,7 +468,7 @@ uv run --no-sync python scripts/experiments/aggregate_oof.py check `
     --experiment-dir outputs/experiments/production_v1
 ```
 
-mask率補助実験は主条件の図表生成・全体fit・解釈を終えてから実施し、別snapshotにする。
+mask率補助実験は低優先度とし、主条件の図表生成・全体fit・第8.2節の解析と解釈の整理を一通り終えた後に実施する。別snapshotにする。
 
 ```powershell
 uv run --no-sync python scripts/experiments/aggregate_oof.py run `
