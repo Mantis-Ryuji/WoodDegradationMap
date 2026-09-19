@@ -27,28 +27,44 @@
   ],
   "metric_order": [
     "LLA",
-    "LFR (both)",
+    "LFR(TGN+FS)",
     "ARI",
     "Cosine-Silhouette",
     "Cluster Occupancy"
   ],
+  "table_metric_order": [
+    "LLA (3 x 3)",
+    "LLA (5 x 5)",
+    "LLA (9 x 9)",
+    "LFR(TGN+FS)",
+    "LFR(TGN)",
+    "LFR(FS)",
+    "ARI",
+    "Cosine-Silhouette",
+    "Cluster Occupancy: used clusters",
+    "Cluster Occupancy: maximum fraction",
+    "Cluster Occupancy: single-cluster fraction"
+  ],
   "figure_layouts": {
-    "01_main_metrics_k_sweep": "2x3; top: LLA 3/5/9; bottom: LFR(both), ARI, Cosine-Silhouette",
+    "01_main_metrics_k_sweep": "2x3; top: LLA 3/5/9; bottom: LFR(TGN+FS), ARI, Cosine-Silhouette",
     "02_k8_distributions": "2x3; same metric order as the main summary",
-    "03_paired_k_sweep": "2x3; top: LLA 3/5/9; bottom: LFR(both), ARI, Cosine-Silhouette; each panel shows M11-B0, M11-B1, M11-M00",
+    "03_paired_k_sweep": "2x3; top: LLA 3/5/9; bottom: LFR(TGN+FS), ARI, Cosine-Silhouette; each panel shows M11-B0, M11-B1, M11-M00",
     "Cluster Occupancy": "CSV tables only",
     "interaction": "CSV tables only"
   },
   "definitions": {
     "LLA": "adjusted_lla_3/5/9; occupancy-corrected; three separate windows; higher is better",
-    "LFR (both)": "saved five-perturbation mean; lower is better; contrasts retain condition-reference",
+    "LFR(TGN+FS)": "lfr_both; TGN and Fractional Shift; figures and CSV",
+    "LFR(TGN)": "lfr_noise; TGN only; CSV only",
+    "LFR(FS)": "lfr_shift; Fractional Shift only; CSV only",
+    "LFR averaging": "saved five-perturbation mean; lower is better; contrasts retain condition-reference",
     "ARI": "three repeat-pair mean within sample, then sample macro; no repeat SD",
     "paired ARI": "condition-reference difference of each sample's three-pair mean, then macro mean and sample SD over samples defined in both conditions; no repeat SD",
     "Cosine-Silhouette": "geometric diagnostic within each representation",
     "Cluster Occupancy": "clean test only; per-sample counts/fractions and per-fold distributions; cluster IDs are not pooled across folds/repeats; single_cluster mean is a fraction",
     "averaging": "equal sample weights; common samples across all three repeats and compared conditions; sample SD and repeat SD have ddof=1; neither is a confidence interval",
     "missing": "undefined remains blank in CSV; reasons and availability retained; no zero imputation",
-    "interaction": "derived from saved adjusted LLA and LFR(both) per-sample/repeat scores; intersection of all four conditions and all three repeats",
+    "interaction": "derived from saved adjusted LLA and all three LFR variants per-sample/repeat scores; intersection of all four conditions and all three repeats",
     "curves": "solid=macro mean, dashed/dotted/dash-dot=repeat 1/2/3; gaps=undefined; common sample membership may differ with K; see CSV",
     "k8_dots": "each dot is a common sample's repeat mean (ARI: three-pair mean); black bar=macro mean; n=defined/common sample count"
   },
@@ -3620,7 +3636,7 @@
     }
   ],
   "code_sha256": {
-    "oof_reporting.py": "affe604c1167a0031d026a511f0afd879a70d8eb6054fd36eee8dd69ab5b94e4",
+    "oof_reporting.py": "9cdf41718ee561bd00be54863a8bc120b90bc3e53fd2214eec4f6fdf103e0f51",
     "oof_sanity.py": "8e147d2e1336d6c2d7cd2509a024dc355304467ccb764e78dff65f830ec99ce6",
     "aggregation.py": "614deeb219db2d6370f05c24514b314535d2107d8f901ba8bfb09b813f724a8d",
     "oof_pipeline.py": "219fb2434ce8d729f58f7d84ab22e26a793bf529ee55c81b2eefb038adda32a5",
