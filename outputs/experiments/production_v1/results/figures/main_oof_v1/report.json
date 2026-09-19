@@ -66,7 +66,8 @@
     "missing": "undefined remains blank in CSV; reasons and availability retained; no zero imputation",
     "interaction": "derived from saved adjusted LLA and all three LFR variants per-sample/repeat scores; intersection of all four conditions and all three repeats",
     "curves": "solid=macro mean, dashed/dotted/dash-dot=repeat 1/2/3; gaps=undefined; common sample membership may differ with K; see CSV",
-    "k8_dots": "each dot is a common sample's repeat mean (ARI: three-pair mean); black bar=macro mean; n=defined/common sample count"
+    "k8_dots": "each dot is a common sample's repeat mean (ARI: three-pair mean); black bar=macro mean; n=defined/common sample count",
+    "y_axes": "LLA windows share limits within each figure, including all points/repeat curves; main/distribution ticks=0.1 for all panels; paired LLA keeps the first panel's original tick interval; different metrics keep independent ranges"
   },
   "source_verification": "hashes of consumed snapshot and source metadata, manifest and coverage; does not rerun the full OOF check, spectra, maps, training, or inference",
   "sources": [
@@ -3636,7 +3637,7 @@
     }
   ],
   "code_sha256": {
-    "oof_reporting.py": "9cdf41718ee561bd00be54863a8bc120b90bc3e53fd2214eec4f6fdf103e0f51",
+    "oof_reporting.py": "8bcad763f3bc3194871b27d815c00db99021402ef3cf63ce030558f6b7d6487a",
     "oof_sanity.py": "8e147d2e1336d6c2d7cd2509a024dc355304467ccb764e78dff65f830ec99ce6",
     "aggregation.py": "614deeb219db2d6370f05c24514b314535d2107d8f901ba8bfb09b813f724a8d",
     "oof_pipeline.py": "219fb2434ce8d729f58f7d84ab22e26a793bf529ee55c81b2eefb038adda32a5",
