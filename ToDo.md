@@ -3,6 +3,7 @@
 現状と残作業を管理する。研究条件は[研究設計](docs/design/README.md)、
 操作と成果物の確認方法は[runbook](docs/experiment_runbook.md)を参照する。
 状態は2026-09-19までに確認・共有された実行記録に基づく。
+2026-09-20に全体fit後のUMAP・連続スペクトル指標mapの可視化案を追記した。実装・実行状況の更新ではない。
 
 ## 現在の状態
 
@@ -74,6 +75,10 @@ CV用CLIをそのまま全体fitへ使わない。
 - [ ] 確定・検証した数値仕様で全体fit用のvMF処理を実装し、同じ表現で5 fitsを行う。CV補助実験の735 fitsとは分ける。
 - [ ] 全49試料のhard label map、SNV類似度行列・matching対応表、確認用contingency・overlap、occupancy・使用クラスタ数、潜在空間図を保存する。
 - [ ] [代表スペクトルの仕様](docs/design/visualization_and_interpretation.md#representative-spectra)に従い、反射率・SNV・疑似吸光度の平均集計、SG二次微分、四分位範囲、差スペクトルを実装する。寄与試料・画素数と追加除外数も保存する。
+- [x] [UMAP・連続スペクトル指標mapの案](docs/design/visualization_and_interpretation.md#latent-spectral-maps)を文書化する（2026-09-20）。PNG・CSV、cosine UMAP、クラスタ所属を使わない空間平滑化の方針を記録する。実装は全体fit待ち。
+- [ ] 全体fit後のクラスタ平均二次微分曲線・試料間変動を確認し、候補帯域・選択理由を記録する。平滑化方式・数値設定、積分端点・符号・計算法、共通color scaleを確定する。
+- [ ] UMAPの共通表示画素・数値設定・seedを確定し、5条件でクラスタ・metadata・同一帯域指標を色分けしたPNGと元数値CSVを生成する。
+- [ ] クラスタに依存しない連続スペクトル指標mapと、UMAP・空間位置・観測スペクトルの対応を示す詳細PNGを生成し、ChemoMAEとbaselineで探索できる領域差を比較する。
 - [ ] 固定7代表試料について、行をCosine-KMeans・vMF、列を5条件とする比較図を作り、試料IDと共通描画規約を確認する。
 - [ ] マップと観測スペクトルから領域差を探索的に解釈し、CV指標の改善と化学的対応を区別する。
 - [ ] 第2節の主条件図表と本節の全体fit・可視化・探索的解釈を確認し、実装上の残件と解釈の限界を記録してから補助実験へ移る。第6節のFT-IR・正式な目視評価は未確定事項として別途扱う。
