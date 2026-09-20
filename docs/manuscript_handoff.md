@@ -25,7 +25,7 @@
 - 実測・要約・人工摂動・模式図を区別し、単位・凡例・matching基準を明記する。主要な反例や傾向の逆転も報告する。
 - [固定7代表試料](design/visualization_and_interpretation.md#representative-samples)と全49試料の補足表示を区別する。
 - [代表スペクトル](design/visualization_and_interpretation.md#representative-spectra)は試料内平均→試料間の等重み平均とする。変換順序、除外範囲、四分位範囲、寄与数をcaptionと対応づける。
-- OOF sanityのfold内B0基準・画素一致数による整列と、全体fitのM00基準・SNV類似度による整列を区別する。
+- OOF sanityのfold内B0基準・画素一致数による整列と、全体fitのM00基準・試料等重みSNV代表線のcosine類似度による整列を区別する。
 - `outputs/`の元成果物を保持し、原稿での体裁調整と解析結果を区別する。Fixedの仕様を実装・解析済みとは扱わない。
 
 ### 図表候補と用途

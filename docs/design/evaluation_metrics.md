@@ -425,7 +425,7 @@ label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様であ�
 - 残りの計画比較もCSVへ保存する。mask率・vMFの図表は各補助実験後に専用pipelineを拡張する。
 - 指標間で結論が異なる場合は、総合順位に潰さずtrade-offとして報告する。
 - Hungarian matchingは表示ラベルの整列に用い、CV指標の計算には使用しない。
-  [OOF sanity](oof_sanity_visualization.md)ではfold内B0基準で一致画素数を最大化する。[全体fit後](visualization_and_interpretation.md#matching-reference)ではM00のCosine-KMeansを表示基準に、観測SNV代表線のcosine類似度の合計を最大化する。全体fitの画素overlapは確認用とする。
+  [OOF sanity](oof_sanity_visualization.md)ではfold内B0基準で一致画素数を最大化する。[全体fit後](visualization_and_interpretation.md#matching-reference)ではM00のCosine-KMeansを表示基準に、試料等重みの観測SNV代表線のcosine類似度の合計を最大化する。全体fitのIoU・contingency・一致画素数も確認用に保存する。
 
 主条件の実装済み成果物はPNG 3枚・CSV 11個である。ファイル名・保存先・再生成方法は
 [runbook](../experiment_runbook.md#oof-reporting)を参照する。PNGは01〜03の連番とし、再生成時は旧PNGを整理する。

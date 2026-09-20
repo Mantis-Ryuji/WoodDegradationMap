@@ -332,7 +332,7 @@ NN学習・PCA fitは追加せず、既存の表現・train画素・Kと同じte
 
 ### 8.2 全体fitと解釈
 
-主条件のOOF図表と全体fitの準備・NN学習は完了した。手順5〜6の専用CLIも実装し、次は本番のクラスタリングと図表生成を実行する。
+主条件のOOF図表と全体fitの準備・NN学習は完了した。手順5〜6も保存済みクラスタリングのcheckと、SNV cosine matchingによる条件別図表の再生成・checkまで完了した。
 mask率sweepとvMF（数値検証・全体fit用5 fitsを含む）より先に、本節の解析・図表・解釈を一通り完了する。
 
 [全体可視化設計](design/visualization_and_interpretation.md)に従い、全49試料の共通抽出画素で
@@ -344,11 +344,11 @@ vMFの5 fitsは第8.1節の後続解析へ回し、数値仕様の確定・検�
 `global_fit.py`にmanifest・B0/PCA・A0/M00/M11の一括学習・再開・checkを実装した。
 合成データのCPU検証済み。本番manifestの作成・checkに続き、修正後のPCA fit・GPU smoke・
 A0/M00/M11の各800 epochが完了した。2026-09-20に保存記録を確認し、`training-check`の完了はユーザー報告による。
-後続処理の実装時には合成データでCPU検証し、本番のGPU checkや全データ処理は再実行していない。
+後続処理は合成データでCPU検証し、本番では保存済みの5条件の中心・ラベルをcheckして図表を再生成した。学習・クラスタリングのGPU再fitは行っていない。
 既存の`train_neural.py`は`--fold`必須のCV用であり、全体fitには使わない。
 
 実装・実施は次の順序とする。手順1〜4は完了し、CLIは再現・再開用の参照として下記に残す。
-手順5〜6は実装・CPU小規模検証済み、本番実行は未完了。手順7は設定・帯域の確定後に実装する。
+手順5〜6は完了した。手順7は設定・帯域の確定後に実装する。
 実行コマンドとその後の順序は[学習完了後の作業](#global-post-fit)を参照する。
 
 1. **全体runの実行契約を固定する（確定・実装済み）。** ROOT_SEED=20260905・SHA-256方式を維持し、
@@ -363,7 +363,7 @@ A0/M00/M11の各800 epochが完了した。2026-09-20に保存記録を確認し
    最終重み・実際の更新回数・実行環境・seed・所要時間を保存する。学習は合計3 runs。
 5. **Cosine-KMeansを5 fits行う。** 各条件の共通fit画素の表現で$K_0=8$をfitし、
    モデル・中心を固定して全49試料の全有効画素を予測する。試料ごとの再fitは行わない。
-6. **matching・スペクトル集計・可視化を行う。** 観測SNVの試料等重み平均線で
+6. **matching・スペクトル集計・可視化を行う。** 試料等重みの観測SNV代表線のcosine類似度で
    M00＋Cosine-KMeansへ直接Hungarian matchingする。全49試料のマップ、対応表・類似度・overlap・occupancyと、
    反射率・SNV・疑似吸光度のSG二次微分の代表線・四分位範囲・寄与数を保存する。
    固定7代表試料はCosine-KMeansの5条件の比較図で確認する。
@@ -469,14 +469,14 @@ PCA・NNのfitが完了した段階であり、全体クラスタリング・全
 **matching・観測スペクトル集計・PNG/CSV生成・check**を`visualize_global.py`へ分離して実装した。
 `global_fit.py`は引き続き準備・baseline・smoke・NN学習とcheckを担当する。
 既存の`cluster_representations.py`は`--fold`必須のCV用なので、`global_v1`へそのまま実行しない。
-以下の手順1〜3は実装・合成データのCPU検証済みで、本番の5 fitsと全画素処理はユーザーが実行する。
+以下の手順1〜3は出力・check済み。今回の可視化変更では、保存済みの5 fits・全画素ラベルを使用した。
 
 1. 保存済みPCA・最終NN重み・共通global manifestを読み、B0・B1・A0・M00・M11の表現を抽出する。
    B0は256次元SNV、B1・NNは16次元で、既定のL2正規化・全可視抽出を用いる。
    既存の学習・PCAを再fitせず、共通401,408画素の表現で固定seedのCosine-KMeansを各1回、$K_0=8$でfitする。
 2. 各条件の固定モデル・中心を全49試料の全3,902,250有効画素へ適用し、画素座標と対応したラベルを保存する。
    保存復元・対象数・ラベル範囲・出典のcheckを行う。試料ごとのクラスタリング再fitは行わない。
-3. 観測SNVの試料等重み平均線でM00＋Cosine-KMeansへラベルを整列する。
+3. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋HungarianでM00＋Cosine-KMeansへラベルを整列する。
    クラスタmap・occupancy・対応表と、反射率・SNV・疑似吸光度のSG二次微分の代表線・ばらつきをPNG・CSVにする。
 4. 二次微分の代表線を見て帯域を選び、平滑化・積分・UMAPの未確定設定を決める。
    cosine UMAP、クラスタに依存しない連続スペクトル指標map、空間位置とスペクトルの対応図を作成し、化学的解釈を整理する。
@@ -486,7 +486,9 @@ mask率sweep・vMFは、この解析・図表・解釈を一通り終えた後�
 
 ##### 実行コマンド：クラスタリングと可視化
 
-リポジトリrootのPowerShellで次を順番に実行する。
+以下は新規の全体クラスタリング出力先に対する手順。既存の`global_v1`はクラスタリング済みなので、
+可視化を再生成する際は2番目の`visualize_global.py run`だけを実行する。
+新規出力先ではリポジトリrootのPowerShellで次を順番に実行する。
 クラスタリングはB0 → B1 → A0 → M00 → M11の順に1 GPUで処理し、最初の失敗で停止する。
 条件ごとの完了後に保存中心・全map・出典をcheckする。可視化も保存後にcheckするため、下記2コマンドで手順1〜3を実行できる。
 
@@ -521,7 +523,9 @@ if ($LASTEXITCODE -ne 0) { throw "Global visualization check failed" }
 通常の処理例外では作業用directoryを片付け、当該条件を最初から再実行できる。KMeansの途中反復からの再開はしない。
 強制終了で正式保存先の片側だけが残った場合や、既存出力の出典・hashが不一致の場合は停止し、自動削除・再利用しない。
 `visualize_global.py run --resume`は既存の完成した図表をcheckしてskipする用途で、再描画や途中からの集計再開は行わない。
-既存出力がなければ通常の生成を行う。どちらも既存の正式保存先を無条件に上書きしない。
+可視化の通常の`run`は図表を再生成し、完成後に指定の`global_k8_v1`を丸ごと置き換える。
+旧PNG・CSV・ラベル表示用NPZは残さず、新旧の構成を混在させない。途中失敗時は元の可視化を保持する。
+PCA・NN・クラスタリング成果物は置換対象に含めない。クラスタリングの`run`は従来どおり既存成果物を上書きしない。
 
 ##### 保存物と確認点
 
@@ -534,35 +538,42 @@ if ($LASTEXITCODE -ne 0) { throw "Global visualization check failed" }
 | `results/clustering/{condition}/repeat_1/run.json`・`completion.json` | 表現の由来、code/runtime/hash、保存復元、試料別画素数・occupancy・完了記録 |
 | `results/figures/global_k8_v1/` | 下記のPNG・CSVと`report.json`・`completion.json` |
 
-図表directory直下のPNGは次の9枚で、全試料の個別マップ49枚と合わせて58枚となる。
+図表directoryを`B0/`・`B1/`・`A0/`・`M00/`・`M11/`へ分ける。各条件のPNGは10枚。
+rootの`01_representative_samples_5x7.png`を加え、全体で51枚となる。
+この比較図は固定7代表試料を列、上からB0・B1・A0・M00・M11を行にする。試料IDは最下段だけに表示する。
+次のpathは各条件directoryからの相対path。
 
 | PNG | 内容 |
 | --- | --- |
-| `01_representative_maps.png` | 固定7代表試料×5条件。列a〜eはB0・B1・A0・M00・M11 |
-| `02_reflectance_spectra.png` | 反射率の代表線・試料間IQR |
-| `03_snv_spectra.png` | 観測SNVの代表線・試料間IQR |
-| `04_second_derivative_spectra.png` | 疑似吸光度SG二次微分の代表線・試料間IQR |
-| `05_snv_similarity.png` | M00基準への観測SNV cosine類似度 |
-| `06_contingency.png` | M00クラスタごとに正規化した同一画素の対応。matchingの目的関数には使わない |
-| `07_reflectance_differences.png` | 各条件 − M00の反射率代表線差 |
-| `08_snv_differences.png` | 各条件 − M00のSNV代表線差 |
-| `09_second_derivative_differences.png` | 各条件 − M00の二次微分代表線差 |
+| `labels/01_samples_01-07_1x7.png`〜`07_samples_43-49_1x7.png` | 試料ID昇順で7試料ずつ。49試料を7枚へ分割 |
+| `labels/08_all_samples_7x7.png` | 同じ順序の全49試料、7×7 |
+| `01_representative_spectra.png` | 上段SNV・反射率、下段全面SG二次微分。各panelを8クラスタの色で比較 |
+| `02_snv_cosine_matrix.png` | 縦M00・横当該条件の8×8 SNV cosine類似度。表示番号順、値域−1〜1 |
 
-スペクトル図は表示クラスタ1〜8の2行4列で、5条件（差はM00以外の4条件）の線を重ねる。
-代表線の帯は試料間IQRであり信頼区間ではない。差スペクトルは代表線どうしの差で、構成試料が異なり得るためpaired差ではない。
-`maps/{sample_id}_k8.png`は全49試料の5条件比較、`labels/{sample_id}.npz`は条件名をkeyとする整列済みラベル。
-元ラベル・中心は変更しない。`spectral_summary.npz`にも波長・代表線・IQR・表示番号対応を保存する。
+マップは`outputs/sample_overviews`の余白・大きな太字の試料IDに合わせる。色は最近傍補間で保持し、colorbarは`Cluster ID`。
+スペクトルはマップと共通のクラスタ色。平均線の帯は試料間IQRであり信頼区間ではない。
+波長の主目盛100 nm・副目盛50 nmにグリッド線を引く。端点の数値は小数2桁を優先し、隣接30 nm未満の数字は省く。
+SNVは縦軸−2〜2、反射率は0〜1、二次微分は5条件共通の自動範囲とする。
+各条件の`label_maps.npz`は試料IDをkeyとする整列済みラベル。元ラベル・中心は変更しない。
+rootの`spectral_summary.npz`には全条件の波長・代表線・IQR・元番号から表示番号への対応を保存する。
 
-CSVは9個：`wavelengths.csv`、`sample_spectra.csv`、`spectrum_counts.csv`、`representative_spectra.csv`、
-`difference_spectra.csv`、`matching.csv`、`matching_matrices.csv`、`occupancy.csv`、`captions.csv`。
+CSVは37個：各条件に`sample_spectra.csv`、`spectrum_counts.csv`、`representative_spectra.csv`、
+`difference_spectra.csv`、`matching.csv`、`matching_matrices.csv`、`occupancy.csv`の7個、rootに`wavelengths.csv`と`captions.csv`。
+差は各条件 − M00の代表線差で、構成試料が異なり得るためpaired差ではない。M00の差表はheaderのみ。
+matching表は`snv_cosine_similarity`、同じ基準クラスタに対する他候補との類似度差、一致画素数、元番号と表示番号を保持する。
+補助値として`iou`も保存する。IoUは全共通画素poolであり試料等重みではなく、SNVの割当には使用しない。
 試料別スペクトルの`band_000`〜`band_255`は`wavelengths.csv`でnmへ対応する。
 代表線は試料内平均→試料間等重み平均。疑似吸光度の全帯域正値判定・除外数と、曲線ごとの寄与試料数・ID・画素数を保持する。
-未定義曲線はNPZでNaN、CSVで空欄。SNV代表線が欠損・非有限・ゼロnormの場合は条件・クラスタをエラーに示して停止し、対応を捏造しない。
-今回、空間平滑化と帯域積分は行わない。`04_second_derivative_spectra.png`と寄与・除外数のCSVを確認してから手順4へ進む。
+未定義曲線はNPZでNaN、CSVで空欄。全試料を通して空のクラスタ、非有限またはノルム0のSNV代表線がある場合はmatchingを停止する。
+今回、空間平滑化と帯域積分は行わない。各条件の`01_representative_spectra.png`下段と寄与・除外数のCSVを確認してから手順4へ進む。
 
 CPU小規模検証では固定seedで1回だけfitすること、保存復元、端数chunk・座標対応、試料等重み集計、
-画素別対数変換、SGのnm単位、SNV matching、PNG/CSV出力、改変検出、再開時のcheckと停止を確認した。
-既存の全体fitテストも合格。本番の全画素処理・GPU実行・科学的な図の読み取りは未確認である。
+画素別対数変換、SGのnm単位、SNV matching、PNG/CSV出力、改変検出、失敗時の旧可視化保持と完成時の置換を確認した。
+SNV変更後に関連CPUテスト6件と静的検査が合格した。空間的な重なりとSNVの対応が異なる合成例、
+試料等重み集計、欠落・空・ノルム0の代表線、符号付き類似度、描画代表線との一致を確認した。
+本番の再生成checkは49試料・PNG 51枚・CSV 37個で合格した。
+SNV変更後の代表7試料×5条件の比較図、B0のSNV類似度図、M11の代表スペクトルを目視確認した。
+化学的な解釈は次の解析で行う。
 
 <a id="oof-aggregation"></a>
 

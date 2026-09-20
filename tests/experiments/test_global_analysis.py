@@ -230,9 +230,9 @@ def test_spectral_aggregation_log_order_exclusions_sample_weights_and_matching(
     pooled = np.average(summary.values[:, gr.REFERENCE, 0, 0], axis=0, weights=counts)
     assert not np.allclose(mean, pooled, atol=1e-6)
     assert np.all(low <= high)
-    # Make spatial overlap favor identity; matching must still use SNV similarity.
-    summary.contingency[:] = np.eye(8, dtype=int) * 1000
-    mapping, similarity = gr.match_spectra(summary)
+    # Reflectance and derivative curves do not contribute to the SNV assignment.
+    summary.values[:, :, :, [0, 2, 3], :] = np.nan
+    mapping, similarity = gr.match_snv(summary)
     np.testing.assert_array_equal(mapping[0, permutation + 1], np.arange(1, 9))
     np.testing.assert_allclose(similarity[0, np.arange(8), permutation], 1, atol=1e-12)
     np.testing.assert_array_equal(mapping[gr.REFERENCE], np.arange(9))
@@ -254,15 +254,50 @@ def test_sg_nm_scale_and_absent_curves() -> None:
         gr.second_derivative(quadratic, broken)
 
 
-def test_undefined_snv_matching_fails_without_fabricated_labels(
+def test_empty_snv_cluster_fails_without_fabricated_labels(
     inputs: tuple[Path, GlobalData, InputInventory],
 ) -> None:
     experiment, _, inventory = inputs
     _make_maps(experiment, inventory)
     summary = gr.collect_spectra(experiment, inventory)
-    summary.values[:, 0, 0, 1] = np.nan
-    with pytest.raises(ValueError, match="Undefined SNV.*B0 cluster 1"):
-        gr.match_spectra(summary)
+    summary.pixels[:, 0, 1] += summary.pixels[:, 0, 0]
+    summary.pixels[:, 0, 0] = 0
+    summary.contingency[0, :, 1] += summary.contingency[0, :, 0]
+    summary.contingency[0, :, 0] = 0
+    with pytest.raises(ValueError, match="Empty cluster.*B0 cluster 1"):
+        gr.match_snv(summary)
+
+
+def test_snv_assignment_uses_equal_sample_spectra_instead_of_spatial_overlap() -> None:
+    basis = np.zeros((8, 256))
+    basis[np.arange(8), 2 * np.arange(8)] = 1
+    basis[np.arange(8), 2 * np.arange(8) + 1] = -1
+    values = np.full((2, 5, 8, 4, 256), np.nan)
+    values[:, :, :, 1] = basis
+    values[0, 0, :2, 1] = .8 * basis[[1, 0]]
+    values[1, 0, :2, 1] = .6 * basis[:2]
+    pixels = np.broadcast_to(np.array([1, 100])[:, None, None], (2, 5, 8)).copy()
+    contingency = np.repeat((101 * np.eye(8, dtype=np.int64))[None], 5, axis=0)
+    summary = gr.SpectralSummaries(("small", "large"), np.arange(256), values,
+                                  pixels, pixels.copy(), contingency)
+    mapping, similarity = gr.match_snv(summary)
+    # Spatial overlap and pixel-weighted spectra favor identity; equal-sample SNV swaps 1/2.
+    np.testing.assert_allclose(similarity[0, :2, :2], [[.6, .8], [.8, .6]])
+    np.testing.assert_array_equal(gr._pooled_iou(summary)[0], np.eye(8))
+    np.testing.assert_array_equal(mapping[0], [0, 2, 1, 3, 4, 5, 6, 7, 8])
+    np.testing.assert_array_equal(mapping[gr.REFERENCE], np.arange(9))
+    # Cosine retains sign rather than taking absolute similarity.
+    values[:, 0, 2, 1] *= -3
+    _, similarity = gr.match_snv(summary)
+    assert similarity[0, 2, 2] == pytest.approx(-1)
+    # An absent sample/cluster curve is excluded, without zero-filling or sample weighting.
+    values[0, 0, 0, 1] = np.nan
+    _, similarity = gr.match_snv(summary)
+    assert similarity[0, 0, 0] == pytest.approx(1)
+    for invalid in (0, np.nan):
+        values[:, 0, 0, 1] = invalid
+        with pytest.raises(ValueError, match="Undefined or zero-norm SNV.*B0 cluster 1"):
+            gr.match_snv(summary)
 
 
 def test_report_png_csv_alignment_and_tamper_detection(
@@ -272,24 +307,55 @@ def test_report_png_csv_alignment_and_tamper_detection(
     permutation = _make_maps(experiment, inventory)
     # The separate clustering tests cover source audits; this fixture isolates report arithmetic.
     monkeypatch.setattr(gr, "report_contract", lambda *args: {"fixture": "saved global maps"})
-    report = gr.render_global_report(experiment, data, inventory, dpi=45, chunk_pixels=19)
-    assert report["png_count"] == 11 and report["csv_count"] == 9
-    assert gr.check_global_report(experiment, data, inventory)["checks_passed"]
+    monkeypatch.setattr(gr, "REPRESENTATIVES", tuple(("fixture", s.sample_id)
+                                                    for s in inventory.samples))
     output = experiment / gr.DEFAULT_DIRECTORY
+    output.mkdir(parents=True)
+    old = output / "obsolete.png"
+    old.write_text("old report", encoding="utf-8")
+    with monkeypatch.context() as failure:
+        def fail(*args: object, **kwargs: object) -> gr.SpectralSummaries:
+            raise ValueError("fixture render failure")
+        failure.setattr(gr, "collect_spectra", fail)
+        with pytest.raises(ValueError, match="fixture render failure"):
+            gr.render_global_report(experiment, data, inventory, dpi=45)
+    assert old.read_text(encoding="utf-8") == "old report"
+    report = gr.render_global_report(experiment, data, inventory, dpi=45, chunk_pixels=19)
+    assert report["png_count"] == 21 and report["csv_count"] == 37
+    assert gr.check_global_report(experiment, data, inventory)["checks_passed"]
+    assert not old.exists()
+    assert [p.name for p in output.glob("*.png")] == [gr.REPRESENTATIVE_FIGURE]
     sample = inventory.samples[0]
-    with np.load(output / "labels" / f"{sample.sample_id}.npz") as saved:
+    with np.load(output / "M00/label_maps.npz") as saved:
+        expected = saved[sample.sample_id]
         for condition in gr.CONDITIONS:
-            np.testing.assert_array_equal(saved[condition], saved["M00"])
-    matching = pd.read_csv(output / "matching.csv")
+            with np.load(output / condition / "label_maps.npz") as target:
+                np.testing.assert_array_equal(target[sample.sample_id], expected)
+    matching = pd.read_csv(output / "B0/matching.csv")
     assert matching.loc[matching.condition == "B0", "display_cluster"].tolist() == (
         np.argsort(permutation) + 1).tolist()
     np.testing.assert_allclose(matching.condition_overlap_fraction, 1)
     assert (matching.common_pixels == 198).all()
-    differences = pd.read_csv(output / "difference_spectra.csv")
+    np.testing.assert_allclose(matching.iou, 1)
+    np.testing.assert_allclose(matching.snv_cosine_similarity, 1)
+    matrices = pd.read_csv(output / "B0/matching_matrices.csv")
+    with np.load(output / "spectral_summary.npz") as saved:
+        means = saved["means"][:, :, gr.KINDS.index("snv")]
+        means /= np.linalg.norm(means, axis=-1, keepdims=True)
+        expected_similarity = means[gr.REFERENCE] @ means[0].T
+    actual_similarity = matrices.pivot(index="reference_cluster", columns="display_target_cluster",
+                                       values="snv_cosine_similarity").to_numpy()
+    np.testing.assert_allclose(actual_similarity, expected_similarity, atol=1e-12)
+    differences = pd.read_csv(output / "B0/difference_spectra.csv")
     np.testing.assert_allclose(differences.difference, 0, atol=1e-12)
-    occupancy = pd.read_csv(output / "occupancy.csv")
+    occupancy = pd.read_csv(output / "B0/occupancy.csv")
     assert np.allclose(occupancy.groupby(["sample_id", "condition"]).fraction.sum(), 1)
-    assert sorted(p.name[:2] for p in output.glob("*.png")) == [f"{i:02d}" for i in range(1, 10)]
+    for condition in gr.CONDITIONS:
+        assert sorted(p.name for p in (output / condition / "labels").glob("*.png")) == [
+            "01_samples_01-02_1x7.png", "08_all_samples_7x7.png"]
+        assert (output / condition / "01_representative_spectra.png").is_file()
+        assert (output / condition / "02_snv_cosine_matrix.png").is_file()
+        assert not (output / condition / "02_iou_matrix.png").exists()
     completion_path = output / "completion.json"
     completion = completion_path.read_text(encoding="utf-8")
     completion_path.write_text(json.dumps({**json.loads(completion), "png_count": 12}),
@@ -297,7 +363,7 @@ def test_report_png_csv_alignment_and_tamper_detection(
     with pytest.raises(ValueError, match="artifact counts"):
         gr.check_global_report(experiment, data, inventory)
     completion_path.write_text(completion, encoding="utf-8")
-    (output / "matching.csv").write_text("tampered", encoding="utf-8")
+    (output / "B0/matching.csv").write_text("tampered", encoding="utf-8")
     with pytest.raises(ValueError, match="artifact changed"):
         gr.check_global_report(experiment, data, inventory)
 

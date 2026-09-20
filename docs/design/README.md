@@ -37,7 +37,7 @@
 低優先度で計画に残し、先行する解析・図表・解釈の整理を一通り終えた後に回す。
 
 CVは105学習、全体解釈を含めると108学習。PCA、KMeans、vMF、表現抽出、評価摂動はこの学習数に含めない。
-全体fitの表示番号は、観測SNV代表線のcosine類似度によるHungarian matchingでM00のCosine-KMeansへ直接整列する。画素overlapは確認用に残す。OOF sanityはfold内B0基準・一致画素数最大化を用いる。
+全体fitの表示番号は、観測SNV代表線のcosine類似度の合計を最大にするHungarian matchingでM00のCosine-KMeansへ直接整列する。代表線は試料内クラスタ平均を試料間で等重み平均する。元番号・対応表・SNV類似度と補助IoU・contingencyを保存する。OOF sanityはfold内B0基準・一致画素数最大化を用いる。
 
 <a id="open-items"></a>
 
