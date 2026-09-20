@@ -71,7 +71,7 @@ Vincentらの分類実験等はこの原理を支えるが、古材NIRで化学�
 再構成lossはクラスタの生成・分離を直接要求しない。
 
 既定の主要比較M11対B0・B1・M00と、M00・M10・M01・M11の2×2 ablationで調べる。
-MAEへの追加corruptionの効果を補正前LLA・LFRと既定診断で評価する。
+MAEへの追加corruptionの効果をLLA（補正後）・LFRと既定診断で評価する。
 
 ## 2. 実装で確認できる構成
 
@@ -340,14 +340,14 @@ $$
 | --- | --- |
 | 提案する設計 | SNV制約を保つTGN・shiftをmasked denoisingへ組み込み、単一16次元単位潜在へ集約する |
 | 固定表現の利用 | 学習後のencoderとtrainでfitした中心をtestへ適用する。後段fine-tuningを要しない現行pipelineの事実 |
-| 追加corruptionの効果 | MAE群の2×2比較・交互作用を補正前LLA・LFRと既定診断で評価する。化学状態をより安定して反映することは仮説であり、指標や再構成lossからは保証されない |
+| 追加corruptionの効果 | MAE群の2×2比較・交互作用をLLA（補正後）・LFRと既定診断で評価する。化学状態をより安定して反映することは仮説であり、指標や再構成lossからは保証されない |
 | 指定摂動への安定性 | LFRで割当の維持を測る。学習と同じ種類・強度の人工摂動への結果であり、実測誤差全般や化学情報保持へ外挿しない |
 | どの差が強調・抑制されたか | 現行実験の実証範囲に含めない。[数理的補足第5節](mathematical_notes.md#latent-decoder)の関係式だけでは改善機構を同定できない |
 | 化学的な対応 | NIR代表・差スペクトルと位置対応FT-IRによる解釈。FT-IRの測定設計はOpen、結果未確認 |
 | 構成の最適性 | 層数・潜在次元・線形decoder・正規化の最適性や、未比較SSLへの優位性は扱わない |
 
 5-fold・3反復のマップ評価は[評価指標](design/evaluation_metrics.md)に従う。
-補正前LLA・LFRだけでなくoccupancy・反復間ARI等を併読し、単一クラスタ化等の退化を区別する。
+LLA・LFRだけでなくoccupancy・反復間ARI等を併読し、単一クラスタ化等の退化を区別する。補正前LLAは補足として扱う。
 Cosine-silhouetteは各表現内の幾何診断であり、化学的妥当性の共通尺度ではない。
 化学的な対応は[FT-IR計画](design/visualization_and_interpretation.md#ftir-interpretation)に基づき別途検討する。
 

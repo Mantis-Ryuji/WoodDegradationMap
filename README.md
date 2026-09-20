@@ -20,6 +20,7 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 | 研究の問いと全体像 | [研究の目的と説明文](docs/research_overview.md) |
 | 固定条件・評価・可視化の設計 | [研究設計](docs/design/README.md) |
 | 現在の進捗と残作業 | [ToDo](ToDo.md) |
+| Thesisで執筆を始める | [執筆への引き継ぎ](docs/manuscript_handoff.md) |
 | 実行・再開・完了確認 | [実験runbook](docs/experiment_runbook.md) |
 | 採用理由・関連研究・解釈の全体案内 | [ドキュメント案内](docs/README.md) |
 
@@ -30,16 +31,15 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 再生成方法と保存先は[主条件OOF図表](docs/experiment_runbook.md#oof-reporting)を参照してください。
 代表指標の優先順はLLA（補正後）、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyです。
 
-全体fitはB0/PCAの準備・保存復元確認、3条件のGPU smoke、A0・M00・M11の各800 epochまで完了しました。
-2026-09-20に保存記録を確認し、`training-check`の完了はユーザー報告に基づいて記録しました。
-後続の表現抽出・Cosine-KMeans・全画素予測は`global_cluster.py`、PNG・CSV生成は`visualize_global.py`へ分けて実装しました。
-全5条件のクラスタリング成果物をcheckし、SNV代表線のcosine類似度＋Hungarianによる条件別図と代表7試料の5条件比較図を生成・checkしました。
-出力はPNG 51枚・CSV 37個です。
-[全体fit後の手順](docs/experiment_runbook.md#global-post-fit)に再生成コマンドと保存先を記載しています。
-5条件のクラスタマップ・代表二次微分スペクトルを確認してから、PC1・PC2の潜在空間図を作成し、帯域選択・空間mapとの対応と化学的解釈を進めます。
-2026-09-20の指定により、mask率sweepとvMFは低優先度で計画に残し、この解析と図表・解釈の整理を一通り終えた後に回します。
-vMFの数値仕様・共通処理の検証と全体fit用5 fitsも後回しとし、先行する可視化の前提にはしません。
-完了範囲と作業順、図表生成・全体fit・補助実験の残作業は[ToDo](ToDo.md)で管理します。
+全体fitとB0・B1・A0・M00・M11のCosine-KMeans（$K_0=8$）、全49試料のマップ・代表スペクトルも生成済みです。
+条件間の表示番号は、試料等重みのSNV代表線のcosine類似度＋HungarianでM00へ整列しています。
+全体図表はPNG 56枚・CSV 37個、独立した[PCA可視化](docs/experiment_runbook.md#global-pca)は2行5列のPNG 1枚・CSV 5個です。
+2026-09-21に保存済み完了記録を確認しました。再生成方法は[全体fit後の手順](docs/experiment_runbook.md#global-post-fit)を参照してください。
+
+**現在はThesisで執筆を始め、既存のCV結果とK8の観察から、主張に必要な追加図を絞る段階です。**
+詳細解釈はM11・K8の試料内クラスタと観測スペクトルを中心に検討します。PCAの追加図や二次微分の帯域積分mapは候補であり、執筆開始の前提ではありません。
+mask率sweepとvMFは低優先度で計画に残します。採用済み条件、完了範囲、保留中の解析は[ToDo](ToDo.md)、
+CVから言えることと物理化学的解釈の区別は[解釈メモ](docs/interpretation_notes.md)で管理します。
 
 ## 主な配置
 
