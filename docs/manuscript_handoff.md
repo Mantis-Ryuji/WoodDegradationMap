@@ -67,7 +67,8 @@ Cutoffのproxyはreferenceの検出器列間のばらつきに基づき、試料
 
 空間的一貫性の改善と物理化学的な意味の同定は別の主張である。外観との対応、観測スペクトル差、
 化学的帰属を区別して記載し、ARI等でbaselineを下回る比較や解釈できない例も残す。
-帯域積分map・PCAの追加色分け・mask率sweep・vMFは、現在の原稿を書き始めるための必須成果物ではない。
+mask率25%・50%・75%の補助実験は実施し、専用OOF集計後に感度解析として結果を追記する。
+結果を待つ間も既存の主条件結果で執筆を進められる。帯域積分map・PCAの追加色分けは保留中の候補として扱う。
 
 ### 解析フロー図
 
@@ -82,7 +83,7 @@ Cutoffのproxyはreferenceの検出器列間のばらつきに基づき、試料
 
 - 試料由来・採取関係・状態、撮像装置・測定条件。解析49試料と取得試料全体を区別し、未確認情報を補完しない。
 - Multi-Otsu、SNV、PCA、球面クラスタリング、Transformer、MAE、denoisingの原典・引用箇所・書誌。
-- vMF数値仕様、FT-IR、正式な目視評価の[Open事項](design/README.md#open-items)と実施状況。
+- mask率補助実験の完了状況と、FT-IR・正式な目視評価の[Open事項](design/README.md#open-items)。
 - 採用runの実行環境・完了状況、図表の出典、提出書式。
 - 指標名と保存キーの対応：補正前LLA（$\mathrm{LLA}^{\mathrm{raw}}$）は`lla`、LLA（$\mathrm{LLA}$）は`adjusted_lla`。
 - 代表指標はLLA、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyの優先順。

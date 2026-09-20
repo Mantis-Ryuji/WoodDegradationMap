@@ -5,9 +5,8 @@
 固定設計を`production_v1`で実行する手順を示す。条件・seed・split・評価方法の定義は
 [研究設計](design/README.md)、現在の進捗は[ToDo](../ToDo.md)を参照する。
 
-[vMF補助実験](design/experiment_protocol.md#vmf-supplementary)は、
-数値検証・設定確定とpipeline実装が必要であり、CLIはまだない。本書のclustering・評価・OOFコマンドは
-Cosine-KMeansの主実験・mask率補助実験用である。vMFの実施順序は第8.1節を参照する。
+本書のclustering・評価・OOFコマンドはCosine-KMeansの主実験・mask率補助実験用である。
+mask率補助実験の範囲と実施順序は[第8.1節](#mask-rate-sweep)を参照する。
 
 ChemoMAE v0.2.2の環境で、リポジトリrootからPowerShellで実行する。
 本番実行例は`uv run --no-sync`とし、環境構築・更新をrun開始時の処理から分ける。
@@ -318,30 +317,35 @@ runでは各組合せの `status=full_test_evaluation_completed` と `checks_pas
 各組合せについてclean mapと評価を完了する。ニューラル学習は合計105 runsで、B0・B1のfitや
 KMeans、評価処理はこの数に含めない。3反復はseed選別に使わず、すべてOOF集計へ含める。
 
-### 8.1 vMF補助実験の準備と実施
+<a id="mask-rate-sweep"></a>
 
-2026-09-20の指定により低優先度とし、主条件のOOF図表と、第8.2節のCosine-KMeansによる
-潜在空間・空間map・観測スペクトルの解析・図表・解釈の整理を一通り終えた後に回す。
-その後、数値仕様の確定・v0.2.2の検証・共通fit処理実装 → 全体fit用5 fits・手法間比較 →
-CV専用pipeline実装 → 735 fits・評価 → 独立OOF集計・比較図表の順に進める。
-数値検証・実装も第8.2節の先行解析の前提にはしない。
-NN学習・PCA fitは追加せず、既存の表現・train画素・Kと同じtest全画素・共通摂動を使う。
-設定・結果・完了記録は主実験から分け、元成果物との対応とsource hash、失敗・未定義値を保持する。
+### 8.1 mask率補助実験の実施
 
-条件は[実験プロトコル](design/experiment_protocol.md#vmf-supplementary)、比較は
-[評価規約](design/evaluation_metrics.md#vmf-evaluation)、実装の残作業は[ToDo第5節](../ToDo.md#5-vmf補助実験)を参照する。
+M11のmask率25%・50%・75%を比較する補助実験を実施する。
+50%は完了済みの主条件M11を再利用し、M11-25・M11-75を各5 folds×3反復、計30 runs追加する。
+800 epoch、split、抽出画素、seed、augmentation強度、全7Kと評価指標は主実験の固定条件を継承する。
+最良mask率の選択ではなく感度解析として報告し、主条件M11を事後的に置き換えない。
+
+1. 第4節の学習・再開手順でM11-25・M11-75を実行し、各runをcheckする。
+2. 第6〜7節に従い、各runでCosine-KMeans・全test画素の予測・評価・checkを完了する。
+3. M11-25・M11・M11-75の3条件を[OOF集計](#oof-aggregation)の`mask_rate_oof_v1`へまとめる。主条件のsnapshotは保持する。
+4. mask率比較の図表生成対応を追加し、LLA・LFR・ARI・Cosine-Silhouette・occupancyとK依存性を報告する。
+
+主条件の図表用CLIを、そのままmask率snapshotへ流用しない。mask率図表への対応は未実装である。
+条件の定義は[実験プロトコル](design/experiment_protocol.md#mask-rate-sweep)、
+残作業は[ToDo第4節](../ToDo.md#4-mask率補助実験)を参照する。
+この実験の着手に、追加の潜在空間図や物理化学的解釈の完了を要求しない。
 
 <a id="global-fit-pipeline"></a>
 
 ### 8.2 全体fitと解釈
 
 主条件OOF図表、全体fit、K8クラスタリング・図表、PCA一枚は生成済みである。
-現在はThesisで既存結果を整理し、追加可視化の必要性を判断する。mask率sweepとvMFは低優先度のままとする。
+現在はThesisで既存結果を整理し、追加可視化の必要性を判断する。mask率sweepは[第8.1節](#mask-rate-sweep)のCV補助実験として実施する。
 
 [全体可視化設計](design/visualization_and_interpretation.md)に従い、全49試料の共通抽出画素で
 B1 PCAとA0・M00・M11をfitする。B0を加えた5条件の表現で、$K_0=8$のCosine-KMeansを5 fits行う。
-vMFの5 fitsは第8.1節の後続解析へ回し、数値仕様の確定・検証後に同じPCA・encoder・抽出座標を再利用する。
-全体学習の3 runsと全体クラスタリングは、補助条件を含むCVの計画105学習・vMF 735 fitsとは別枠であり、OOF集計に含めない。
+全体学習の3 runsと全体クラスタリングは、補助条件を含むCVの計画105学習とは別枠であり、OOF集計に含めない。
 
 実装の残作業は[ToDo第3節](../ToDo.md#3-全体fitと解釈)を参照する。
 `global_fit.py`にmanifest・B0/PCA・A0/M00/M11の一括学習・再開・checkを実装した。
@@ -357,7 +361,7 @@ A0/M00/M11の各800 epochが完了した。2026-09-20に保存記録を確認し
    fold位置を`global`、反復IDを1とする。抽出・PCA・NNと後続の$K_0=8$クラスタリング用のseed計55個を保存する。
    保存rootは`outputs/experiments/global_v1/`。2026-09-19のユーザー確認による。
 2. **共通入力と専用pipelineを実装・小規模検証する。** 49試料から各8,192画素、計401,408画素を抽出し、
-   全5条件・両手法で座標を共有する。fit画素と推論対象の全有効画素を区別し、CPU小規模と必要最小限のGPU検証で、
+   全5条件で座標を共有する。fit画素と推論対象の全有効画素を区別し、CPU小規模と必要最小限のGPU検証で、
    入出力・seed・保存復元・完了判定を確認する。CVのmanifestと成果物は全体fitから分離する。
 3. **B0・B1を準備する。** B0は固定のSNV変換、B1は共通fit画素でPCAを1回fitする。
    全体fit用の入力・表現抽出・保存復元を確認してから長時間のNN学習へ進む。
@@ -373,9 +377,8 @@ A0/M00/M11の各800 epochが完了した。2026-09-20に保存記録を確認し
    図は表現の補助表示とし、条件の優越性や化学的妥当性を図の分離だけで判断しない。
 8. **既存結果を書き、必要な詳細解析を絞る。** CVの未知試料評価と、全体fitの記述的なマップ・スペクトルを区別する。
    M11・K8の試料内クラスタの観察を中心に検討し、追加図・帯域指標は採否と仕様を決めてから実装する。
-   低優先度のmask率sweep・vMFは、その後に必要性と工数を再確認する。
 
-vMF数値仕様は引き続きOpen。5条件・共通画素数・各1回・800 epoch・$K_0=8$の方針は維持する。
+5条件・共通画素数・各1回・800 epoch・$K_0=8$の方針は維持する。
 
 #### 準備・PCA・GPU smoke
 
@@ -483,7 +486,7 @@ GPU smokeはA0・M00・M11のすべてで`checks_passed=true`、再開時の重�
    試料別スペクトルCSVを先に参照でき、帯域積分mapや追加のPCA色分けは必須工程ではない。
 
 帯域選択・平滑化・積分の数値設定は未確定である。採用時の定義は[可視化設計](design/visualization_and_interpretation.md#spectral-band-selection)を参照する。
-mask率sweep・vMFは低優先度の計画として維持する。
+mask率sweepは[第8.1節](#mask-rate-sweep)に従って実施する。
 
 ##### 実行コマンド：クラスタリングと可視化
 
@@ -676,7 +679,8 @@ uv run --no-sync python scripts/experiments/aggregate_oof.py check `
     --experiment-dir outputs/experiments/production_v1
 ```
 
-mask率補助実験は低優先度とし、主条件の図表生成・全体fit・第8.2節の解析と解釈の整理を一通り終えた後に実施する。別snapshotにする。
+mask率補助実験は、M11-25・M11-75の全fold・全反復の評価完了後に、完了済みのM11を加えて集計する。
+主条件のsnapshotを保持し、3条件を別snapshotにする。
 
 ```powershell
 uv run --no-sync python scripts/experiments/aggregate_oof.py run `

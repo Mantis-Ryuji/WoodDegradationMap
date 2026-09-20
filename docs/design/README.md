@@ -9,7 +9,7 @@
 | 文書 | 状態 | 定義する内容 |
 | --- | --- | --- |
 | [前処理](preprocessing.md) | Fixed | 200 Hz入力、mask、負値除外、256点補間、SNV、保存schema |
-| [実験プロトコル](experiment_protocol.md) | 主条件Fixed / vMF数値仕様Open | 条件、split、seed、共通画素、学習、クラスタリング、実行記録 |
+| [実験プロトコル](experiment_protocol.md) | 主条件・mask率補助Fixed | 条件、split、seed、共通画素、学習、クラスタリング、実行記録 |
 | [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA（補正後）、LFR、ARI、silhouette、occupancy、補正前LLA、未定義値、集約、比較・報告 |
 | [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1・A0・M00のPNG・CSV、fold内B0基準のmatching |
 | [全体可視化と解釈](visualization_and_interpretation.md) | 全体fit・K8比較・PCA一枚Fixed / 詳細図・連続指標map・FT-IR等Open | M00基準のmatching、代表例、試料別／全体スペクトル、PC1/PC2、追加解析候補 |
@@ -28,17 +28,17 @@
 | --- | --- | ---: | --- |
 | 主実験 | B0、B1、A0、M00、M10、M01、M11の5-fold・3反復 | 75回 | Cosine-KMeans、全7K |
 | Mask率補助 | M11-25・M11-75。50%はM11を再利用 | 30回 | Cosine-KMeans、全7K |
-| vMF補助 | 主7条件の既存表現、5-fold・3反復 | 0回 | vMF、全7Kの735 fits |
 | OOF sanity | 完了済みB0・B1・A0・M00のOOF map・指標 | 0回 | 既存成果物のみ |
-| 全体解釈 | B0、B1、A0、M00、M11を全49試料でfit・学習 | 3回 | $K_0=8$、各手法5 fits |
+| 全体解釈 | B0、B1、A0、M00、M11を全49試料でfit・学習 | 3回 | Cosine-KMeans、$K_0=8$、5 fits |
 
 全体解釈の比較対象はCosine-KMeansの5条件・K8とする。現在は既存結果の執筆を先行し、
 M11の試料内クラスタを中心とする詳細解釈と、追加図の必要性を検討する。
-mask率sweepとvMF（数値検証・全体fit用5 fits・CV補助735 fitsを含む）は低優先度の計画として保持する。
+補助実験は[mask率25%・50%・75%の比較](experiment_protocol.md#mask-rate-sweep)を実施する。
+既存の50%を再利用し、25%・75%を各15 runs追加する。全体解釈の完了を着手条件にしない。
 
 NN学習の計画総数は主CV 75回＋mask率補助30回＝105回、全体fitの3回を含めて108回である。
 このうち主CV 75回と全体fit 3回は完了し、mask率補助30回は未実施。
-PCA、KMeans、vMF、表現抽出、評価摂動はこのNN学習数に含めない。
+PCA、KMeans、表現抽出、評価摂動はこのNN学習数に含めない。
 全体fitの表示番号は、観測SNV代表線のcosine類似度の合計を最大にするHungarian matchingでM00のCosine-KMeansへ直接整列する。代表線は試料内クラスタ平均を試料間で等重み平均する。元番号・対応表・SNV類似度と補助IoU・contingencyを保存する。OOF sanityはfold内B0基準・一致画素数最大化を用いる。
 
 <a id="open-items"></a>
@@ -47,12 +47,10 @@ PCA、KMeans、vMF、表現抽出、評価摂動はこのNN学習数に含めな
 
 | Open事項 | 実施前に決める・確認する内容 | 定義先 |
 | --- | --- | --- |
-| vMF数値仕様・実装 | 精度、EM停止条件、集中度設定、数値・動作検証、専用pipeline。利用版・範囲・退化成分の扱いはFixed | [vMF](experiment_protocol.md#vmf-supplementary) |
 | 任意の形状診断 | 採用する場合の近傍・connectivity・閾値・分母 | [診断](evaluation_metrics.md#occupancy) |
 | 試料ごとの詳細図 | M11・K8で注目する試料・領域、示したい差、panel構成。試料別平均CSVは既存成果物を利用可能 | [スペクトルの要約](visualization_and_interpretation.md#representative-spectra) |
 | PCAの追加色分け | PC1/PC2のPNG一枚は生成済み。追加metadata・帯域指標による図の採否・内容は執筆時に判断 | [表現空間の可視化](visualization_and_interpretation.md#latent-spectral-maps) |
 | 連続スペクトル指標map | 採否、3×3平均またはGaussianの選択・数値設定、帯域選択、積分・符号・共通color scale。クラスタ所属で近傍を制限しない | [帯域選択](visualization_and_interpretation.md#spectral-band-selection) |
-| 任意の責務マップ | 採用する場合の表示範囲・配色・背景 | [責務マップ](visualization_and_interpretation.md#vmf-responsibility-maps) |
 | 位置対応FT-IR | 対象、位置対応、測定・反復条件、前処理・指標、解釈範囲 | [FT-IR](visualization_and_interpretation.md#ftir-interpretation) |
 | 正式な目視評価 | 評価者、rubric、条件名・提示順、意見不一致の扱い | [証拠の統合](visualization_and_interpretation.md#evidence-triangulation) |
 

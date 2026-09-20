@@ -401,8 +401,8 @@ paired ARIも報告pipelineで算出し、元OOF snapshotのscore・集約値・
 ### 8.3 必須の表・図
 
 本節は対象条件の全fold・全反復のCVとOOF集計が完了した報告図表に適用する。
-まず主7条件のOOF snapshotから主条件の図表を生成する。mask率依存性とvMF比較の図表は、
-主条件の図表生成・全体fit・解釈を終えてから行う各補助実験のOOF集計完了後に追加する。
+主7条件のOOF snapshotから主条件の図表を生成済みである。mask率依存性の図表は、
+M11-25・M11・M11-75のOOF集計完了後に、専用の図表生成対応を追加して作成する。
 [OOF sanity可視化](oof_sanity_visualization.md)は、
 label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様である。
 
@@ -422,41 +422,13 @@ label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様であ�
 - Cluster Occupancyと2×2交互作用はCSV表のみとし、単独PNGや分布panelを作らない。
   現行のoccupancy表はclean testが対象で、試料別の使用クラスタ数・最大占有率・単一クラスタ化と、
   fold・反復ごとの分布を保持する。未整列の番号をfold・反復間で平均しない。
-- 残りの計画比較もCSVへ保存する。mask率・vMFの図表は各補助実験後に専用pipelineを拡張する。
+- 残りの計画比較もCSVへ保存する。mask率比較にも本節の指標・表記・集計規約を適用し、図の構成は専用pipelineの実装時に定める。
 - 指標間で結論が異なる場合は、総合順位に潰さずtrade-offとして報告する。
 - Hungarian matchingは表示ラベルの整列に用い、CV指標の計算には使用しない。
   [OOF sanity](oof_sanity_visualization.md)ではfold内B0基準で一致画素数を最大化する。[全体fit後](visualization_and_interpretation.md#matching-reference)ではM00のCosine-KMeansを表示基準に、試料等重みの観測SNV代表線のcosine類似度の合計を最大化する。全体fitのIoU・contingency・一致画素数も確認用に保存する。
 
 主条件の実装済み成果物はPNG 3枚・CSV 11個である。ファイル名・保存先・再生成方法は
 [runbook](../experiment_runbook.md#oof-reporting)を参照する。PNGは01〜03の連番とし、再生成時は旧PNGを整理する。
-
-<a id="vmf-evaluation"></a>
-
-### 8.4 vMFクラスタリング補助実験への適用
-
-[プロトコルのvMF補助実験](experiment_protocol.md#vmf-supplementary)にも、第2〜8.3節の画素・全指標・
-未定義値・集計・図表を適用する。最大posterior責務によるhard labelを背景0・クラスタ1〜Kへ変換し、
-同じtest全画素と3種類×5 drawsの摂動実現値・seed・画素対応をCosine-KMeansと共有する。
-
-cosine-silhouetteは同じ表現のcosine距離とvMFのhard labelから計算する。
-反復間ARIは各クラスタリング方法内の既存3対を使う。方法間ARIを主評価へ追加せず、
-ARIをencoderだけの再現性とも解釈しない。
-
-各方法内で[全計画比較と2×2交互作用](experiment_protocol.md#planned-comparisons)を求め、
-同一試料・K・反復の条件差の方向・大きさ・K依存性・ばらつきを手法間で比較する。
-同条件の方法間score差にも共通対象のpaired規約を適用し、未定義理由と対象数を示す。
-
-両方法で傾向が一致すれば、検討した二つの球面クラスタリング方法に対して結論が保たれたと述べる。
-異なる場合は、成分の広がりや混合比のモデル化によって、表現の読み取りが変わった可能性を検討する。
-任意のクラスタリング方法への一般化や、化学状態の正しさを実証したとはしない。
-単一成分への集中による見かけの補正前LLA・LFR改善は、occupancyと併せて確認する。
-
-vMFの責務は化学的な正解確率や存在比ではない。方向・集中度・混合比・尤度はfitの診断として記録する。
-尤度をsilhouetteの代替にしたり、異なる表現・次元を横断する品質scoreとして使ったりしない。
-BIC・elbowによる表現条件の順位付けや固定Kの選び直しは行わない。
-
-全体学習後の5条件（B0・B1・A0・M00・M11）× 2手法のマップ比較は、[可視化設計第4.3節](visualization_and_interpretation.md#vmf-global-maps)
-に従う探索的解釈として別に報告する。全体解釈用vMFの5 fitsとその全試料予測を、本節のCV評価・OOF集計へ含めない。
 
 ## 9. 方法論上の参考文献
 
