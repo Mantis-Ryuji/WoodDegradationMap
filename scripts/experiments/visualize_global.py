@@ -1,4 +1,7 @@
-"""Read global K=8 maps and produce/check M00-aligned static PNG and CSV reports."""
+"""Render/check global K=8 PNG/CSV reports with M00 observed SNV cosine matching.
+
+Run replaces the previous report directory only after successful generation.
+"""
 
 from __future__ import annotations
 
