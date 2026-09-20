@@ -11,7 +11,9 @@
 全体fitのmanifest・B0/PCA・3条件一括学習・再開・check用CLIは実装し、合成データでCPU検証した。
 2026-09-20に、本番manifest・B0/PCA・3条件のGPU smoke・A0/M00/M11の各800 epochの完了を確認した。
 PCA保存復元誤差0、smokeの合格、学習完了は保存記録に基づき、`training-check`完了はユーザー報告による。
-全体fit用の表現抽出・クラスタリング・全画素予測と、それ以降の図表生成pipelineは未実装である。
+全体fit用の表現抽出・Cosine-KMeans・全画素予測は`global_cluster.py`、matching・観測スペクトル集計・
+PNG/CSV生成は`visualize_global.py`として分離して実装し、合成データのCPU検証を行った。本番出力は未実行である。
+UMAP・連続スペクトル指標mapは数値設定と帯域の確定後に実装する。
 実装・実施の残作業は[ToDo](../../ToDo.md#3-全体fitと解釈)、具体的な順序は[runbook](../experiment_runbook.md#global-fit-pipeline)で管理する。
 2026-09-20のユーザー指定により、まずCosine-KMeansの5条件で、潜在空間・空間map・観測スペクトルの
 対応と化学的解釈を進める。mask率sweepとvMFは低優先度で計画に残し、この解析・図表・解釈の整理を
@@ -210,6 +212,17 @@ matchingは表示と対応関係の確認を目的とし、異なる条件・手
 | UMAP・空間map・観測スペクトルの対応図 | 表現空間の領域が、試料表面の位置とどのスペクトル差に対応するかを詳しく調べる |
 
 B0、B1、A0、M00、M11と両クラスタリング手法で、同じ試料順、同じlabel palette、同じ表示範囲を使用する。
+
+先行するCosine-KMeansの図表は`results/figures/global_k8_v1/`へ保存する。
+ルートのPNGは`01`から`09`の連番とし、固定7代表試料×5条件のマップ、反射率・SNV・二次微分の代表線、
+SNV類似度、contingency、および3種類の差スペクトルを出力する。全49試料の5条件マップは`maps/`にも個別保存する。
+代表・差スペクトルは表示クラスタ1〜8の2行4列で、各panelに条件の線を重ねる。差は各条件の代表線から
+M00の同じ表示クラスタの代表線を引き、構成試料が異なり得るためpaired差とは扱わない。
+二次微分と差スペクトルは同一図内で縦軸を共有する。occupancyはCSVのみとする。
+対応・類似度・overlap、試料別／代表／差スペクトル、寄与・除外数、波長、captionをCSVへ保存する。
+元のクラスタラベルは保持し、整列済みラベルを図表directory内の`labels/`へ別保存する。
+全体のoverlapは共通画素数を分母とする比率、contingency図はM00クラスタごとの行比率であり、区別して記録する。
+保存先の一覧と実行方法は[runbook](../experiment_runbook.md#global-post-fit)を参照する。
 
 <a id="representative-spectra"></a>
 

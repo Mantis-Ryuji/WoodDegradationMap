@@ -32,8 +32,9 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 
 全体fitはB0/PCAの準備・保存復元確認、3条件のGPU smoke、A0・M00・M11の各800 epochまで完了しました。
 2026-09-20に保存記録を確認し、`training-check`の完了はユーザー報告に基づいて記録しました。
-次は[全体fit後の手順](docs/experiment_runbook.md#global-post-fit)に従い、全体fit用の表現抽出・Cosine-KMeans・全画素予測のpipelineを実装します。
-この後続CLIは未実装です。5条件のクラスタマップ・代表スペクトルから、潜在空間・空間mapとの対応と化学的解釈を進めます。
+後続の表現抽出・Cosine-KMeans・全画素予測は`global_cluster.py`、PNG・CSV生成は`visualize_global.py`へ分けて実装しました。
+合成データのCPU検証済みで、本番実行はこれからです。[全体fit後の手順](docs/experiment_runbook.md#global-post-fit)に実行コマンドと保存先を記載しています。
+5条件のクラスタマップ・代表二次微分スペクトルを確認してから、帯域とUMAP設定を決め、潜在空間・空間mapとの対応と化学的解釈を進めます。
 2026-09-20の指定により、mask率sweepとvMFは低優先度で計画に残し、この解析と図表・解釈の整理を一通り終えた後に回します。
 vMFの数値仕様・共通処理の検証と全体fit用5 fitsも後回しとし、先行する可視化の前提にはしません。
 完了範囲と作業順、図表生成・全体fit・補助実験の残作業は[ToDo](ToDo.md)で管理します。

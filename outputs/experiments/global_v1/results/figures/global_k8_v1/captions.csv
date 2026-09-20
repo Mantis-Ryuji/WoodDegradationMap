@@ -1,0 +1,11 @@
+file,caption
+01_representative_maps.png,"Rows: fixed representative samples in design order; columns/panels a-e: B0, B1, A0, M00, M11; M00 SNV matching; 0 is background."
+maps/*.png,"Panels a-e: B0, B1, A0, M00, M11; identical pixel coordinates; colors aligned by SNV representative similarity, not chemical ground truth."
+05_snv_similarity.png,Equal-sample SNV representative cosine similarity; columns reordered by Hungarian matching to M00.
+06_contingency.png,Common-pixel contingency normalized within each M00 cluster; diagnostic only. Larger samples contribute more pixels. Raw counts in CSV.
+02_reflectance_spectra.png,"Panels 1-8: display clusters; lines: equal-sample means; bands: sample IQR (not confidence intervals). Absent sample/cluster curves excluded; contribution counts in CSV. Second derivative: pixelwise -log10(R), within-sample mean, SG(7,2,2)."
+07_reflectance_differences.png,"Panels 1-8: display clusters. Differences of representative means relative to M00; sample membership can differ, so these are not paired chemical changes."
+03_snv_spectra.png,"Panels 1-8: display clusters; lines: equal-sample means; bands: sample IQR (not confidence intervals). Absent sample/cluster curves excluded; contribution counts in CSV. Second derivative: pixelwise -log10(R), within-sample mean, SG(7,2,2)."
+08_snv_differences.png,"Panels 1-8: display clusters. Differences of representative means relative to M00; sample membership can differ, so these are not paired chemical changes."
+04_second_derivative_spectra.png,"Panels 1-8: display clusters; lines: equal-sample means; bands: sample IQR (not confidence intervals). Absent sample/cluster curves excluded; contribution counts in CSV. Second derivative: pixelwise -log10(R), within-sample mean, SG(7,2,2)."
+09_second_derivative_differences.png,"Panels 1-8: display clusters. Differences of representative means relative to M00; sample membership can differ, so these are not paired chemical changes."
