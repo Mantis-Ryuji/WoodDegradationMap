@@ -532,6 +532,43 @@ if ($LASTEXITCODE -ne 0) { throw "Global visualization check failed" }
 独立管理の`pca-latent-2d/`は引き継ぎ、PCA座標・NN・クラスタリング成果物は置換対象に含めない。
 クラスタリングの`run`は既存成果物を上書きしない。
 
+<a id="representative-sample-update"></a>
+
+##### 代表7試料の変更を既存図へ反映する
+
+2026-09-21に代表試料を、各樹種で多様な化学状態が見られそうなものを目視で選んだ7試料へ変更した。
+試料番号順に`KYOw02752`（ヒノキ）、`KYOw02772`（マツ）、`KYOw02777`（ケヤキ）、
+`KYOw02787`（ツガ）、`KYOw02790`（クリ）、`KYOw16744`（スギ）、`KYOw16750`（モミ）とする。
+旧指定との差分と選定の位置づけは[表示例の選択](design/visualization_and_interpretation.md#representative-samples)を参照。
+コード・文書の更新だけでは保存済みPNGは変わらないため、以下をリポジトリrootのPowerShellで実行する。
+
+raw BMPと反射率L2 normの代表1×7は、保存済み画像をCPUで読み、次の1コマンドで両方を同名上書きする。
+既存の全49試料の7×7図は変更しない。前処理・スペクトル計算は行わない。
+
+```powershell
+uv run --no-sync python scripts/preprocess/create_sample_overviews.py --representatives-only --overwrite
+if ($LASTEXITCODE -ne 0) { throw "Representative sample overviews failed" }
+```
+
+対象は`outputs/sample_overviews/raw_bmp_representatives_1x7.png`と
+`outputs/sample_overviews/reflectance_l2_norm_representatives_1x7.png`。
+
+全体fitの条件別代表1×7と5条件×7試料図は、次の1コマンドで同時に更新する。
+既存の全49試料のラベル・観測スペクトルをCPUで読み、図表一式（PNG 56枚・CSV 37個と関連記録）を
+再生成して同じ`results/figures/global_k8_v1/`へ置き換えるため、代表図2枚の合成より処理量が多い。
+学習・クラスタリングは再実行せず、独立した`pca-latent-2d/`は保持する。
+
+```powershell
+uv run --no-sync python scripts/experiments/visualize_global.py run
+if ($LASTEXITCODE -ne 0) { throw "Global representative visualization failed" }
+```
+
+対象の代表図は`{B0,B1,A0,M00,M11}/labels/07_representative_samples_1x7.png`と
+rootの`01_representative_samples_5x7.png`。`report.json`の`representative_sample_ids`と
+`captions.csv`も新しい7試料・並び順へ更新される。既存図の検証だけを行う`--resume`は付けない。
+終了code 0、図中のIDと列順、`report.json`の代表ID、実行末尾の`checks_passed=true`を確認する。
+既存のOOF sanity図はこの2コマンドの更新対象に含まれない。
+
 ##### 保存物と確認点
 
 以下はすべて`outputs/experiments/global_v1/`からの相対path。

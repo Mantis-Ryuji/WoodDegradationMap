@@ -33,6 +33,10 @@
 - OOF sanityのfold内B0基準・画素一致数による整列と、全体fitのM00基準・試料等重みSNV代表線のcosine類似度による整列を区別する。
 - `outputs/`の元成果物を保持し、原稿での体裁調整と解析結果を区別する。Fixedの仕様を実装・解析済みとは扱わない。
 
+2026-09-21に代表7試料を、各樹種から多様な化学状態が見られそうなものを目視で選んだ試料へ変更し、
+列順を試料番号の昇順にした。[選定記録](design/visualization_and_interpretation.md#representative-samples)と
+[上書き生成手順](experiment_runbook.md#representative-sample-update)を参照し、使用するPNGに新指定が反映されていることを確認する。
+
 ### 図表候補と用途
 
 | 資料 | 出典と注意点 |

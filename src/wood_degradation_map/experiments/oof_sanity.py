@@ -21,9 +21,10 @@ from .manifests import _digest, _read_json
 CONDITIONS = ("B0", "B1")
 DISPLAY_K = 8
 DISPLAY_REPEAT = 1
+# Visually selected by the user on 2026-09-21; ascending sample number.
 REPRESENTATIVES = (
-    ("クリ", "KYOw02789"), ("ケヤキ", "KYOw02777"), ("スギ", "KYOw02784"),
-    ("ツガ", "KYOw02787"), ("ヒノキ", "KYOw02720"), ("マツ", "KYOw02769"),
+    ("ヒノキ", "KYOw02752"), ("マツ", "KYOw02772"), ("ケヤキ", "KYOw02777"),
+    ("ツガ", "KYOw02787"), ("クリ", "KYOw02790"), ("スギ", "KYOw16744"),
     ("モミ", "KYOw16750"),
 )
 LABEL_COLORS = (

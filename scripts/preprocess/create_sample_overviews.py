@@ -49,7 +49,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir", type=Path,
         default=root / "outputs/sample_overviews",
-        help="New directory for the four overview PNGs; must not already exist.",
+        help="Overview PNG directory; must be new unless --overwrite is supplied.",
+    )
+    parser.add_argument(
+        "--representatives-only", action="store_true",
+        help="Render only the two representative 1x7 PNGs, leaving all-sample grids untouched.",
+    )
+    parser.add_argument(
+        "--overwrite", action="store_true",
+        help="Allow an existing output directory and replace the selected overview PNGs.",
     )
     return parser.parse_args()
 
@@ -123,7 +131,7 @@ def paste_colorbar(canvas: Image.Image, scale: ReflectanceScale) -> None:
 
 def render_overview(
     sources: dict[str, Path], output: Path, *, sample_ids: list[str], image_height: int,
-    reflectance_scale: ReflectanceScale | None = None,
+    reflectance_scale: ReflectanceScale | None = None, overwrite: bool = False,
 ) -> None:
     """Lay out full source images in the supplied order with large IDs underneath."""
     if len(sample_ids) not in (GRID_SIZE, GRID_SIZE**2) or len(set(sample_ids)) != len(sample_ids):
@@ -163,15 +171,15 @@ def render_overview(
             )
         if reflectance_scale is not None:
             paste_colorbar(canvas, reflectance_scale)
-        # Exclusive creation prevents accidental replacement of an existing artifact.
-        with output.open("xb") as handle:
+        # Existing artifacts are replaced only when explicitly requested.
+        with output.open("wb" if overwrite else "xb") as handle:
             canvas.save(handle, format="PNG", dpi=(DPI, DPI))
     print(f"{output}: {size[0]} x {size[1]} pixels; {len(sample_ids)} samples", flush=True)
 
 
 def main() -> int:
     args = parse_args()
-    if args.output_dir.exists():
+    if args.output_dir.exists() and not args.overwrite:
         raise FileExistsError(f"Output directory already exists: {args.output_dir}")
     reflectance, raw = paired_sources(args.reflectance_dir, args.raw_dir)
     scale = load_reflectance_scale(args.reflectance_dir)
@@ -180,17 +188,19 @@ def main() -> int:
     if missing:
         raise ValueError(f"Missing fixed representative samples: {sorted(missing)}")
     height = image_box_height((reflectance, raw))
-    args.output_dir.mkdir(parents=True, exist_ok=False)
-    for suffix, sample_ids in (
-        ("7x7", sorted(reflectance)), ("representatives_1x7", representatives),
-    ):
+    args.output_dir.mkdir(parents=True, exist_ok=args.overwrite)
+    selections = [("representatives_1x7", representatives)]
+    if not args.representatives_only:
+        selections.insert(0, ("7x7", sorted(reflectance)))
+    for suffix, sample_ids in selections:
         render_overview(
             reflectance, args.output_dir / f"reflectance_l2_norm_{suffix}.png",
             sample_ids=sample_ids, image_height=height, reflectance_scale=scale,
+            overwrite=args.overwrite,
         )
         render_overview(
             raw, args.output_dir / f"raw_bmp_{suffix}.png",
-            sample_ids=sample_ids, image_height=height,
+            sample_ids=sample_ids, image_height=height, overwrite=args.overwrite,
         )
     return 0
 
