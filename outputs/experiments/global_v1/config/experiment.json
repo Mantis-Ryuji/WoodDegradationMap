@@ -1,0 +1,230 @@
+{
+  "preprocessing_id": "production_v1",
+  "input": {
+    "dataset": "snv",
+    "bands": 256,
+    "dtype": "float32"
+  },
+  "representation": {
+    "l2_normalize_rows": true,
+    "b0_pca_normalization_eps": 1e-06
+  },
+  "pca": {
+    "n_components": 16,
+    "copy": true,
+    "whiten": false,
+    "svd_solver": "auto",
+    "tol": 0.0,
+    "iterated_power": "auto",
+    "n_oversamples": 10,
+    "power_iteration_normalizer": "auto",
+    "random_state": null,
+    "rng_policy": "isolated NumPy random state set to the recorded PCA seed",
+    "fit_scope": "shared global fit pixels",
+    "additional_autoscaling": false
+  },
+  "chemomae": {
+    "version": "0.2.2",
+    "seq_len": 256,
+    "d_model": 256,
+    "nhead": 8,
+    "num_layers": 8,
+    "dim_feedforward": 1024,
+    "dropout": 0.0,
+    "n_patches": 16,
+    "latent_dim": 16,
+    "latent_normalize": true,
+    "decoder_num_layers": 1,
+    "initialization": "ChemoMAE 0.2.2 defaults"
+  },
+  "training": {
+    "epochs": 800,
+    "batch_size": 1024,
+    "world_size": 1,
+    "accum_iter": 1,
+    "optimizer": "AdamW",
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "eps": 1e-08,
+    "amsgrad": false,
+    "weight_decay": 0.05,
+    "zero_weight_decay": [
+      "bias",
+      "normalization_parameters"
+    ],
+    "base_lr": 0.00015,
+    "peak_lr": 0.0006,
+    "min_lr": 0.0,
+    "warmup_epochs": 40,
+    "scheduler": "linear warmup then half-cycle cosine; epoch + batch/steps_per_epoch",
+    "lr_update": "before batch",
+    "amp_dtype": "fp16",
+    "grad_scaler": true,
+    "weight_dtype": "float32",
+    "grad_clip": null,
+    "drop_path": 0.0,
+    "shuffle": true,
+    "drop_last": true,
+    "use_ema": false,
+    "checkpoint": "last_model.pt; final raw weights at epoch 800",
+    "independent_run_resume_from": null,
+    "early_stopping": false,
+    "target": "clean SNV",
+    "patch_target_normalization": false
+  },
+  "augmentation": {
+    "noise_angle_deg_range": [
+      0.0,
+      5.0
+    ],
+    "shift_delta_range": [
+      -2.0,
+      2.0
+    ],
+    "shuffle_order_per_batch": true,
+    "recenter_after_each_op": true,
+    "renorm_to_input_norm": true,
+    "eps": 1e-08
+  },
+  "extraction": {
+    "visible_mask": "all",
+    "model_mode": "eval",
+    "amp": false,
+    "dtype": "float32",
+    "tf32": false,
+    "augmenter": null
+  },
+  "schema_version": 1,
+  "scope": "global_fit",
+  "repeat": 1,
+  "protocol": "docs/design/visualization_and_interpretation.md",
+  "sample_ids": [
+    "KYOw02702",
+    "KYOw02707",
+    "KYOw02708",
+    "KYOw02709",
+    "KYOw02715",
+    "KYOw02716",
+    "KYOw02717",
+    "KYOw02719",
+    "KYOw02720",
+    "KYOw02751",
+    "KYOw02752",
+    "KYOw02754",
+    "KYOw02756",
+    "KYOw02758",
+    "KYOw02759",
+    "KYOw02760",
+    "KYOw02762",
+    "KYOw02763",
+    "KYOw02764",
+    "KYOw02766",
+    "KYOw02767",
+    "KYOw02768",
+    "KYOw02769",
+    "KYOw02770",
+    "KYOw02771",
+    "KYOw02772",
+    "KYOw02773",
+    "KYOw02774",
+    "KYOw02775",
+    "KYOw02776",
+    "KYOw02777",
+    "KYOw02780",
+    "KYOw02783",
+    "KYOw02784",
+    "KYOw02787",
+    "KYOw02788",
+    "KYOw02789",
+    "KYOw02790",
+    "KYOw16662",
+    "KYOw16666",
+    "KYOw16700",
+    "KYOw16702",
+    "KYOw16711",
+    "KYOw16714",
+    "KYOw16716",
+    "KYOw16719",
+    "KYOw16737",
+    "KYOw16744",
+    "KYOw16750"
+  ],
+  "conditions": [
+    {
+      "condition_id": "B0",
+      "representation": "snv",
+      "output_dim": 256,
+      "n_mask": null,
+      "loss_region": null,
+      "noise_prob": 0.0,
+      "shift_prob": 0.0,
+      "experiment": "main"
+    },
+    {
+      "condition_id": "B1",
+      "representation": "pca",
+      "output_dim": 16,
+      "n_mask": null,
+      "loss_region": null,
+      "noise_prob": 0.0,
+      "shift_prob": 0.0,
+      "experiment": "main"
+    },
+    {
+      "condition_id": "A0",
+      "representation": "chemomae",
+      "output_dim": 16,
+      "n_mask": 0,
+      "loss_region": "all",
+      "noise_prob": 0.0,
+      "shift_prob": 0.0,
+      "experiment": "main"
+    },
+    {
+      "condition_id": "M00",
+      "representation": "chemomae",
+      "output_dim": 16,
+      "n_mask": 8,
+      "loss_region": "masked",
+      "noise_prob": 0.0,
+      "shift_prob": 0.0,
+      "experiment": "main"
+    },
+    {
+      "condition_id": "M11",
+      "representation": "chemomae",
+      "output_dim": 16,
+      "n_mask": 8,
+      "loss_region": "masked",
+      "noise_prob": 0.5,
+      "shift_prob": 0.5,
+      "experiment": "main"
+    }
+  ],
+  "sampling": {
+    "q": 8192,
+    "replace": false,
+    "distribution": "uniform",
+    "algorithm": "NumPy PCG64 choice; HDF5 rows sorted after selection",
+    "shared_across": [
+      "condition",
+      "clustering_method",
+      "epoch"
+    ]
+  },
+  "seeds": {
+    "root_seed": 20260905,
+    "algorithm": "sha256-json-v1-first-32-bits",
+    "context": "global replaces fold; repeat=1; sampling has no repeat"
+  },
+  "clustering_plan": {
+    "K": 8,
+    "methods": [
+      "cosine_kmeans",
+      "vmf"
+    ]
+  },
+  "prediction_scope": "all saved valid pixels; descriptive, not OOF"
+}

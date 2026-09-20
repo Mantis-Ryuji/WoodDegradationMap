@@ -1,0 +1,62 @@
+{
+  "status": "smoke_and_resume_probe_completed",
+  "scope": "global_fit",
+  "condition": "M11",
+  "smoke_id": "20260919T133053_403179Z",
+  "checks_passed": true,
+  "batch_size": 1024,
+  "batches_per_smoke_epoch": 2,
+  "executed_batches_including_replay": 6,
+  "raw_weights_save_load_exact": true,
+  "resume_inputs_lr_scaler_and_steps_exact": true,
+  "resume_weight_absolute_error_max": 0.0,
+  "resume_latent_absolute_error_max": 0.0,
+  "reference_epoch_2": [
+    {
+      "epoch": 2,
+      "batch": 0,
+      "lr": 1.4999999999999999e-05,
+      "loss": 0.9968558549880981,
+      "optimizer_step": true,
+      "amp_scale": 65536.0,
+      "train_rows_sha256": "6f001acabb227c875bfc3b90466bea2309292f4650c295e5473957479b273ed1",
+      "augmented_sha256": "5ea559946929a4eb5af93d0ad10e9b29d046a37a904408c895627e99472f8692",
+      "visible_mask_sha256": "303a3a310d427e9623ccb7400f07a099691c0a9c302b7f70e0ea6a07f0eb33ed"
+    },
+    {
+      "epoch": 2,
+      "batch": 1,
+      "lr": 1.503826530612245e-05,
+      "loss": 0.9920745491981506,
+      "optimizer_step": true,
+      "amp_scale": 65536.0,
+      "train_rows_sha256": "2a1547253d0c2dad679d654b1b2d508ac6918ce14de42b3c85ce2435f3c8e6d6",
+      "augmented_sha256": "aafcf5b956ca8187cf8ce09f155181e81e201fb3abb98f7fae2fcf0784f56204",
+      "visible_mask_sha256": "8f87fdb6c2a1ec4ea097c2bf734ad068ab9f9ae663326a5cc531f74225098d0a"
+    }
+  ],
+  "resumed_epoch_2": [
+    {
+      "epoch": 2,
+      "batch": 0,
+      "lr": 1.4999999999999999e-05,
+      "loss": 0.9968558549880981,
+      "optimizer_step": true,
+      "amp_scale": 65536.0,
+      "train_rows_sha256": "6f001acabb227c875bfc3b90466bea2309292f4650c295e5473957479b273ed1",
+      "augmented_sha256": "5ea559946929a4eb5af93d0ad10e9b29d046a37a904408c895627e99472f8692",
+      "visible_mask_sha256": "303a3a310d427e9623ccb7400f07a099691c0a9c302b7f70e0ea6a07f0eb33ed"
+    },
+    {
+      "epoch": 2,
+      "batch": 1,
+      "lr": 1.503826530612245e-05,
+      "loss": 0.9920745491981506,
+      "optimizer_step": true,
+      "amp_scale": 65536.0,
+      "train_rows_sha256": "2a1547253d0c2dad679d654b1b2d508ac6918ce14de42b3c85ce2435f3c8e6d6",
+      "augmented_sha256": "aafcf5b956ca8187cf8ce09f155181e81e201fb3abb98f7fae2fcf0784f56204",
+      "visible_mask_sha256": "8f87fdb6c2a1ec4ea097c2bf734ad068ab9f9ae663326a5cc531f74225098d0a"
+    }
+  ]
+}
