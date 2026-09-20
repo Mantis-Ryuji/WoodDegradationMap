@@ -12,7 +12,7 @@
 | [実験プロトコル](experiment_protocol.md) | 主条件Fixed / vMF数値仕様Open | 条件、split、seed、共通画素、学習、クラスタリング、実行記録 |
 | [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA（補正後）、LFR、ARI、silhouette、occupancy、補正前LLA、未定義値、集約、比較・報告 |
 | [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1・A0・M00のPNG・CSV、fold内B0基準のmatching |
-| [全体可視化と解釈](visualization_and_interpretation.md) | 研究条件・全体fit seed契約・初回PCA方針Fixed / 帯域指標と任意責務マップ・FT-IR・正式目視評価の詳細Open | 全体fit、M00基準のmatching、代表例、スペクトル、PC1/PC2・連続map、FT-IR計画 |
+| [全体可視化と解釈](visualization_and_interpretation.md) | 全体fit・K8比較・PCA一枚Fixed / 詳細図・連続指標map・FT-IR等Open | M00基準のmatching、代表例、試料別／全体スペクトル、PC1/PC2、追加解析候補 |
 
 ## 条件の参照先
 
@@ -32,11 +32,13 @@
 | OOF sanity | 完了済みB0・B1・A0・M00のOOF map・指標 | 0回 | 既存成果物のみ |
 | 全体解釈 | B0、B1、A0、M00、M11を全49試料でfit・学習 | 3回 | $K_0=8$、各手法5 fits |
 
-2026-09-20の指定により、全体解釈はまずCosine-KMeansの5条件で、潜在空間・空間map・観測スペクトルの
-対応と化学的解釈を優先する。mask率sweepとvMF（数値検証・全体fit用5 fits・CV補助735 fitsを含む）は
-低優先度で計画に残し、先行する解析・図表・解釈の整理を一通り終えた後に回す。
+全体解釈の比較対象はCosine-KMeansの5条件・K8とする。現在は既存結果の執筆を先行し、
+M11の試料内クラスタを中心とする詳細解釈と、追加図の必要性を検討する。
+mask率sweepとvMF（数値検証・全体fit用5 fits・CV補助735 fitsを含む）は低優先度の計画として保持する。
 
-CVは105学習、全体解釈を含めると108学習。PCA、KMeans、vMF、表現抽出、評価摂動はこの学習数に含めない。
+NN学習の計画総数は主CV 75回＋mask率補助30回＝105回、全体fitの3回を含めて108回である。
+このうち主CV 75回と全体fit 3回は完了し、mask率補助30回は未実施。
+PCA、KMeans、vMF、表現抽出、評価摂動はこのNN学習数に含めない。
 全体fitの表示番号は、観測SNV代表線のcosine類似度の合計を最大にするHungarian matchingでM00のCosine-KMeansへ直接整列する。代表線は試料内クラスタ平均を試料間で等重み平均する。元番号・対応表・SNV類似度と補助IoU・contingencyを保存する。OOF sanityはfold内B0基準・一致画素数最大化を用いる。
 
 <a id="open-items"></a>
@@ -47,8 +49,9 @@ CVは105学習、全体解釈を含めると108学習。PCA、KMeans、vMF、表
 | --- | --- | --- |
 | vMF数値仕様・実装 | 精度、EM停止条件、集中度設定、数値・動作検証、専用pipeline。利用版・範囲・退化成分の扱いはFixed | [vMF](experiment_protocol.md#vmf-supplementary) |
 | 任意の形状診断 | 採用する場合の近傍・connectivity・閾値・分母 | [診断](evaluation_metrics.md#occupancy) |
-| PCAの追加色分け | 共通401,408画素・PC1/PC2のPNG一枚を先行する。追加metadata・帯域指標の選択はその後に行う | [表現空間の可視化](visualization_and_interpretation.md#latent-spectral-maps) |
-| 連続スペクトル指標map | 3×3平均またはGaussianの選択・数値設定、全体fit後の代表二次微分曲線に基づく帯域選択、積分・符号・共通color scale。クラスタ所属で近傍を制限しない | [帯域選択](visualization_and_interpretation.md#spectral-band-selection) |
+| 試料ごとの詳細図 | M11・K8で注目する試料・領域、示したい差、panel構成。試料別平均CSVは既存成果物を利用可能 | [スペクトルの要約](visualization_and_interpretation.md#representative-spectra) |
+| PCAの追加色分け | PC1/PC2のPNG一枚は生成済み。追加metadata・帯域指標による図の採否・内容は執筆時に判断 | [表現空間の可視化](visualization_and_interpretation.md#latent-spectral-maps) |
+| 連続スペクトル指標map | 採否、3×3平均またはGaussianの選択・数値設定、帯域選択、積分・符号・共通color scale。クラスタ所属で近傍を制限しない | [帯域選択](visualization_and_interpretation.md#spectral-band-selection) |
 | 任意の責務マップ | 採用する場合の表示範囲・配色・背景 | [責務マップ](visualization_and_interpretation.md#vmf-responsibility-maps) |
 | 位置対応FT-IR | 対象、位置対応、測定・反復条件、前処理・指標、解釈範囲 | [FT-IR](visualization_and_interpretation.md#ftir-interpretation) |
 | 正式な目視評価 | 評価者、rubric、条件名・提示順、意見不一致の扱い | [証拠の統合](visualization_and_interpretation.md#evidence-triangulation) |

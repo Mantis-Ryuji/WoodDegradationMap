@@ -3,6 +3,10 @@
 論文の章立て・原稿・執筆進捗は `C:\Users\PC_User\Python\Thesis` で管理する。
 本リポジトリから研究条件、根拠、実験成果物を参照する。
 
+2026-09-21時点では、主条件CV・OOF図表、全体fit・K8マップとスペクトル、PCA一枚まで生成済みである。
+まず既存の成果物で書き始め、追加可視化は主張と根拠の不足を確認してから選ぶ。
+詳細な観察はM11・K8の試料内クラスタを中心に検討する。完了記録の確認範囲は[ToDo](../ToDo.md)を参照する。
+
 ## 1. 参照資料
 
 | 内容 | 定義・参照先 |
@@ -25,6 +29,7 @@
 - 実測・要約・人工摂動・模式図を区別し、単位・凡例・matching基準を明記する。主要な反例や傾向の逆転も報告する。
 - [固定7代表試料](design/visualization_and_interpretation.md#representative-samples)と全49試料の補足表示を区別する。
 - [代表スペクトル](design/visualization_and_interpretation.md#representative-spectra)は試料内平均→試料間の等重み平均とする。変換順序、除外範囲、四分位範囲、寄与数をcaptionと対応づける。
+- 個別試料の領域差は試料内クラスタ平均で確認する。全試料macro平均のIQRを、その試料内のばらつきとして使わない。
 - OOF sanityのfold内B0基準・画素一致数による整列と、全体fitのM00基準・試料等重みSNV代表線のcosine類似度による整列を区別する。
 - `outputs/`の元成果物を保持し、原稿での体裁調整と解析結果を区別する。Fixedの仕様を実装・解析済みとは扱わない。
 
@@ -42,11 +47,27 @@
 | 主7条件の試料別分布 | [02_k8_distributions.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/02_k8_distributions.png)。$K_0=8$、試料別平均・macro平均・共通対象数 |
 | 主要3比較のpaired差 | [03_paired_k_sweep.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/03_paired_k_sweep.png)。M11−B0・M11−B1・M11−M00。ARI差は試料内3反復対平均同士の差 |
 | 主条件の表・出典 | `outputs/experiments/production_v1/results/figures/main_oof_v1/`のCSV 11個と[report.json](../outputs/experiments/production_v1/results/figures/main_oof_v1/report.json)。Occupancyと交互作用は表のみ。内容一覧・再生成は[runbook](experiment_runbook.md#oof-reporting) |
+| 全体fit・K8の5条件比較 | [01_representative_samples_5x7.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/01_representative_samples_5x7.png)。固定代表7試料を列、B0・B1・A0・M00・M11を行に配置。CVの予測ではなく全体fitによる記述 |
+| M11・K8の代表試料マップ | [07_representative_samples_1x7.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/labels/07_representative_samples_1x7.png)。同じ`labels/`の00〜06・08に全49試料を保存 |
+| M11の全体代表スペクトル | [01_representative_spectra.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/01_representative_spectra.png)。上段SNV・反射率、下段疑似吸光度のSG二次微分。試料等重み平均・試料間IQR |
+| M11の試料別スペクトル・寄与数 | [sample_spectra.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/sample_spectra.csv)、[spectrum_counts.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/spectrum_counts.csv)、[wavelengths.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/wavelengths.csv)。試料ID・表示Cluster ID・kindで選び、`band_000`〜`band_255`をnmへ対応づける。試料別詳細PNGは未実装 |
+| K8のmatching・出典 | [report.json](../outputs/experiments/global_v1/results/figures/global_k8_v1/report.json)、[M11/matching.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/matching.csv)。元番号とM00基準の表示番号を区別。親図表はPNG 56枚・CSV 37個 |
+| 5条件のPCA補助図 | [01_pca_density_clusters.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/pca-latent-2d/01_pca_density_clusters.png)。2行5列・共通401,408画素。B1は既存PC、他条件は別々のPCA。軸の対応・化学情報量・優劣を図の見栄えから推定しない。掲載は未定 |
 
 摂動例の選定・再生成は[runbook](experiment_runbook.md#input-preparation)を参照する。
 TGNの固定例は2.5・5・7.5度で採用上限5度を超える例を含み、shiftの符号は順に＋・−・＋である。
 固定値の説明図と学習時の一様分布を区別する。
 Cutoffのproxyはreferenceの検出器列間のばらつきに基づき、試料画素のSNRや時間方向の測定noiseを直接示さない。
+
+### 執筆を進める順序
+
+1. CVの主指標・分布・paired差から、どの条件・指標で改善やtrade-offがあるかを書く。LLAは補正後、LFRは低いほど割当が安定する指標として扱う。
+2. 全体fit・K8のマップと観測スペクトルで、分割された領域を記述する。M11に注目する理由と、結果を見た後の探索であることを明示する。
+3. 個別試料で解釈したい差を絞り、既存CSVで足りる確認と、新しい図が必要な確認を分ける。追加図の依頼には対象試料・領域・支える主張を添える。
+
+空間的一貫性の改善と物理化学的な意味の同定は別の主張である。外観との対応、観測スペクトル差、
+化学的帰属を区別して記載し、ARI等でbaselineを下回る比較や解釈できない例も残す。
+帯域積分map・PCAの追加色分け・mask率sweep・vMFは、現在の原稿を書き始めるための必須成果物ではない。
 
 ### 解析フロー図
 

@@ -2,8 +2,8 @@
 
 現状と残作業を管理する。研究条件は[研究設計](docs/design/README.md)、
 操作と成果物の確認方法は[runbook](docs/experiment_runbook.md)を参照する。
-状態は2026-09-20までに確認した保存記録とユーザーの完了報告に基づく。
-全体fitの完了、後続クラスタリング・図表生成の実装とCPU検証、潜在空間・化学的解釈を優先する方針を反映した。
+状態は2026-09-21時点の保存記録とユーザーの完了報告に基づく。
+今回の整理では完了JSONと実装を読み合わせた。学習・描画・テスト・成果物の全hash検証は再実行していない。
 
 ## 現在の状態
 
@@ -20,21 +20,20 @@
 | OOF sanity | B0・B1・A0・M00のPNG 5枚・CSV 3つを`outputs/sanity_checks/a0_m00_oof_visualization/`に保存済み |
 | 全体fit準備 | 共通manifest・B0/PCAの準備・check完了。PCAは49試料・401,408画素でfitし、保存復元probeの最大絶対誤差0。3条件のGPU smoke・再開probeはすべて合格 |
 | 全体NN学習 | A0・M00・M11の各800 epochが完了。各313,600 attempted updates。`completion.json`・attempt記録を確認し、`training-check`完了はユーザー報告による |
-| 全体クラスタリング・代表図表 | 5条件の保存済みfit・全49試料の予測をcheck。SNV代表線のcosine類似度＋Hungarianで条件別図と代表7試料×5条件の比較図を更新。PNG 51枚・CSV 37個を再生成・check済み |
-| 初回PCA | 共通401,408画素・2行5列PNG。文字拡大・上段条件名・B1の既存PC直接利用を実装。出力は`global_k8_v1/pca-latent-2d/`。改修版のテスト・本番実行は未実施 |
-| 未実装 | PCAのmetadata・帯域指標による色分け、連続指標map、vMF・mask率補助実験の図表生成対応、vMF補助実験pipeline |
+| 全体クラスタリング・代表図表 | 5条件・K8・全49試料。M00基準のSNV cosine＋Hungarianで表示番号を整列。完了記録はPNG 56枚・CSV 37個、`checks_passed=true` |
+| PCA | 共通401,408画素の入力・5条件の座標・2行5列PNG 1枚とCSV 5個の完了記録を確認。B1は既存PC1/PC2を直接使用。保存先は`global_k8_v1/pca-latent-2d/` |
+| 現在の作業 | Thesisで既存結果を書き始め、主張と根拠を対応づけて必要な追加可視化を絞る。観察粒度はK8 |
+| 保留・未実装 | 試料ごとの詳細図、PCAの追加色分け、連続指標map。採否・具体的な構成は執筆後に検討。mask率・vMFは低優先度 |
 
-**次の作業は[初回PCAの実行](docs/experiment_runbook.md#global-pca)と、その一枚の確認。**
-帯域選択を要する連続指標mapはその後に扱う。
-[学習完了後の手順](docs/experiment_runbook.md#global-post-fit)の手順1〜3は出力・check済み。保存先は`outputs/experiments/global_v1/`。
-図表を更新する場合は`visualize_global.py run`だけを使う。生成成功後に旧可視化directoryを置き換える。
-主条件図表は[再生成手順](docs/experiment_runbook.md#oof-reporting)から更新できる。
+**次は[執筆への引き継ぎ](docs/manuscript_handoff.md)を入口に、Thesisで本文・図表の対応を整理する。**
+追加解析を先に増やさず、CVで比較できる性質と、M11・K8の試料内で解釈したい領域差を分けて書く。
+既存の試料別スペクトルCSVは利用可能。詳細PNGの対象試料・構成・帯域は未確定である。
+再生成が必要な場合だけ、[OOF図表](docs/experiment_runbook.md#oof-reporting)、
+[K8マップ・スペクトル](docs/experiment_runbook.md#global-post-fit)、[PCA](docs/experiment_runbook.md#global-pca)の各手順を使う。
 
-2026-09-20のユーザー指定により、作業順は**主条件のOOF図表 → 全体fit → Cosine-KMeansの5条件による潜在空間・空間map・観測スペクトルの解析 → 図表・化学的解釈の整理 → 低優先度の補助実験**とする。
-mask率sweepとvMFは計画に残し、先行する解析・図表・解釈を一通り終えるまで着手しない。
-vMFの数値検証・共通処理実装・全体fit用5 fitsも第5節へ移し、先行する可視化・解釈の前提にしない。
-学習条件・比較範囲は維持する。第4〜5節へ着手する時点で必要性と工数を再確認する。
-主条件の代表指標・表示構成については第2節に今回のユーザー指定を反映する。
+mask率sweepとvMFは計画に残し、既存結果の執筆・解釈を優先する。第4〜5節へ着手する時点で必要性と工数を再確認する。
+vMFの数値検証・共通処理実装・全体fit用5 fitsも、先行する可視化・解釈の前提にしない。
+主条件の学習・評価条件と比較範囲は維持する。
 
 ## 1. 主条件のOOF集計
 
@@ -63,37 +62,29 @@ PNGは`01_main_metrics_k_sweep.png`、`02_k8_distributions.png`、`03_paired_k_s
 
 ## 3. 全体fitと解釈
 
-[全体可視化設計](docs/design/visualization_and_interpretation.md)に従い、B0・B1・A0・M00・M11の5条件を、まずCosine-KMeansで比較する。
-M00＋Cosine-KMeans基準のmatching、代表スペクトルの平均集計、SG二次微分はFixedであり、以下は実装・実施の残作業である。
-CV用CLIをそのまま全体fitへ使わない。
-本節では潜在空間・空間map・観測スペクトルの対応と化学的解釈を優先する。vMFとの手法間比較は第5節で後から追加する。
+[全体可視化設計](docs/design/visualization_and_interpretation.md)に従う。
+比較の全体像はB0・B1・A0・M00・M11の5条件で保持し、詳細な観察はM11・K8を中心に検討する。
+M11の選択は既存結果を見た後の探索方針であり、全指標での優位性や化学的妥当性の確定とは区別する。
 
-- [x] ROOT_SEED=20260905・SHA-256方式でfoldを`global`へ置換し、反復ID 1を使用するseed対応と、独立root `global_v1`をユーザー確認する（2026-09-19）。
-- [x] 全49試料×8,192画素（401,408画素）の共通manifest・実行記録・保存先・CLIを実装する。
-- [x] B0/PCAの準備・保存復元と、A0・M00・M11の各1回を順次実行する学習・明示的再開・完了checkを実装し、合成データのCPU検証を行う。
-- [x] 本番manifestを作成・checkする（49試料・401,408画素、ユーザー実行ログ確認）。
-- [x] B0/PCAの準備・全体fit・checkを完了する。修正後のPCA保存復元誤差0、49試料・401,408画素の完了記録を確認した。
-- [x] 実寸model・batch size 1024のGPU smokeで、全3条件の保存復元・全可視抽出・epoch境界再開を確認する。保存された`smoke.json`はすべて`checks_passed=true`、再開重み・潜在誤差0。
-- [x] A0・M00・M11を各800 epochで1回、計3回学習し、`training-check`で確認する。学習完了は保存記録、`training-check`完了は2026-09-20のユーザー報告に基づく。
-- [x] 全体fit用の表現抽出・Cosine-KMeans fit・全有効画素予測・保存復元checkを`global_cluster.py`へ実装し、合成データでCPU検証する。global manifest・保存済みPCA・最終NN重みを使用する。
-- [x] fit処理とは別の`visualize_global.py`へ、M00基準SNV cosine＋Hungarian、条件別マップ・行列・occupancyのPNG/CSV出力と出典checkを実装する。試料等重みSNVによる割当、空・ノルム0の代表線の検出、改変検出、旧図表の安全な置換をCPU検証する。
-- [x] 同じ表現・抽出座標・$K_0=8$でCosine-KMeansを5 fits行う。可視化再生成時に5条件の保存済み中心・出典・全マップのcheckが合格した。
-- [x] 全49試料のhard label map、SNV類似度行列・matching対応表、確認用IoU・contingency・overlap、occupancy・使用クラスタ数を本番出力し、checkする。潜在空間図は下記のPCA工程で扱う。
-- [x] [代表スペクトルの仕様](docs/design/visualization_and_interpretation.md#representative-spectra)に従い、反射率・SNV・疑似吸光度の平均集計、SG二次微分、四分位範囲、差スペクトルを実装し、合成データで検証する。寄与試料・画素数と追加除外数も保存する。
-- [x] 条件別にSNV・反射率・二次微分の3パネルPNGと元数値CSVを生成・checkする。差スペクトルはCSVに残す。寄与数・除外数の科学的な吟味は次の帯域選択時に行う。
-- [x] [PCA・連続スペクトル指標mapの案](docs/design/visualization_and_interpretation.md#latent-spectral-maps)を文書化する（2026-09-20）。PNG・CSV、PCA、クラスタ所属を使わない空間平滑化の方針を記録する。全体fitは完了し、クラスタリング・代表スペクトル作成・残る数値設定の確定が次の前提となる。
-- [ ] 全体fit後のクラスタ平均二次微分曲線・試料間変動を確認し、候補帯域・選択理由を記録する。平滑化方式・数値設定、積分端点・符号・計算法、共通color scaleを確定する。
-- [x] 共通401,408画素の正規化済み表現に対する可視化用PCAへ切り替える。中心化・PC1/PC2、追加の標準化・whiteningなし。
-- [x] ホストでの表現準備、CPU PCA（B1は既存PCを利用）、別スクリプトでの静的描画を実装する。密度／Cluster IDの2行5列PNG一枚を`global_k8_v1/pca-latent-2d/`へ保存する。
-- [ ] PCAのCPU回帰テスト、本番5条件のfit、PNG一枚の描画とcheckを実行する。
-- [ ] 保存したPCA座標でmetadata・同一帯域指標を色分けする。今回の一枚を確認後、必要な図と指標を選ぶ。
-- [ ] クラスタに依存しない連続スペクトル指標mapと、PCA・空間位置・観測スペクトルの対応を示す詳細PNGを生成し、ChemoMAEとbaselineで探索できる領域差を比較する。
-- [x] 各条件の49試料をID昇順で、1×7の7枚と7×7の1枚に描画する。`sample_overviews`に合わせた余白・太字の試料ID・`Cluster ID`色バーを確認する。
-- [x] 各条件の`labels/`へ固定代表7試料の1×7図を追加する。全試料分割図00〜06、代表図07、全49試料7×7図08の順にする実装・check期待値を更新する。
-- [x] 代表1×7図追加後の本番再生成を行う。完了はユーザー報告による（PNG 56枚・CSV 37個をcheckする実装）。変更後の回帰テストは未実行。
-- [x] 図表rootへ代表7試料の7列×5行の比較図を追加する。上からB0・B1・A0・M00・M11、試料IDは最下段のみ。
-- [ ] マップと観測スペクトルから領域差を探索的に解釈し、CV指標の改善と化学的対応を区別する。
-- [ ] 第2節の主条件図表と本節の全体fit・可視化・探索的解釈を一通り完了し、図表・知見・解釈の限界を整理する。低優先度の補助実験はその後に扱う。第6節のFT-IR・正式な目視評価は未確定事項として別途扱う。
+### 完了した成果物
+
+- [x] ROOT_SEED=20260905、fold位置を`global`、反復ID 1とする共通manifest・seed・保存規約を実装し、本番manifestを作成・checkする。49試料×8,192＝401,408画素、保存rootは`global_v1`。
+- [x] B0/PCA準備・保存復元確認と3条件のGPU smokeを完了し、A0・M00・M11を各800 epoch学習する。学習完了は保存記録、`training-check`完了はユーザー報告による。
+- [x] `global_cluster.py`で5条件のCosine-KMeansをK8でfitし、全49試料・3,902,250有効画素のラベルと中心・出典・完了記録を保存する。
+- [x] `visualize_global.py`でM00基準のSNV cosine＋Hungarian、条件別マップ、SNV類似度・対応表、occupancy、代表・試料別・差スペクトルを出力する。元のクラスタ所属は変えない。
+- [x] 各条件の`labels/`に00〜06の1×7、07の固定代表7試料、08の全49試料7×7を保存する。rootの代表7試料×5条件図を含め、完了記録はPNG 56枚・CSV 37個。
+- [x] 共通401,408画素のPCA入力・5条件の座標・PNG一枚・CSVを保存する。B1は既存PCを利用し、他4条件は中心化したPC1/PC2を使う。`pca-latent-2d/`の完了記録を確認した。
+
+集計・matching・表示の定義は設計書、テスト履歴・再生成・checkコマンドはrunbookに集約する。
+保存記録の確認と、現在のコードでテスト・全成果物checkを再実行したことは区別する。
+
+### 執筆と追加解析の判断
+
+- [ ] 既存のCV図表を本文に配置し、LLA・LFRの傾向とARI・silhouette・occupancyのtrade-offを整理する。
+- [ ] M11・K8で注目する試料と領域を絞り、既存`sample_spectra.csv`・寄与画素数を用いて、試料内クラスタの観測スペクトルを確認する。全試料macro平均だけで個別領域を解釈しない。
+- [ ] 本文の根拠に不足する図を選び、対象試料・panel・比較対象を決めてから詳細PNGを追加する。現在のPCA一枚の採否もここで判断する。
+- [ ] PCAのmetadata・帯域指標による色分け、連続スペクトル指標mapは、必要性を確認した場合だけ具体化する。採用する場合は[帯域・平滑化・積分のOpen事項](docs/design/visualization_and_interpretation.md#spectral-band-selection)を確定する。
+- [ ] 空間的一貫性と物理化学的解釈を分け、外観・スペクトルの対応、例外、未確認の帰属を記述する。第6節のFT-IR・正式な目視評価は別の未確定事項として扱う。
 
 ## 4. Mask率補助実験
 
