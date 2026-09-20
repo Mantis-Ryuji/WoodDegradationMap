@@ -18,7 +18,7 @@ from chemomae.models.chemo_mae import ChemoMAE
 from wood_degradation_map.experiments import global_clustering as gc
 from wood_degradation_map.experiments import global_reporting as gr
 from wood_degradation_map.experiments.baselines import B0Baseline
-from wood_degradation_map.experiments.global_baselines import global_baselines
+from wood_degradation_map.experiments.global_baselines import GlobalPCA, global_baselines
 from wood_degradation_map.experiments.global_manifest import GlobalData, create_global_manifest
 from wood_degradation_map.experiments.input_validation import InputInventory, SampleInput
 from wood_degradation_map.experiments.manifests import _digest, _write_json
@@ -115,6 +115,67 @@ def test_extraction_uses_only_manifest_fit_rows_and_retains_tail(
     assert len(actual) == 64
     with pytest.raises(ValueError, match="non-finite SNV"):
         list(gc.AllPixelData(inventory.samples).all_batches(chunk_pixels=13))
+
+
+def test_pca_export_preserves_shared_pixel_and_snv_label_identity(
+    inputs: tuple[Path, GlobalData, InputInventory], monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wood_degradation_map.experiments import global_pca_inputs as ui
+
+    experiment, _, inventory = inputs
+    report = experiment / ui.DEFAULT_DIRECTORY
+    report.mkdir(parents=True)
+    _write_json(report / "completion.json", {"fixture": "SNV report"})
+    monkeypatch.setattr(ui, "load_input_inventory", lambda *args: inventory)
+    # Reconstruct the same deterministic manifest used by the fixture.
+    data_manifest = create_global_manifest(inventory, q=32)
+    monkeypatch.setattr(ui, "load_global_bundle", lambda *args: data_manifest)
+    monkeypatch.setattr(ui, "check_global_report", lambda *args: None)
+    expected = {}
+    baseline = GlobalPCA.load(experiment / "checkpoints/baselines/pca.npz")
+    selected = np.argsort(-baseline.estimator.singular_values_, kind="stable")[:2]
+    expected["B1"] = baseline.estimator.transform(
+        GlobalData(inventory, data_manifest).train_matrix())[:, selected]
+
+    def extract(
+        current_data: GlobalData, representation: object, condition: str, *, chunk_pixels: int,
+    ) -> np.ndarray:
+        assert condition != "B1"  # B1 must bypass the normalized representation wrapper.
+        values = B0Baseline().transform(current_data.train_matrix()).values
+        if condition != "B0":
+            values = values[:, :16].copy()
+            values /= np.linalg.norm(values, axis=1, keepdims=True)
+        expected[condition] = values.copy()
+        return values
+
+    def label_map(path: Path, sample: SampleInput) -> np.ndarray:
+        return (np.arange(sample.height * sample.width).reshape(sample.height, sample.width)
+                % 8 + 1).astype(np.uint8)
+
+    monkeypatch.setattr(ui, "load_global_representation",
+                        lambda exp, data, condition, **kwargs:
+                        (baseline if condition == "B1" else None, {}))
+    monkeypatch.setattr(ui, "collect_global_features", extract)
+    monkeypatch.setattr(ui, "read_label_map", label_map)
+    for condition in ui.CONDITIONS:
+        (report / condition).mkdir()
+        pd.DataFrame({"original_cluster": np.arange(1, 9),
+                      "display_cluster": np.arange(8, 0, -1),
+                      "snv_cosine_similarity": np.ones(8)}).to_csv(
+                          report / condition / "matching.csv", index=False)
+    ui.prepare_inputs(experiment, Path("unused"), Path("unused"), device=torch.device("cpu"))
+    output = experiment / ui.INPUT_DIRECTORY
+    record, pixels = ui.check_inputs(output)
+    assert record["plot_seed"] == ui.ROOT_SEED
+    expected_pixels = data_manifest.fit_pixels[["sample_id", "hdf5_row", "pixel_row", "pixel_col"]]
+    pd.testing.assert_frame_equal(pixels[expected_pixels.columns], expected_pixels,
+                                  check_dtype=False)
+    raw = (pixels.pixel_row * 16 + pixels.pixel_col) % 8 + 1
+    for condition in ui.CONDITIONS:
+        np.testing.assert_allclose(np.load(output / f"{condition}.npy"), expected[condition],
+                                   rtol=1e-5, atol=2e-6)
+        np.testing.assert_array_equal(pixels[f"{condition}_original_cluster"], raw)
+        np.testing.assert_array_equal(pixels[f"{condition}_cluster"], 9 - raw)
 
 
 def test_failed_global_fit_does_not_publish_partial_condition(
@@ -311,6 +372,13 @@ def test_report_png_csv_alignment_and_tamper_detection(
                                                     for s in inventory.samples))
     output = experiment / gr.DEFAULT_DIRECTORY
     output.mkdir(parents=True)
+    latent = output / "pca-latent-2d"
+    latent.mkdir()
+    (latent / "projection.png").write_bytes(b"independently managed PCA figure")
+    (latent / "completion.json").write_text('{"scope":"latent"}', encoding="utf-8")
+    obsolete_latent = output / "latent"
+    obsolete_latent.mkdir()
+    (obsolete_latent / "projection.png").write_bytes(b"obsolete output location")
     old = output / "obsolete.png"
     old.write_text("old report", encoding="utf-8")
     with monkeypatch.context() as failure:
@@ -321,8 +389,11 @@ def test_report_png_csv_alignment_and_tamper_detection(
             gr.render_global_report(experiment, data, inventory, dpi=45)
     assert old.read_text(encoding="utf-8") == "old report"
     report = gr.render_global_report(experiment, data, inventory, dpi=45, chunk_pixels=19)
-    assert report["png_count"] == 21 and report["csv_count"] == 37
+    assert report["png_count"] == 26 and report["csv_count"] == 37
     assert gr.check_global_report(experiment, data, inventory)["checks_passed"]
+    assert (latent / "projection.png").read_bytes() == b"independently managed PCA figure"
+    assert json.loads((latent / "completion.json").read_text()) == {"scope": "latent"}
+    assert not obsolete_latent.exists()
     assert not old.exists()
     assert [p.name for p in output.glob("*.png")] == [gr.REPRESENTATIVE_FIGURE]
     sample = inventory.samples[0]
@@ -352,7 +423,8 @@ def test_report_png_csv_alignment_and_tamper_detection(
     assert np.allclose(occupancy.groupby(["sample_id", "condition"]).fraction.sum(), 1)
     for condition in gr.CONDITIONS:
         assert sorted(p.name for p in (output / condition / "labels").glob("*.png")) == [
-            "01_samples_01-02_1x7.png", "08_all_samples_7x7.png"]
+            "00_samples_01-02_1x7.png", "07_representative_samples_1x7.png",
+            "08_all_samples_7x7.png"]
         assert (output / condition / "01_representative_spectra.png").is_file()
         assert (output / condition / "02_snv_cosine_matrix.png").is_file()
         assert not (output / condition / "02_iou_matrix.png").exists()
@@ -366,6 +438,32 @@ def test_report_png_csv_alignment_and_tamper_detection(
     (output / "B0/matching.csv").write_text("tampered", encoding="utf-8")
     with pytest.raises(ValueError, match="artifact changed"):
         gr.check_global_report(experiment, data, inventory)
+
+
+def test_publish_report_restores_latent_when_directory_swap_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment = tmp_path / "global"
+    output = experiment / gr.DEFAULT_DIRECTORY
+    (output / "pca-latent-2d").mkdir(parents=True)
+    (output / "old.csv").write_text("old report", encoding="utf-8")
+    (output / "pca-latent-2d/projection.png").write_bytes(b"preserved PCA")
+    stage = experiment / ".staging/report"
+    stage.mkdir(parents=True)
+    (stage / "new.csv").write_text("new report", encoding="utf-8")
+    rename = Path.rename
+
+    def fail_publication(source: Path, target: Path) -> Path:
+        if source == stage and target == output:
+            raise PermissionError("synthetic directory lock")
+        return rename(source, target)
+
+    monkeypatch.setattr(Path, "rename", fail_publication)
+    with pytest.raises(PermissionError, match="synthetic directory lock"):
+        gr._publish_report(stage, output, experiment)
+    assert (output / "old.csv").read_text() == "old report"
+    assert (output / "pca-latent-2d/projection.png").read_bytes() == b"preserved PCA"
+    assert not (stage / "pca-latent-2d").exists()
 
 
 def _cli(name: str) -> ModuleType:

@@ -38,6 +38,7 @@ PLOTTED_KINDS = (0, 1, 3)
 Y_LABELS = ("Reflectance", "SNV", "Pseudoabsorbance", r"$d^2A/d\lambda^2$ (nm$^{-2}$)")
 DEFAULT_DIRECTORY = "results/figures/global_k8_v1"
 REPRESENTATIVE_FIGURE = "01_representative_samples_5x7.png"
+REPRESENTATIVE_LABEL_FIGURE = "07_representative_samples_1x7.png"
 
 
 @dataclass(frozen=True)
@@ -414,6 +415,8 @@ def _plot_maps(
     samples = sorted(inventory.samples, key=lambda s: s.sample_id)
     _require(0 < len(samples) <= 49, "Expected at most 49 global samples")
     sample_ids = [sample.sample_id for sample in samples]
+    representative_ids = [sample for _, sample in REPRESENTATIVES]
+    _require(set(representative_ids) <= set(sample_ids), "Missing fixed representative samples")
     width = max(1, round(720 * dpi / 240))
     image_height = max(round(width * s.height / s.width) for s in samples)
     for ci, condition in enumerate(CONDITIONS):
@@ -422,11 +425,13 @@ def _plot_maps(
         labels = {s.sample_id: mapping[ci, read_label_map(condition_paths(experiment, condition)[0]
                   / "maps" / f"{s.sample_id}.npz", s)] for s in samples}
         np.savez_compressed(output / condition / "label_maps.npz", **labels)
-        for group, start in enumerate(range(0, len(samples), 7), start=1):
+        for group, start in enumerate(range(0, len(samples), 7)):
             stop = min(start + 7, len(samples))
             _map_overview(labels, sample_ids[start:stop],
                           directory / f"{group:02d}_samples_{start + 1:02d}-{stop:02d}_1x7.png",
                           rows=1, image_height=image_height, dpi=dpi)
+        _map_overview(labels, representative_ids, directory / REPRESENTATIVE_LABEL_FIGURE,
+                      rows=1, image_height=image_height, dpi=dpi)
         _map_overview(labels, sample_ids, directory / "08_all_samples_7x7.png",
                       rows=7, image_height=image_height, dpi=dpi)
         print(f"{condition}: saved label overviews", flush=True)
@@ -534,10 +539,15 @@ def render_global_report(
                      "only. Shared M00-aligned display IDs and cluster colors.")]
         for condition in CONDITIONS:
             captions.extend([
-                (f"{condition}/labels/*_1x7.png", "Samples in ascending ID order, seven per "
+                (f"{condition}/labels/*_samples_??-??_1x7.png",
+                 "Samples in ascending ID order, seven per "
                  "file; the seven rows together contain all 49 samples. Background is 0. "
                  "Display IDs aligned once to M00 by maximum summed cosine similarity "
                  "of equal-sample observed SNV representative spectra."),
+                (f"{condition}/labels/{REPRESENTATIVE_LABEL_FIGURE}",
+                 "Fixed representative samples, left to right: "
+                 + ", ".join(sample for _, sample in REPRESENTATIVES)
+                 + ". Same columns, display IDs and colors as the five-condition comparison."),
                 (f"{condition}/labels/08_all_samples_7x7.png", "All 49 samples in ascending "
                  "ID order, row-major 7 by 7 grid. The same display IDs and colors apply."),
                 (f"{condition}/01_representative_spectra.png", "Top left: SNV; top right: "
@@ -596,6 +606,8 @@ def _publish_report(stage: Path, output: Path, experiment: Path) -> None:
     _require(output.absolute() == expected and output.resolve() == expected,
              "Report replacement target escapes the expected directory")
     previous = stage.parent / "previous-report"
+    saved_latent = previous / "pca-latent-2d"
+    staged_latent = stage / "pca-latent-2d"
     if output.exists():
         for path in (output, *output.rglob("*")):
             attributes = getattr(path.lstat(), "st_file_attributes", 0)
@@ -606,8 +618,13 @@ def _publish_report(stage: Path, output: Path, experiment: Path) -> None:
         # The enclosing TemporaryDirectory removes the old, validated tree only after success.
         output.rename(previous)
     try:
+        # Latent projections have their own completion record and independent lifecycle.
+        if saved_latent.exists():
+            saved_latent.rename(staged_latent)
         stage.rename(output)
     except OSError:
+        if staged_latent.exists():
+            staged_latent.rename(saved_latent)
         if previous.exists():
             previous.rename(output)
         raise
@@ -623,13 +640,14 @@ def check_global_report(
              and completion.get("checks_passed") is True, "Global report contract differs")
     hashes = completion["artifact_sha256"]
     actual = {str(p.relative_to(output)).replace("\\", "/") for p in output.rglob("*")
-              if p.is_file() and p.name != "completion.json"}
+              if p.is_file() and p.name != "completion.json"
+              and p.relative_to(output).parts[0] != "pca-latent-2d"}
     _require(set(hashes) == actual, "Global report artifact coverage differs")
     expected_samples = sorted(sample.sample_id for sample in inventory.samples)
     _require(report["sample_ids"] == expected_samples
              and completion["samples"] == len(expected_samples)
              and completion["png_count"] == sum(name.endswith(".png") for name in hashes)
-             == len(CONDITIONS) * (math.ceil(len(expected_samples) / 7) + 3) + 1
+             == len(CONDITIONS) * (math.ceil(len(expected_samples) / 7) + 4) + 1
              and completion["csv_count"] == sum(name.endswith(".csv") for name in hashes) == 37,
              "Global report artifact counts differ")
     _require(report["representative_sample_ids"] == [sample for _, sample in REPRESENTATIVES]
@@ -639,8 +657,9 @@ def check_global_report(
     for condition in CONDITIONS:
         expected_png.update((f"{condition}/01_representative_spectra.png",
                              f"{condition}/02_snv_cosine_matrix.png",
+                             f"{condition}/labels/{REPRESENTATIVE_LABEL_FIGURE}",
                              f"{condition}/labels/08_all_samples_7x7.png"))
-        for group, start in enumerate(range(0, len(expected_samples), 7), start=1):
+        for group, start in enumerate(range(0, len(expected_samples), 7)):
             stop = min(start + 7, len(expected_samples))
             expected_png.add(f"{condition}/labels/{group:02d}_samples_{start + 1:02d}-{stop:02d}_1x7.png")
     _require({name for name in hashes if name.endswith(".png")} == expected_png,

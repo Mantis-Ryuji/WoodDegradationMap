@@ -1,0 +1,82 @@
+{
+  "sources": {
+    "B0": "6a3cd2a22a3f416774cf70f660b11800950c70617d724ced39e67e7c2c83c455",
+    "B1": "cdf1724e6acbc5f4b1f580276f9c94f32bcec016ea63d176a4c96fca406e629f",
+    "A0": "6ff82055ee1323cdc8fed1e780abea9c23f7faa541b4cbef8c69b11a4600bf92",
+    "M00": "7cff376a2dc639b3c7bcc198bb4582d6a7aa8ff5518d00939f8443855bfa0f81",
+    "M11": "03120bd2128c78a9d6f6e7ada1523db53470307d9ee21845e69c7613d95b4cf6"
+  },
+  "pixels": 401408,
+  "input_completion_sha256": "3b7ef419081cdbc3f704078ca710e90a4727da9900be66d9419d1ef4e3764748",
+  "code_sha256": "9413061c4abbaca9b466a5898ab5fe6b4dbd438e074d1d4e332c246091eeaded",
+  "style": {
+    "density": {
+      "cmap": "turbo",
+      "normalization": "log",
+      "vmin": 1,
+      "vmax": 23775.0,
+      "gridsize": 70,
+      "extent": {
+        "B0": [
+          -1.1612059451708117,
+          0.5062300814741487,
+          -0.8585623097475177,
+          0.8088737168974427
+        ],
+        "B1": [
+          -18.542346296310427,
+          8.08399230003357,
+          -13.708798942565918,
+          12.917539653778077
+        ],
+        "A0": [
+          -0.836801341753908,
+          0.9565017209367619,
+          -0.5455481789090311,
+          1.2477548837816388
+        ],
+        "M00": [
+          -0.6573326882864893,
+          1.1403143567593812,
+          -0.8049254467815442,
+          0.9927215982643262
+        ],
+        "M11": [
+          -0.6496345580424925,
+          1.1798819803033949,
+          -0.7986663196589402,
+          1.0308502186869473
+        ]
+      }
+    },
+    "centroid": "arithmetic mean of displayed member coordinates; not transformed centers",
+    "columns": [
+      "B0",
+      "B1",
+      "A0",
+      "M00",
+      "M11"
+    ],
+    "rows": [
+      "pixel count",
+      "display Cluster ID"
+    ],
+    "axis_ticks": true,
+    "condition_titles": true,
+    "font_sizes": {
+      "condition": 22,
+      "axis": 18,
+      "tick": 15,
+      "centroid": 14
+    },
+    "extent_scope": "per condition; identical between rows",
+    "point_order_seed": 20260905,
+    "dpi": 240
+  },
+  "runtime": {
+    "matplotlib": "3.11.0",
+    "numpy": "2.4.4",
+    "pandas": "3.0.3"
+  },
+  "interpretation": "Hexbin counts describe PCA sampling density, not chemical concentration or original-space density. Embeddings have independent axes."
+}

@@ -43,7 +43,7 @@ Occupancyと2×2交互作用はCSV表で読む。LFR noise・shiftと補正前LL
 
 [全体fit後の可視化案](design/visualization_and_interpretation.md#latent-spectral-maps)では、
 クラスタに依存しない空間平滑化と疑似吸光度の二次微分から、選択帯域の連続指標mapを作る。
-このmapの作成にはChemoMAEは不要であり、同じ指標で5条件のUMAPを色分けして、
+このmapの作成にはChemoMAEは不要であり、同じ指標で5条件のPCAを色分けして、
 単一帯域の勾配と各表現・partitionの関係を読む。
 
 例えば同程度の帯域指標を持つ画素が別クラスタへ分かれる場合は、別の観測帯域や試料情報にも

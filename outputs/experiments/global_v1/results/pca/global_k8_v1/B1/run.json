@@ -1,0 +1,20 @@
+{
+  "condition": "B1",
+  "input_completion_sha256": "3b7ef419081cdbc3f704078ca710e90a4727da9900be66d9419d1ef4e3764748",
+  "settings": {
+    "n_components": 2,
+    "source": "saved_global_baseline_pca",
+    "component_order": "descending_singular_values",
+    "score_normalization": "none"
+  },
+  "runtime": {
+    "python": "3.11.15",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "numpy": "2.4.4",
+    "device": "cpu",
+    "dtype": "float64",
+    "operation": "copy saved FP32 baseline scores without normalization"
+  },
+  "code_sha256": "c24036ddfe80a4a33b29cb07fcd686185ad947cb9422f25f14487c9bda5c0b46",
+  "fit_scope": "reuse baseline PCA fitted on shared global fit pixels; raw scores"
+}
