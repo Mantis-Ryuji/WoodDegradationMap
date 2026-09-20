@@ -332,7 +332,7 @@ NN学習・PCA fitは追加せず、既存の表現・train画素・Kと同じte
 
 ### 8.2 全体fitと解釈
 
-主条件のOOF集計・図表生成と出力確認は完了し、次の着手対象は本節のpipelineである。
+主条件のOOF図表と全体fitの準備・NN学習は完了した。次の着手対象は手順5の全体クラスタリング用pipelineである。
 mask率sweepとvMF（数値検証・全体fit用5 fitsを含む）より先に、本節の解析・図表・解釈を一通り完了する。
 
 [全体可視化設計](design/visualization_and_interpretation.md)に従い、全49試料の共通抽出画素で
@@ -342,11 +342,13 @@ vMFの5 fitsは第8.1節の後続解析へ回し、数値仕様の確定・検�
 
 実装の残作業は[ToDo第3節](../ToDo.md#3-全体fitと解釈)を参照する。
 `global_fit.py`にmanifest・B0/PCA・A0/M00/M11の一括学習・再開・checkを実装した。
-合成データのCPU検証済み。本番manifestの作成・checkはユーザー実行ログで確認済み。
-PCAは初回の保存復元checkで停止し、配列配置を保持する修正後の再fit待ち。GPU smoke・800 epoch学習は未実行である。
+合成データのCPU検証済み。本番manifestの作成・checkに続き、修正後のPCA fit・GPU smoke・
+A0/M00/M11の各800 epochが完了した。2026-09-20に保存記録を確認し、`training-check`の完了はユーザー報告による。
+今回の文書更新ではGPU checkや重みのhash照合を再実行していない。
 既存の`train_neural.py`は`--fold`必須のCV用であり、全体fitには使わない。
 
-実装・実施は次の順序とする。手順1〜4のCLIは下記に示す。
+実装・実施は次の順序とする。手順1〜4は完了し、CLIは再現・再開用の参照として下記に残す。
+手順5以降は未実装。直近の実装範囲とその後の順序は[学習完了後の作業](#global-post-fit)を参照する。
 
 1. **全体runの実行契約を固定する（確定・実装済み）。** ROOT_SEED=20260905・SHA-256方式を維持し、
    fold位置を`global`、反復IDを1とする。抽出・PCA・NNと後続の$K_0=8$クラスタリング用のseed計55個を保存する。
@@ -375,7 +377,7 @@ vMF数値仕様は引き続きOpen。5条件・共通画素数・各1回・800 e
 
 #### 準備・PCA・GPU smoke
 
-リポジトリrootのPowerShellで実行する。以下は新規`global_v1`の初回作成用。
+リポジトリrootのPowerShellで実行する。以下は新規出力先を準備する場合の初回作成用であり、完了済みの`global_v1`には再実行しない。
 `create`は座標・maskを読み、PCAは共通401,408行のSNV（FP32行列だけで392 MiB）をCPUでfitする。
 `smoke`は実寸model・batch size 1024で、A0 → M00 → M11の順に各2 epoch×2 batchと第2 epochの再開を確認する。
 3条件合計18 batchをGPUで実行し、raw重みの保存復元、全可視16次元表現、再開時の入力・LR・AMP判断・重みを照合する。
@@ -394,18 +396,12 @@ foreach ($step in @("create", "check", "baseline-fit", "baseline-check", "smoke"
 PCAの復元では保存時のC/F配列配置を保持する。配置を変えるとFP32積和の丸めが変わるため、
 保存復元の許容差は`1e-6`のまま、同じ配置で照合する。復元checkは一時directoryで行い、合格後に本番出力先へ置く。
 初回の`Global PCA roundtrip mismatch`で残った2ファイルは`global_v1/recovery/pca_roundtrip_<timestamp>/`へ退避した。
-今回の再実行では`create`を含めず、次を使用する。
-
-```powershell
-foreach ($step in @("baseline-fit", "baseline-check", "smoke")) {
-    uv run --no-sync python scripts/experiments/global_fit.py $step
-    if ($LASTEXITCODE -ne 0) { throw "Global fit preparation failed: $step" }
-}
-```
+その後の`baseline-fit`・`baseline-check`・`smoke`は完了した。既存PCAを確認する際は`baseline-check`を使う。
 
 #### 3条件の一括学習と完了check
 
-上の全段階が正常終了してから実行する。1 GPUでA0 → M00 → M11を直列に各800 epoch学習する。
+以下は学習手順の参照である。既存`global_v1`の3条件は完了済みのため、新規学習として再実行しない。
+新規出力先で行う場合は上の全段階が正常終了してから実行し、1 GPUでA0 → M00 → M11を直列に各800 epoch学習する。
 392 batch/epoch、313,600 attempted updates/run、計940,800 attempted updatesが予定値である。
 AMP overflowによるskipと実optimizer更新数は別途記録し、実更新数を予定値と同一とは仮定しない。
 
@@ -446,6 +442,45 @@ if ($LASTEXITCODE -ne 0) { throw "Global training completion check failed" }
 
 `training-check`は保存checkpointを実際に読み、epoch・更新数・manifest/config/code/runtime・重みhashと、
 checkpoint中の重みと最終raw重みの一致を確認する。全3条件の完了確認後に、手順5の全体Cosine-KMeansへ進む。
+
+#### 2026-09-20に確認した全体fitの完了記録
+
+B0/PCAの[完了記録](../outputs/experiments/global_v1/results/baselines/completion.json)は
+`fitted_and_roundtrip_checked`。PCAは全49試料の共通401,408画素で16成分をfitし、
+solverは`covariance_eigh`、保存復元probeの最大絶対誤差は0である。
+GPU smokeはA0・M00・M11のすべてで`checks_passed=true`、再開時の重み・全可視潜在の最大絶対誤差は0。
+
+| 条件・完了記録 | epoch | attempted updates | optimizer updates | AMP skips |
+| --- | ---: | ---: | ---: | ---: |
+| [A0](../outputs/experiments/global_v1/results/neural/A0/repeat_1/completion.json) | 800 | 313,600 | 313,483 | 117 |
+| [M00](../outputs/experiments/global_v1/results/neural/M00/repeat_1/completion.json) | 800 | 313,600 | 313,483 | 117 |
+| [M11](../outputs/experiments/global_v1/results/neural/M11/repeat_1/completion.json) | 800 | 313,600 | 313,481 | 119 |
+
+全3条件の`completion.json`は`training_completed`、attempt記録は`completed`である。
+表は保存記録の値を示し、`training-check`の完了は同日のユーザー報告に基づく。
+PCA・NNのfitが完了した段階であり、全体クラスタリング・全画素予測・解釈図が生成済みという意味ではない。
+
+<a id="global-post-fit"></a>
+
+#### 学習完了後の作業
+
+直近の作業は、保存済みモデルを利用する**全体fit用の表現抽出・Cosine-KMeans・全画素予測・checkの実装**である。
+`global_fit.py`の実装済みactionは準備・baseline・smoke・NN学習とcheckまでである。
+既存の`cluster_representations.py`は`--fold`必須のCV用なので、`global_v1`へそのまま実行しない。
+全体fit用の後続CLIはまだなく、以下は実装後に実行する工程である。
+
+1. 保存済みPCA・最終NN重み・共通global manifestを読み、B0・B1・A0・M00・M11の表現を抽出する。
+   B0は256次元SNV、B1・NNは16次元で、既定のL2正規化・全可視抽出を用いる。
+   既存の学習・PCAを再fitせず、共通401,408画素の表現で固定seedのCosine-KMeansを各1回、$K_0=8$でfitする。
+2. 各条件の固定モデル・中心を全49試料の全3,902,250有効画素へ適用し、画素座標と対応したラベルを保存する。
+   保存復元・対象数・ラベル範囲・出典のcheckを行う。試料ごとのクラスタリング再fitは行わない。
+3. 観測SNVの試料等重み平均線でM00＋Cosine-KMeansへラベルを整列する。
+   クラスタmap・occupancy・対応表と、反射率・SNV・疑似吸光度のSG二次微分の代表線・ばらつきをPNG・CSVにする。
+4. 二次微分の代表線を見て帯域を選び、平滑化・積分・UMAPの未確定設定を決める。
+   cosine UMAP、クラスタに依存しない連続スペクトル指標map、空間位置とスペクトルの対応図を作成し、化学的解釈を整理する。
+
+帯域選択やUMAP設定の確定は手順1〜3の着手条件ではない。まずクラスタmapと代表二次微分スペクトルを確認できる状態にする。
+mask率sweep・vMFは、この解析・図表・解釈を一通り終えた後の低優先度の計画として維持する。
 
 <a id="oof-aggregation"></a>
 
