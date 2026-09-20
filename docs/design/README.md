@@ -12,7 +12,7 @@
 | [実験プロトコル](experiment_protocol.md) | 主条件Fixed / vMF数値仕様Open | 条件、split、seed、共通画素、学習、クラスタリング、実行記録 |
 | [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA（補正後）、LFR、ARI、silhouette、occupancy、補正前LLA、未定義値、集約、比較・報告 |
 | [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1・A0・M00のPNG・CSV、fold内B0基準のmatching |
-| [全体可視化と解釈](visualization_and_interpretation.md) | 研究条件・全体fit seed契約Fixed / UMAP・帯域指標と任意責務マップ・FT-IR・正式目視評価の詳細Open | 全体fit、M00基準のmatching、代表例、スペクトル、cosine UMAP・連続map、FT-IR計画 |
+| [全体可視化と解釈](visualization_and_interpretation.md) | 研究条件・全体fit seed契約・初回PCA方針Fixed / 帯域指標と任意責務マップ・FT-IR・正式目視評価の詳細Open | 全体fit、M00基準のmatching、代表例、スペクトル、PC1/PC2・連続map、FT-IR計画 |
 
 ## 条件の参照先
 
@@ -47,7 +47,7 @@ CVは105学習、全体解釈を含めると108学習。PCA、KMeans、vMF、表
 | --- | --- | --- |
 | vMF数値仕様・実装 | 精度、EM停止条件、集中度設定、数値・動作検証、専用pipeline。利用版・範囲・退化成分の扱いはFixed | [vMF](experiment_protocol.md#vmf-supplementary) |
 | 任意の形状診断 | 採用する場合の近傍・connectivity・閾値・分母 | [診断](evaluation_metrics.md#occupancy) |
-| cosine UMAP | 共通表示画素の抽出方法・数、近傍数・min_dist・初期化・seed・利用版。PNGで出力する方針は決定済み | [表現空間の可視化](visualization_and_interpretation.md#latent-spectral-maps) |
+| PCAの追加色分け | 共通401,408画素・PC1/PC2のPNG一枚を先行する。追加metadata・帯域指標の選択はその後に行う | [表現空間の可視化](visualization_and_interpretation.md#latent-spectral-maps) |
 | 連続スペクトル指標map | 3×3平均またはGaussianの選択・数値設定、全体fit後の代表二次微分曲線に基づく帯域選択、積分・符号・共通color scale。クラスタ所属で近傍を制限しない | [帯域選択](visualization_and_interpretation.md#spectral-band-selection) |
 | 任意の責務マップ | 採用する場合の表示範囲・配色・背景 | [責務マップ](visualization_and_interpretation.md#vmf-responsibility-maps) |
 | 位置対応FT-IR | 対象、位置対応、測定・反復条件、前処理・指標、解釈範囲 | [FT-IR](visualization_and_interpretation.md#ftir-interpretation) |

@@ -16,7 +16,7 @@ ChemoMAE v0.2.2の環境で、リポジトリrootからPowerShellで実行する
 - [NNの1 runと再開](#neural-run)・[PCA](#5-b1-pca-fitとbaseline変換の検証)
 - [clean test map](#6-clean-test-map)・[評価](#7-評価)
 - [OOF集計](#oof-aggregation)・[OOF sanity図](#oof-sanity)・[主条件OOF図表](#oof-reporting)
-- [全体fitの準備・一括学習](#global-fit-pipeline)・[保存規約](#artifact-records)
+- [全体fitの準備・一括学習](#global-fit-pipeline)・[PCA一枚](#global-pca)・[保存規約](#artifact-records)
 
 各CLIの終了後に `$LASTEXITCODE -eq 0` を確認し、非0なら後続工程へ進まない。JSONのstatus確認は
 終了codeの確認に加えて行う。
@@ -369,7 +369,7 @@ A0/M00/M11の各800 epochが完了した。2026-09-20に保存記録を確認し
    固定7代表試料はCosine-KMeansの5条件の比較図で確認する。
 7. **潜在空間・連続map・観測スペクトルの対応を詳しく解析する。**
    [可視化案](design/visualization_and_interpretation.md#latent-spectral-maps)に従い、代表二次微分曲線から
-   帯域を選び、残る数値設定を確定する。共通画素のcosine UMAP・連続スペクトル指標map・対応の詳細図をPNGで保存する。
+   帯域を選び、残る数値設定を確定する。共通画素のPCA・連続スペクトル指標map・対応の詳細図をPNGで保存する。
    図表の元数値はCSVに残し、B0・B1・A0・M00・M11で読み取れる領域差と化学的解釈を比較する。
 8. **探索的解釈と残件を記録する。** CVの未知試料評価と、全体fitの記述的なマップ・スペクトルを区別する。
    解析・図表・知見・限界を一通り整理した後に、低優先度のmask率sweep・vMFの必要性と工数を再確認する。
@@ -478,10 +478,10 @@ PCA・NNのfitが完了した段階であり、全体クラスタリング・全
    保存復元・対象数・ラベル範囲・出典のcheckを行う。試料ごとのクラスタリング再fitは行わない。
 3. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋HungarianでM00＋Cosine-KMeansへラベルを整列する。
    クラスタmap・occupancy・対応表と、反射率・SNV・疑似吸光度のSG二次微分の代表線・ばらつきをPNG・CSVにする。
-4. 二次微分の代表線を見て帯域を選び、平滑化・積分・UMAPの未確定設定を決める。
-   cosine UMAP、クラスタに依存しない連続スペクトル指標map、空間位置とスペクトルの対応図を作成し、化学的解釈を整理する。
+4. [確定した設定でPCA一枚](#global-pca)を生成・確認する。
+   その後、二次微分の代表線を見て帯域を選び、平滑化・積分を確定し、連続指標mapや対応詳細図へ進む。
 
-帯域選択やUMAP設定の確定は手順1〜3の着手条件ではない。まずクラスタmapと代表二次微分スペクトルを確認できる状態にする。
+帯域選択は手順1〜3や初回PCAの着手条件ではない。
 mask率sweep・vMFは、この解析・図表・解釈を一通り終えた後の低優先度の計画として維持する。
 
 ##### 実行コマンド：クラスタリングと可視化
@@ -538,14 +538,15 @@ PCA・NN・クラスタリング成果物は置換対象に含めない。クラ
 | `results/clustering/{condition}/repeat_1/run.json`・`completion.json` | 表現の由来、code/runtime/hash、保存復元、試料別画素数・occupancy・完了記録 |
 | `results/figures/global_k8_v1/` | 下記のPNG・CSVと`report.json`・`completion.json` |
 
-図表directoryを`B0/`・`B1/`・`A0/`・`M00/`・`M11/`へ分ける。各条件のPNGは10枚。
-rootの`01_representative_samples_5x7.png`を加え、全体で51枚となる。
+図表directoryを`B0/`・`B1/`・`A0/`・`M00/`・`M11/`へ分ける。各条件のPNGは11枚。
+rootの`01_representative_samples_5x7.png`を加え、全体で56枚となる。
 この比較図は固定7代表試料を列、上からB0・B1・A0・M00・M11を行にする。試料IDは最下段だけに表示する。
 次のpathは各条件directoryからの相対path。
 
 | PNG | 内容 |
 | --- | --- |
-| `labels/01_samples_01-07_1x7.png`〜`07_samples_43-49_1x7.png` | 試料ID昇順で7試料ずつ。49試料を7枚へ分割 |
+| `labels/00_samples_01-07_1x7.png`〜`06_samples_43-49_1x7.png` | 試料ID昇順で7試料ずつ。49試料を7枚へ分割 |
+| `labels/07_representative_samples_1x7.png` | 固定代表7試料。rootの5条件×7試料図と同じ試料・並び順 |
 | `labels/08_all_samples_7x7.png` | 同じ順序の全49試料、7×7 |
 | `01_representative_spectra.png` | 上段SNV・反射率、下段全面SG二次微分。各panelを8クラスタの色で比較 |
 | `02_snv_cosine_matrix.png` | 縦M00・横当該条件の8×8 SNV cosine類似度。表示番号順、値域−1〜1 |
@@ -571,9 +572,92 @@ CPU小規模検証では固定seedで1回だけfitすること、保存復元、
 画素別対数変換、SGのnm単位、SNV matching、PNG/CSV出力、改変検出、失敗時の旧可視化保持と完成時の置換を確認した。
 SNV変更後に関連CPUテスト6件と静的検査が合格した。空間的な重なりとSNVの対応が異なる合成例、
 試料等重み集計、欠落・空・ノルム0の代表線、符号付き類似度、描画代表線との一致を確認した。
-本番の再生成checkは49試料・PNG 51枚・CSV 37個で合格した。
+代表1×7図の追加前の本番再生成checkは49試料・PNG 51枚・CSV 37個で合格した。
+各条件の代表1×7図追加と00〜08への採番変更後、本番再生成の完了はユーザー報告による。
+`visualize_global.py run`は旧directoryを置換し、PNG 56枚・CSV 37個をcheckする。
 SNV変更後の代表7試料×5条件の比較図、B0のSNV類似度図、M11の代表スペクトルを目視確認した。
 化学的な解釈は次の解析で行う。
+
+<a id="global-pca"></a>
+
+### 8.3 潜在空間のPCA：2行5列一枚
+
+可視化用のPCAへ切り替え、Dockerは使わず既存のホスト環境で処理する。
+左からB0・B1・A0・M00・M11、上段は画素数hexbin（turbo・共通の対数色範囲）、
+下段はSNV整列後のCluster IDと、所属画素のPC1・PC2座標の算術平均を示すcentroid。
+上段の各panel上に条件名（22 pt）を付け、PC名・寄与率・少数の数値目盛りを表示する。
+軸名・colorbar名は18 pt、目盛りは15 pt、centroid番号は14 pt。配置と定義は`captions.csv`にも保存する。
+
+既存global fitの49試料×8,192＝401,408画素を全条件で共有し、B1以外の4条件の
+クラスタリング用L2正規化済み表現へ独立に2次元PCAをfitする。
+中心化し、追加の列標準化・whitening・投影後のL2正規化は行わない。
+FP64の`PCA(n_components=2, svd_solver="covariance_eigh", whiten=False)`を使い、
+座標・平均・主成分係数・固有値・寄与率・runtime・入力hashを保存する。
+B1は保存済みbaseline PCAの特異値の降順に上位2成分を選び、L2正規化前の得点を直接表示する。
+寄与率も元のSNV全分散に対する保存値を使う。B1の再PCA・baselineの再学習・クラスタリングのやり直しは行わない。
+条件間で座標尺度が異なるため表示範囲は条件別とし、同じ条件の上下段では一致させる。hexbinの色範囲は全条件で共通。
+詳細は[設計書](design/visualization_and_interpretation.md#latent-spectral-maps)を参照。
+
+**文字・条件名・B1の既存PC直接利用・保存先の改修は実装済み。改修版のテスト・本番実行は未実施。**
+先に小規模CPUテストを実行する。実データやDockerは不要。
+
+```powershell
+uv run --no-sync pytest tests/experiments/test_global_pca.py -q
+if ($LASTEXITCODE -ne 0) { throw 'PCA CPU tests failed' }
+uv run --no-sync pytest tests/experiments/test_global_analysis.py -q -k "pca_export or report_png_csv or publish_report"
+if ($LASTEXITCODE -ne 0) { throw 'PCA export/report tests failed' }
+```
+
+出力先の`global_k8_v1/pca-latent-2d/`は親のクラスタ図表と独立してcheckする。
+親の図表の再生成時には既存`pca-latent-2d/`を引き継ぎ、親のPNG 56枚・CSV 37個の件数へ加算しない。
+この保存規約の変更で親のcode契約も更新したため、初回は親図表を一度再生成してから入力を準備する。
+今回の切替では旧可視化入力・投影結果・旧`latent/`を削除した。保存済みbaseline PCA・NN・クラスタリング成果物は保持する。
+
+リポジトリrootのPowerShellで次を実行する。
+
+```powershell
+& {
+    # 初回のみ：親図表を新しい保存規約で再生成・check。
+    uv run --no-sync python scripts/experiments/visualize_global.py run
+    if ($LASTEXITCODE -ne 0) { throw 'Global report update failed' }
+
+    # 保存済みモデルから共通画素の表現を抽出（ホストCUDA）、PCAをCPUでfit。
+    foreach ($step in @("prepare", "fit")) {
+        uv run --no-sync python scripts/experiments/global_pca.py $step --resume
+        if ($LASTEXITCODE -ne 0) { throw "PCA failed: $step" }
+    }
+
+    # 固定した座標からPNG一枚を描画・check。
+    uv run --no-sync python scripts/experiments/visualize_global_pca.py run
+    if ($LASTEXITCODE -ne 0) { throw 'PCA plotting failed' }
+}
+```
+
+`prepare`でのNN表現抽出のみCUDAを使用する（既定device 0、chunk 1,024）。
+`fit`とPNG描画はCPU処理である。保存する入力配列は約491 MBと画素CSV、
+B0のFP64化だけで約822 MBを要するため、PCA時は入力・作業領域を含むRAMを確保する。
+PCAはB1以外の4条件で一度だけ全共通画素を使い、B1は既存PCを取り出す。描画時には再fitしない。
+`--resume`は既存の完成した入力・条件を検証してskipする。
+PCA fitに乱数seedは使わず、scatterの重なり順だけROOT_SEEDで固定する。
+
+| 保存先（`outputs/experiments/global_v1/`からの相対path） | 内容 |
+| --- | --- |
+| `checkpoints/pca_projection/global_k8_v1/inputs/` | 条件別FP32配列（B1は上位2成分の未正規化得点）、`B1_projection.npz`に既存係数・寄与率・元成分index、画素CSV、出典 |
+| `results/pca/global_k8_v1/{condition}/` | `projection.npz`、`coordinates.npy`・`coordinates.csv`、`components.csv`、`explained_variance.csv`、実行・完了記録 |
+| `results/figures/global_k8_v1/pca-latent-2d/01_pca_density_clusters.png` | 指定の2行5列PNG一枚 |
+| `results/figures/global_k8_v1/pca-latent-2d/`内のCSV | `pixels.csv`・`hexbin_counts.csv`・`centroids.csv`・`explained_variance.csv`・`captions.csv` |
+
+描画だけの変更時は`visualize_global_pca.py run`だけを実行する。新しい図が完成してから`pca-latent-2d/`を置換する。
+checkだけを行う場合は次を使う。
+
+```powershell
+uv run --no-sync python scripts/experiments/global_pca.py check
+if ($LASTEXITCODE -ne 0) { throw 'PCA coordinate check failed' }
+uv run --no-sync python scripts/experiments/visualize_global_pca.py check
+if ($LASTEXITCODE -ne 0) { throw 'PCA figure check failed' }
+```
+
+metadata・帯域指標による追加の色分けは、この一枚を確認してから扱う。
 
 <a id="oof-aggregation"></a>
 

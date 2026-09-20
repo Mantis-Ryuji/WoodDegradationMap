@@ -21,9 +21,11 @@
 | 全体fit準備 | 共通manifest・B0/PCAの準備・check完了。PCAは49試料・401,408画素でfitし、保存復元probeの最大絶対誤差0。3条件のGPU smoke・再開probeはすべて合格 |
 | 全体NN学習 | A0・M00・M11の各800 epochが完了。各313,600 attempted updates。`completion.json`・attempt記録を確認し、`training-check`完了はユーザー報告による |
 | 全体クラスタリング・代表図表 | 5条件の保存済みfit・全49試料の予測をcheck。SNV代表線のcosine類似度＋Hungarianで条件別図と代表7試料×5条件の比較図を更新。PNG 51枚・CSV 37個を再生成・check済み |
-| 未実装 | UMAP・連続指標map、vMF・mask率補助実験の図表生成対応、vMF補助実験pipeline |
+| 初回PCA | 共通401,408画素・2行5列PNG。文字拡大・上段条件名・B1の既存PC直接利用を実装。出力は`global_k8_v1/pca-latent-2d/`。改修版のテスト・本番実行は未実施 |
+| 未実装 | PCAのmetadata・帯域指標による色分け、連続指標map、vMF・mask率補助実験の図表生成対応、vMF補助実験pipeline |
 
-**次の作業は条件別のクラスタマップ・代表二次微分曲線の確認と、帯域・UMAP等の未確定設定の決定。**
+**次の作業は[初回PCAの実行](docs/experiment_runbook.md#global-pca)と、その一枚の確認。**
+帯域選択を要する連続指標mapはその後に扱う。
 [学習完了後の手順](docs/experiment_runbook.md#global-post-fit)の手順1〜3は出力・check済み。保存先は`outputs/experiments/global_v1/`。
 図表を更新する場合は`visualize_global.py run`だけを使う。生成成功後に旧可視化directoryを置き換える。
 主条件図表は[再生成手順](docs/experiment_runbook.md#oof-reporting)から更新できる。
@@ -76,14 +78,19 @@ CV用CLIをそのまま全体fitへ使わない。
 - [x] 全体fit用の表現抽出・Cosine-KMeans fit・全有効画素予測・保存復元checkを`global_cluster.py`へ実装し、合成データでCPU検証する。global manifest・保存済みPCA・最終NN重みを使用する。
 - [x] fit処理とは別の`visualize_global.py`へ、M00基準SNV cosine＋Hungarian、条件別マップ・行列・occupancyのPNG/CSV出力と出典checkを実装する。試料等重みSNVによる割当、空・ノルム0の代表線の検出、改変検出、旧図表の安全な置換をCPU検証する。
 - [x] 同じ表現・抽出座標・$K_0=8$でCosine-KMeansを5 fits行う。可視化再生成時に5条件の保存済み中心・出典・全マップのcheckが合格した。
-- [x] 全49試料のhard label map、SNV類似度行列・matching対応表、確認用IoU・contingency・overlap、occupancy・使用クラスタ数を本番出力し、checkする。潜在空間図は下記のUMAP設定確定後に扱う。
+- [x] 全49試料のhard label map、SNV類似度行列・matching対応表、確認用IoU・contingency・overlap、occupancy・使用クラスタ数を本番出力し、checkする。潜在空間図は下記のPCA工程で扱う。
 - [x] [代表スペクトルの仕様](docs/design/visualization_and_interpretation.md#representative-spectra)に従い、反射率・SNV・疑似吸光度の平均集計、SG二次微分、四分位範囲、差スペクトルを実装し、合成データで検証する。寄与試料・画素数と追加除外数も保存する。
 - [x] 条件別にSNV・反射率・二次微分の3パネルPNGと元数値CSVを生成・checkする。差スペクトルはCSVに残す。寄与数・除外数の科学的な吟味は次の帯域選択時に行う。
-- [x] [UMAP・連続スペクトル指標mapの案](docs/design/visualization_and_interpretation.md#latent-spectral-maps)を文書化する（2026-09-20）。PNG・CSV、cosine UMAP、クラスタ所属を使わない空間平滑化の方針を記録する。全体fitは完了し、クラスタリング・代表スペクトル作成・残る数値設定の確定が次の前提となる。
+- [x] [PCA・連続スペクトル指標mapの案](docs/design/visualization_and_interpretation.md#latent-spectral-maps)を文書化する（2026-09-20）。PNG・CSV、PCA、クラスタ所属を使わない空間平滑化の方針を記録する。全体fitは完了し、クラスタリング・代表スペクトル作成・残る数値設定の確定が次の前提となる。
 - [ ] 全体fit後のクラスタ平均二次微分曲線・試料間変動を確認し、候補帯域・選択理由を記録する。平滑化方式・数値設定、積分端点・符号・計算法、共通color scaleを確定する。
-- [ ] UMAPの共通表示画素・数値設定・seedを確定し、5条件でクラスタ・metadata・同一帯域指標を色分けしたPNGと元数値CSVを生成する。
-- [ ] クラスタに依存しない連続スペクトル指標mapと、UMAP・空間位置・観測スペクトルの対応を示す詳細PNGを生成し、ChemoMAEとbaselineで探索できる領域差を比較する。
+- [x] 共通401,408画素の正規化済み表現に対する可視化用PCAへ切り替える。中心化・PC1/PC2、追加の標準化・whiteningなし。
+- [x] ホストでの表現準備、CPU PCA（B1は既存PCを利用）、別スクリプトでの静的描画を実装する。密度／Cluster IDの2行5列PNG一枚を`global_k8_v1/pca-latent-2d/`へ保存する。
+- [ ] PCAのCPU回帰テスト、本番5条件のfit、PNG一枚の描画とcheckを実行する。
+- [ ] 保存したPCA座標でmetadata・同一帯域指標を色分けする。今回の一枚を確認後、必要な図と指標を選ぶ。
+- [ ] クラスタに依存しない連続スペクトル指標mapと、PCA・空間位置・観測スペクトルの対応を示す詳細PNGを生成し、ChemoMAEとbaselineで探索できる領域差を比較する。
 - [x] 各条件の49試料をID昇順で、1×7の7枚と7×7の1枚に描画する。`sample_overviews`に合わせた余白・太字の試料ID・`Cluster ID`色バーを確認する。
+- [x] 各条件の`labels/`へ固定代表7試料の1×7図を追加する。全試料分割図00〜06、代表図07、全49試料7×7図08の順にする実装・check期待値を更新する。
+- [x] 代表1×7図追加後の本番再生成を行う。完了はユーザー報告による（PNG 56枚・CSV 37個をcheckする実装）。変更後の回帰テストは未実行。
 - [x] 図表rootへ代表7試料の7列×5行の比較図を追加する。上からB0・B1・A0・M00・M11、試料IDは最下段のみ。
 - [ ] マップと観測スペクトルから領域差を探索的に解釈し、CV指標の改善と化学的対応を区別する。
 - [ ] 第2節の主条件図表と本節の全体fit・可視化・探索的解釈を一通り完了し、図表・知見・解釈の限界を整理する。低優先度の補助実験はその後に扱う。第6節のFT-IR・正式な目視評価は未確定事項として別途扱う。
@@ -110,7 +117,7 @@ CV用CLIをそのまま全体fitへ使わない。
 - [ ] v0.2.2の数値関数・公開helper・初期化・最終尤度・保存復元・退化成分を検証する。16次元・256次元の参照値比較、CPU小規模、chunk、GPU最小確認を含む。
 - [ ] [実験プロトコル第5.2.3節](docs/design/experiment_protocol.md#vmf-supplementary)に従い、数値精度・EM停止条件・集中度設定を検証・ユーザー確認のうえ固定する。vMFのtest結果を見る前に固定し、全体fitとCV補助実験で共用する。
 - [ ] 確定・検証した数値仕様で全体fit用のvMF処理を実装し、同じ表現で5 fitsを行う。CV補助実験の735 fitsとは分ける。
-- [ ] 全49試料のvMF map・matching・スペクトル要約を保存し、固定7代表試料の2手法×5条件の比較図を追加する。先行するUMAP座標と帯域指標を共用する。
+- [ ] 全49試料のvMF map・matching・スペクトル要約を保存し、固定7代表試料の2手法×5条件の比較図を追加する。先行するPCA座標と帯域指標を共用する。
 - [ ] CV専用のfit・評価・check・OOFと独立した出力先を設計・実装する。
 - [ ] 既存の主7条件の重み・PCAと共通train画素で735 fitsを実施する。NN学習・PCA fitは追加しない。
 - [ ] 同じtest全画素・共通摂動で評価し、完了・失敗・未定義値を保持してOOF集計する。
