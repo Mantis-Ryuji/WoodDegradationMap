@@ -23,7 +23,8 @@
 | 全体クラスタリング・代表図表 | 5条件・K8・全49試料。M00基準のSNV cosine＋Hungarianで表示番号を整列。完了記録はPNG 56枚・CSV 37個、`checks_passed=true` |
 | PCA | 共通401,408画素の入力・5条件の座標・2行5列PNG 1枚とCSV 5個の完了記録を確認。B1は既存PC1/PC2を直接使用。保存先は`global_k8_v1/pca-latent-2d/` |
 | 現在の作業 | Thesisで既存結果を書き始め、主張と根拠を対応づけて必要な追加可視化を絞る。観察粒度はK8 |
-| 保留・未実装 | 試料ごとの詳細図、PCAの追加色分け、連続指標map。採否・具体的な構成は執筆後に検討。mask率・vMFは低優先度 |
+| mask率補助実験 | 実施する。25%・75%を各15 runs追加し、50%は主条件M11を再利用。学習・評価・OOF集計は既存CLIを使用し、mask率図表は追加実装が必要 |
+| 保留・未実装 | 試料ごとの詳細図、PCAの追加色分け、連続指標map。採否・具体的な構成は執筆後に検討 |
 
 **次は[執筆への引き継ぎ](docs/manuscript_handoff.md)を入口に、Thesisで本文・図表の対応を整理する。**
 追加解析を先に増やさず、CVで比較できる性質と、M11・K8の試料内で解釈したい領域差を分けて書く。
@@ -31,8 +32,7 @@
 再生成が必要な場合だけ、[OOF図表](docs/experiment_runbook.md#oof-reporting)、
 [K8マップ・スペクトル](docs/experiment_runbook.md#global-post-fit)、[PCA](docs/experiment_runbook.md#global-pca)の各手順を使う。
 
-mask率sweepとvMFは計画に残し、既存結果の執筆・解釈を優先する。第4〜5節へ着手する時点で必要性と工数を再確認する。
-vMFの数値検証・共通処理実装・全体fit用5 fitsも、先行する可視化・解釈の前提にしない。
+mask率sweepは第4節の固定条件で実施する。追加可視化や物理化学的解釈の完了を着手条件にしない。
 主条件の学習・評価条件と比較範囲は維持する。
 
 ## 1. 主条件のOOF集計
@@ -45,7 +45,7 @@ vMFの数値検証・共通処理実装・全体fit用5 fitsも、先行する�
 この節と第3節の実装はAstraで進める（ユーザー指定）。作業時のモデル選択であり、研究条件には含めない。
 図表は[評価指標の報告規約](docs/design/evaluation_metrics.md#reporting)に従う。
 主7条件の`main_oof_v1`から図表生成・可視化の実装と出力確認を先に固める。
-mask率・vMFの補助実験に依存する図表は、それぞれのOOF集計完了後に追加する。
+mask率の補助図表は、専用OOF集計の完了後に追加する。
 
 - [x] OOF snapshotから、代表$K_0=8$と全7Kの指標・paired比較・交互作用のCSV表を生成するpipelineを実装する。
 - [x] 主指標サマリ・$K_0=8$の試料別分布・主要3比較のpaired K依存図を、各2行3列のPNGとして生成する。
@@ -58,7 +58,7 @@ Cluster Occupancyの優先順とする。LLAの窓3・5・9は個別に残す。
 LFRは図ではTGN+FSのみ、CSVではLFR(TGN+FS)・LFR(TGN)・LFR(FS)の3種類を保存する。
 PNGは`01_main_metrics_k_sweep.png`、`02_k8_distributions.png`、`03_paired_k_sweep.png`の連番とし、旧PNGは削除済み。
 補正後LLAの交互作用と試料単位のpaired ARIは報告pipelineで算出し、元OOF snapshotを保持する。
-原稿への採用・captionの最終調整は第7節の執筆側で管理する。
+原稿への採用・captionの最終調整は第6節の執筆側で管理する。
 
 ## 3. 全体fitと解釈
 
@@ -84,11 +84,11 @@ M11の選択は既存結果を見た後の探索方針であり、全指標で�
 - [ ] M11・K8で注目する試料と領域を絞り、既存`sample_spectra.csv`・寄与画素数を用いて、試料内クラスタの観測スペクトルを確認する。全試料macro平均だけで個別領域を解釈しない。
 - [ ] 本文の根拠に不足する図を選び、対象試料・panel・比較対象を決めてから詳細PNGを追加する。現在のPCA一枚の採否もここで判断する。
 - [ ] PCAのmetadata・帯域指標による色分け、連続スペクトル指標mapは、必要性を確認した場合だけ具体化する。採用する場合は[帯域・平滑化・積分のOpen事項](docs/design/visualization_and_interpretation.md#spectral-band-selection)を確定する。
-- [ ] 空間的一貫性と物理化学的解釈を分け、外観・スペクトルの対応、例外、未確認の帰属を記述する。第6節のFT-IR・正式な目視評価は別の未確定事項として扱う。
+- [ ] 空間的一貫性と物理化学的解釈を分け、外観・スペクトルの対応、例外、未確認の帰属を記述する。第5節のFT-IR・正式な目視評価は別の未確定事項として扱う。
 
 ## 4. Mask率補助実験
 
-**低優先度。計画は維持し、第2〜3節の解析・図表・解釈の整理を一通り終えた後に回す。**
+**実施する補助実験。M11のmask率25%・50%・75%の感度解析とする。**
 [1 runの手順](docs/experiment_runbook.md#neural-run)に従い、各runを800 epochで学習し、clustering・評価・checkまで完了する。
 
 - [ ] M11-25の5 folds×3反復を完了する（15 runs）。
@@ -96,30 +96,15 @@ M11の選択は既存結果を見た後の探索方針であり、全指標で�
 - [ ] 50%は主実験M11を再利用し、3条件の`mask_rate_oof_v1`を作成・checkする。
 - [ ] 第2節の図表生成pipelineへmask率依存性の図表を追加し、`mask_rate_oof_v1`から生成・照合する。
 
-主条件とmask率のOOFは別snapshotとする。
+主条件とmask率のOOFは別snapshotとする。800 epoch、split・seed・共通画素・augmentation強度・全7Kと評価指標は主実験と同一。
+最良mask率の選択や主条件M11の置換は行わない。[実施手順](docs/experiment_runbook.md#mask-rate-sweep)を参照する。
 
-## 5. vMF補助実験
-
-**低優先度。数値検証・実装・全体fit用5 fitsを含め、第2〜3節の解析・図表・解釈の整理を一通り終えた後に回す。**
-全体fit用5 fitsと、主7条件×5 folds×3反復×7KのCV用735 fitsを計画に残す。範囲・利用版・退化成分の扱いはFixed、数値仕様と専用pipelineは未完了。
-[実験プロトコル](docs/design/experiment_protocol.md#vmf-supplementary)と[評価規約](docs/design/evaluation_metrics.md#vmf-evaluation)に従う。
-数値仕様と共通処理を本節で確定・検証し、全体fitとCV補助実験で共用する。
-
-- [ ] v0.2.2の数値関数・公開helper・初期化・最終尤度・保存復元・退化成分を検証する。16次元・256次元の参照値比較、CPU小規模、chunk、GPU最小確認を含む。
-- [ ] [実験プロトコル第5.2.3節](docs/design/experiment_protocol.md#vmf-supplementary)に従い、数値精度・EM停止条件・集中度設定を検証・ユーザー確認のうえ固定する。vMFのtest結果を見る前に固定し、全体fitとCV補助実験で共用する。
-- [ ] 確定・検証した数値仕様で全体fit用のvMF処理を実装し、同じ表現で5 fitsを行う。CV補助実験の735 fitsとは分ける。
-- [ ] 全49試料のvMF map・matching・スペクトル要約を保存し、固定7代表試料の2手法×5条件の比較図を追加する。先行するPCA座標と帯域指標を共用する。
-- [ ] CV専用のfit・評価・check・OOFと独立した出力先を設計・実装する。
-- [ ] 既存の主7条件の重み・PCAと共通train画素で735 fitsを実施する。NN学習・PCA fitは追加しない。
-- [ ] 同じtest全画素・共通摂動で評価し、完了・失敗・未定義値を保持してOOF集計する。
-- [ ] 第2節の図表生成pipelineへvMF比較を追加し、計画contrast・2×2交互作用・K依存性をCosine-KMeansと併記する。
-
-## 6. 未確定事項
+## 5. 未確定事項
 
 [研究設計のOpen事項](docs/design/README.md#open-items)を確認する。
-位置対応FT-IRと正式な目視評価は詳細設計が必要。任意の形状診断・vMF責務マップは、採用する場合だけ定義を固定する。
+位置対応FT-IRと正式な目視評価は詳細設計が必要。任意の形状診断は、採用する場合だけ定義を固定する。
 
-## 7. 外部執筆への資料提供
+## 6. 外部執筆への資料提供
 
 論文の章立て・本文・図の体裁・引用・執筆進捗は `C:\Users\PC_User\Python\Thesis` で管理する。
 実験・図表生成は本書、資料の対応と引き渡し時の確認事項は[執筆への引き継ぎ](docs/manuscript_handoff.md)を参照する。
