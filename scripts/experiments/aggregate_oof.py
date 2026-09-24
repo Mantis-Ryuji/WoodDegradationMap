@@ -19,6 +19,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--conditions", nargs="+", choices=[c.condition_id for c in CONDITIONS],
                         help="Run only: all five folds and three repeats are required for every condition")
     parser.add_argument("--snapshot", help="Output name; run defaults to UTC timestamp, check requires a name")
+    parser.add_argument("--overwrite", action="store_true",
+                        help="Replace the named snapshot after successful aggregation")
     parser.add_argument("--experiment-dir", type=Path,
                         default=root / "outputs/experiments/preflight_v1")
     parser.add_argument("--processed-dir", type=Path,
@@ -27,6 +29,8 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if args.action == "run" and not args.conditions:
         parser.error("run requires --conditions")
+    if args.overwrite and (args.action != "run" or args.snapshot is None):
+        parser.error("--overwrite requires run and an explicit --snapshot")
     if args.action == "check" and (args.conditions is not None or args.snapshot is None):
         parser.error("check requires --snapshot and reads conditions from that snapshot")
     return args
@@ -40,7 +44,8 @@ def main() -> int:
     if args.action == "check":
         report = check_oof(experiment, inventory, manifest, args.snapshot)
     else:
-        output = run_oof(experiment, inventory, manifest, tuple(args.conditions), snapshot=args.snapshot)
+        output = run_oof(experiment, inventory, manifest, tuple(args.conditions),
+                         snapshot=args.snapshot, overwrite=args.overwrite)
         report = {"output_dir": str(output), **_read_json(output / "completion.json")}
     print(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False))
     return 0

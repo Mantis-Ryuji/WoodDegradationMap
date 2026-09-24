@@ -11,6 +11,10 @@ mask率補助実験の範囲と実施順序は[第8.1節](#mask-rate-sweep)を�
 ChemoMAE v0.2.2の環境で、リポジトリrootからPowerShellで実行する。
 本番実行例は`uv run --no-sync`とし、環境構築・更新をrun開始時の処理から分ける。
 
+2026-09-22のA1追加は[追補runbook](a1_extension_runbook.md)に従う。A1を含む主8条件は
+`main_oof_v1`、全体6条件の図表・PCAは`global_k8_v1`へ再生成して上書きする。
+以下の7条件・5条件の完了記録と枚数はA1追加前のもの。追加後は追補の条件数・枚数を確認する。
+
 現在は主条件CV・OOF、全体fit・K8図表、PCA一枚まで生成済みである。
 執筆開始時は[引き継ぎ資料](manuscript_handoff.md)から既存成果物を参照し、本書のコマンドは再生成・再検証が必要な場合に使う。
 

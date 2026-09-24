@@ -122,7 +122,7 @@ def test_resume_single_figure_shared_norm_and_tamper(
 
     monkeypatch.setattr(gu, "fit_projection", fit)
     assert gu.run_pca(portable)["pixels"] == 64
-    assert calls == [(64, 256)] + [(64, 16)] * 3
+    assert calls == [(64, 256)] + [(64, 16)] * 4
     baseline_scores = np.load(portable / gu.INPUT_DIRECTORY / "B1.npy")
     np.testing.assert_array_equal(
         np.load(portable / gu.RESULT_DIRECTORY / "B1/coordinates.npy"), baseline_scores)
@@ -132,7 +132,7 @@ def test_resume_single_figure_shared_norm_and_tamper(
                                       np.array([.24, .10], dtype=np.float32))
         assert projection["components"].shape == (2, 256)
     gu.run_pca(portable, resume=True)
-    assert len(calls) == 4
+    assert len(calls) == 5
     with pytest.raises(FileExistsError):
         gu.run_pca(portable)
 
@@ -140,11 +140,11 @@ def test_resume_single_figure_shared_norm_and_tamper(
     seen = []
 
     def inspect_figure(figure: ur.plt.Figure, *args: object, **kwargs: object) -> None:
-        panels = figure.axes[:10]
-        assert len(panels) == 10
+        panels = figure.axes[:12]
+        assert len(panels) == 12
         norm = panels[0].collections[0].norm
         assert isinstance(norm, LogNorm) and norm.vmin == 1
-        for condition, upper, lower in zip(gu.CONDITIONS, panels[:5], panels[5:], strict=True):
+        for condition, upper, lower in zip(gu.CONDITIONS, panels[:6], panels[6:], strict=True):
             assert upper.collections[0].norm is norm
             assert upper.collections[0].get_cmap().name == "turbo"
             assert upper.get_xlim() == lower.get_xlim() and upper.get_ylim() == lower.get_ylim()
@@ -174,7 +174,14 @@ def test_resume_single_figure_shared_norm_and_tamper(
                 axis=0, dtype=np.float64)
             np.testing.assert_allclose([row.pc1, row.pc2], expected)
     ur.render_pca(portable, dpi=30)
-    assert len(calls) == 4  # B1 reuse and re-rendering never fit PCA again.
+    assert len(calls) == 5  # B1 reuse and re-rendering never fit PCA again.
+    obsolete = portable / gu.RESULT_DIRECTORY / "A0/obsolete.csv"
+    obsolete.write_text("old projection")
+    gu.run_pca(portable, overwrite=True)
+    assert len(calls) == 10
+    assert not obsolete.exists()
+    with pytest.raises(ValueError, match="resume or overwrite"):
+        gu.run_pca(portable, resume=True, overwrite=True)
     path = portable / gu.RESULT_DIRECTORY / "A0/coordinates.csv"
     path.write_bytes(path.read_bytes() + b"changed")
     with pytest.raises(ValueError, match="Artifact changed"):

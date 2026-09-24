@@ -48,6 +48,7 @@ CONDITIONS = (
     Condition("B0", "snv", 256, None, None, 0.0, 0.0),
     Condition("B1", "pca", 16, None, None, 0.0, 0.0),
     Condition("A0", "chemomae", 16, 0, "all", 0.0, 0.0),
+    Condition("A1", "chemomae", 16, 0, "all", 0.5, 0.5),
     Condition("M00", "chemomae", 16, 8, "masked", 0.0, 0.0),
     Condition("M10", "chemomae", 16, 8, "masked", 0.5, 0.0),
     Condition("M01", "chemomae", 16, 8, "masked", 0.0, 0.5),

@@ -12,7 +12,9 @@ import time
 import numpy as np
 import pandas as pd
 
-CONDITIONS = ("B0", "B1", "A0", "M00", "M11")
+from .artifact_output import publish_directory
+
+CONDITIONS = ("B0", "B1", "A0", "A1", "M00", "M11")
 INPUT_DIRECTORY = "checkpoints/pca_projection/global_k8_v1/inputs"
 RESULT_DIRECTORY = "results/pca/global_k8_v1"
 FIGURE_DIRECTORY = "results/figures/global_k8_v1/pca-latent-2d"
@@ -196,7 +198,8 @@ def check_projection(
     return record
 
 
-def run_pca(experiment: Path, *, resume: bool = False) -> dict:
+def run_pca(experiment: Path, *, resume: bool = False, overwrite: bool = False) -> dict:
+    require(not (resume and overwrite), "Choose resume or overwrite")
     inputs = experiment / INPUT_DIRECTORY
     _, pixels = check_inputs(inputs)
     baseline_projection = load_baseline_projection(inputs)
@@ -206,7 +209,7 @@ def run_pca(experiment: Path, *, resume: bool = False) -> dict:
     for condition in CONDITIONS:
         target = output / condition
         values = np.load(inputs / f"{condition}.npy", mmap_mode="r", allow_pickle=False)
-        if target.exists():
+        if target.exists() and not overwrite:
             if not resume:
                 raise FileExistsError(f"{target} exists; use --resume to verify/skip")
             check_projection(target, input_digest, condition, values, baseline_projection)
@@ -250,7 +253,7 @@ def run_pca(experiment: Path, *, resume: bool = False) -> dict:
             finish_artifacts(stage, "pca_projection_completed")
             require(digest(inputs / "completion.json") == input_digest, "PCA inputs changed")
             check_projection(stage, input_digest, condition, values, baseline_projection)
-            stage.rename(target)
+            publish_directory(stage, target, root=experiment)
         del values, coordinates
     return check_pca(experiment)
 

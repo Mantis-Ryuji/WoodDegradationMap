@@ -21,7 +21,7 @@ from wood_degradation_map.experiments.manifests import _digest, _read_json, _wri
 
 
 def _summary(condition: str, metric: str, k: int, expected: dict[str, int]) -> dict:
-    values = {"B0": 0.0, "B1": 0.1, "A0": 0.2, "M00": 0.2,
+    values = {"B0": 0.0, "B1": 0.1, "A0": 0.2, "A1": 0.5, "M00": 0.2,
               "M10": 0.3, "M01": 0.4, "M11": 0.8}
     scale = {"lfr_noise": 0.25, "lfr_shift": 0.5}.get(metric, 1.0)
     records = [ScoreRecord(sample, fold, condition, k, metric, repeat, "defined",
@@ -151,8 +151,8 @@ def saved_report(tmp_path: Path) -> tuple[Path, str]:
     })
     _write_json(prefix / "completion.json", {
         "status": "oof_aggregation_completed", "checks_passed": True,
-        "conditions": list(report.MAIN_CONDITIONS), "sample_count": 49, "source_run_count": 105,
-        "score_record_count": 72030,
+        "conditions": list(report.MAIN_CONDITIONS), "sample_count": 49, "source_run_count": 120,
+        "score_record_count": 82320,
         "artifact_sha256": {path.relative_to(prefix).as_posix(): _digest(path)
                             for path in prefix.rglob("*.json")},
     })
@@ -168,8 +168,8 @@ def test_saved_data_keeps_corrected_lla_ari_and_sample_weighting(saved_report: t
     occupancy = data.summaries[(data.summaries.source_metric == "max_occupancy")
                                & (data.summaries.expression == "B0") & (data.summaries.k == 8)].iloc[0]
     assert occupancy["mean"] == pytest.approx((25 * (2 / 3) + 24 * (5 / 6)) / 49)
-    assert len(data.occupancy) == 49 * 7 * 3 * 7
-    assert len(data.occupancy_folds) == 7 * 5 * 3 * sum(CLUSTER_COUNTS)
+    assert len(data.occupancy) == 49 * 8 * 3 * 7
+    assert len(data.occupancy_folds) == 8 * 5 * 3 * sum(CLUSTER_COUNTS)
     paired = data.summaries[(data.summaries.kind == "paired")
                             & (data.summaries.source_metric == "lfr_both")
                             & (data.summaries.expression == "M11 - M00")]
@@ -227,18 +227,32 @@ def test_csv_and_figure_contract(
 
     def inspect_and_save(figure: object, directory: Path, stem: str, dpi: int) -> None:
         assert not (output / "completion.json").exists()
-        assert len(figure.axes) == 6
         grid = figure.axes[0].get_subplotspec().get_gridspec()
-        assert (grid.nrows, grid.ncols) == (2, 3)
-        assert [axis.get_ylabel() for axis in figure.axes] == [
-            report.LABELS[metric] + (" difference" if stem == "03_paired_k_sweep" else "")
-            for metric in report.SUMMARY_METRICS
-        ]
+        if stem == "01_main_metrics_k_sweep":
+            assert len(figure.axes) == 4
+            assert (grid.nrows, grid.ncols) == (2, 2)
+            assert [axis.get_ylabel() for axis in figure.axes] == [
+                "LLA-3", "LLA-5", "LLA-9", "LFR(TGN+FS)",
+            ]
+            assert figure.get_size_inches()[0] == pytest.approx(3.5)
+            for axis in figure.axes:
+                assert axis.yaxis.label.get_fontsize() >= 9
+                assert all(tick.get_fontsize() >= 8 for tick in axis.get_xticklabels())
+                assert all(tick.get_fontsize() >= 8 for tick in axis.get_yticklabels())
+            assert all(text.get_fontsize() >= 8 for text in figure.legends[0].get_texts())
+            assert figure.axes[0].get_ylim() == figure.axes[1].get_ylim() == figure.axes[2].get_ylim()
+        else:
+            assert len(figure.axes) == 6
+            assert (grid.nrows, grid.ncols) == (2, 3)
+            assert [axis.get_ylabel() for axis in figure.axes] == [
+                report.LABELS[metric] + (" difference" if stem == "03_paired_k_sweep" else "")
+                for metric in report.SUMMARY_METRICS
+            ]
         assert figure.axes[3].get_ylabel() == "LFR(TGN+FS)" + (
             " difference" if stem == "03_paired_k_sweep" else ""
         )
         if stem == "03_paired_k_sweep":
-            assert len(figure.axes[4].get_lines()) == 4  # Three ARI differences and zero line.
+            assert len(figure.axes[4].get_lines()) == 6  # Five ARI differences and zero line.
         layouts[stem] = len(figure.axes)
         original_save(figure, directory, stem, dpi)
 
@@ -253,7 +267,12 @@ def test_csv_and_figure_contract(
     assert note.read_text(encoding="utf-8") == "keep"
     table = pd.read_csv(output / "metrics_k8.csv")
     assert table.priority.tolist() == sorted(table.priority)
-    assert len(table) == 7 * 11
+    assert len(table) == 8 * 11
+    assert "A1" in set(table.expression)
+    paired = pd.read_csv(output / "paired_k8.csv")
+    for expression in ("A1 - A0", "M11 - A1"):
+        assert paired.loc[(paired.expression == expression)
+                          & (paired.source_metric == "lfr_both"), "mean"].item() == pytest.approx(0.3)
     assert table.loc[table.metric == "LLA", "label"].str.startswith("LLA (").all()
     assert _read_json(output / "completion.json")["status"] == "oof_figures_completed"
     assert "user_note.txt" not in _read_json(output / "completion.json")["artifact_sha256"]
