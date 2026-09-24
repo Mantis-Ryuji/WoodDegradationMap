@@ -9,6 +9,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import h5py
 import numpy as np
@@ -17,6 +18,7 @@ from .aggregation import (
     REPEATED_METRICS, RepeatedSummary, ScoreRecord, SummaryRow, _number, _summarize,
     _unavailable, _validated_records, aggregate_ari, aggregate_scores, paired_difference,
 )
+from .artifact_output import publish_directory
 from .config import CLUSTER_COUNTS, CONDITIONS, FOLDS, REPEATS, experiment_config
 from .data import FoldData
 from .diagnostic_metrics import repeat_ari
@@ -28,6 +30,7 @@ from .manifests import CVManifest, _digest, _read_json, _write_json
 PLANNED_PAIRS = (
     ("M11", "B0"), ("M11", "B1"), ("M11", "M00"), ("M00", "B0"), ("M00", "B1"),
     ("M00", "A0"), ("M10", "M00"), ("M01", "M00"), ("M11", "M10"), ("M11", "M01"),
+    ("A1", "A0"), ("M11", "A1"),
 )
 FACTORIAL_CONDITIONS = ("M11", "M10", "M01", "M00")
 PRIMARY_METRICS = ("lla_3", "lla_5", "lla_9", "lfr_noise", "lfr_shift", "lfr_both")
@@ -124,7 +127,7 @@ def _files(conditions: tuple[str, ...]) -> set[str]:
 
 def run_oof(
     experiment: Path, inventory: InputInventory, manifest: CVManifest,
-    conditions: tuple[str, ...], *, snapshot: str | None = None,
+    conditions: tuple[str, ...], *, snapshot: str | None = None, overwrite: bool = False,
 ) -> Path:
     """Aggregate every saved sample/K from all five folds and three repeats.
 
@@ -136,8 +139,22 @@ def run_oof(
     conditions = _conditions(conditions)
     snapshot = snapshot if snapshot is not None else datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
     output = _output(experiment, snapshot)
-    if output.exists():
+    if output.exists() and not overwrite:
         raise FileExistsError(f"OOF snapshot already exists: {output}")
+    if overwrite:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        with TemporaryDirectory(prefix=".oof-", dir=output.parent) as temporary:
+            stage = Path(temporary) / "snapshot"
+            _write_oof(experiment, inventory, manifest, conditions, snapshot=snapshot, output=stage)
+            publish_directory(stage, output, root=experiment)
+        return output
+    return _write_oof(experiment, inventory, manifest, conditions, snapshot=snapshot, output=output)
+
+
+def _write_oof(
+    experiment: Path, inventory: InputInventory, manifest: CVManifest,
+    conditions: tuple[str, ...], *, snapshot: str, output: Path,
+) -> Path:
     expected, ledger = _sources(experiment, inventory, manifest, conditions)
     records = []
     for item in ledger:

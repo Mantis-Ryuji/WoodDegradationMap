@@ -56,10 +56,14 @@ def _inventory(tmp_path: Path, *, count: int = 10, pixels: int = 12) -> InputInv
 
 def test_fixed_condition_matrix_and_recipe() -> None:
     conditions = {item.condition_id: item for item in CONDITIONS}
-    assert set(conditions) == {"B0", "B1", "A0", "M00", "M10", "M01", "M11", "M11-25", "M11-75"}
+    assert set(conditions) == {
+        "B0", "B1", "A0", "A1", "M00", "M10", "M01", "M11", "M11-25", "M11-75",
+    }
     assert conditions["B0"].output_dim == 256
     assert all(item.output_dim == 16 for key, item in conditions.items() if key != "B0")
     assert conditions["A0"].n_mask == 0 and conditions["A0"].loss_region == "all"
+    assert conditions["A1"].n_mask == 0 and conditions["A1"].loss_region == "all"
+    assert conditions["A1"].noise_prob == conditions["A1"].shift_prob == 0.5
     assert [conditions[name].n_mask for name in ("M11-25", "M11", "M11-75")] == [4, 8, 12]
     assert [(conditions[name].noise_prob, conditions[name].shift_prob)
             for name in ("M00", "M10", "M01", "M11")] == [

@@ -23,8 +23,8 @@ from .manifests import (
     input_snapshot,
 )
 
-GLOBAL_CONDITIONS = ("B0", "B1", "A0", "M00", "M11")
-NEURAL_CONDITIONS = ("A0", "M00", "M11")
+GLOBAL_CONDITIONS = ("B0", "B1", "A0", "A1", "M00", "M11")
+NEURAL_CONDITIONS = ("A0", "A1", "M00", "M11")
 SAMPLE_COLUMNS = ["sample_id", "file", "saved_pixel_count", "height", "width"]
 PIXEL_COLUMNS = ["sample_id", "sampling_seed", "hdf5_row", "pixel_row", "pixel_col"]
 BUNDLE_FILES = (

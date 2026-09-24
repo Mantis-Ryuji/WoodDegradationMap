@@ -187,6 +187,16 @@
           "experiment": "main"
         },
         {
+          "condition_id": "A1",
+          "representation": "chemomae",
+          "output_dim": 16,
+          "n_mask": 0,
+          "loss_region": "all",
+          "noise_prob": 0.5,
+          "shift_prob": 0.5,
+          "experiment": "main"
+        },
+        {
           "condition_id": "M00",
           "representation": "chemomae",
           "output_dim": 16,
@@ -233,7 +243,7 @@
       "prediction_scope": "all saved valid pixels; descriptive, not OOF"
     },
     "manifest_artifact_sha256": {
-      "config/experiment.json": "db29805a46ece0b26a1e39df265675c5f003672da0ebb2e4c2489f187a9cfa68",
+      "config/experiment.json": "ed8415d6ca01e0fd2316c98f9d81b0c86d169e3cd9ae9284bbb952562387e6eb",
       "config/seeds.json": "a0fbda34464dbdc6cc1ce26f064091d74286b2735c00da861ac33583991260a3",
       "manifests/inputs.json": "87370c47ff3fe6423f35be9011f255779a025b864c3bc17760c64ddb1b4f4fcd",
       "manifests/samples.parquet": "3e4653c450fea9492de68634d94e2bbf9eef4693ea69b9198d74878bf9ba851d",
@@ -241,10 +251,10 @@
     },
     "code_sha256": {
       "global_baselines.py": "abe9a015fd6580e287e051598f758d53ea5d624243d1f205b8a31f59a645df4d",
-      "global_manifest.py": "a11f6d436d7b4c9534fde03cb04e9ad12f992460428800d4cc6a34888aa4d341",
+      "global_manifest.py": "63e0652aba8fc648c7f8623fc32b0626d077c22c6e8c01a834cc0de4e8011b08",
       "baselines.py": "6dcd53ab68fef2c3486d8f9b41ce02be79161a7e868027266f683f93df7d9cba",
       "data.py": "2c22e1e08e522c384ae6f0d323f7473a3e296e712643ee1c6e25e00c181668ad",
-      "config.py": "6d09044cd9bc023dc0f427193633ef1808910a43d1e158f0702a8c7b2247bb8a",
+      "config.py": "5015aad320ab611326d8d0a621053b3f8ccc709e4c26a2945d595c1c0d0a53db",
       "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",
       "input_validation.py": "7aec04fd753625cd7f4432f6f70ef6288a6be79ae3ee28822cbe68dd0777e961"
     }

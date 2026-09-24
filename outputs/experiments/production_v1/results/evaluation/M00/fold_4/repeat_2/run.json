@@ -18,7 +18,7 @@
   ],
   "test_pixels": 750105,
   "manifest_artifact_sha256": {
-    "config/experiment.json": "861e52c21803c3ea2f768ae4eecee6831ba6a2d104ec33f2db69c18a9a855389",
+    "config/experiment.json": "0279f047d13f6221078a728b4ce4b3ecbe00f9d91782222b564e922561ff16d2",
     "config/seeds.json": "367ef557504c53f416addd4bd88b0afdb596faacd9dbd73c0e616ecf38e8eb4a",
     "manifests/inputs.json": "87370c47ff3fe6423f35be9011f255779a025b864c3bc17760c64ddb1b4f4fcd",
     "manifests/folds.parquet": "0d1029cfb5f94245da1bdb6d7c26eb64b85241dfeb135eb66be612cc01c100d5",
@@ -28,13 +28,13 @@
     "manifests/train_pixels/fold_4.parquet": "77d8219004e6d291db8ebf87a74c519a0f8f57169a8d0355b390db946ed6bd65",
     "manifests/train_pixels/fold_5.parquet": "c146d1a95a4282af1a1ac0d18e856e908204c8b92d9969403ea2d46c220dd972"
   },
-  "clustering_completion_sha256": "11e1d08805296596b3c374f3c193f98c84fbfcace43d07f99afd9830ba5790a7",
+  "clustering_completion_sha256": "ca7f5993b42f1ace2b90f6ce5ac16394ee4439cbaf24edaf6870761d1ab0a7b2",
   "source": {
     "kind": "neural",
     "mode": "training",
     "smoke_id": null,
     "weights_sha256": "1435715ad1d5c97c628cf4b553ef821fc2a12584709d721ffd86a2c1b836df40",
-    "run_sha256": "19f4d8988e44f16b6b71a2da469722319d6156dfb8fbddbaa7d287d5fff16125",
+    "run_sha256": "1efcab4b93b050b9bb6f9d438f965691f1ef4634e8c60cb4348f07c1b018d883",
     "completion_sha256": "31a4d22146ce3f7c7d0736e58fea85f601e5282ed2451b0cf336974ae30bb8d0",
     "training_runtime": {
       "python": "3.11.15",
@@ -205,6 +205,16 @@
           "loss_region": "all",
           "noise_prob": 0.0,
           "shift_prob": 0.0,
+          "experiment": "main"
+        },
+        {
+          "condition_id": "A1",
+          "representation": "chemomae",
+          "output_dim": 16,
+          "n_mask": 0,
+          "loss_region": "all",
+          "noise_prob": 0.5,
+          "shift_prob": 0.5,
           "experiment": "main"
         },
         {
@@ -447,7 +457,7 @@
     "code_sha256": {
       "training.py": "720d01c34076f975771c562dbdb3df21488ac4ee6eefaea74ebb43469d191db2",
       "neural.py": "0edd7c2899bf3f8d69c680031463dbce2915bb05cd5730bcf8fafd067ee9f346",
-      "config.py": "6d09044cd9bc023dc0f427193633ef1808910a43d1e158f0702a8c7b2247bb8a",
+      "config.py": "5015aad320ab611326d8d0a621053b3f8ccc709e4c26a2945d595c1c0d0a53db",
       "data.py": "2c22e1e08e522c384ae6f0d323f7473a3e296e712643ee1c6e25e00c181668ad",
       "input_validation.py": "7aec04fd753625cd7f4432f6f70ef6288a6be79ae3ee28822cbe68dd0777e961",
       "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",

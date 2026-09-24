@@ -148,17 +148,28 @@ def test_all_three_rng_states_can_replay_next_epoch_and_batch(spectra: torch.Ten
     assert torch.equal(expected_mask, actual_mask)
 
 
-@pytest.mark.parametrize("condition_id", ["A0", "M00", "M11-25", "M11-75"])
+@pytest.mark.parametrize("condition_id", ["A0", "A1", "M00", "M11-25", "M11-75"])
 def test_loss_uses_clean_target_and_correct_region(condition_id: str, spectra: torch.Tensor) -> None:
     stream = TrainingRandomness(condition_id, 1, 1, torch.device("cpu"))
     _, visible = stream.prepare(spectra)
     reconstruction = (spectra + torch.where(visible, 7.0, 2.0)).detach().requires_grad_()
     loss = reconstruction_loss(condition_id, reconstruction, spectra, visible)
-    assert float(loss.detach()) == pytest.approx(49.0 if condition_id == "A0" else 4.0)
+    assert float(loss.detach()) == pytest.approx(49.0 if condition_id in ("A0", "A1") else 4.0)
     loss.backward()
-    if condition_id != "A0":
+    if condition_id not in ("A0", "A1"):
         assert bool((reconstruction.grad[visible] == 0).all())
         assert bool((reconstruction.grad[~visible] != 0).all())
+
+
+def test_a1_shares_m11_corruption_with_full_visibility(spectra: torch.Tensor) -> None:
+    dae = TrainingRandomness("A1", 2, 3, torch.device("cpu"))
+    mae = TrainingRandomness("M11", 2, 3, torch.device("cpu"))
+    for _ in range(3):
+        augmented, visible = dae.prepare(spectra)
+        masked_input, masked_visible = mae.prepare(spectra)
+        assert torch.equal(augmented, masked_input)
+        assert bool(visible.all())
+        assert bool(((~masked_visible).sum(dim=1) == 128).all())
 
 
 def test_invalid_loss_masks_fail(spectra: torch.Tensor) -> None:

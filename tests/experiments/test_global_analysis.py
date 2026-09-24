@@ -176,6 +176,13 @@ def test_pca_export_preserves_shared_pixel_and_snv_label_identity(
                                    rtol=1e-5, atol=2e-6)
         np.testing.assert_array_equal(pixels[f"{condition}_original_cluster"], raw)
         np.testing.assert_array_equal(pixels[f"{condition}_cluster"], 9 - raw)
+    obsolete = output / "obsolete.json"
+    obsolete.write_text("old inputs")
+    ui.prepare_inputs(experiment, Path("unused"), Path("unused"), device=torch.device("cpu"),
+                       overwrite=True)
+    assert not obsolete.exists()
+    _, updated_pixels = ui.check_inputs(output)
+    pd.testing.assert_frame_equal(pixels, updated_pixels)
 
 
 def test_failed_global_fit_does_not_publish_partial_condition(
@@ -333,12 +340,12 @@ def test_snv_assignment_uses_equal_sample_spectra_instead_of_spatial_overlap() -
     basis = np.zeros((8, 256))
     basis[np.arange(8), 2 * np.arange(8)] = 1
     basis[np.arange(8), 2 * np.arange(8) + 1] = -1
-    values = np.full((2, 5, 8, 4, 256), np.nan)
+    values = np.full((2, len(gr.CONDITIONS), 8, 4, 256), np.nan)
     values[:, :, :, 1] = basis
     values[0, 0, :2, 1] = .8 * basis[[1, 0]]
     values[1, 0, :2, 1] = .6 * basis[:2]
-    pixels = np.broadcast_to(np.array([1, 100])[:, None, None], (2, 5, 8)).copy()
-    contingency = np.repeat((101 * np.eye(8, dtype=np.int64))[None], 5, axis=0)
+    pixels = np.broadcast_to(np.array([1, 100])[:, None, None], (2, len(gr.CONDITIONS), 8)).copy()
+    contingency = np.repeat((101 * np.eye(8, dtype=np.int64))[None], len(gr.CONDITIONS), axis=0)
     summary = gr.SpectralSummaries(("small", "large"), np.arange(256), values,
                                   pixels, pixels.copy(), contingency)
     mapping, similarity = gr.match_snv(summary)
@@ -379,7 +386,7 @@ def test_report_png_csv_alignment_and_tamper_detection(
     obsolete_latent = output / "latent"
     obsolete_latent.mkdir()
     (obsolete_latent / "projection.png").write_bytes(b"obsolete output location")
-    old = output / "obsolete.png"
+    old = output / "01_representative_samples_5x7.png"
     old.write_text("old report", encoding="utf-8")
     with monkeypatch.context() as failure:
         def fail(*args: object, **kwargs: object) -> gr.SpectralSummaries:
@@ -389,7 +396,7 @@ def test_report_png_csv_alignment_and_tamper_detection(
             gr.render_global_report(experiment, data, inventory, dpi=45)
     assert old.read_text(encoding="utf-8") == "old report"
     report = gr.render_global_report(experiment, data, inventory, dpi=45, chunk_pixels=19)
-    assert report["png_count"] == 26 and report["csv_count"] == 37
+    assert report["png_count"] == 31 and report["csv_count"] == 44
     assert gr.check_global_report(experiment, data, inventory)["checks_passed"]
     assert (latent / "projection.png").read_bytes() == b"independently managed PCA figure"
     assert json.loads((latent / "completion.json").read_text()) == {"scope": "latent"}

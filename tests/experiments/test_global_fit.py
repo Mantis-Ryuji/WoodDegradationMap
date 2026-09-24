@@ -339,7 +339,8 @@ def test_cli_defaults_and_batch_failure_stops_next_condition(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     cli = cli_module()
-    assert cli.parse_args(["train"]).conditions == ["A0", "M00", "M11"]
+    assert cli.parse_args(["train"]).conditions == ["A0", "A1", "M00", "M11"]
+    assert cli.parse_args(["train", "--conditions", "A1"]).conditions == ["A1"]
     for argv in (["create", "--resume"], ["train", "--smoke-batches", "2"],
                  ["train", "--conditions", "M10"], ["train", "--conditions", "A0", "A0"]):
         with pytest.raises(SystemExit):

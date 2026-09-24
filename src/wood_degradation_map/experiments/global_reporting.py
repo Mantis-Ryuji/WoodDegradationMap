@@ -35,9 +35,9 @@ CONDITIONS = GLOBAL_CONDITIONS
 REFERENCE = CONDITIONS.index("M00")
 KINDS = ("reflectance", "snv", "pseudoabsorbance", "second_derivative")
 PLOTTED_KINDS = (0, 1, 3)
-Y_LABELS = ("Reflectance", "SNV", "Pseudoabsorbance", r"$d^2A/d\lambda^2$ (nm$^{-2}$)")
+Y_LABELS = ("Reflectance", "SNV spectra", "Pseudoabsorbance", r"$d^2A/d\lambda^2$ (nm$^{-2}$)")
 DEFAULT_DIRECTORY = "results/figures/global_k8_v1"
-REPRESENTATIVE_FIGURE = "01_representative_samples_5x7.png"
+REPRESENTATIVE_FIGURE = "01_representative_samples_6x7.png"
 REPRESENTATIVE_LABEL_FIGURE = "07_representative_samples_1x7.png"
 
 
@@ -533,7 +533,7 @@ def render_global_report(
         _plot_spectra(stage, summary, means, dpi)
         _plot_matrices(stage, mapping, similarity, dpi)
         captions = [(REPRESENTATIVE_FIGURE,
-                     "Rows from top: B0, B1, A0, M00, M11. Columns: "
+                     "Rows from top: B0, B1, A0, A1, M00, M11. Columns: "
                      + ", ".join(sample for _, sample in REPRESENTATIVES)
                      + ". Fixed representative samples; sample IDs appear below the final row "
                      "only. Shared M00-aligned display IDs and cluster colors.")]
@@ -547,7 +547,7 @@ def render_global_report(
                 (f"{condition}/labels/{REPRESENTATIVE_LABEL_FIGURE}",
                  "Fixed representative samples, left to right: "
                  + ", ".join(sample for _, sample in REPRESENTATIVES)
-                 + ". Same columns, display IDs and colors as the five-condition comparison."),
+                 + ". Same columns, display IDs and colors as the six-condition comparison."),
                 (f"{condition}/labels/08_all_samples_7x7.png", "All 49 samples in ascending "
                  "ID order, row-major 7 by 7 grid. The same display IDs and colors apply."),
                 (f"{condition}/01_representative_spectra.png", "Top left: SNV; top right: "
@@ -648,7 +648,8 @@ def check_global_report(
              and completion["samples"] == len(expected_samples)
              and completion["png_count"] == sum(name.endswith(".png") for name in hashes)
              == len(CONDITIONS) * (math.ceil(len(expected_samples) / 7) + 4) + 1
-             and completion["csv_count"] == sum(name.endswith(".csv") for name in hashes) == 37,
+             and completion["csv_count"] == sum(name.endswith(".csv") for name in hashes)
+             == 7 * len(CONDITIONS) + 2,
              "Global report artifact counts differ")
     _require(report["representative_sample_ids"] == [sample for _, sample in REPRESENTATIVES]
              and report["representative_row_conditions"] == list(CONDITIONS),

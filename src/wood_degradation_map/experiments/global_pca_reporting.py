@@ -1,4 +1,4 @@
-"""One static 2x5 density/cluster figure from saved CPU PCA coordinates."""
+"""One static 2x6 density/cluster figure from saved CPU PCA coordinates."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def plot_summary(
     for condition in CONDITIONS:
         require(coordinates[condition].shape == (len(pixels), 2)
                 and np.isfinite(coordinates[condition]).all(), "Invalid PCA plot coordinates")
-    fig, axes = plt.subplots(2, 5, figsize=(24, 10), squeeze=False)
+    fig, axes = plt.subplots(2, len(CONDITIONS), figsize=(4.8 * len(CONDITIONS), 10), squeeze=False)
     cmap = ListedColormap(palette)
     cluster_norm = BoundaryNorm(np.arange(.5, 9.5), cmap.N)
     order = np.random.default_rng(seed).permutation(len(pixels))
@@ -111,7 +111,7 @@ def plot_summary(
     pd.concat(tables, ignore_index=True).to_csv(output / "hexbin_counts.csv", index=False)
     pd.concat(centers, ignore_index=True).to_csv(output / "centroids.csv", index=False)
     pd.DataFrame([{"file": FIGURE_NAME, "caption":
-        "Columns: B0, B1, A0, M00, M11. Top: pixel counts per hexagon, shared logarithmic "
+        "Columns: B0, B1, A0, A1, M00, M11. Top: pixel counts per hexagon, shared logarithmic "
         "turbo scale. Bottom: SNV-aligned Cluster ID; numbered circles are arithmetic "
         "means of member PCA coordinates. All conditions use the same selected pixels. "
         "B1 uses the saved baseline's top two PCA scores before L2 normalization, with its "

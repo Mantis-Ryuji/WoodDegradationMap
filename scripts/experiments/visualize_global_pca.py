@@ -1,4 +1,4 @@
-"""Render/check the single static 2x5 PNG from fixed global PCA coordinates."""
+"""Render/check the single static 2x6 PNG from fixed global PCA coordinates."""
 
 from __future__ import annotations
 

@@ -31,7 +31,8 @@ LFR_METRICS = ("lfr_both", "lfr_noise", "lfr_shift")
 REPEATED = (*LLA_METRICS, *LFR_METRICS, "silhouette")
 CONTRAST_METRICS = (*LLA_METRICS, *LFR_METRICS)
 OCCUPANCY_METRICS = ("used_clusters", "max_occupancy", "single_cluster")
-# The six figure panels are a subset of the complete CSV metrics.
+# Figure panels are subsets of the complete CSV metrics.
+MAIN_FIGURE_METRICS = (*LLA_METRICS, "lfr_both")
 SUMMARY_METRICS = (*LLA_METRICS, "lfr_both", "ari", "silhouette")
 TABLE_METRICS = (*LLA_METRICS, *LFR_METRICS, "ari", "silhouette")
 DISPLAY_ORDER = (*TABLE_METRICS, *OCCUPANCY_METRICS)
@@ -48,7 +49,7 @@ TABLE_NAMES = (
     "ari_pairs", "occupancy_samples", "occupancy_folds", "metrics_k8", "paired_k8", "interaction_k8",
 )
 COLORS = dict(zip(MAIN_CONDITIONS, (
-    "#0072b2", "#d55e00", "#009e73", "#cc79a7", "#e69f00", "#56b4e9", "#332288",
+    "#0072b2", "#d55e00", "#009e73", "#882255", "#cc79a7", "#e69f00", "#56b4e9", "#332288",
 ), strict=True))
 LABELS = {
     **{f"adjusted_lla_{w}": f"LLA ({w} x {w})" for w in (3, 5, 9)},
@@ -59,6 +60,7 @@ LABELS = {
     "single_cluster": "Cluster Occupancy: single-cluster fraction",
 }
 STYLES = ("--", ":", "-.")
+FIGURE_PAIRS = ("M11 - B0", "M11 - B1", "M11 - M00", "A1 - A0", "M11 - A1")
 
 
 @dataclass
@@ -293,7 +295,7 @@ def load_report_data(experiment: Path, snapshot: str) -> ReportData:
             or done.get("sample_count") != len(expected)
             or done.get("source_run_count") != len(MAIN_CONDITIONS) * len(FOLDS) * len(REPEATS)
             or done.get("score_record_count") != len(expected) * len(MAIN_CONDITIONS) * 3 * 7 * 10):
-        raise ValueError("Expected a complete main-seven-condition OOF snapshot")
+        raise ValueError("Expected a complete main-eight-condition OOF snapshot including A1")
 
     def read(name: str) -> dict:
         return reader.read_json(f"{prefix}/{name}", done["artifact_sha256"][name])
@@ -406,10 +408,12 @@ def _align_lla_axes(axes: tuple[Axes, ...], *, tick_step: float | None) -> None:
 def _curve_figure(
     data: ReportData, output: Path, stem: str, metrics: tuple[str, ...], dpi: int,
     *, kind: str = "condition", expressions: tuple[str, ...] = MAIN_CONDITIONS,
-    layout: tuple[int, int] | None = None,
+    layout: tuple[int, int] | None = None, single_column: bool = False,
 ) -> None:
     nrows, ncols = layout or (1, len(metrics))
-    fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 3.6 * nrows + 0.7), squeeze=False)
+    # Use the intended print width so text remains 8–9 pt in a journal column.
+    figsize = (3.5, 4.1) if single_column else (5 * ncols, 3.6 * nrows + 0.7)
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, squeeze=False)
     for axis, metric in zip(axes.flat, metrics, strict=True):
         for index, expression in enumerate(expressions):
             rows = data.summaries[(data.summaries.kind == kind)
@@ -420,13 +424,22 @@ def _curve_figure(
             if metric != "ari":
                 for repeat, style in zip(REPEATS, STYLES, strict=True):
                     axis.plot(CLUSTER_COUNTS, rows[f"repeat_{repeat}_mean"], color=color,
-                              linestyle=style, alpha=0.35, linewidth=0.8)
-            axis.plot(CLUSTER_COUNTS, rows["mean"], color=color, marker="o", markersize=4,
-                      linewidth=2, label=expression)
+                              linestyle=style, alpha=0.35, linewidth=0.5 if single_column else 0.8)
+            axis.plot(CLUSTER_COUNTS, rows["mean"], color=color, marker="o",
+                      markersize=2 if single_column else 4,
+                      linewidth=1 if single_column else 2, label=expression)
         if kind != "condition":
             axis.axhline(0, color="0.4", linewidth=0.8)
         axis.set(xlabel="K", ylabel=LABELS[metric] + (" difference" if kind != "condition" else ""),
                  xticks=CLUSTER_COUNTS)
+        if single_column:
+            if metric in LLA_METRICS:
+                axis.set_ylabel(f"LLA-{metric.rsplit('_', 1)[1]}")
+            axis.xaxis.label.set_size(9)
+            axis.yaxis.label.set_size(9)
+            axis.xaxis.labelpad = 2
+            axis.yaxis.labelpad = 2
+            axis.tick_params(axis="both", labelsize=8, pad=2, length=2.5)
         if kind == "condition":
             axis.yaxis.set_major_locator(MultipleLocator(0.1))
         axis.grid(alpha=0.2)
@@ -436,8 +449,13 @@ def _curve_figure(
     if any(metric != "ari" for metric in metrics):
         handles += [Line2D([], [], color="0.5", linestyle=style) for style in STYLES]
         labels += [f"Repeat {repeat}" for repeat in REPEATS]
-    fig.legend(handles, labels, loc="lower center", ncol=min(5, len(labels)), frameon=False)
-    fig.tight_layout(rect=(0, 0.16 if nrows == 1 else 0.10, 1, 1))
+    if single_column:
+        fig.legend(handles, labels, loc="center left", bbox_to_anchor=(1, 0.5),
+                   ncol=1, frameon=False, fontsize=8, handlelength=1.5, handletextpad=0.4)
+        fig.tight_layout(pad=0.4, w_pad=0.6, h_pad=0.8)
+    else:
+        fig.legend(handles, labels, loc="lower center", ncol=min(5, len(labels)), frameon=False)
+        fig.tight_layout(rect=(0, 0.16 if nrows == 1 else 0.10, 1, 1))
     _save(fig, output, stem, dpi)
 
 
@@ -507,10 +525,11 @@ def render_report(experiment: Path, snapshot: str, output: Path, *, dpi: int = 2
             table = table.sort_values(["_order", "expression", "k"], kind="stable").drop(columns="_order")
         table.to_csv(output / f"{name}.csv", index=False, encoding="utf-8-sig")
     with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 10}):
-        _curve_figure(data, output, "01_main_metrics_k_sweep", SUMMARY_METRICS, dpi, layout=(2, 3))
+        _curve_figure(data, output, "01_main_metrics_k_sweep", MAIN_FIGURE_METRICS, dpi,
+                      layout=(2, 2), single_column=True)
         _dot_figure(data, output, dpi)
         _curve_figure(data, output, "03_paired_k_sweep", SUMMARY_METRICS, dpi,
-                      kind="paired", expressions=tuple(f"M11 - {c}" for c in ("B0", "B1", "M00")),
+                      kind="paired", expressions=FIGURE_PAIRS,
                       layout=(2, 3))
     data.reader.verify_unchanged()
     for name in OBSOLETE_FIGURES:
@@ -522,10 +541,11 @@ def render_report(experiment: Path, snapshot: str, output: Path, *, dpi: int = 2
         "metric_order": ["LLA", "LFR(TGN+FS)", "ARI", "Cosine-Silhouette", "Cluster Occupancy"],
         "table_metric_order": [LABELS[metric] for metric in DISPLAY_ORDER],
         "figure_layouts": {
-            "01_main_metrics_k_sweep": "2x3; top: LLA 3/5/9; bottom: LFR(TGN+FS), ARI, Cosine-Silhouette",
-            "02_k8_distributions": "2x3; same metric order as the main summary",
+            "01_main_metrics_k_sweep": "2x2; top: LLA-3, LLA-5; bottom: LLA-9, LFR(TGN+FS); "
+            "single column: 3.5 inches wide, 8 pt ticks/legend, 9 pt axis labels",
+            "02_k8_distributions": "2x3; top: LLA 3/5/9; bottom: LFR(TGN+FS), ARI, Cosine-Silhouette",
             "03_paired_k_sweep": "2x3; top: LLA 3/5/9; bottom: LFR(TGN+FS), ARI, Cosine-Silhouette; "
-            "each panel shows M11-B0, M11-B1, M11-M00",
+            "each panel shows M11-B0, M11-B1, M11-M00, A1-A0, M11-A1",
             "Cluster Occupancy": "CSV tables only",
             "interaction": "CSV tables only",
         },

@@ -18,7 +18,7 @@
     "mode": "training",
     "smoke_id": null,
     "weights_sha256": "e8ac7d5c8105e0893c5cbe43f05991f893ec8fb1dee38dcf87b8aa781d0bb64d",
-    "run_sha256": "79128eee62e76496d73ed071ce15a3f4297df8e01cf6faefe86aaf93b3604843",
+    "run_sha256": "a7f1d12fd3898713f042e2a08ece0205241908f87e65c350424752f6b60a7cdf",
     "completion_sha256": "babbb44937c3b272487aeb5b7eafe247c4949b9bd96c4c584f7f42c267386fb6",
     "training_runtime": {
       "python": "3.11.15",
@@ -103,7 +103,7 @@
   ],
   "test_pixels": 750105,
   "manifest_artifact_sha256": {
-    "config/experiment.json": "861e52c21803c3ea2f768ae4eecee6831ba6a2d104ec33f2db69c18a9a855389",
+    "config/experiment.json": "0279f047d13f6221078a728b4ce4b3ecbe00f9d91782222b564e922561ff16d2",
     "config/seeds.json": "367ef557504c53f416addd4bd88b0afdb596faacd9dbd73c0e616ecf38e8eb4a",
     "manifests/inputs.json": "87370c47ff3fe6423f35be9011f255779a025b864c3bc17760c64ddb1b4f4fcd",
     "manifests/folds.parquet": "0d1029cfb5f94245da1bdb6d7c26eb64b85241dfeb135eb66be612cc01c100d5",
@@ -242,6 +242,16 @@
           "loss_region": "all",
           "noise_prob": 0.0,
           "shift_prob": 0.0,
+          "experiment": "main"
+        },
+        {
+          "condition_id": "A1",
+          "representation": "chemomae",
+          "output_dim": 16,
+          "n_mask": 0,
+          "loss_region": "all",
+          "noise_prob": 0.5,
+          "shift_prob": 0.5,
           "experiment": "main"
         },
         {
@@ -484,7 +494,7 @@
     "code_sha256": {
       "training.py": "720d01c34076f975771c562dbdb3df21488ac4ee6eefaea74ebb43469d191db2",
       "neural.py": "0edd7c2899bf3f8d69c680031463dbce2915bb05cd5730bcf8fafd067ee9f346",
-      "config.py": "6d09044cd9bc023dc0f427193633ef1808910a43d1e158f0702a8c7b2247bb8a",
+      "config.py": "5015aad320ab611326d8d0a621053b3f8ccc709e4c26a2945d595c1c0d0a53db",
       "data.py": "2c22e1e08e522c384ae6f0d323f7473a3e296e712643ee1c6e25e00c181668ad",
       "input_validation.py": "7aec04fd753625cd7f4432f6f70ef6288a6be79ae3ee28822cbe68dd0777e961",
       "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",

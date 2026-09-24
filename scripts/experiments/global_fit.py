@@ -1,4 +1,4 @@
-"""Prepare global B0/PCA inputs and sequentially train A0, M00 and M11 once."""
+"""Prepare global B0/PCA inputs and sequentially train A0, A1, M00 and M11 once."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--processed-dir", type=Path, default=root / "data/processed/production_v1")
     parser.add_argument("--metadata", type=Path, default=root / "data/metadata/古材メタデータ.csv")
     parser.add_argument("--conditions", nargs="+", choices=NEURAL_CONDITIONS,
-                        default=None, help="Default: A0 M00 M11, sequentially")
+                        default=None, help="Default: A0 A1 M00 M11, sequentially")
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--resume", action="store_true",
                         help="Train: resume last.pt; verify and skip completed runs")

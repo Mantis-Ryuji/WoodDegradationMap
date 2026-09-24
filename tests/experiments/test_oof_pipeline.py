@@ -18,7 +18,7 @@ from wood_degradation_map.experiments.input_validation import InputInventory, Sa
 from wood_degradation_map.experiments.manifests import CVManifest, _digest, _read_json, _write_json, create_cv_manifest
 
 Fixture = tuple[Path, InputInventory, CVManifest]
-SELECTED = ("B0", "M00", "M10", "M01", "M11")
+SELECTED = ("B0", "M00", "M10", "M01", "M11", "A0", "A1")
 
 
 def _records(metric: str = "lla_3") -> list[ScoreRecord]:
@@ -161,14 +161,39 @@ def _forbidden(*args: object, **kwargs: object) -> None:
     raise AssertionError("OOF/check must not read spectra, train, predict or recompute checked summaries")
 
 
+@pytest.mark.parametrize("fail", [False, True])
+def test_named_snapshot_overwrite_preserves_previous_on_failure(
+    saved_sources: Fixture, monkeypatch: pytest.MonkeyPatch, fail: bool,
+) -> None:
+    directory, inventory, manifest = saved_sources
+    output = pipeline.run_oof(directory, inventory, manifest, ("B0",), snapshot="same")
+    old = output / "obsolete.json"
+    old.write_text("old output")
+    before = {path.name: path.read_bytes() for path in output.glob("*.json")}
+
+    def broken_ari(*args: object, **kwargs: object) -> None:
+        raise ValueError("fixture failed regeneration")
+
+    if fail:
+        monkeypatch.setattr(pipeline, "repeat_ari", broken_ari)
+        with pytest.raises(ValueError, match="fixture failed regeneration"):
+            pipeline.run_oof(directory, inventory, manifest, ("B0",), snapshot="same", overwrite=True)
+        assert before == {path.name: path.read_bytes() for path in output.glob("*.json")}
+    else:
+        assert pipeline.run_oof(directory, inventory, manifest, ("B0",),
+                                snapshot="same", overwrite=True) == output
+        assert not old.exists()
+        assert pipeline.check_oof(directory, inventory, manifest, "same")["source_run_count"] == 15
+
+
 @pytest.mark.parametrize("saved_sources", [SELECTED], indirect=True)
 def test_full_oof_save_check_pairs_interaction_and_ari(saved_sources: Fixture, monkeypatch: pytest.MonkeyPatch) -> None:
     directory, inventory, manifest = saved_sources
     monkeypatch.setattr(FoldData, "batches", _forbidden)
     output = pipeline.run_oof(directory, inventory, manifest, SELECTED, snapshot="fixture")
     report = _read_json(output / "completion.json")
-    assert report["sample_count"] == 6 and report["source_run_count"] == 75
-    assert report["score_record_count"] == 6 * 5 * 3 * 7 * 10
+    assert report["sample_count"] == 6 and report["source_run_count"] == 105
+    assert report["score_record_count"] == 6 * 7 * 3 * 7 * 10
     summary = _read_json(output / "summaries/M11/k4.json")["metrics"]["lla_3"]
     assert summary["common_samples"] == 6
     assert summary["mean"] == pytest.approx((2.5 + 2 + 4) / 16)
@@ -176,6 +201,9 @@ def test_full_oof_save_check_pairs_interaction_and_ari(saved_sources: Fixture, m
     assert summary["repeat_sd"] == pytest.approx(1 / 16)
     paired = _read_json(output / "comparisons/M11_minus_B0/k4.json")["metrics"]["lfr_noise"]
     assert paired["mean"] == pytest.approx(4 / 16)  # No LFR sign reversal.
+    for name, difference in (("A1_minus_A0", 1 / 16), ("M11_minus_A1", -2 / 16)):
+        contrast = _read_json(output / f"comparisons/{name}/k4.json")["metrics"]["lfr_noise"]
+        assert contrast["mean"] == pytest.approx(difference)
     interaction = _read_json(output / "interaction/k4.json")["metrics"]["lla_3"]
     assert interaction["mean"] == 0
     ari = _read_json(output / "ari/M11/k4.json")

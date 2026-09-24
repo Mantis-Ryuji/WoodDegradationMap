@@ -11,6 +11,7 @@ import pandas as pd
 import torch
 
 from .config import ROOT_SEED
+from .artifact_output import publish_directory
 from .global_baselines import GlobalPCA
 from .global_clustering import collect_global_features, condition_paths, load_global_representation
 from .global_clustering import read_label_map
@@ -51,9 +52,10 @@ def collect_baseline_scores(
 
 def prepare_inputs(
     experiment: Path, processed: Path, metadata: Path, *, device: torch.device,
-    chunk_pixels: int = 1024, resume: bool = False,
+    chunk_pixels: int = 1024, resume: bool = False, overwrite: bool = False,
 ) -> dict:
     require(chunk_pixels > 0, "Invalid extraction chunk size")
+    require(not (resume and overwrite), "Choose resume or overwrite")
     require(CONDITIONS == GLOBAL_CONDITIONS, "PCA conditions differ from global fits")
     inventory = load_input_inventory(processed, metadata)
     manifest = load_global_bundle(experiment, inventory, processed, metadata)
@@ -65,7 +67,7 @@ def prepare_inputs(
               "baseline_pca": digest(experiment / "checkpoints/baselines/pca.npz"),
               "prepare_code": digest(Path(__file__))}
     output = experiment / INPUT_DIRECTORY
-    if output.exists():
+    if output.exists() and not overwrite:
         if not resume:
             raise FileExistsError(f"{output} exists; use --resume to verify/skip")
         record, _ = check_inputs(output)
@@ -130,5 +132,5 @@ def prepare_inputs(
                 "PCA source changed during extraction")
         finish_artifacts(stage, "pca_inputs_completed")
         check_inputs(stage)
-        stage.rename(output)
+        publish_directory(stage, output, root=experiment)
     return {"status": "pca_inputs_completed", "pixels": len(pixels), "output": str(output)}

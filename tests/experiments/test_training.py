@@ -76,7 +76,7 @@ def _assert_nested_equal(expected: object, actual: object) -> None:
         assert expected == actual
 
 
-@pytest.mark.parametrize("condition", ["A0", "M11"])
+@pytest.mark.parametrize("condition", ["A0", "A1", "M11"])
 def test_inherited_fit_recipe_and_resume_reproduce_trajectory(
     experiment: tuple[Path, TrainingData], condition: str,
 ) -> None:

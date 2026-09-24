@@ -1,4 +1,4 @@
-"""Fit/check global K=8 Cosine-KMeans and all-pixel maps for the five fixed conditions."""
+"""Fit/check global K=8 Cosine-KMeans and all-pixel maps for the six fixed conditions."""
 
 from __future__ import annotations
 
