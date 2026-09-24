@@ -75,9 +75,9 @@ test試料は、trainで得た変換器、encoder、クラスタ中心を固定�
 - B0は表現学習を行わない。B1のPCAが決定的な設定ならfoldごとのfit結果を再利用し、確率的な設定なら
   反復ごとにseedを記録してfitする。B0/B1を含めKMeansは各反復でfitする。
 
-主比較の学習5条件は$5\times5\times3=75$学習、追加mask率2条件は$2\times5\times3=30$学習で、
-CVのニューラルネット学習は合計105回となる。Kの数だけ表現学習を繰り返さず、同一fold・条件・反復の
-表現を全Kで共有する。PCA、KMeansおよび全体可視化用の学習はこの105回に含めない。
+主比較の学習6条件は$6\times5\times3=90$学習、追加mask率2条件は$2\times5\times3=30$学習で、
+CVのニューラルネット学習は合計120回となる。Kの数だけ表現学習を繰り返さず、同一fold・条件・反復の
+表現を全Kで共有する。PCA、KMeansおよび全体可視化用の学習はこの120回に含めない。
 
 CV用seed計画の基準値は `20260905` とする。
 `["wood-degradation-map-seeds-v1", 基準値, 用途, ...文脈]` を空白なしのASCII JSONへ変換し、
@@ -134,7 +134,7 @@ seed計画は乱数管理の契約であり、後続の学習・共通評価摂�
 
 ## 4. 主比較条件
 
-主比較のMAE条件ではmask率を50%に固定し、A0は0%とする。通常の推論入力にはaugmentationを適用せず、
+主比較のMAE条件ではmask率を50%に固定し、A0・A1は0%とする。通常の推論入力にはaugmentationを適用せず、
 学習時の各augmentationの適用確率は、有効な条件においてそれぞれ0.5とする。
 LFR評価では別途、固定モデルに対する評価摂動を明示的に生成する。
 
@@ -143,14 +143,17 @@ LFR評価では別途、固定モデルに対する評価摂動を明示的に�
 | B0 | raw SNV | - | - | - | 入力空間baseline |
 | B1 | PCA | - | - | - | 線形次元削減baseline |
 | A0 | AE | 0% | なし | なし | maskなし再構成baseline |
+| A1 | Denoising AE | 0% | あり | あり | maskなし・全領域再構成へのTGN＋shift追加 |
 | M00 | MAE | 50% | なし | なし | 標準MAE |
 | M10 | Noise-MAE | 50% | あり | なし | Gaussian noiseの単独効果 |
 | M01 | Shift-MAE | 50% | なし | あり | shiftの単独効果 |
 | M11 | Aug-MAE | 50% | あり | あり | 提案条件 |
 
-A0はChemoMAE v0.2.2の全領域再構成lossを使用する。
+A0・A1はChemoMAE v0.2.2の全領域再構成lossを使用する。
 `ChemoMAE(n_mask=0)`と`TrainerConfig(loss_region="all")`を組み合わせ、
 全パッチをencoderへ入力してclean targetの全スペクトルに再構成lossを計算する。
+A1はM11と同じTGN＋shiftを同じ強度・各適用確率0.5で入力に加える。targetは追加摂動前のclean SNVとする。
+A1は2026-09-22に既存7条件の結果を得た後で追加したablationであり、当初からの事前計画条件とは区別する。
 M00を含むMAE条件では`loss_region="masked"`を使用する。
 本書の「標準MAE」M00は、本研究で共通のChemoMAE構成を用いたaugmentationなしの対照を指す。
 原MAE論文の画像用architectureを再現した条件という意味ではない。
@@ -169,14 +172,14 @@ augmentationの採用値・固定根拠は第4.1.3節に示す。
 
 #### 4.1.1 表現次元とL2正規化（Fixed）
 
-B1のPCA成分数と、A0・すべてのMAE条件の`latent_dim`を16に固定する。
+B1のPCA成分数と、A0・A1・すべてのMAE条件の`latent_dim`を16に固定する。
 mask率補助実験および全体学習でも同じ16次元を使用する。B0は256次元の入力空間baselineとする。
 
 | 条件 | クラスタリング・評価へ渡す表現 |
 | --- | --- |
 | B0 | SNV 256次元 → 行ごとのL2正規化 |
 | B1 | trainでfitしたPCAによる16次元得点 → 行ごとのL2正規化 |
-| A0・MAE系 | 全可視encoderのCLS出力 → `to_latent`で16次元 → L2正規化 |
+| A0・A1・MAE系 | 全可視encoderのCLS出力 → `to_latent`で16次元 → L2正規化 |
 
 正規化前の表現を$h$として、各画素で$z=h/\lVert h\rVert_2$とする。
 PCAでは**次元削減後**に正規化し、PCA入力の正規化だけで代用しない。
@@ -371,8 +374,8 @@ GPUの並列reductionによる微小な非決定性まで消えたとは主張�
 | EMA | 使用しない（`use_ema=False`） |
 | checkpoint選択 | 800 epoch完了時のraw weights（`last_model.pt`）。EMA weightsを使用しない |
 
-この設定をA0、M00、M10、M01、M11およびM11のmask率25%・75%へ共通適用する。
-全体可視化用のA0・M00・M11にも、CVと同じ条件別のmask・loss対象・augmentation設定と、
+この設定をA0、A1、M00、M10、M01、M11およびM11のmask率25%・75%へ共通適用する。
+全体可視化用のA0・A1・M00・M11にも、CVと同じ条件別のmask・loss対象・augmentation設定と、
 同じ800 epochのrecipeを適用する。
 参照は[公式PRETRAIN.mdの明示設定](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/PRETRAIN.md)
 を優先する。`main_pretrain.py`の引数既定値には400 epoch・base lr $10^{-3}$が含まれるが、
@@ -460,11 +463,16 @@ Trainerはbatch更新後にschedulerを進めるため、本節の0から始ま�
 | M01 vs M00 | shiftの単独効果 |
 | M11 vs M10 | shiftの追加効果 |
 | M11 vs M01 | Gaussian noiseの追加効果 |
+| A1 vs A0 | maskなし・全領域再構成AEへのTGN＋shift追加効果（追加ablation） |
+| M11 vs A1 | TGN＋shiftを揃えたdenoising AEとAug-MAEの比較（追加ablation） |
 
 M11 vs B0、M11 vs B1、M11 vs M00を主要な計画比較とし、残りは構成要素を説明するablationとする。
 M00 vs B1では出力次元を16、normを1に揃えるが、学習目的と変換器が異なるため、非線形性だけの効果とは解釈しない。
 M00 vs A0ではmaskの有無とloss対象が同時に異なるため、mask率だけの効果とは解釈しない。
-augmentation付きAEは本計画に含めず、augmentationとmask modelingの組合せに固有の優位性は主張しない。
+A1 vs A0ではmask 0%・全領域lossを共通とし、TGN＋shiftの追加を比較する。
+M11 vs A1ではaugmentationを揃えるが、maskの有無とloss対象の両方が異なる。
+mask率だけの効果や、augmentationとmask modelingの組合せに固有の一般的な優位性とは解釈しない。
+この2比較は既存結果を得た後の追加ablationとして報告し、主要3比較と以下の2×2要因計画は維持する。
 
 M00、M10、M01、M11は、Gaussian noiseの有無とshiftの有無による2×2要因計画として扱う。
 現行の報告ではLLA-3/5/9（補正後）とLFR(TGN+FS)・LFR(TGN)・LFR(FS)について、
@@ -613,18 +621,18 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 1. 固定済みの200 Hz本番前処理datasetと診断図を生成・確認する。
 2. 第11.2節の確認・記録を行う。固定済みの$q$、共通$\mathcal{K}$と代表表示$K_0$を含む実行configを作成する。
 3. 試料単位の共通5-fold splitとtrain画素のmanifestを作成する。
-4. 主比較7条件を3反復で評価する。
-5. 主7条件のOOF snapshotを作成・checkし、pairedな条件差、K依存性、2×2交互作用および反復間安定性を集計する。主条件の報告図表を生成・照合し、図表生成の実装と表示を固める。
-6. B0、B1、A0、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$K_0$で
+4. A1を含む主比較8条件を3反復で評価する。
+5. 主8条件のOOF snapshotを作成・checkし、pairedな条件差、K依存性、2×2交互作用および反復間安定性を集計する。主条件の報告図表を生成・照合し、図表生成の実装と表示を固める。
+6. B0、B1、A0、A1、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$K_0$で
    Cosine-KMeansを各1回fitする。
-7. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋Hungarian matchingでM00のCosine-KMeansを共通基準にラベルを直接整列し、SNV類似度行列・確認用IoU/contingency/overlapとともに5条件のマップとスペクトル、PCA（PC1・PC2）を保存する。既存結果の執筆を進め、M11・K8の試料内クラスタの観察を中心に、追加図・帯域指標の必要性と仕様を検討する。
+7. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋Hungarian matchingでM00のCosine-KMeansを共通基準にラベルを直接整列し、SNV類似度行列・確認用IoU/contingency/overlapとともに6条件のマップとスペクトル、PCA（PC1・PC2）を保存する。
 8. M11のmask率補助実験を同じ3反復で行い、独立したOOF snapshotとmask率依存性の図表を追加する。手順7の追加可視化・解釈の完了を待つ必要はない。
 
-主条件CV・OOF、全体fit・K8図表、PCA一枚は生成済みである。
+2026-09-25のユーザー完了報告により、A1を含む主条件CV・OOF、全体fit・K8図表、PCA一枚は生成済みである。
 mask率sweepは第5.1節の固定条件で実施し、主条件の結果と区別して補助実験として報告する。
 主条件の図表生成時に更新した代表指標・表示構成は
 [評価の報告規約](evaluation_metrics.md#reporting)を参照する。
-位置対応FT-IRと正式な目視評価の詳細設計は引き続きOpenとして別途扱う。
+残るToDoはmask ratio sweepと位置対応FT-IRの2件。正式な目視評価などの未採用案は現在の残作業に含めない。
 
 ## 11. 実験条件の確定状況と実行記録
 
