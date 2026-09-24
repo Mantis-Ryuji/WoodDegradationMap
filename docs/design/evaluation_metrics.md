@@ -401,7 +401,7 @@ paired ARIも報告pipelineで算出し、元OOF snapshotのscore・集約値・
 ### 8.3 必須の表・図
 
 本節は対象条件の全fold・全反復のCVとOOF集計が完了した報告図表に適用する。
-主7条件のOOF snapshotから主条件の図表を生成済みである。mask率依存性の図表は、
+主8条件のOOF snapshotからA1を含む主条件の図表を再生成済みである（2026-09-25ユーザー完了報告）。mask率依存性の図表は、
 M11-25・M11・M11-75のOOF集計完了後に、専用の図表生成対応を追加して作成する。
 [OOF sanity可視化](oof_sanity_visualization.md)は、
 label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様である。
@@ -410,11 +410,11 @@ label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様であ�
   反復間SD・対象数・未定義理由を区別する。ARIとそのpaired差には反復間SDを付けない。
   LFRはTGN+FS・TGN単独・FS単独の3種類を保存する。図ではTGN+FSのみを表示する。
   保存キー`lfr_both`・`lfr_noise`・`lfr_shift`の表示名は、それぞれLFR(TGN+FS)・LFR(TGN)・LFR(FS)とする。
-- 主指標サマリは2行3列とし、上段にLLAの窓3・5・9、下段にLFR(TGN+FS)・ARI・Cosine-Silhouetteを置く。
-  横軸は全7K、各panelに主7条件のmacro平均を表示する。ARI以外では同じ共通試料集合による反復別曲線も表示する。
-- $K_0=8$の試料別分布図も同じ2行3列・指標順とする。各点は試料ごとの3反復平均
+- 主指標サマリは単段幅の2×2とし、上段にLLA 3・5、下段にLLA 9・LFR(TGN+FS)を置く。
+  横軸は全7K、各panelに主8条件のmacro平均と、同じ共通試料集合による反復別曲線を表示する。
+- $K_0=8$の試料別分布図は2×3で、上段LLA 3・5・9、下段LFR(TGN+FS)・ARI・Cosine-Silhouetteとする。各点は試料ごとの3反復平均
   （ARIでは3反復対平均）、黒線はmacro平均、`n`は定義済み共通試料数を表す。
-- paired図はK依存図1枚とし、主指標サマリと同じ2行3列に、M11−B0・M11−B1・M11−M00の主要3比較を重ねる。
+- paired図はK依存図1枚とし、試料別分布図と同じ2×3に、M11−B0・M11−B1・M11−M00の主要3比較と追加ablationのA1−A0・M11−A1を重ねる。
   ARI差には第8.2節の試料単位の定義を用いる。
 - 各図内のLLA 3・5・9は縦軸範囲を揃える。全点・反復曲線と余白を含む共通範囲とし、値を切り落とさない。
   主指標サマリと試料別分布図の縦軸目盛りは全パネル0.1刻みとする。

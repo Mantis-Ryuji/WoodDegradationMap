@@ -3,8 +3,9 @@
 論文の章立て・原稿・執筆進捗は `C:\Users\PC_User\Python\Thesis` で管理する。
 本リポジトリから研究条件、根拠、実験成果物を参照する。
 
-2026-09-21時点では、主条件CV・OOF図表、全体fit・K8マップとスペクトル、PCA一枚まで生成済みである。
-まず既存の成果物で書き始め、追加可視化は主張と根拠の不足を確認してから選ぶ。
+2026-09-25のユーザー完了報告により、A1を含む主8条件CV・OOF図表、全体6条件のfit・K8マップと
+スペクトル、6×7代表図・2×6 PCA図まで再生成済みである。残るToDoはmask ratio sweepと位置対応FT-IRのみ。
+追加可視化や正式な目視評価は現在の実施対象に含めず、既存成果物から執筆を進める。
 詳細な観察はM11・K8の試料内クラスタを中心に検討する。完了記録の確認範囲は[ToDo](../ToDo.md)を参照する。
 
 ## 1. 参照資料
@@ -47,16 +48,16 @@
 | TGN・shiftの例 | [TGN](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_noise_exact_angles_examples.png)・[shift](../outputs/sanity_checks/augmentation_strengths_train_fold1/snv_shift_exact_endpoints_examples.png)。同じ実測train SNV 3画素による説明図 |
 | 摂動の数値要約 | [metrics.csv](../outputs/sanity_checks/augmentation_strengths_train_fold1/metrics.csv)・[summary.json](../outputs/sanity_checks/augmentation_strengths_train_fold1/summary.json)。fold 1のtrain 8試料×128画素による強度確認。CV指標による最適化ではない |
 | B0・B1・A0・M00のOOF確認 | `outputs/sanity_checks/a0_m00_oof_visualization/`のPNG・CSV。[OOF sanity仕様](design/oof_sanity_visualization.md)に従う。全主条件の最終比較には代用しない |
-| 主7条件のK依存性 | [01_main_metrics_k_sweep.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/01_main_metrics_k_sweep.png)。上段LLA 3・5・9、下段LFR(TGN+FS)・ARI・Cosine-Silhouetteの2行3列 |
-| 主7条件の試料別分布 | [02_k8_distributions.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/02_k8_distributions.png)。$K_0=8$、試料別平均・macro平均・共通対象数 |
-| 主要3比較のpaired差 | [03_paired_k_sweep.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/03_paired_k_sweep.png)。M11−B0・M11−B1・M11−M00。ARI差は試料内3反復対平均同士の差 |
+| 主8条件のK依存性 | [01_main_metrics_k_sweep.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/01_main_metrics_k_sweep.png)。単段幅2×2、上段LLA 3・5、下段LLA 9・LFR(TGN+FS) |
+| 主8条件の試料別分布 | [02_k8_distributions.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/02_k8_distributions.png)。$K_0=8$、試料別平均・macro平均・共通対象数 |
+| 主要3比較＋追加ablationのpaired差 | [03_paired_k_sweep.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/03_paired_k_sweep.png)。M11−B0・M11−B1・M11−M00・A1−A0・M11−A1。ARI差は試料内3反復対平均同士の差 |
 | 主条件の表・出典 | `outputs/experiments/production_v1/results/figures/main_oof_v1/`のCSV 11個と[report.json](../outputs/experiments/production_v1/results/figures/main_oof_v1/report.json)。Occupancyと交互作用は表のみ。内容一覧・再生成は[runbook](experiment_runbook.md#oof-reporting) |
-| 全体fit・K8の5条件比較 | [01_representative_samples_5x7.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/01_representative_samples_5x7.png)。固定代表7試料を列、B0・B1・A0・M00・M11を行に配置。CVの予測ではなく全体fitによる記述 |
+| 全体fit・K8の6条件比較 | [01_representative_samples_6x7.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/01_representative_samples_6x7.png)。固定代表7試料を列、B0・B1・A0・A1・M00・M11を行に配置。CVの予測ではなく全体fitによる記述 |
 | M11・K8の代表試料マップ | [07_representative_samples_1x7.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/labels/07_representative_samples_1x7.png)。同じ`labels/`の00〜06・08に全49試料を保存 |
 | M11の全体代表スペクトル | [01_representative_spectra.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/01_representative_spectra.png)。上段SNV・反射率、下段疑似吸光度のSG二次微分。試料等重み平均・試料間IQR |
 | M11の試料別スペクトル・寄与数 | [sample_spectra.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/sample_spectra.csv)、[spectrum_counts.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/spectrum_counts.csv)、[wavelengths.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/wavelengths.csv)。試料ID・表示Cluster ID・kindで選び、`band_000`〜`band_255`をnmへ対応づける。試料別詳細PNGは未実装 |
-| K8のmatching・出典 | [report.json](../outputs/experiments/global_v1/results/figures/global_k8_v1/report.json)、[M11/matching.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/matching.csv)。元番号とM00基準の表示番号を区別。親図表はPNG 56枚・CSV 37個 |
-| 5条件のPCA補助図 | [01_pca_density_clusters.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/pca-latent-2d/01_pca_density_clusters.png)。2行5列・共通401,408画素。B1は既存PC、他条件は別々のPCA。軸の対応・化学情報量・優劣を図の見栄えから推定しない。掲載は未定 |
+| K8のmatching・出典 | [report.json](../outputs/experiments/global_v1/results/figures/global_k8_v1/report.json)、[M11/matching.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/matching.csv)。元番号とM00基準の表示番号を区別。親図表はPNG 67枚・CSV 44個 |
+| 6条件のPCA補助図 | [01_pca_density_clusters.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/pca-latent-2d/01_pca_density_clusters.png)。2行6列・共通401,408画素。B1は既存PC、他条件は別々のPCA。軸の対応・化学情報量・優劣を図の見栄えから推定しない。掲載は未定 |
 
 摂動例の選定・再生成は[runbook](experiment_runbook.md#input-preparation)を参照する。
 TGNの固定例は2.5・5・7.5度で採用上限5度を超える例を含み、shiftの符号は順に＋・−・＋である。
@@ -87,7 +88,8 @@ mask率25%・50%・75%の補助実験は実施し、専用OOF集計後に感度�
 
 - 試料由来・採取関係・状態、撮像装置・測定条件。解析49試料と取得試料全体を区別し、未確認情報を補完しない。
 - Multi-Otsu、SNV、PCA、球面クラスタリング、Transformer、MAE、denoisingの原典・引用箇所・書誌。
-- mask率補助実験の完了状況と、FT-IR・正式な目視評価の[Open事項](design/README.md#open-items)。
+- mask率補助実験の完了状況と、FT-IRの[Open事項](design/README.md#open-items)。正式な目視評価などの未採用案を実施済みと扱わない。
+- A1とA1−A0・M11−A1は、既存7条件の結果を得た後の追加ablationであること。M11−A1はmaskとloss対象の両方が異なること。
 - 採用runの実行環境・完了状況、図表の出典、提出書式。
 - 指標名と保存キーの対応：補正前LLA（$\mathrm{LLA}^{\mathrm{raw}}$）は`lla`、LLA（$\mathrm{LLA}$）は`adjusted_lla`。
 - 代表指標はLLA、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyの優先順。

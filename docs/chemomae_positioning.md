@@ -84,7 +84,7 @@ MAEへの追加corruptionの効果をLLA（補正後）・LFRと既定診断で�
 | encoder | 幅256、8層、8 head、FFN幅1024、GELU、pre-norm、dropout 0、学習可能な位置埋め込み |
 | bottleneck | 最終CLSを16次元へ線形射影し、L2正規化 |
 | decoder | bias付き `Linear(16, 256)` |
-| loss | 追加摂動前のSNVへのMSE。MAEは不可視チャネル、A0は全チャネル |
+| loss | 追加摂動前のSNVへのMSE。MAEは不可視チャネル、A0・A1は全チャネル |
 | 利用時 | 全patch可視・augmentationなしの17 token。encoderを固定して単位潜在をCosine-KMeansへ渡す |
 
 Decoderへ渡る入力由来の情報は単一の $z$ のみで、patch別出力、skip connection、decoder用mask tokenは使わない。
@@ -116,8 +116,10 @@ $$
 M00では $g$ は恒等写像、M10・M01・M11ではTGN・shift・両方を用いる。Targetの値と波長位置は動かさない。
 適用確率・強度は[実験プロトコル §4.1.3](design/experiment_protocol.md)に従う。
 A0は追加摂動なし・全可視で、内側の和と分母を全256チャネルへ変える。
+A1は全可視・全256チャネルのlossを維持し、入力にM11と同じTGN＋shiftを加えるdenoising AEである。
+既存7条件の結果を得た後の追加ablationとして扱う。
 
-各stepのlossは不可視帯域だけだが、画素・stepごとのrandom maskにより全帯域が復元対象となる。
+MAE条件の各stepのlossは不可視帯域だけだが、画素・stepごとのrandom maskにより全帯域が復元対象となる。
 ただし予測自体がmaskに依存するため、mask平均した目的関数も全可視・全帯域lossとは同一でない。
 学習時のmask課題と利用時の全可視表現は分けて評価する。
 
@@ -150,7 +152,7 @@ $$
 | --- | --- | --- |
 | 座標推定 | train平均で中心化した線形射影 | 可視patchに依存する非線形写像 |
 | 復元 | PCA部分空間への直交射影 | 単位潜在からのアフィン写像 |
-| 学習目標 | 全帯域二乗誤差に対応する分散最大化 | A0は全帯域MSE、MAE条件はmasked MSE |
+| 学習目標 | 全帯域二乗誤差に対応する分散最大化 | A0・A1は全帯域MSE、MAE条件はmasked MSE |
 | 軸 | 直交・分散順序を持つ | 直交性・分散順序を課さない |
 | L2正規化 | fit後のクラスタリング用scoreへ適用 | 再構成学習のbottleneck内部から適用 |
 

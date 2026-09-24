@@ -26,24 +26,28 @@
 
 | 区分 | 対象 | 追加NN学習 | クラスタリング |
 | --- | --- | ---: | --- |
-| 主実験 | B0、B1、A0、M00、M10、M01、M11の5-fold・3反復 | 75回 | Cosine-KMeans、全7K |
+| 主実験 | B0、B1、A0、A1、M00、M10、M01、M11の5-fold・3反復 | 90回 | Cosine-KMeans、全7K |
 | Mask率補助 | M11-25・M11-75。50%はM11を再利用 | 30回 | Cosine-KMeans、全7K |
 | OOF sanity | 完了済みB0・B1・A0・M00のOOF map・指標 | 0回 | 既存成果物のみ |
-| 全体解釈 | B0、B1、A0、M00、M11を全49試料でfit・学習 | 3回 | Cosine-KMeans、$K_0=8$、5 fits |
+| 全体解釈 | B0、B1、A0、A1、M00、M11を全49試料でfit・学習 | 4回 | Cosine-KMeans、$K_0=8$、6 fits |
 
-全体解釈の比較対象はCosine-KMeansの5条件・K8とする。現在は既存結果の執筆を先行し、
-M11の試料内クラスタを中心とする詳細解釈と、追加図の必要性を検討する。
+全体解釈の比較対象はCosine-KMeansの6条件・K8とする。
+A1は既存7条件の結果を得た後に追加したdenoising AEのablationであり、[比較の位置づけ](experiment_protocol.md#planned-comparisons)を明記する。
 補助実験は[mask率25%・50%・75%の比較](experiment_protocol.md#mask-rate-sweep)を実施する。
 既存の50%を再利用し、25%・75%を各15 runs追加する。全体解釈の完了を着手条件にしない。
 
-NN学習の計画総数は主CV 75回＋mask率補助30回＝105回、全体fitの3回を含めて108回である。
-このうち主CV 75回と全体fit 3回は完了し、mask率補助30回は未実施。
+NN学習の計画総数は主CV 90回＋mask率補助30回＝120回、全体fitの4回を含めて124回である。
+2026-09-25のユーザー完了報告により主CV 90回と全体fit 4回は完了し、mask率補助30回は未実施。
+OOF・全体K8図表・PCAもA1を含めて再生成済み。残るToDoはmask ratio sweepと位置対応FT-IRの2件である。
 PCA、KMeans、表現抽出、評価摂動はこのNN学習数に含めない。
 全体fitの表示番号は、観測SNV代表線のcosine類似度の合計を最大にするHungarian matchingでM00のCosine-KMeansへ直接整列する。代表線は試料内クラスタ平均を試料間で等重み平均する。元番号・対応表・SNV類似度と補助IoU・contingencyを保存する。OOF sanityはfold内B0基準・一致画素数最大化を用いる。
 
 <a id="open-items"></a>
 
-## 残るOpen事項
+## Open事項と実施範囲
+
+現在の残作業に含むのは位置対応FT-IRのみ（mask ratio sweepの条件はFixed）。
+以下のその他の項目は未採用の候補であり、完了したことや追加実施が必要なことを意味しない。
 
 | Open事項 | 実施前に決める・確認する内容 | 定義先 |
 | --- | --- | --- |

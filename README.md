@@ -26,20 +26,23 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 
 ## 現在の段階
 
-主7条件の5-fold・3反復の学習・クラスタリング・評価、`main_oof_v1`のOOF集計、
-主条件の図表生成・出力確認まで完了しました。図は2行3列のPNG 3枚、表はCSV 11個で、
+2026-09-25のユーザー完了報告により、A1（denoising AE）を含む主8条件の5-fold・3反復、
+`main_oof_v1`のOOF再集計・図表再生成まで完了しました。ニューラル学習は計90 runs、
+クラスタリング・評価は計120組です。図はPNG 3枚（主指標2×2、分布・paired各2×3）、表はCSV 11個で、
 再生成方法と保存先は[主条件OOF図表](docs/experiment_runbook.md#oof-reporting)を参照してください。
 代表指標の優先順はLLA（補正後）、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyです。
 
-全体fitとB0・B1・A0・M00・M11のCosine-KMeans（$K_0=8$）、全49試料のマップ・代表スペクトルも生成済みです。
+全体fitとB0・B1・A0・A1・M00・M11のCosine-KMeans（$K_0=8$）、全49試料のマップ・代表スペクトルも生成済みです。
 条件間の表示番号は、試料等重みのSNV代表線のcosine類似度＋HungarianでM00へ整列しています。
-全体図表はPNG 56枚・CSV 37個、独立した[PCA可視化](docs/experiment_runbook.md#global-pca)は2行5列のPNG 1枚・CSV 5個です。
-2026-09-21に保存済み完了記録を確認しました。再生成方法は[全体fit後の手順](docs/experiment_runbook.md#global-post-fit)を参照してください。
+同じ`global_k8_v1`へ全体図表PNG 67枚・CSV 44個を再生成し、代表比較は6×7です。
+独立した[PCA可視化](docs/experiment_runbook.md#global-pca)は2×6のPNG 1枚・CSV 5個です。
+A1追加の手順は[追補runbook](docs/a1_extension_runbook.md)を参照してください。今回の文書更新で成果物の再検証は行っていません。
 
-**現在はThesisで執筆を始め、既存のCV結果とK8の観察から、主張に必要な追加図を絞る段階です。**
-詳細解釈はM11・K8の試料内クラスタと観測スペクトルを中心に検討します。PCAの追加図や二次微分の帯域積分mapは候補であり、執筆開始の前提ではありません。
-補助実験として[mask率25%・50%・75%の比較](docs/experiment_runbook.md#mask-rate-sweep)を実施します。
-50%のM11は再利用し、25%・75%を各15 runs追加します。採用済み条件、完了範囲、残作業は[ToDo](ToDo.md)、
+**残るToDoはmask ratio sweepと位置対応FT-IRの2件です。**
+[mask率25%・50%・75%の比較](docs/experiment_runbook.md#mask-rate-sweep)では、
+50%のM11を再利用し、25%・75%を各15 runs追加してOOF・図表まで生成します。
+FT-IRは詳細設計・測定・化学的対応の検討が残ります。追加可視化などの候補は現在の残作業に含めず、執筆はThesisで管理します。
+採用済み条件、完了範囲、残作業は[ToDo](ToDo.md)、
 CVから言えることと物理化学的解釈の区別は[解釈メモ](docs/interpretation_notes.md)で管理します。
 
 ## 主な配置
