@@ -1,0 +1,21 @@
+{
+  "condition": "A1",
+  "input_completion_sha256": "c0da35f898702c47e558af22597efd217043c62253049690253b2cfc70711c7f",
+  "settings": {
+    "n_components": 2,
+    "svd_solver": "covariance_eigh",
+    "whiten": false
+  },
+  "runtime": {
+    "python": "3.11.15",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "numpy": "2.4.4",
+    "scipy": "1.17.1",
+    "scikit_learn": "1.9.0",
+    "device": "cpu",
+    "dtype": "float64",
+    "wall_seconds": 0.05362280004192144
+  },
+  "code_sha256": "ac892734c70b2c5f547ef64fe4a37abfeaa3bb7c356d76d11ad6f88cc2090bf4",
+  "fit_scope": "shared global fit pixels; centered, no extra scaling or whitening"
+}
