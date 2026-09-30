@@ -1,0 +1,124 @@
+{
+  "mode": "bacteria_id_cv_finetune",
+  "stage": "final",
+  "trial_number": 38,
+  "condition": "M11",
+  "run_seed": 1,
+  "fold_index": null,
+  "processed_manifest_sha256": "5a0bd644011e673d53503035a508d2ae9bffd365a1579b92e3e3817ca040972e",
+  "pretrain_run_sha256": "ce513ceb847ca202e7eed5f55fd9acf79386ebf6f7b8ae3fa1e5a8565577fb65",
+  "pretrain_weights_sha256": "57f1f5922ed95bf92635d52ecdbf99ed97d1fa3197accb4072c618c84f88e84a",
+  "study_contract_sha256": "3824fbed13350433d1f3e442cfb09f201f67ac08692e9beecc2921c850e67f99",
+  "seeds": {
+    "finetune_head": 2477585051,
+    "finetune_order": 2046812542,
+    "finetune_augmentation": 3587180884
+  },
+  "schema_version": 2,
+  "contract": {
+    "config": {
+      "setting": {
+        "k": 8,
+        "head_lr": 0.0003,
+        "encoder_lr": 8e-05,
+        "batch_size": 8,
+        "tgn": false,
+        "fs": false,
+        "weight_decay": 0.0001
+      },
+      "epochs": 50,
+      "head_only_epochs": 5,
+      "train_count": 3000,
+      "validation_count": 0,
+      "scheduler": null,
+      "early_stopping": null,
+      "optimizer": "AdamW",
+      "betas": [
+        0.9,
+        0.95
+      ],
+      "eps": 1e-08,
+      "augmentation_strength": "WoodDegradationMap defaults",
+      "augmentation_order": "SNV then TGN/FS on train only"
+    },
+    "runtime": {
+      "python": "3.11.15",
+      "platform": "Windows",
+      "torch": "2.13.0+cu130",
+      "chemomae": "0.2.2",
+      "numpy": "2.4.4",
+      "h5py": "3.16.0",
+      "cuda_runtime": "13.0",
+      "device": "cuda:0",
+      "deterministic_algorithms": false,
+      "deterministic_warn_only": false,
+      "cudnn_benchmark": false,
+      "cudnn_deterministic": false,
+      "matmul_fp32_precision": "none",
+      "cudnn_fp32_precision": "none",
+      "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+      "gpu_memory_bytes": 17170956288,
+      "gpu_capability": [
+        8,
+        9
+      ],
+      "cudnn_version": 92000
+    },
+    "code_sha256": {
+      "bacteria_hpo.py": "164bb1c711c5ba2b70d6ec2c7e4c160a618409c4274033a6a1b389de95dbafd7"
+    }
+  },
+  "execution": {
+    "config": {
+      "setting": {
+        "k": 8,
+        "head_lr": 0.0003,
+        "encoder_lr": 8e-05,
+        "batch_size": 8,
+        "tgn": false,
+        "fs": false,
+        "weight_decay": 0.0001
+      },
+      "epochs": 50,
+      "head_only_epochs": 5,
+      "train_count": 3000,
+      "validation_count": 0,
+      "scheduler": null,
+      "early_stopping": null,
+      "optimizer": "AdamW",
+      "betas": [
+        0.9,
+        0.95
+      ],
+      "eps": 1e-08,
+      "augmentation_strength": "WoodDegradationMap defaults",
+      "augmentation_order": "SNV then TGN/FS on train only"
+    },
+    "runtime": {
+      "python": "3.11.15",
+      "platform": "Windows",
+      "torch": "2.13.0+cu130",
+      "chemomae": "0.2.2",
+      "numpy": "2.4.4",
+      "h5py": "3.16.0",
+      "cuda_runtime": "13.0",
+      "device": "cuda:0",
+      "deterministic_algorithms": false,
+      "deterministic_warn_only": false,
+      "cudnn_benchmark": false,
+      "cudnn_deterministic": false,
+      "matmul_fp32_precision": "none",
+      "cudnn_fp32_precision": "none",
+      "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+      "gpu_memory_bytes": 17170956288,
+      "gpu_capability": [
+        8,
+        9
+      ],
+      "cudnn_version": 92000
+    },
+    "code_sha256": {
+      "bacteria_hpo.py": "164bb1c711c5ba2b70d6ec2c7e4c160a618409c4274033a6a1b389de95dbafd7"
+    }
+  }
+}

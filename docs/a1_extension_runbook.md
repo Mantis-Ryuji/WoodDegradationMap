@@ -1,12 +1,10 @@
 # A1（denoising AE）追加の実行手順
 
-**2026-09-25：ユーザー完了報告により、A1のCV 15 runs、主8条件OOF・図表の再生成、
-全体fit・K8マップ・代表図6×7・PCA図2×6まで完了。** 保存先は既存の`main_oof_v1`・`global_k8_v1`を上書きした。
-残るToDoはmask ratio sweepと位置対応FT-IRのみ（[ToDo](../ToDo.md)）。
-今回の文書更新では学習・テスト・成果物checkを再実行していない。
-以下はA1追加時の操作記録として残す。完了済みの学習・記録更新を最初からやり直す必要はない。
+この手順のA1 CV 15 runs、主8条件OOF・図表、全体fit・K8マップ・PCA図は完了済み。
+保存先は`main_oof_v1`と`global_k8_v1`である。以下は再現・照合用の手順であり、
+既存の完了runを新規学習として再実行しない。
 
-2026-09-22の追加条件。A1はA0と同じChemoMAE構成・mask 0%・全領域MSEで、
+A1はA0と同じChemoMAE構成・mask 0%・全領域MSEで、
 M11と同じTGN＋shift（各適用確率0.5、角度0–5度、shift −2–2）を入力に加え、
 clean SNVを再構成する。推論はclean・全可視。学習budgetは800 epoch、latentは16次元。
 

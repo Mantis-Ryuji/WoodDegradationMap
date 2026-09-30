@@ -1,8 +1,11 @@
 {
   "contract": {
-    "schema_version": 3,
+    "schema_version": 4,
     "scope": "global_descriptive_report",
     "K": 8,
+    "clustering_directory": "results/global_k8_3seed_v1/clustering",
+    "repeat": 1,
+    "seed": 1960870825,
     "conditions": [
       "B0",
       "B1",
@@ -13,16 +16,16 @@
     ],
     "reference": "M00+Cosine-KMeans",
     "sources": {
-      "B0": "4f4c52da10f01ad3e432e0dbf256ee8a221a5e99533cf9d8ff1f8d70ff36d4f9",
-      "B1": "44b1d634b0d5fe46708a268a28e8fdbb4ddda0b10c22e370b1c96ba90eea3dc5",
-      "A0": "030baee4c2fb13013938e6ddd26d907c28c4f02b09334822defa3bc6e0aacbf7",
-      "A1": "5325dc098745bb90c5f1581ce47c38600be462b0d52393926cd6c55080e5e95d",
-      "M00": "43cb0b6a567c1419c47ad9d20e8b7cb82abd84e8a9442633a2a4845e782906c1",
-      "M11": "ab5afb92fc83198482e758e206a6f1fb9814d44797af86ed6ddf9f2698156892"
+      "B0": "b49c6ea991c81f6609fd47df1d62bdef92f2c0fa46e9930428a76021dc00e943",
+      "B1": "d5dd0ea44c9becfab98d3777979be24406624eafa1c5e319cfd67b42e459d637",
+      "A0": "4e3c6d841779e3ab459b24db220c0bef172ff7165303ae3dc8f626dd5c9cceee",
+      "A1": "a7cbc5c074f505ebbcd35b89812eec2443b8b28362fb6d733f37ea6c1833773e",
+      "M00": "2212936f36f5c8f0331341c83f9a0ff3f7f32f076cb00746ae36d7d3515915cf",
+      "M11": "a24c51a4a221218942aef752085402cda2722cb9603fbfcfd06a91a268cab9ce"
     },
     "manifest_sha256": "206209405fc9e32b78065486ad42edba9758b441273c4d004a29aacc0dd227ce",
     "code_sha256": {
-      "global_reporting.py": "841fb0ecfee407096815785d06ec5842007a894257d83f379a9af548593d779c",
+      "global_reporting.py": "99d3e7c86b5aa5ebe91ab9136b24e2ac5956ba63445e1ba398ff3d0ba91d2ea2",
       "oof_sanity.py": "fd8aacecc1a3de9712c87f18d7af90b7c0677763cf5dd6b09df708a4530701bd"
     },
     "runtime": {
@@ -102,6 +105,7 @@
     "M00",
     "M11"
   ],
+  "comparison_sample_id": "KYOw16744",
   "map_groups": [
     [
       "KYOw02702",
@@ -169,6 +173,7 @@
   ],
   "definitions": {
     "aggregation": "within-sample pixel mean, then equal-sample mean",
+    "clustering": "saved global K8 three-seed analysis, repeat 1; no refit",
     "pseudoabsorbance": "pixelwise -log10(reflectance); all 256 values positive finite",
     "missing": "absent curves are NaN in NPZ and empty CSV cells; no zero fill",
     "sg": {

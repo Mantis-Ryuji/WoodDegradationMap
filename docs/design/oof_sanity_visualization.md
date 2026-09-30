@@ -28,7 +28,7 @@ PCA・KMeansのfit、表現抽出、評価を再実行しない。実行方法�
 
 $K_0=8$、repeat 1で[固定7試料](visualization_and_interpretation.md#representative-samples)を
 試料番号の昇順（ヒノキ、マツ、ケヤキ、ツガ、クリ、スギ、モミ）に並べ、B0・B1・A0・M00各1枚へ保存する。
-2026-09-21の代表試料変更を共通定義から引き継ぐ。既存のOOF sanity PNGへの反映には再生成が必要である。
+代表試料の現行定義を適用する。保存済みPNGと試料IDが異なる場合は再生成する。
 
 各試料の下に`KYOw...`試料IDを表示し、背景0・クラスタ1〜8の共通凡例を付ける。
 [共通描画規約](visualization_and_interpretation.md#figure-style)を適用する。

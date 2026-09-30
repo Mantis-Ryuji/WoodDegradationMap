@@ -1,0 +1,94 @@
+{
+  "contract": {
+    "schema_version": 1,
+    "scope": "global_k8_3seed_evaluation",
+    "condition": "B0",
+    "K": 8,
+    "repeats": [
+      1,
+      2,
+      3
+    ],
+    "seed_plan": [
+      {
+        "repeat": 1,
+        "K": 8,
+        "seed": 1960870825
+      },
+      {
+        "repeat": 2,
+        "K": 8,
+        "seed": 322674335
+      },
+      {
+        "repeat": 3,
+        "K": 8,
+        "seed": 2051198256
+      }
+    ],
+    "representation": "one saved global fit per condition, fixed across KMeans repeats",
+    "pixel_scope": "all saved valid pixels of every global sample",
+    "held_out": false,
+    "sources": {
+      "1": "b49c6ea991c81f6609fd47df1d62bdef92f2c0fa46e9930428a76021dc00e943",
+      "2": "4e0603546df313d9ca5762d54701347cf1c9b5bbe51df8a62d7d4f4feed24f2b",
+      "3": "1960dfdb413f91a151cfc07f1dd1d841b04c90f01625024e63703c5732c0ace4"
+    },
+    "manifest_sha256": "206209405fc9e32b78065486ad42edba9758b441273c4d004a29aacc0dd227ce",
+    "code_sha256": {
+      "global_k8_evaluation.py": "f6078d9de2ddcd5bed567d5357590ebd424ff6d864aa547fb1685cec8d768401",
+      "global_silhouette.py": "0663b3ff7bb5af4e6bb42c5e068183d8b9a84f428fe08201dd71458da9fb8cbc",
+      "spatial_metrics.py": "3487fec112e8487f7908c3cc5ea1836eb952880be59125a31c393415083fca32",
+      "diagnostic_metrics.py": "fb8fd47f7678fabff4dc6040eec4311f92f1e1731f6787ee19b6cd419dca42f0",
+      "cluster_pipeline.py": "b4c5592859fc6b3af7edcc864a0b3abc9667cf3637a6c8be8b864d7a9e32b316"
+    }
+  },
+  "representation_source": {
+    "kind": "B0",
+    "completion_sha256": "963e56eeb2ddf0c78abe2c0fc1bc8f35d781f48f675304ee0c2fe523629a80c8",
+    "artifact_sha256": {
+      "b0.json": "f82a1b72a0f5b9050946f19e148a2f11de479ac4ffe7df3482f99d3078611459",
+      "pca.npz": "9e3d9aa17ad389999491a01cb3f5ceb03cfa6309b3e85571478f3169b00839e0"
+    }
+  },
+  "execution_device": "cuda:0",
+  "chunk_pixels": 1024,
+  "silhouette_method": "pooled exact cosine via cluster vector sums; FP64 accumulation",
+  "silhouette_undefined_reason": {
+    "1": null,
+    "2": null,
+    "3": null
+  },
+  "pooled_cluster_counts": {
+    "1": [
+      874168,
+      138183,
+      291914,
+      137727,
+      1504091,
+      134192,
+      25838,
+      796137
+    ],
+    "2": [
+      135181,
+      1013157,
+      172991,
+      275520,
+      711363,
+      106233,
+      25736,
+      1462069
+    ],
+    "3": [
+      952293,
+      122628,
+      1484176,
+      154963,
+      744062,
+      26312,
+      279792,
+      138024
+    ]
+  }
+}

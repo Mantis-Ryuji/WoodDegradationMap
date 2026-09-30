@@ -19,6 +19,7 @@ from wood_degradation_map.experiments import global_clustering as gc
 from wood_degradation_map.experiments import global_reporting as gr
 from wood_degradation_map.experiments.baselines import B0Baseline
 from wood_degradation_map.experiments.global_baselines import GlobalPCA, global_baselines
+from wood_degradation_map.experiments.global_k8_repeats import repeat_paths
 from wood_degradation_map.experiments.global_manifest import GlobalData, create_global_manifest
 from wood_degradation_map.experiments.input_validation import InputInventory, SampleInput
 from wood_degradation_map.experiments.manifests import _digest, _write_json
@@ -149,6 +150,9 @@ def test_pca_export_preserves_shared_pixel_and_snv_label_identity(
         return values
 
     def label_map(path: Path, sample: SampleInput) -> np.ndarray:
+        assert path.relative_to(experiment).parts[:3] == (
+            "results", "global_k8_3seed_v1", "clustering")
+        assert path.parent.parent.name == "repeat_1"
         return (np.arange(sample.height * sample.width).reshape(sample.height, sample.width)
                 % 8 + 1).astype(np.uint8)
 
@@ -261,8 +265,10 @@ def test_neural_loader_uses_completed_global_raw_weights_and_rejects_smoke(
 def _make_maps(experiment: Path, inventory: InputInventory) -> np.ndarray:
     permutation = np.roll(np.arange(8), 3)
     for ci, condition in enumerate(gr.CONDITIONS):
-        directory = gc.condition_paths(experiment, condition)[0] / "maps"
+        directory = repeat_paths(experiment, condition, 1)[0] / "maps"
         directory.mkdir(parents=True, exist_ok=True)
+        legacy = gc.condition_paths(experiment, condition)[0] / "maps"
+        legacy.mkdir(parents=True, exist_ok=True)
         for sample in inventory.samples:
             with h5py.File(sample.path, "r") as handle:
                 coords = handle["pixel_row_col"][:]
@@ -272,7 +278,45 @@ def _make_maps(experiment: Path, inventory: InputInventory) -> np.ndarray:
             output = np.zeros((sample.height, sample.width), dtype=np.uint8)
             output[tuple(coords.T)] = labels + 1
             np.savez_compressed(directory / f"{sample.sample_id}.npz", labels_k8=output)
+            # An old output is deliberately incompatible, so mixed input paths cannot pass.
+            np.savez_compressed(legacy / f"{sample.sample_id}.npz", labels_k8=output > 0)
     return permutation
+
+
+def test_report_contract_audits_three_seed_repeat_one(
+    inputs: tuple[Path, GlobalData, InputInventory], monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment, data, inventory = inputs
+    checked = []
+    expected_sources = {}
+    for condition in gr.CONDITIONS:
+        directory = repeat_paths(experiment, condition, 1)[0]
+        directory.mkdir(parents=True)
+        _write_json(directory / "completion.json", {"condition": condition, "repeat": 1})
+        expected_sources[condition] = _digest(directory / "completion.json")
+
+    def check(
+        current: Path, current_data: GlobalData, current_inventory: InputInventory,
+        condition: str, repeat: int,
+    ) -> dict[str, object]:
+        assert current == experiment and current_data is data and current_inventory is inventory
+        checked.append((condition, repeat))
+        return {"checks_passed": True}
+
+    monkeypatch.setattr(gr, "check_repeat_clustering", check)
+    contract = gr.report_contract(experiment, data, inventory)
+    assert checked == [(condition, 1) for condition in gr.CONDITIONS]
+    assert contract["sources"] == expected_sources
+    assert contract["repeat"] == 1 and contract["seed"] == 1960870825
+    assert contract["clustering_directory"] == "results/global_k8_3seed_v1/clustering"
+    # Existing single-fit reports must fail validation instead of being skipped by --resume.
+    output = experiment / gr.DEFAULT_DIRECTORY
+    output.mkdir(parents=True)
+    _write_json(output / "report.json", {"contract": {**contract, "schema_version": 3}})
+    _write_json(output / "completion.json", {
+        "status": "global_report_completed", "checks_passed": True})
+    with pytest.raises(ValueError, match="Global report contract differs"):
+        gr.check_global_report(experiment, data, inventory)
 
 
 def test_spectral_aggregation_log_order_exclusions_sample_weights_and_matching(
@@ -377,11 +421,12 @@ def test_report_png_csv_alignment_and_tamper_detection(
     monkeypatch.setattr(gr, "report_contract", lambda *args: {"fixture": "saved global maps"})
     monkeypatch.setattr(gr, "REPRESENTATIVES", tuple(("fixture", s.sample_id)
                                                     for s in inventory.samples))
+    monkeypatch.setattr(gr, "COMPARISON_SAMPLE", inventory.samples[0].sample_id)
     output = experiment / gr.DEFAULT_DIRECTORY
     output.mkdir(parents=True)
     latent = output / "pca-latent-2d"
     latent.mkdir()
-    (latent / "projection.png").write_bytes(b"independently managed PCA figure")
+    (latent / "projection.png").write_bytes(b"PCA figure with old cluster labels")
     (latent / "completion.json").write_text('{"scope":"latent"}', encoding="utf-8")
     obsolete_latent = output / "latent"
     obsolete_latent.mkdir()
@@ -395,14 +440,15 @@ def test_report_png_csv_alignment_and_tamper_detection(
         with pytest.raises(ValueError, match="fixture render failure"):
             gr.render_global_report(experiment, data, inventory, dpi=45)
     assert old.read_text(encoding="utf-8") == "old report"
+    assert (latent / "projection.png").read_bytes() == b"PCA figure with old cluster labels"
     report = gr.render_global_report(experiment, data, inventory, dpi=45, chunk_pixels=19)
-    assert report["png_count"] == 31 and report["csv_count"] == 44
+    assert report["png_count"] == 32 and report["csv_count"] == 44
     assert gr.check_global_report(experiment, data, inventory)["checks_passed"]
-    assert (latent / "projection.png").read_bytes() == b"independently managed PCA figure"
-    assert json.loads((latent / "completion.json").read_text()) == {"scope": "latent"}
+    assert not latent.exists()
     assert not obsolete_latent.exists()
     assert not old.exists()
-    assert [p.name for p in output.glob("*.png")] == [gr.REPRESENTATIVE_FIGURE]
+    assert {p.name for p in output.glob("*.png")} == {
+        gr.REPRESENTATIVE_FIGURE, f"02_{gr.COMPARISON_SAMPLE}_1x6.png"}
     sample = inventory.samples[0]
     with np.load(output / "M00/label_maps.npz") as saved:
         expected = saved[sample.sample_id]
@@ -447,7 +493,7 @@ def test_report_png_csv_alignment_and_tamper_detection(
         gr.check_global_report(experiment, data, inventory)
 
 
-def test_publish_report_restores_latent_when_directory_swap_fails(
+def test_publish_report_restores_entire_old_tree_when_directory_swap_fails(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     experiment = tmp_path / "global"

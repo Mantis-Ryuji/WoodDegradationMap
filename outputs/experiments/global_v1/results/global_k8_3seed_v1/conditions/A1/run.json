@@ -1,0 +1,93 @@
+{
+  "contract": {
+    "schema_version": 1,
+    "scope": "global_k8_3seed_evaluation",
+    "condition": "A1",
+    "K": 8,
+    "repeats": [
+      1,
+      2,
+      3
+    ],
+    "seed_plan": [
+      {
+        "repeat": 1,
+        "K": 8,
+        "seed": 1960870825
+      },
+      {
+        "repeat": 2,
+        "K": 8,
+        "seed": 322674335
+      },
+      {
+        "repeat": 3,
+        "K": 8,
+        "seed": 2051198256
+      }
+    ],
+    "representation": "one saved global fit per condition, fixed across KMeans repeats",
+    "pixel_scope": "all saved valid pixels of every global sample",
+    "held_out": false,
+    "sources": {
+      "1": "a7cbc5c074f505ebbcd35b89812eec2443b8b28362fb6d733f37ea6c1833773e",
+      "2": "587874c902b9dc0a68fedbf8a2fec470100370f4153431196824787422f72594",
+      "3": "bd96a2343b11f8aa7f6db75c1de3c305efd3c52041eb1a2132c090f7cd284b53"
+    },
+    "manifest_sha256": "206209405fc9e32b78065486ad42edba9758b441273c4d004a29aacc0dd227ce",
+    "code_sha256": {
+      "global_k8_evaluation.py": "f6078d9de2ddcd5bed567d5357590ebd424ff6d864aa547fb1685cec8d768401",
+      "global_silhouette.py": "0663b3ff7bb5af4e6bb42c5e068183d8b9a84f428fe08201dd71458da9fb8cbc",
+      "spatial_metrics.py": "3487fec112e8487f7908c3cc5ea1836eb952880be59125a31c393415083fca32",
+      "diagnostic_metrics.py": "fb8fd47f7678fabff4dc6040eec4311f92f1e1731f6787ee19b6cd419dca42f0",
+      "cluster_pipeline.py": "b4c5592859fc6b3af7edcc864a0b3abc9667cf3637a6c8be8b864d7a9e32b316"
+    }
+  },
+  "representation_source": {
+    "kind": "A1",
+    "run_sha256": "1800d5006e3e1d774dbd446fafbf5dca65cbcc45fd12124190030a3d48345968",
+    "completion_sha256": "aaa33df346e3301cd0b1916d743d0cd13770f9f183accfda62731abc6a71fed7",
+    "weights_sha256": "6f7910f449404ccc79d0765b3b8e7c3f06dff1f4532ede80bc85a90b8bac11b8",
+    "completed_epochs": 800
+  },
+  "execution_device": "cuda:0",
+  "chunk_pixels": 1024,
+  "silhouette_method": "pooled exact cosine via cluster vector sums; FP64 accumulation",
+  "silhouette_undefined_reason": {
+    "1": null,
+    "2": null,
+    "3": null
+  },
+  "pooled_cluster_counts": {
+    "1": [
+      1257211,
+      87090,
+      272047,
+      138611,
+      454767,
+      976188,
+      482345,
+      233991
+    ],
+    "2": [
+      138347,
+      1168857,
+      88395,
+      326863,
+      454866,
+      1056129,
+      86168,
+      582625
+    ],
+    "3": [
+      1241473,
+      1425918,
+      202248,
+      98682,
+      19348,
+      243360,
+      478642,
+      192579
+    ]
+  }
+}

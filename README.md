@@ -26,24 +26,11 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 
 ## 現在の段階
 
-2026-09-25のユーザー完了報告により、A1（denoising AE）を含む主8条件の5-fold・3反復、
-`main_oof_v1`のOOF再集計・図表再生成まで完了しました。ニューラル学習は計90 runs、
-クラスタリング・評価は計120組です。図はPNG 3枚（主指標2×2、分布・paired各2×3）、表はCSV 11個で、
-再生成方法と保存先は[主条件OOF図表](docs/experiment_runbook.md#oof-reporting)を参照してください。
-代表指標の優先順はLLA（補正後）、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyです。
-
-全体fitとB0・B1・A0・A1・M00・M11のCosine-KMeans（$K_0=8$）、全49試料のマップ・代表スペクトルも生成済みです。
-条件間の表示番号は、試料等重みのSNV代表線のcosine類似度＋HungarianでM00へ整列しています。
-同じ`global_k8_v1`へ全体図表PNG 67枚・CSV 44個を再生成し、代表比較は6×7です。
-独立した[PCA可視化](docs/experiment_runbook.md#global-pca)は2×6のPNG 1枚・CSV 5個です。
-A1追加の手順は[追補runbook](docs/a1_extension_runbook.md)を参照してください。今回の文書更新で成果物の再検証は行っていません。
-
-**残るToDoはmask ratio sweepと位置対応FT-IRの2件です。**
-[mask率25%・50%・75%の比較](docs/experiment_runbook.md#mask-rate-sweep)では、
-50%のM11を再利用し、25%・75%を各15 runs追加してOOF・図表まで生成します。
-FT-IRは詳細設計・測定・化学的対応の検討が残ります。追加可視化などの候補は現在の残作業に含めず、執筆はThesisで管理します。
-採用済み条件、完了範囲、残作業は[ToDo](ToDo.md)、
-CVから言えることと物理化学的解釈の区別は[解釈メモ](docs/interpretation_notes.md)で管理します。
+主8条件のCV・OOF図表、全体fitの6条件・K8マップとスペクトル・PCA、
+Raman Bacteria-IDの[Table 4](docs/bacteria_id_runbook.md)と
+[Table 5](docs/bacteria_id_hpo_runbook.md)は完了しました。
+残作業はmask率補助実験と位置対応FT-IRです。進捗と成果物は[ToDo](ToDo.md)、
+実行・再開方法は[runbook](docs/experiment_runbook.md)にまとめています。
 
 ## 主な配置
 

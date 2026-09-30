@@ -3,10 +3,8 @@
 論文の章立て・原稿・執筆進捗は `C:\Users\PC_User\Python\Thesis` で管理する。
 本リポジトリから研究条件、根拠、実験成果物を参照する。
 
-2026-09-25のユーザー完了報告により、A1を含む主8条件CV・OOF図表、全体6条件のfit・K8マップと
-スペクトル、6×7代表図・2×6 PCA図まで再生成済みである。残るToDoはmask ratio sweepと位置対応FT-IRのみ。
-追加可視化や正式な目視評価は現在の実施対象に含めず、既存成果物から執筆を進める。
-詳細な観察はM11・K8の試料内クラスタを中心に検討する。完了記録の確認範囲は[ToDo](../ToDo.md)を参照する。
+完了範囲と残作業は[ToDo](../ToDo.md)を参照する。
+既存図表から執筆を進め、詳細な観察はM11・K8の試料内クラスタを中心に検討する。
 
 ## 1. 参照資料
 
@@ -17,11 +15,31 @@
 | モデル・学習・CV・seed・クラスタリング | [実験プロトコル](design/experiment_protocol.md) |
 | 指標・未定義値・集計・比較 | [評価指標](design/evaluation_metrics.md) |
 | 全体fit・スペクトル要約・表示・FT-IR計画 | [全体可視化と解釈](design/visualization_and_interpretation.md) |
+| Raman補助実験のTable 4・5と研究上の位置づけ | [Bacteria-ID実験計画](design/bacteria_id_experiment_plan.md)、[現行Table 5 HPO](design/bacteria_id_hpo_protocol.md)、[結果解釈計画](bacteria_id_interpretation_plan.md) |
 | SNV・摂動・loss・表現幾何の導出 | [数理的補足](mathematical_notes.md) |
 | 混合精度・train loss・inertia | [数値実装の補足](numerical_implementation_notes.md) |
 | 完了範囲・残作業・成果物の確認方法 | [ToDo](../ToDo.md)、[runbook](experiment_runbook.md) |
 
 ## 2. 図表の引き渡し
+
+Raman Table 4の主結果は`outputs/experiments/bacteria_id_table4_80_20_v1/table4.md`を使用する。
+同じ出力先の`table4_seed_scores.csv`、`table4_statistics.json`、`table4_seed_scores.png`で
+5 seedの値、平均±標本SD、使用した最終checkpointを照合する。旧Table 4は
+`outputs/experiments/bacteria_id_table4_60_20_20_legacy_v1/table4.md`の過去実験として
+区別する。Table 5の主表は
+`outputs/experiments/bacteria_id_table5_hpo_cv_v1/table5.md`を使用し、
+当初100設定の計画から変更して最初の60完了設定で選択したことを明記する。
+論文向けのTable 4方法説明は次の最終手順とする。
+
+> Bacteria-4（ID 0–3）とBacteria-6（ID 0–5）について、参照スペクトルを
+> train 80%・test 20%に分けた。M00/M11の各5 seedをtrainで独立に初期化し、
+> validation・early stoppingを用いず、batch size 1024で800 epoch事前学習した。
+> 最終epochの重みから追加摂動なし・全パッチ可視で128次元潜在を抽出し、
+> train全件でCosine-KMeans（K=4/6）をfitした。固定したクラスタ中心でtestを割り当て、
+> ACC・NMI・AMIを計算し、5 seedの平均±標本標準偏差を示した。
+
+文献から引用した6手法の値はそのまま掲載する。文献手法の学習割合や評価手順が一致すると
+確認できないため、厳密な同一条件比較とは表現しない。
 
 必須図表は[評価の報告規約](design/evaluation_metrics.md#reporting)、全体マップと観測スペクトルは
 [可視化設計](design/visualization_and_interpretation.md)に従う。掲載章・枚数は外部原稿で決める。
@@ -34,9 +52,9 @@
 - OOF sanityのfold内B0基準・画素一致数による整列と、全体fitのM00基準・試料等重みSNV代表線のcosine類似度による整列を区別する。
 - `outputs/`の元成果物を保持し、原稿での体裁調整と解析結果を区別する。Fixedの仕様を実装・解析済みとは扱わない。
 
-2026-09-21に代表7試料を、各樹種から多様な化学状態が見られそうなものを目視で選んだ試料へ変更し、
-列順を試料番号の昇順にした。[選定記録](design/visualization_and_interpretation.md#representative-samples)と
-[上書き生成手順](experiment_runbook.md#representative-sample-update)を参照し、使用するPNGに新指定が反映されていることを確認する。
+代表7試料は各樹種から多様な化学状態が見られそうなものを目視で選び、
+列順を試料番号の昇順にした。[選定条件](design/visualization_and_interpretation.md#representative-samples)と
+[再生成手順](experiment_runbook.md#representative-sample-update)を参照し、使用するPNGの試料IDと列順を照合する。
 
 ### 図表候補と用途
 
@@ -93,8 +111,8 @@ mask率25%・50%・75%の補助実験は実施し、専用OOF集計後に感度�
 - 採用runの実行環境・完了状況、図表の出典、提出書式。
 - 指標名と保存キーの対応：補正前LLA（$\mathrm{LLA}^{\mathrm{raw}}$）は`lla`、LLA（$\mathrm{LLA}$）は`adjusted_lla`。
 - 代表指標はLLA、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyの優先順。
-  OOF集計完了後の2026-09-19のユーザー指定による報告規約であり、元snapshotと報告CSVの対応を
-  [評価仕様](design/evaluation_metrics.md#reporting)で確認する。補正後LLAの交互作用は報告CSVを参照する。
+  元snapshotと報告CSVの対応を[評価仕様](design/evaluation_metrics.md#reporting)で確認する。
+  補正後LLAの交互作用は報告CSVを参照する。
 - 記号を初出と添字省略時に定義する。SNVと潜在のnorm、中心化行列$P$と偶然一致確率$P_m$、学習時潜在と全可視潜在を区別する。
 
 CVは未知試料でのマップの性質を比較する。全体fit・観測スペクトル・位置対応FT-IRは化学的対応を探索する。

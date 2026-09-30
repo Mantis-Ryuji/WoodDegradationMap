@@ -14,7 +14,7 @@
 数式ではそれぞれ$\mathrm{LLA}^{\mathrm{raw}}$、$\mathrm{LLA}$と表す。実装・保存データのキーは、
 `lla`が補正前LLA、`adjusted_lla`がLLAに対応する。
 
-2026-09-19のOOF集計完了後のユーザー指定により、代表指標は次の優先順で報告する。
+OOF集計後に定めた報告規約では、代表指標を次の優先順で報告する。
 **LLA（補正後） → LFR(TGN+FS) → ARI → Cosine-Silhouette → Cluster Occupancy**。
 これは報告指標・図表構成の更新であり、保存済みのCV評価値とOOF snapshotを出典として使用する。
 
@@ -401,7 +401,7 @@ paired ARIも報告pipelineで算出し、元OOF snapshotのscore・集約値・
 ### 8.3 必須の表・図
 
 本節は対象条件の全fold・全反復のCVとOOF集計が完了した報告図表に適用する。
-主8条件のOOF snapshotからA1を含む主条件の図表を再生成済みである（2026-09-25ユーザー完了報告）。mask率依存性の図表は、
+主8条件のOOF snapshotからA1を含む主条件の図表を再生成済みである。mask率依存性の図表は、
 M11-25・M11・M11-75のOOF集計完了後に、専用の図表生成対応を追加して作成する。
 [OOF sanity可視化](oof_sanity_visualization.md)は、
 label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様である。

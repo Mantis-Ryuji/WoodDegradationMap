@@ -1,0 +1,68 @@
+{
+  "contract": {
+    "schema_version": 1,
+    "scope": "global_k8_3seed_summary",
+    "K": 8,
+    "conditions": [
+      "B0",
+      "B1",
+      "A0",
+      "A1",
+      "M00",
+      "M11"
+    ],
+    "repeats": [
+      1,
+      2,
+      3
+    ],
+    "seed_plan": [
+      {
+        "repeat": 1,
+        "K": 8,
+        "seed": 1960870825
+      },
+      {
+        "repeat": 2,
+        "K": 8,
+        "seed": 322674335
+      },
+      {
+        "repeat": 3,
+        "K": 8,
+        "seed": 2051198256
+      }
+    ],
+    "sources": {
+      "B0": "ae874cda1b4ddb36f234e5b743578a8904988687b247edc8f32a8eade2f5b881",
+      "B1": "3e7a64171de0ae3ac024d34f5b39e3c22950a89f10f35e9085c8b042e44cab82",
+      "A0": "cf730864898290c39f144327d5bdce25dd45a773b169edec2078705250c7c796",
+      "A1": "afa4786e52a5d9b15db2055022151dbcb2d7d4042dbfd441e38deb1a1d81b810",
+      "M00": "e74433e119d490eb0dca7aaf7fc0f31db4a1cb824b305b190f59c7b144d3b7f3",
+      "M11": "015362f771a3d5db12f2c816bacd7375bc17361587ea6ee34ae8717d9a85d8f6"
+    },
+    "code_sha256": "edb7e4cccceb23488b88b2584478fe7c6baca02765f4309c60acc704997b3743",
+    "metrics": [
+      "adjusted_lla_3",
+      "adjusted_lla_5",
+      "adjusted_lla_9",
+      "silhouette",
+      "ari",
+      "used_clusters",
+      "k_usage_rate",
+      "maximum_occupancy"
+    ]
+  },
+  "definitions": {
+    "LLA": "occupancy-adjusted local label agreement; windows 3, 5, 9",
+    "silhouette": "pooled all-valid-pixel cosine distances, then equal-sample mean",
+    "ARI": "three KMeans repeat pairs per sample, then equal-sample mean",
+    "K_usage": "used clusters / 8; used_clusters also retained",
+    "occupancy": "original cluster fractions per sample/repeat; maximum fraction summarized",
+    "SD": "sample SD of three-repeat means; repeat SD of equal-sample macro means",
+    "repeat_variation": "KMeans initialization only; saved representation is fixed",
+    "cluster_ids": "original, not aligned across repeats",
+    "interpretation": "descriptive full-fit diagnostics; no held-out test claim",
+    "LFR": "not computed"
+  }
+}

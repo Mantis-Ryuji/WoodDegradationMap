@@ -100,6 +100,24 @@ def test_check_identifies_unfinished_fit_before_rendering(portable: Path) -> Non
         gu.check_pca(portable)
 
 
+def test_pca_rejects_labels_from_replaced_global_report(portable: Path) -> None:
+    parent = portable / Path(gu.FIGURE_DIRECTORY).parent
+    parent.mkdir(parents=True)
+    completion = parent / "completion.json"
+    gu.write_json(completion, {"fixture": "old cluster maps"})
+    inputs = portable / gu.INPUT_DIRECTORY / "inputs.json"
+    record = gu.read_json(inputs)
+    record["source"] = {"snv_report": gu.digest(completion)}
+    gu.write_json(inputs, record)
+    gu.finish_artifacts(inputs.parent, "pca_inputs_completed")
+    gu.run_pca(portable)
+    assert set(ur._sources(portable)) == set(gu.CONDITIONS)
+    gu.write_json(completion, {"fixture": "repeat 1 cluster maps"})
+    with pytest.raises(ValueError, match="PCA labels differ"):
+        ur.render_pca(portable, dpi=30)
+    assert not (portable / gu.FIGURE_DIRECTORY).exists()
+
+
 def test_centroids_are_member_means_and_keep_empty_clusters() -> None:
     coordinates = np.array([[0, 0], [6, 0], [0, 3], [10, 10]], dtype=np.float32)
     centers = ur.centroids(coordinates, np.array([2, 2, 2, 8]), "M11").set_index("cluster")

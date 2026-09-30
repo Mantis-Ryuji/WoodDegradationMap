@@ -484,12 +484,12 @@ $$
 
 LLAとLFRは改善方向が逆である。contrastは指標の元の尺度で示し、正負の意味を明記する。
 交互作用はこの指標・この強度設定に対する記述であり、augmentationの一般的な相乗効果とは断定しない。
-OOF集計完了後の2026-09-19の報告指標変更と、元snapshot・報告CSVの対応は
-[評価指標第8.2節](evaluation_metrics.md#reporting)に記録する。主条件の学習・評価を再実行したことにはしない。
+現行の報告指標と、元snapshot・報告CSVの対応は
+[評価指標第8.2節](evaluation_metrics.md#reporting)に記録する。
 
 ## 5. 補助実験
 
-2026-09-21のユーザー指定により、mask率sweepを実施する。
+mask率sweepを補助実験として実施する。
 追加の潜在空間図や物理化学的解釈の完了を着手条件にしない。
 本節の固定条件・比較範囲を維持し、結果が得られるまでは未実施の感度解析として扱う。
 
@@ -626,13 +626,12 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 6. B0、B1、A0、A1、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$K_0$で
    Cosine-KMeansを各1回fitする。
 7. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋Hungarian matchingでM00のCosine-KMeansを共通基準にラベルを直接整列し、SNV類似度行列・確認用IoU/contingency/overlapとともに6条件のマップとスペクトル、PCA（PC1・PC2）を保存する。
-8. M11のmask率補助実験を同じ3反復で行い、独立したOOF snapshotとmask率依存性の図表を追加する。手順7の追加可視化・解釈の完了を待つ必要はない。
+8. [Bacteria-ID計画](bacteria_id_experiment_plan.md)に沿ってRamanの補助実験を先に行う。事前学習とTable 4は同計画書、現行Table 5は[HPO計画](bacteria_id_hpo_protocol.md)を参照する。
+9. M11のmask率補助実験を同じ3反復で再開し、独立したOOF snapshotとmask率依存性の図表を追加する。手順7の追加可視化・解釈の完了を待つ必要はない。
 
-2026-09-25のユーザー完了報告により、A1を含む主条件CV・OOF、全体fit・K8図表、PCA一枚は生成済みである。
-mask率sweepは第5.1節の固定条件で実施し、主条件の結果と区別して補助実験として報告する。
-主条件の図表生成時に更新した代表指標・表示構成は
-[評価の報告規約](evaluation_metrics.md#reporting)を参照する。
-残るToDoはmask ratio sweepと位置対応FT-IRの2件。正式な目視評価などの未採用案は現在の残作業に含めない。
+手順1〜8は完了済み。mask率sweepは中断・完了runを確認してから第5.1節の固定条件で再開し、
+主条件と区別して報告する。現状の残作業は[ToDo](../../ToDo.md)、
+代表指標・表示構成は[評価の報告規約](evaluation_metrics.md#reporting)を参照する。
 
 ## 11. 実験条件の確定状況と実行記録
 

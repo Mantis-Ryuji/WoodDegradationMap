@@ -13,10 +13,11 @@ import torch
 from .config import ROOT_SEED
 from .artifact_output import publish_directory
 from .global_baselines import GlobalPCA
-from .global_clustering import collect_global_features, condition_paths, load_global_representation
+from .global_clustering import collect_global_features, load_global_representation
 from .global_clustering import read_label_map
+from .global_k8_repeats import repeat_paths
 from .global_manifest import GLOBAL_CONDITIONS, GlobalData, load_global_bundle
-from .global_reporting import DEFAULT_DIRECTORY, check_global_report
+from .global_reporting import DEFAULT_DIRECTORY, DISPLAY_REPEAT, check_global_report
 from .global_pca import (
     BASELINE_PROJECTION, CONDITIONS, INPUT_DIRECTORY, baseline_component_indices,
     check_inputs, digest, finish_artifacts, require, write_json,
@@ -105,8 +106,9 @@ def prepare_inputs(
             for sample in inventory.samples:
                 selected = pixels.sample_id == sample.sample_id
                 coordinates = pixels.loc[selected, ["pixel_row", "pixel_col"]].to_numpy()
-                label_map = read_label_map(condition_paths(experiment, condition)[0] / "maps"
-                                          / f"{sample.sample_id}.npz", sample)
+                label_map = read_label_map(
+                    repeat_paths(experiment, condition, DISPLAY_REPEAT)[0] / "maps"
+                    / f"{sample.sample_id}.npz", sample)
                 raw_labels[selected] = label_map[tuple(coordinates.T)]
             pixels[f"{condition}_original_cluster"] = raw_labels
             pixels[f"{condition}_cluster"] = mapping[raw_labels]

@@ -1,0 +1,84 @@
+{
+  "status": "completed",
+  "protocol": "bacteria_id_table4_80_20_v1",
+  "corpus": "bacteria6",
+  "condition": "M00",
+  "run_seed": 0,
+  "k": 6,
+  "train_count": 9600,
+  "test_count": 2400,
+  "dimension": 128,
+  "fit_scope": "all new 80% train latents",
+  "score_scope": "saved legacy test; fixed centers",
+  "isolate_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "clustering_settings": {
+    "method": "ChemoMAE CosineKMeans",
+    "max_iter": 500,
+    "tol": 0.0001,
+    "initializations": 1
+  },
+  "kmeans_seed": 1553799684,
+  "metrics_percent": {
+    "ACC": 71.5,
+    "NMI": 69.45552011877186,
+    "AMI": 67.10551716222668
+  },
+  "reference_inertia": 0.3863888084888458,
+  "fit_seconds": 0.18883610000193585,
+  "processed_manifest_sha256": "f1ffdf4415220b3c762db23c097d98faa78ba6a7d4d5d32df146a9f0a9ac9065",
+  "split_sha256": "263a4ec169911249560ba7a8ba15fdff8b9c463592494ca8376424f59bf5dc80",
+  "test_source_index_sha256": "8ebad7f0483c76f01f1a3a67650b23ca6de92c7a31921f44c8d574bb27a056a8",
+  "pretrain_run_sha256": "698dec0ff58ecf07f5590d46a1df23171350f148f603af1f775fcceb8f5d6429",
+  "pretrain_weights_file": "C:\\Users\\PC_User\\Python\\WoodDegradationMap\\outputs\\experiments\\bacteria_id_table4_80_20_v1\\checkpoints\\pretrain\\bacteria6\\M00\\seed_0\\last_model.pt",
+  "pretrain_weights_sha256": "3620dafe45fed070f6c67953d79bae3128f4546f1ababb33749d24b9a972c333",
+  "centroids_sha256": "06b788218812646c4b42defd5dae95e00d297f7c49f206922ec94e758dfa7dbb",
+  "code_sha256": {
+    "bacteria_table4_80.py": "b24c9622a91ddf02c39e7f9103133f440d4356b1037b2ef78063cd879c6079ab",
+    "bacteria_training.py": "8a89f2c5000daa249f68dfefe07e597d290829e935a6ea93dea5cedbd93bc11b",
+    "bacteria_evaluation.py": "ce05a293d3742b2d9793a1db8ebfe4525881ec90f080e0f878b20b251b60f250",
+    "bacteria_config.py": "a9c2a92787c05221179b4f2f518251f68aa5486f3d587381039670396c360dbf",
+    "bacteria_data.py": "1690ec07345b1f04ad7165b1dcd7d1d8afd06c40bd5e84079a5d68c4cb0760e6",
+    "config.py": "5015aad320ab611326d8d0a621053b3f8ccc709e4c26a2945d595c1c0d0a53db",
+    "neural.py": "0edd7c2899bf3f8d69c680031463dbce2915bb05cd5730bcf8fafd067ee9f346",
+    "training.py": "720d01c34076f975771c562dbdb3df21488ac4ee6eefaea74ebb43469d191db2",
+    "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",
+    "records.py": "c58eaa48d97b80623787507436a81982ce92747196f99f20ea41a07b88368aae"
+  },
+  "runtime": {
+    "python": "3.11.15",
+    "platform": "Windows",
+    "torch": "2.13.0+cu130",
+    "chemomae": "0.2.2",
+    "numpy": "2.4.4",
+    "h5py": "3.16.0",
+    "cuda_runtime": "13.0",
+    "device": "cuda:0",
+    "deterministic_algorithms": false,
+    "deterministic_warn_only": false,
+    "cudnn_benchmark": false,
+    "cudnn_deterministic": false,
+    "matmul_fp32_precision": "none",
+    "cudnn_fp32_precision": "none",
+    "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+    "gpu_memory_bytes": 17170956288,
+    "gpu_capability": [
+      8,
+      9
+    ],
+    "cudnn_version": 92000
+  },
+  "versions": {
+    "chemomae": "0.2.2",
+    "torch": "2.13.0+cu130",
+    "numpy": "2.4.4",
+    "scipy": "1.17.1",
+    "scikit_learn": "1.9.0"
+  }
+}

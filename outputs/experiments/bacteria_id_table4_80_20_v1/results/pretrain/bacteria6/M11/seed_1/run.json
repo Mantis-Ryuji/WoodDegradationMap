@@ -1,0 +1,329 @@
+{
+  "schema_version": 2,
+  "mode": "bacteria_id_table4_80_20_v1_pretrain",
+  "corpus": "bacteria6",
+  "condition": "M11",
+  "run_seed": 1,
+  "train_spectra": 9600,
+  "batch_size": 1024,
+  "steps_per_epoch": 9,
+  "planned_updates": 7200,
+  "processed_manifest_sha256": "f1ffdf4415220b3c762db23c097d98faa78ba6a7d4d5d32df146a9f0a9ac9065",
+  "split_sha256": "263a4ec169911249560ba7a8ba15fdff8b9c463592494ca8376424f59bf5dc80",
+  "source_split": "bacteria6_train",
+  "seeds": {
+    "model_init": 772823846,
+    "train_order": 1903520817,
+    "mask": 2213721445,
+    "pretrain_augmentation": 3894789424
+  },
+  "resume_boundary": "completed epoch; interrupted epoch is replayed",
+  "contract": {
+    "config": {
+      "protocol": "bacteria_id_table4_80_20_v1",
+      "model": {
+        "version": "0.2.2",
+        "seq_len": 1000,
+        "d_model": 256,
+        "nhead": 8,
+        "num_layers": 8,
+        "dim_feedforward": 1024,
+        "dropout": 0.0,
+        "n_patches": 20,
+        "latent_dim": 128,
+        "latent_normalize": true,
+        "decoder_num_layers": 1,
+        "initialization": "ChemoMAE 0.2.2 defaults",
+        "n_mask": 10
+      },
+      "pretrain": {
+        "epochs": 800,
+        "batch_size": 1024,
+        "world_size": 1,
+        "accum_iter": 1,
+        "optimizer": "AdamW",
+        "betas": [
+          0.9,
+          0.95
+        ],
+        "eps": 1e-08,
+        "amsgrad": false,
+        "weight_decay": 0.05,
+        "zero_weight_decay": [
+          "bias",
+          "normalization_parameters"
+        ],
+        "base_lr": 0.00015,
+        "peak_lr": 0.0006,
+        "min_lr": 0.0,
+        "warmup_epochs": 40,
+        "scheduler": "linear warmup then half-cycle cosine; epoch + batch/steps_per_epoch",
+        "lr_update": "before batch",
+        "amp_dtype": "fp16",
+        "grad_scaler": true,
+        "weight_dtype": "float32",
+        "grad_clip": null,
+        "drop_path": 0.0,
+        "shuffle": true,
+        "drop_last": true,
+        "use_ema": false,
+        "checkpoint": "last_model.pt; final raw weights at epoch 800",
+        "independent_run_resume_from": null,
+        "early_stopping": false,
+        "target": "clean SNV",
+        "patch_target_normalization": false
+      },
+      "augmentation": {
+        "noise_angle_deg_range": [
+          0.0,
+          5.0
+        ],
+        "shift_delta_range": [
+          -2.0,
+          2.0
+        ],
+        "shuffle_order_per_batch": true,
+        "recenter_after_each_op": true,
+        "renorm_to_input_norm": true,
+        "eps": 1e-08
+      },
+      "preprocessing": {
+        "method": "per-spectrum SNV",
+        "ddof": 1,
+        "dtype": "float32"
+      },
+      "table4": {
+        "isolate_ids": {
+          "bacteria4": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "bacteria6": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "split": [
+          0.8,
+          0.2
+        ],
+        "split_source": "saved legacy train union validation; saved legacy test unchanged",
+        "validation": null,
+        "checkpoint": "raw weights after fixed epoch 800",
+        "clustering": {
+          "method": "ChemoMAE CosineKMeans",
+          "max_iter": 500,
+          "tol": 0.0001,
+          "initializations": 1
+        },
+        "metrics": {
+          "ACC": "Hungarian",
+          "NMI_average_method": "arithmetic",
+          "AMI_average_method": "max"
+        }
+      },
+      "run_seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "runtime": {
+      "python": "3.11.15",
+      "platform": "Windows",
+      "torch": "2.13.0+cu130",
+      "chemomae": "0.2.2",
+      "numpy": "2.4.4",
+      "h5py": "3.16.0",
+      "cuda_runtime": "13.0",
+      "device": "cuda:0",
+      "deterministic_algorithms": false,
+      "deterministic_warn_only": false,
+      "cudnn_benchmark": false,
+      "cudnn_deterministic": false,
+      "matmul_fp32_precision": "none",
+      "cudnn_fp32_precision": "none",
+      "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+      "gpu_memory_bytes": 17170956288,
+      "gpu_capability": [
+        8,
+        9
+      ],
+      "cudnn_version": 92000
+    },
+    "code_sha256": {
+      "bacteria_table4_80.py": "b24c9622a91ddf02c39e7f9103133f440d4356b1037b2ef78063cd879c6079ab",
+      "bacteria_training.py": "8a89f2c5000daa249f68dfefe07e597d290829e935a6ea93dea5cedbd93bc11b",
+      "bacteria_evaluation.py": "ce05a293d3742b2d9793a1db8ebfe4525881ec90f080e0f878b20b251b60f250",
+      "bacteria_config.py": "a9c2a92787c05221179b4f2f518251f68aa5486f3d587381039670396c360dbf",
+      "bacteria_data.py": "1690ec07345b1f04ad7165b1dcd7d1d8afd06c40bd5e84079a5d68c4cb0760e6",
+      "config.py": "5015aad320ab611326d8d0a621053b3f8ccc709e4c26a2945d595c1c0d0a53db",
+      "neural.py": "0edd7c2899bf3f8d69c680031463dbce2915bb05cd5730bcf8fafd067ee9f346",
+      "training.py": "720d01c34076f975771c562dbdb3df21488ac4ee6eefaea74ebb43469d191db2",
+      "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",
+      "records.py": "c58eaa48d97b80623787507436a81982ce92747196f99f20ea41a07b88368aae"
+    }
+  },
+  "execution": {
+    "config": {
+      "protocol": "bacteria_id_table4_80_20_v1",
+      "model": {
+        "version": "0.2.2",
+        "seq_len": 1000,
+        "d_model": 256,
+        "nhead": 8,
+        "num_layers": 8,
+        "dim_feedforward": 1024,
+        "dropout": 0.0,
+        "n_patches": 20,
+        "latent_dim": 128,
+        "latent_normalize": true,
+        "decoder_num_layers": 1,
+        "initialization": "ChemoMAE 0.2.2 defaults",
+        "n_mask": 10
+      },
+      "pretrain": {
+        "epochs": 800,
+        "batch_size": 1024,
+        "world_size": 1,
+        "accum_iter": 1,
+        "optimizer": "AdamW",
+        "betas": [
+          0.9,
+          0.95
+        ],
+        "eps": 1e-08,
+        "amsgrad": false,
+        "weight_decay": 0.05,
+        "zero_weight_decay": [
+          "bias",
+          "normalization_parameters"
+        ],
+        "base_lr": 0.00015,
+        "peak_lr": 0.0006,
+        "min_lr": 0.0,
+        "warmup_epochs": 40,
+        "scheduler": "linear warmup then half-cycle cosine; epoch + batch/steps_per_epoch",
+        "lr_update": "before batch",
+        "amp_dtype": "fp16",
+        "grad_scaler": true,
+        "weight_dtype": "float32",
+        "grad_clip": null,
+        "drop_path": 0.0,
+        "shuffle": true,
+        "drop_last": true,
+        "use_ema": false,
+        "checkpoint": "last_model.pt; final raw weights at epoch 800",
+        "independent_run_resume_from": null,
+        "early_stopping": false,
+        "target": "clean SNV",
+        "patch_target_normalization": false
+      },
+      "augmentation": {
+        "noise_angle_deg_range": [
+          0.0,
+          5.0
+        ],
+        "shift_delta_range": [
+          -2.0,
+          2.0
+        ],
+        "shuffle_order_per_batch": true,
+        "recenter_after_each_op": true,
+        "renorm_to_input_norm": true,
+        "eps": 1e-08
+      },
+      "preprocessing": {
+        "method": "per-spectrum SNV",
+        "ddof": 1,
+        "dtype": "float32"
+      },
+      "table4": {
+        "isolate_ids": {
+          "bacteria4": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "bacteria6": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "split": [
+          0.8,
+          0.2
+        ],
+        "split_source": "saved legacy train union validation; saved legacy test unchanged",
+        "validation": null,
+        "checkpoint": "raw weights after fixed epoch 800",
+        "clustering": {
+          "method": "ChemoMAE CosineKMeans",
+          "max_iter": 500,
+          "tol": 0.0001,
+          "initializations": 1
+        },
+        "metrics": {
+          "ACC": "Hungarian",
+          "NMI_average_method": "arithmetic",
+          "AMI_average_method": "max"
+        }
+      },
+      "run_seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "runtime": {
+      "python": "3.11.15",
+      "platform": "Windows",
+      "torch": "2.13.0+cu130",
+      "chemomae": "0.2.2",
+      "numpy": "2.4.4",
+      "h5py": "3.16.0",
+      "cuda_runtime": "13.0",
+      "device": "cuda:0",
+      "deterministic_algorithms": false,
+      "deterministic_warn_only": false,
+      "cudnn_benchmark": false,
+      "cudnn_deterministic": false,
+      "matmul_fp32_precision": "none",
+      "cudnn_fp32_precision": "none",
+      "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+      "gpu_memory_bytes": 17170956288,
+      "gpu_capability": [
+        8,
+        9
+      ],
+      "cudnn_version": 92000
+    },
+    "code_sha256": {
+      "bacteria_table4_80.py": "b24c9622a91ddf02c39e7f9103133f440d4356b1037b2ef78063cd879c6079ab",
+      "bacteria_training.py": "8a89f2c5000daa249f68dfefe07e597d290829e935a6ea93dea5cedbd93bc11b",
+      "bacteria_evaluation.py": "ce05a293d3742b2d9793a1db8ebfe4525881ec90f080e0f878b20b251b60f250",
+      "bacteria_config.py": "a9c2a92787c05221179b4f2f518251f68aa5486f3d587381039670396c360dbf",
+      "bacteria_data.py": "1690ec07345b1f04ad7165b1dcd7d1d8afd06c40bd5e84079a5d68c4cb0760e6",
+      "config.py": "5015aad320ab611326d8d0a621053b3f8ccc709e4c26a2945d595c1c0d0a53db",
+      "neural.py": "0edd7c2899bf3f8d69c680031463dbce2915bb05cd5730bcf8fafd067ee9f346",
+      "training.py": "720d01c34076f975771c562dbdb3df21488ac4ee6eefaea74ebb43469d191db2",
+      "manifests.py": "a2b621393e6351e795d0cf57f859994501dd09eb929363f49a2c344acecd7c5b",
+      "records.py": "c58eaa48d97b80623787507436a81982ce92747196f99f20ea41a07b88368aae"
+    }
+  }
+}

@@ -1,6 +1,7 @@
-"""Render/check global K=8 PNG/CSV reports with M00 observed SNV cosine matching.
+"""Render/check saved global K=8 repeat 1 with M00 observed SNV cosine matching.
 
-Run replaces the previous report directory only after successful generation.
+Uses results/global_k8_3seed_v1/clustering without refitting. Run replaces the
+previous report directory, including old PCA figures, after successful generation.
 """
 
 from __future__ import annotations
