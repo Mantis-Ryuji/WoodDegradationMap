@@ -7,17 +7,14 @@
 
 本書のclustering・評価・OOFコマンドはCosine-KMeansの主実験・mask率補助実験用である。
 mask率補助実験の範囲と実施順序は[第8.1節](#mask-rate-sweep)を参照する。
+Bacteria-IDの現行Table 5は[HPO runbook](bacteria_id_hpo_runbook.md)、既存事前学習・Table 4は[専用runbook](bacteria_id_runbook.md)を参照する。
 
 ChemoMAE v0.2.2の環境で、リポジトリrootからPowerShellで実行する。
 本番実行例は`uv run --no-sync`とし、環境構築・更新をrun開始時の処理から分ける。
 
-2026-09-25のユーザー完了報告により、A1を含む主8条件のCV・OOF・図表、全体6条件のfit・K8図表・PCAまで完了した。
-主条件は`main_oof_v1`、全体図表・PCAは`global_k8_v1`へ上書き再生成済み。
-A1追加時の操作記録は[追補runbook](a1_extension_runbook.md)を参照する。今回の文書更新では再実行・成果物再検証は行っていない。
-残るToDoはmask ratio sweepと位置対応FT-IRのみ。以下の既存成果物のコマンドは参照・再生成用である。
-
-現在は主条件CV・OOF、全体fit・K8図表、PCA一枚まで生成済みである。
-執筆開始時は[引き継ぎ資料](manuscript_handoff.md)から既存成果物を参照し、本書のコマンドは再生成・再検証が必要な場合に使う。
+主条件CV・OOF、全体fit・K8図表、PCAは生成済み。本書のコマンドは再現・再検証用である。
+Bacteria-IDは[Table 4](bacteria_id_runbook.md)と[Table 5](bacteria_id_hpo_runbook.md)、
+執筆用の図表は[引き継ぎ資料](manuscript_handoff.md)を参照する。
 
 - [入力確認](#input-preparation)・[manifest](#3-本番manifest)
 - [NNの1 runと再開](#neural-run)・[PCA](#5-b1-pca-fitとbaseline変換の検証)
@@ -353,9 +350,7 @@ B1 PCAとA0・A1・M00・M11をfitする。B0を加えた6条件の表現で、$
 全体学習の4 runsと全体クラスタリングは、補助条件を含むCVの計画120学習とは別枠であり、OOF集計に含めない。
 
 完了範囲は[ToDo第3節](../ToDo.md#3-全体fitと解釈)を参照する。
-`global_fit.py`にmanifest・B0/PCA・A0/A1/M00/M11の一括学習・再開・checkを実装した。
-既存A0・M00・M11の検証履歴は下記の2026-09-20の記録を参照する。
-2026-09-25のユーザー報告によりA1の800 epoch学習・K8クラスタリングと、全6条件の図表・PCA再生成まで完了した。
+`global_fit.py`がmanifest・B0/PCA・A0/A1/M00/M11の一括学習・再開・checkを担当する。
 既存の`train_neural.py`は`--fold`必須のCV用であり、全体fitには使わない。
 
 以下は処理工程の参照である。手順1〜7は完了済み。手順8の執筆はThesis側で管理し、追加可視化案は現在の残ToDoに含めない。
@@ -363,7 +358,7 @@ B1 PCAとA0・A1・M00・M11をfitする。B0を加えた6条件の表現で、$
 
 1. **全体runの実行契約を固定する（確定・実装済み）。** ROOT_SEED=20260905・SHA-256方式を維持し、
    fold位置を`global`、反復IDを1とする。抽出・PCA・NNと後続の$K_0=8$クラスタリング用のseed計55個を保存する。
-   保存rootは`outputs/experiments/global_v1/`。2026-09-19のユーザー確認による。
+   保存rootは`outputs/experiments/global_v1/`。
 2. **共通入力と専用pipelineを実装・小規模検証する。** 49試料から各8,192画素、計401,408画素を抽出し、
    全6条件で座標を共有する。fit画素と推論対象の全有効画素を区別し、CPU小規模と必要最小限のGPU検証で、
    入出力・seed・保存復元・完了判定を確認する。CVのmanifestと成果物は全体fitから分離する。
@@ -455,23 +450,11 @@ if ($LASTEXITCODE -ne 0) { throw "Global training completion check failed" }
 `training-check`は保存checkpointを実際に読み、epoch・更新数・manifest/config/code/runtime・重みhashと、
 checkpoint中の重みと最終raw重みの一致を確認する。全4条件の完了確認後に、手順5の全体Cosine-KMeansへ進む。
 
-#### 2026-09-20に確認した全体fitの完了記録
+#### 全体fitの完了記録
 
-B0/PCAの[完了記録](../outputs/experiments/global_v1/results/baselines/completion.json)は
-`fitted_and_roundtrip_checked`。PCAは全49試料の共通401,408画素で16成分をfitし、
-solverは`covariance_eigh`、保存復元probeの最大絶対誤差は0である。
-GPU smokeはA0・M00・M11のすべてで`checks_passed=true`、再開時の重み・全可視潜在の最大絶対誤差は0。
-
-| 条件・完了記録 | epoch | attempted updates | optimizer updates | AMP skips |
-| --- | ---: | ---: | ---: | ---: |
-| [A0](../outputs/experiments/global_v1/results/neural/A0/repeat_1/completion.json) | 800 | 313,600 | 313,483 | 117 |
-| [M00](../outputs/experiments/global_v1/results/neural/M00/repeat_1/completion.json) | 800 | 313,600 | 313,483 | 117 |
-| [M11](../outputs/experiments/global_v1/results/neural/M11/repeat_1/completion.json) | 800 | 313,600 | 313,481 | 119 |
-
-全3条件の`completion.json`は`training_completed`、attempt記録は`completed`である。
-表は保存記録の値を示し、`training-check`の完了は同日のユーザー報告に基づく。
-追加A1は2026-09-25のユーザー報告で完了とする。A1のoptimizer updates・AMP skipsは今回再確認していないため、この表へ推定値を補わない。
-この表は学習段階の記録である。後続のK8マップ・図表とPCAの現状・操作は以下の節で扱う。
+B0/PCAとA0・A1・M00・M11の更新数、AMP skip数、保存復元結果は
+`outputs/experiments/global_v1/results/`以下の条件別`completion.json`とrun記録を正本とする。
+学習後のK8マップ・図表とPCAの操作は以下の節で扱う。
 
 <a id="global-post-fit"></a>
 
@@ -481,7 +464,7 @@ GPU smokeはA0・M00・M11のすべてで`checks_passed=true`、再開時の重�
 **matching・観測スペクトル集計・PNG/CSV生成・check**を`visualize_global.py`へ分離して実装した。
 `global_fit.py`は引き続き準備・baseline・smoke・NN学習とcheckを担当する。
 既存の`cluster_representations.py`は`--fold`必須のCV用なので、`global_v1`へそのまま実行しない。
-以下の手順1〜3はA1を含めて完了済み（2026-09-25ユーザー報告）。既存の6 fits・全画素ラベルを再利用できる。
+以下の手順1〜3はA1を含めて完了済み。既存の6 fits・全画素ラベルを再利用できる。
 
 1. 保存済みPCA・最終NN重み・共通global manifestを読み、B0・B1・A0・A1・M00・M11の表現を抽出する。
    B0は256次元SNV、B1・NNは16次元で、既定のL2正規化・全可視抽出を用いる。
@@ -542,13 +525,10 @@ if ($LASTEXITCODE -ne 0) { throw "Global visualization check failed" }
 
 <a id="representative-sample-update"></a>
 
-##### 代表7試料の変更を既存図へ反映する
+##### 代表7試料の図を再生成する
 
-2026-09-21に代表試料を、各樹種で多様な化学状態が見られそうなものを目視で選んだ7試料へ変更した。
-試料番号順に`KYOw02752`（ヒノキ）、`KYOw02772`（マツ）、`KYOw02777`（ケヤキ）、
-`KYOw02787`（ツガ）、`KYOw02790`（クリ）、`KYOw16744`（スギ）、`KYOw16750`（モミ）とする。
-旧指定との差分と選定の位置づけは[表示例の選択](design/visualization_and_interpretation.md#representative-samples)を参照。
-コード・文書の更新だけでは保存済みPNGは変わらないため、以下をリポジトリrootのPowerShellで実行する。
+対象ID・順序・選定の位置づけは[表示例の選択](design/visualization_and_interpretation.md#representative-samples)を参照。
+代表図を再生成する場合は、リポジトリrootのPowerShellで以下を実行する。
 
 raw BMPと反射率L2 normの代表1×7は、保存済み画像をCPUで読み、次の1コマンドで両方を同名上書きする。
 既存の全49試料の7×7図は変更しない。前処理・スペクトル計算は行わない。
@@ -619,12 +599,8 @@ matching表は`snv_cosine_similarity`、同じ基準クラスタに対する他�
 既存図表には空間平滑化・帯域積分を適用していない。
 個別試料の解釈には`sample_spectra.csv`と寄与・除外数のCSVを参照し、全試料macro平均と区別する。
 
-CPU小規模検証では固定seedで1回だけfitすること、保存復元、端数chunk・座標対応、試料等重み集計、
-画素別対数変換、SGのnm単位、SNV matching、PNG/CSV出力、改変検出、失敗時の旧可視化保持と完成時の置換を確認した。
-SNV変更後に関連CPUテスト6件と静的検査が合格した。空間的な重なりとSNVの対応が異なる合成例、
-試料等重み集計、欠落・空・ノルム0の代表線、符号付き類似度、描画代表線との一致を確認した。
-2026-09-25のユーザー報告により、A1を含む49試料・PNG 67枚・CSV 44個の再生成まで完了した。
-上記のCPU検証は過去の履歴であり、今回の文書整理ではテスト・成果物checkを再実行していない。
+A1を含む49試料・PNG 67枚・CSV 44個は生成済み。生成物の整合性は保存済みの
+`report.json`・`completion.json`と`visualize_global.py check`で確認する。
 図表生成の完了と、領域差の物理化学的な解釈の完了は区別する。
 
 <a id="global-pca"></a>
@@ -647,8 +623,8 @@ B1は保存済みbaseline PCAの特異値の降順に上位2成分を選び、L2
 条件間で座標尺度が異なるため表示範囲は条件別とし、同じ条件の上下段では一致させる。hexbinの色範囲は全条件で共通。
 詳細は[設計書](design/visualization_and_interpretation.md#latent-spectral-maps)を参照。
 
-**A1を含む入力・6条件の投影・2×6 PNG一枚とCSV 5個は再生成済み（2026-09-25ユーザー完了報告）。**
-今回の文書整理では回帰テストや全成果物checkは再実行していない。コード変更時の小規模CPUテストは次のとおり。
+**A1を含む入力・6条件の投影・2×6 PNG一枚とCSV 5個は生成済み。**
+コード変更時の小規模CPUテストは次のとおり。
 
 ```powershell
 uv run --no-sync pytest tests/experiments/test_global_pca.py -q
@@ -711,7 +687,7 @@ metadata・帯域指標による追加の色分けは保留中であり、執筆
 指定する全conditionについて5 folds × 3 repeatsの評価が揃ってから実行する。
 既存snapshotの確認は`check`、同じ保存先への再集計は明示的な`--overwrite`を使う。
 
-`main_oof_v1`は主8条件で再集計・check完了済み（2026-09-25ユーザー報告）。対象は49試料・120 source runs・82,320 score records。
+`main_oof_v1`は主8条件で再集計・check完了済み。対象は49試料・120 source runs・82,320 score records。
 以下は同じv1への再生成例であり、現在のsnapshotの再確認には`check`だけを実行する。
 
 ```powershell

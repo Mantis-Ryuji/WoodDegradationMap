@@ -2,6 +2,7 @@
 
 本ディレクトリは研究条件・計算方法・データ契約を管理する。
 **Fixed**は採用済みの仕様、**Open**は実施前に決定が必要な事項を表す。Fixedは実装・実行済みという意味ではない。
+**本研究の補完条件**は、参照論文の未記載事項をこちらで具体化した採用条件を表す。原論文の実設定とは区別する。
 研究目的は[研究の目的と説明文](../research_overview.md)、進捗は[ToDo](../../ToDo.md)を参照する。
 
 ## 設計文書と定義の置き場所
@@ -10,6 +11,8 @@
 | --- | --- | --- |
 | [前処理](preprocessing.md) | Fixed | 200 Hz入力、mask、負値除外、256点補間、SNV、保存schema |
 | [実験プロトコル](experiment_protocol.md) | 主条件・mask率補助Fixed | 条件、split、seed、共通画素、学習、クラスタリング、実行記録 |
+| [Bacteria-ID補助実験計画](bacteria_id_experiment_plan.md) | 事前学習・Table 4 Fixed | RamanのM00/M11、出版版SMAE Table 4・5との報告値比較、事前学習とクラスタリング |
+| [Bacteria-ID Table 5 HPO](bacteria_id_hpo_protocol.md) | 分類条件・実績 | M11の5-fold CVで64設定完了、先頭60設定で選択し、M00/M11を全件学習してtest評価 |
 | [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA（補正後）、LFR、ARI、silhouette、occupancy、補正前LLA、未定義値、集約、比較・報告 |
 | [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1・A0・M00のPNG・CSV、fold内B0基準のmatching |
 | [全体可視化と解釈](visualization_and_interpretation.md) | 全体fit・K8比較・PCA一枚Fixed / 詳細図・連続指標map・FT-IR等Open | M00基準のmatching、代表例、試料別／全体スペクトル、PC1/PC2、追加解析候補 |
@@ -27,26 +30,23 @@
 | 区分 | 対象 | 追加NN学習 | クラスタリング |
 | --- | --- | ---: | --- |
 | 主実験 | B0、B1、A0、A1、M00、M10、M01、M11の5-fold・3反復 | 90回 | Cosine-KMeans、全7K |
+| Bacteria-ID補助 | RamanのM00・M11。出版版SMAE Table 4・5へ追加 | 旧事前学習30回は記録として保持。新80/20 Table 4の20回とTable 5のHPO・分類は完了 | 新Table 4はCosine-KMeans、K=4/6、計20 fits完了 |
 | Mask率補助 | M11-25・M11-75。50%はM11を再利用 | 30回 | Cosine-KMeans、全7K |
 | OOF sanity | 完了済みB0・B1・A0・M00のOOF map・指標 | 0回 | 既存成果物のみ |
 | 全体解釈 | B0、B1、A0、A1、M00、M11を全49試料でfit・学習 | 4回 | Cosine-KMeans、$K_0=8$、6 fits |
 
-全体解釈の比較対象はCosine-KMeansの6条件・K8とする。
-A1は既存7条件の結果を得た後に追加したdenoising AEのablationであり、[比較の位置づけ](experiment_protocol.md#planned-comparisons)を明記する。
-補助実験は[mask率25%・50%・75%の比較](experiment_protocol.md#mask-rate-sweep)を実施する。
-既存の50%を再利用し、25%・75%を各15 runs追加する。全体解釈の完了を着手条件にしない。
-
-NN学習の計画総数は主CV 90回＋mask率補助30回＝120回、全体fitの4回を含めて124回である。
-2026-09-25のユーザー完了報告により主CV 90回と全体fit 4回は完了し、mask率補助30回は未実施。
-OOF・全体K8図表・PCAもA1を含めて再生成済み。残るToDoはmask ratio sweepと位置対応FT-IRの2件である。
-PCA、KMeans、表現抽出、評価摂動はこのNN学習数に含めない。
-全体fitの表示番号は、観測SNV代表線のcosine類似度の合計を最大にするHungarian matchingでM00のCosine-KMeansへ直接整列する。代表線は試料内クラスタ平均を試料間で等重み平均する。元番号・対応表・SNV類似度と補助IoU・contingencyを保存する。OOF sanityはfold内B0基準・一致画素数最大化を用いる。
+実験の完了状態は[ToDo](../../ToDo.md)、全体fitのmatching・表示規約は
+[可視化設計](visualization_and_interpretation.md)を参照する。
+A1は既存7条件の結果を得た後に追加したablationであり、主比較との区別は
+[実験プロトコル](experiment_protocol.md#planned-comparisons)に定義する。
 
 <a id="open-items"></a>
 
 ## Open事項と実施範囲
 
-現在の残作業に含むのは位置対応FT-IRのみ（mask ratio sweepの条件はFixed）。
+Open事項のうち現在の残作業に含むのは位置対応FT-IR（mask ratio sweepの条件はFixed）。
+Bacteria-IDの未記載条件は[本研究の補完条件](bacteria_id_experiment_plan.md#open-items)として具体化済み。
+参照資料間の不一致は文献比較の留保として記載し、実装・実行の待機理由にはしない。
 以下のその他の項目は未採用の候補であり、完了したことや追加実施が必要なことを意味しない。
 
 | Open事項 | 実施前に決める・確認する内容 | 定義先 |

@@ -129,6 +129,14 @@ def plot_summary(
 
 
 def _sources(experiment: Path) -> dict:
+    # Portable PCA exports may omit the parent report. When present, its label mapping
+    # must match: regenerating the parent invalidates the previous PCA color labels.
+    parent_completion = experiment / Path(FIGURE_DIRECTORY).parent / "completion.json"
+    if parent_completion.exists():
+        inputs = read_json(experiment / INPUT_DIRECTORY / "inputs.json")
+        require(inputs.get("source", {}).get("snv_report") == digest(parent_completion),
+                "PCA labels differ from the current global report; "
+                "rerun global_pca.py prepare --overwrite and fit --overwrite")
     return {condition: digest(experiment / RESULT_DIRECTORY / condition / "completion.json")
             for condition in CONDITIONS}
 

@@ -42,6 +42,9 @@ dev = [
     "pytest",
     "ruff",
 ]
+bacteria-hpo = [
+    "optuna>=4.6,<5",
+]
 
 [tool.ruff]
 target-version = "py311"

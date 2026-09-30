@@ -3,9 +3,7 @@
 研究の問い・採用理由・現行仕様・実行手順をまとめる。論文の原稿と執筆進捗は
 `C:\Users\PC_User\Python\Thesis` で管理する。
 
-2026-09-25のユーザー完了報告により、A1を含む主8条件のCV・OOF図表、全体6条件のfit・K8図表・PCAまで完了した。
-残るToDoはmask ratio sweepと位置対応FT-IRの2件とし、[ToDo](../ToDo.md)で管理する。
-[執筆への引き継ぎ](manuscript_handoff.md)から既存図表を参照できる。未採用の追加可視化案を残作業に含めない。
+完了範囲と残作業は[ToDo](../ToDo.md)、既存図表は[執筆への引き継ぎ](manuscript_handoff.md)を参照する。
 
 ## 目的別の入口
 
@@ -15,6 +13,8 @@
 | 手法の理由を知る | [ChemoMAEの位置づけ](chemomae_positioning.md)・[関連研究](related_work.md) | 採用理由、先行研究との関係、主張の範囲 |
 | 条件と定義を確認する | [研究設計](design/README.md) | 前処理、実験条件、評価、可視化、Open事項 |
 | 実験を進める | [ToDo](../ToDo.md) → [runbook](experiment_runbook.md) | 現在の状態、残作業、CLI、再開・完了判定・保存先 |
+| Raman補助実験の成果物を確認する | [Bacteria-ID計画](design/bacteria_id_experiment_plan.md)・[Table 4手順](bacteria_id_runbook.md)・[Table 5実行記録](bacteria_id_hpo_runbook.md)・[成果物整理記録](bacteria_id_artifact_reorganization_plan.md) | 新80/20 Table 4とTable 5は完了。旧60/20/20 Table 4は履歴として区別する |
+| Raman補助実験を解釈する | [Bacteria-ID解釈計画](bacteria_id_interpretation_plan.md) | Table 4・5の主張範囲、古材LLA・位置対応FT-IRとの関係、局所ラベルから面推定への将来構想 |
 | 結果を解釈する | [解釈メモ](interpretation_notes.md) | マップ・指標・再構成lossの読み方と限界 |
 | 数理・数値処理を確認する | [数理的補足](mathematical_notes.md)・[数値実装の補足](numerical_implementation_notes.md) | 導出、混合精度、loss・inertiaの意味 |
 | 論文へ資料を渡す | [執筆への引き継ぎ](manuscript_handoff.md) | 出典、図表の扱い、原稿で確認する事項 |
@@ -23,9 +23,10 @@
 
 - 研究条件・定義・データ契約は`docs/design/`を正とする。
 - 進捗はToDo、操作はrunbookに集約する。実測値と実行由来は`outputs/`の各成果物を参照する。
-- 完了記録の読み合わせ、過去の実行・検証結果、今回新たに実行した検証を区別する。
-- 仕様を更新するときは該当箇所へ直接反映し、変更ログ・旧仕様・不採用案を残さない。重複する詳細は定義先へリンクする。
+- 保存記録で確認できる内容と、現在のコードで再実行して確認した内容を区別する。
+- 仕様の定義は該当文書に置き、重複する説明はリンクにする。
 - **Fixed**は採用済み、**Open**は未確定を表す。実装・実行・検証の完了状況とは区別する。
+- **本研究の補完条件**は、参照論文の未記載事項をこちらで具体化した採用条件を表す。原論文の実設定とは区別する。
 
 ## 用語
 

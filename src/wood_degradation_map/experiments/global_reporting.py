@@ -1,4 +1,4 @@
-"""Observed spectral summaries, M00 matching, and static global-fit PNG/CSV reports."""
+"""Spectral summaries and M00-aligned PNG/CSV reports from global K8 repeat 1."""
 
 from __future__ import annotations
 
@@ -25,8 +25,10 @@ from PIL import Image, ImageDraw, ImageFont
 from scipy.optimize import linear_sum_assignment
 from scipy.signal import savgol_filter
 
-from .global_clustering import K, check_global_clustering, condition_paths, read_label_map
+from .global_clustering import K, read_label_map
+from .global_k8_repeats import check_repeat_clustering, repeat_paths
 from .global_manifest import GLOBAL_CONDITIONS, GlobalData
+from .global_seed_plan import global_kmeans_seed
 from .input_validation import InputInventory
 from .manifests import _digest, _read_json, _require, _write_json
 from .oof_sanity import LABEL_COLORS, REPRESENTATIVES, occupancy_values
@@ -37,6 +39,8 @@ KINDS = ("reflectance", "snv", "pseudoabsorbance", "second_derivative")
 PLOTTED_KINDS = (0, 1, 3)
 Y_LABELS = ("Reflectance", "SNV spectra", "Pseudoabsorbance", r"$d^2A/d\lambda^2$ (nm$^{-2}$)")
 DEFAULT_DIRECTORY = "results/figures/global_k8_v1"
+DISPLAY_REPEAT = 1
+COMPARISON_SAMPLE = "KYOw16744"
 REPRESENTATIVE_FIGURE = "01_representative_samples_6x7.png"
 REPRESENTATIVE_LABEL_FIGURE = "07_representative_samples_1x7.png"
 
@@ -75,7 +79,7 @@ def collect_spectra(
     contingency = np.zeros((len(CONDITIONS), K, K), dtype=np.int64)
     wavelength: np.ndarray | None = None
     for si, sample in enumerate(samples):
-        maps = np.stack([read_label_map(condition_paths(experiment, c)[0] / "maps"
+        maps = np.stack([read_label_map(repeat_paths(experiment, c, DISPLAY_REPEAT)[0] / "maps"
                                         / f"{sample.sample_id}.npz", sample) for c in CONDITIONS])
         sums = np.zeros((len(CONDITIONS), K, 3, 256), dtype=np.float64)
         with h5py.File(sample.path, "r") as handle:
@@ -378,22 +382,24 @@ def _paste_cluster_colorbar(canvas: Image.Image, *, dpi: int, height: int) -> No
 
 def _map_overview(
     labels: dict[str, np.ndarray], sample_ids: list[str], path: Path, *, rows: int,
-    image_height: int, dpi: int,
+    image_height: int, dpi: int, columns: int = 7,
 ) -> None:
     """Mirror sample_overviews spacing and labels, using nearest-neighbor class colors."""
     scale = dpi / 240
     width, gutter, label_height, font_size, bar_height = (
         max(1, round(value * scale)) for value in (720, 24, 128, 80, 360))
-    _require(0 < len(sample_ids) <= rows * 7, "Map grid cannot hold the selected samples")
+    _require(columns > 0 and 0 < len(sample_ids) <= rows * columns,
+             "Map grid cannot hold the selected samples")
     cell_height = image_height + label_height
-    size = (7 * width + 8 * gutter, rows * cell_height + (rows + 1) * gutter + bar_height)
+    size = (columns * width + (columns + 1) * gutter,
+            rows * cell_height + (rows + 1) * gutter + bar_height)
     font_path = Path(matplotlib.get_data_path()) / "fonts/ttf/DejaVuSans-Bold.ttf"
     font = ImageFont.truetype(str(font_path), size=font_size)
     palette = np.rint(np.array([to_rgb(color) for color in LABEL_COLORS]) * 255).astype(np.uint8)
     with Image.new("RGB", size, "white") as canvas:
         draw = ImageDraw.Draw(canvas)
         for index, sample_id in enumerate(sample_ids):
-            row, column = divmod(index, 7)
+            row, column = divmod(index, columns)
             x, y = gutter + column * (width + gutter), gutter + row * (cell_height + gutter)
             with Image.fromarray(palette[labels[sample_id]]) as source:
                 ratio = min(width / source.width, image_height / source.height)
@@ -422,8 +428,9 @@ def _plot_maps(
     for ci, condition in enumerate(CONDITIONS):
         directory = output / condition / "labels"
         directory.mkdir()
-        labels = {s.sample_id: mapping[ci, read_label_map(condition_paths(experiment, condition)[0]
-                  / "maps" / f"{s.sample_id}.npz", s)] for s in samples}
+        map_directory = repeat_paths(experiment, condition, DISPLAY_REPEAT)[0] / "maps"
+        labels = {s.sample_id: mapping[ci, read_label_map(
+                  map_directory / f"{s.sample_id}.npz", s)] for s in samples}
         np.savez_compressed(output / condition / "label_maps.npz", **labels)
         for group, start in enumerate(range(0, len(samples), 7)):
             stop = min(start + 7, len(samples))
@@ -499,12 +506,30 @@ def _plot_matrices(
         _save(fig, output / condition / "02_snv_cosine_matrix.png", dpi)
 
 
+def _plot_sample_comparison(output: Path, dpi: int) -> None:
+    """Render the manuscript's six-condition example from the same aligned maps."""
+    labels = {}
+    for condition in CONDITIONS:
+        with np.load(output / condition / "label_maps.npz", allow_pickle=False) as saved:
+            _require(COMPARISON_SAMPLE in saved.files,
+                     f"{condition}: missing comparison sample {COMPARISON_SAMPLE}")
+            labels[condition] = saved[COMPARISON_SAMPLE]
+    width = max(1, round(720 * dpi / 240))
+    image_height = max(round(width * values.shape[0] / values.shape[1])
+                       for values in labels.values())
+    _map_overview(labels, list(CONDITIONS), output / f"02_{COMPARISON_SAMPLE}_1x6.png",
+                  rows=1, columns=len(CONDITIONS), image_height=image_height, dpi=dpi)
+
+
 def report_contract(experiment: Path, data: GlobalData, inventory: InputInventory) -> dict[str, object]:
     sources = {}
     for condition in CONDITIONS:
-        check_global_clustering(experiment, data, inventory, condition)
-        sources[condition] = _digest(condition_paths(experiment, condition)[0] / "completion.json")
-    return {"schema_version": 3, "scope": "global_descriptive_report", "K": K,
+        check_repeat_clustering(experiment, data, inventory, condition, DISPLAY_REPEAT)
+        sources[condition] = _digest(
+            repeat_paths(experiment, condition, DISPLAY_REPEAT)[0] / "completion.json")
+    return {"schema_version": 4, "scope": "global_descriptive_report", "K": K,
+            "clustering_directory": "results/global_k8_3seed_v1/clustering",
+            "repeat": DISPLAY_REPEAT, "seed": global_kmeans_seed(DISPLAY_REPEAT),
             "conditions": list(CONDITIONS), "reference": "M00+Cosine-KMeans", "sources": sources,
             "manifest_sha256": _digest(experiment / "manifests/complete.json"),
             "code_sha256": {name: _digest(Path(__file__).with_name(name))
@@ -530,6 +555,7 @@ def render_global_report(
         means = _write_tables(stage, summary, mapping, similarity)
         _plot_maps(experiment, inventory, stage, mapping, dpi)
         _plot_representatives(stage, dpi)
+        _plot_sample_comparison(stage, dpi)
         _plot_spectra(stage, summary, means, dpi)
         _plot_matrices(stage, mapping, similarity, dpi)
         captions = [(REPRESENTATIVE_FIGURE,
@@ -537,6 +563,9 @@ def render_global_report(
                      + ", ".join(sample for _, sample in REPRESENTATIVES)
                      + ". Fixed representative samples; sample IDs appear below the final row "
                      "only. Shared M00-aligned display IDs and cluster colors.")]
+        captions.append((f"02_{COMPARISON_SAMPLE}_1x6.png",
+                         f"{COMPARISON_SAMPLE}; left to right: " + ", ".join(CONDITIONS)
+                         + ". Saved KMeans repeat 1; shared M00-aligned display IDs and colors."))
         for condition in CONDITIONS:
             captions.extend([
                 (f"{condition}/labels/*_samples_??-??_1x7.png",
@@ -568,9 +597,11 @@ def render_global_report(
             "sample_ids": list(summary.sample_ids),
             "representative_sample_ids": [sample for _, sample in REPRESENTATIVES],
             "representative_row_conditions": list(CONDITIONS),
+            "comparison_sample_id": COMPARISON_SAMPLE,
             "map_groups": [list(summary.sample_ids[start:start + 7])
                            for start in range(0, len(summary.sample_ids), 7)],
             "definitions": {"aggregation": "within-sample pixel mean, then equal-sample mean",
+                "clustering": "saved global K8 three-seed analysis, repeat 1; no refit",
                 "pseudoabsorbance": "pixelwise -log10(reflectance); all 256 values positive finite",
                 "missing": "absent curves are NaN in NPZ and empty CSV cells; no zero fill",
                 "sg": {"window_length": 7, "polyorder": 2, "deriv": 2,
@@ -601,13 +632,11 @@ def render_global_report(
 
 
 def _publish_report(stage: Path, output: Path, experiment: Path) -> None:
-    """Replace only the specified report after rendering; preserve the old one on failure."""
+    """Replace the report, including stale PCA figures; restore the old tree on failure."""
     expected = experiment.resolve() / DEFAULT_DIRECTORY
     _require(output.absolute() == expected and output.resolve() == expected,
              "Report replacement target escapes the expected directory")
     previous = stage.parent / "previous-report"
-    saved_latent = previous / "pca-latent-2d"
-    staged_latent = stage / "pca-latent-2d"
     if output.exists():
         for path in (output, *output.rglob("*")):
             attributes = getattr(path.lstat(), "st_file_attributes", 0)
@@ -618,13 +647,9 @@ def _publish_report(stage: Path, output: Path, experiment: Path) -> None:
         # The enclosing TemporaryDirectory removes the old, validated tree only after success.
         output.rename(previous)
     try:
-        # Latent projections have their own completion record and independent lifecycle.
-        if saved_latent.exists():
-            saved_latent.rename(staged_latent)
+        # PCA figures also depend on these labels and matching; regenerate them afterwards.
         stage.rename(output)
     except OSError:
-        if staged_latent.exists():
-            staged_latent.rename(saved_latent)
         if previous.exists():
             previous.rename(output)
         raise
@@ -647,14 +672,15 @@ def check_global_report(
     _require(report["sample_ids"] == expected_samples
              and completion["samples"] == len(expected_samples)
              and completion["png_count"] == sum(name.endswith(".png") for name in hashes)
-             == len(CONDITIONS) * (math.ceil(len(expected_samples) / 7) + 4) + 1
+             == len(CONDITIONS) * (math.ceil(len(expected_samples) / 7) + 4) + 2
              and completion["csv_count"] == sum(name.endswith(".csv") for name in hashes)
              == 7 * len(CONDITIONS) + 2,
              "Global report artifact counts differ")
     _require(report["representative_sample_ids"] == [sample for _, sample in REPRESENTATIVES]
-             and report["representative_row_conditions"] == list(CONDITIONS),
+             and report["representative_row_conditions"] == list(CONDITIONS)
+             and report["comparison_sample_id"] == COMPARISON_SAMPLE,
              "Global representative layout differs")
-    expected_png = {REPRESENTATIVE_FIGURE}
+    expected_png = {REPRESENTATIVE_FIGURE, f"02_{COMPARISON_SAMPLE}_1x6.png"}
     for condition in CONDITIONS:
         expected_png.update((f"{condition}/01_representative_spectra.png",
                              f"{condition}/02_snv_cosine_matrix.png",
@@ -670,5 +696,6 @@ def check_global_report(
         _require(path.is_relative_to(output.resolve()) and _digest(path) == expected,
                  f"Global report artifact changed: {name}")
     return {"status": "validated_global_report", "checks_passed": True,
+            "repeat": DISPLAY_REPEAT, "seed": global_kmeans_seed(DISPLAY_REPEAT),
             "samples": completion["samples"], "png_count": completion["png_count"],
             "csv_count": completion["csv_count"], "output": str(output)}
