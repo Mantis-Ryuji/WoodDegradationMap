@@ -30,7 +30,7 @@ jobs:
           enable-cache: true
 
       - name: Install project
-        run: uv sync --locked --dev
+        run: uv sync --locked --dev --group bacteria-hpo
 
       - name: Run tests
-        run: uv run pytest
+        run: uv run --no-sync pytest
