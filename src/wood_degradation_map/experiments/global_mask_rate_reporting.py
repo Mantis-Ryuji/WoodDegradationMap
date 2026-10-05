@@ -1,8 +1,9 @@
-"""Appendix comparison tables and the prespecified M11-50/M11-75 2 x 7 figure."""
+"""Appendix comparison tables and the prespecified M11(-50)/M11-75 2 x 7 figure."""
 
 from __future__ import annotations
 
 import json
+from importlib.metadata import version
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -33,9 +34,9 @@ from .oof_sanity import LABEL_COLORS, REPRESENTATIVES
 
 CONDITIONS = ("M11", CONDITION)
 FIGURE = "01_representative_samples_2x7.png"
-DISPLAY_NAMES = {"M11": "M11-50", CONDITION: "M11-75"}
+DISPLAY_NAMES = {"M11": "M11(-50)", CONDITION: "M11-75"}
 CAPTION = (
-    "Appendix supplementary comparison of M11-50 (top) and M11-75 (bottom). "
+    "Appendix supplementary comparison of M11(-50) (top) and M11-75 (bottom). "
     "Each representation was fitted once on the same fixed pixels of all 49 samples; "
     "K=8 Cosine-KMeans repeat 1 is displayed, without seed selection. "
     "Columns retain the seven prespecified samples from the main global figure. "
@@ -110,12 +111,14 @@ def spectral_mapping(
              and sample_means.shape[1:] == (K, 256) and len(sample_means) > 0,
              "Invalid SNV summary shape")
     norms = np.linalg.norm(reference, axis=1)
-    _require(np.isfinite(reference).all() and np.all(norms > 0), "Invalid M00 SNV reference")
+    _require(np.isfinite(reference).all() and np.isfinite(norms).all() and np.all(norms > 0),
+             "Invalid M00 SNV reference")
     means = np.stack([equal_sample_summary(sample_means[:, label])[0] for label in range(K)])
     present = np.isfinite(means).all(axis=1)
     _require(present.any(), "No observed M11-75 SNV clusters")
     norms_target = np.linalg.norm(means[present], axis=1)
-    _require(np.all(norms_target > 0), "Zero-norm observed SNV representative")
+    _require(np.isfinite(norms_target).all() and np.all(norms_target > 0),
+             "Zero or nonfinite norm of observed SNV representative")
     similarity = np.full((K, K), np.nan)
     similarity[:, present] = np.clip((reference / norms[:, None])
                                      @ (means[present] / norms_target[:, None]).T, -1, 1)
@@ -137,7 +140,9 @@ def _reference_contract(
     contract = report["contract"]
     _require(completion.get("status") == "global_report_completed"
              and completion.get("checks_passed") is True
-             and contract["repeat"] == 1 and contract["seed"] == global_kmeans_seed(1)
+             and contract["K"] == K and contract["repeat"] == 1
+             and contract["seed"] == global_kmeans_seed(1)
+             and contract["manifest_sha256"] == _digest(experiment / "manifests/complete.json")
              and contract["reference"] == "M00+Cosine-KMeans"
              and report["sample_ids"] == list(data.train_sample_ids)
              and report["representative_sample_ids"] == [sid for _, sid in REPRESENTATIVES],
@@ -166,6 +171,8 @@ def report_contract(
         "evaluations": {"M11": _digest(condition_output(experiment, "M11") / "completion.json"),
                         CONDITION: _digest(evaluation_path(experiment) / "completion.json")},
         "representatives": [sid for _, sid in REPRESENTATIVES],
+        "runtime": {name: version(name) for name in (
+            "numpy", "pandas", "scipy", "matplotlib", "pillow")},
         "code_sha256": {name: _digest(Path(__file__).with_name(name)) for name in (
             Path(__file__).name, "global_reporting.py", "global_k8_aggregate.py", "oof_sanity.py")},
     }
@@ -180,7 +187,7 @@ def plot_representatives(maps: dict[str, dict[str, np.ndarray]], output: Path, d
              "Expected exactly two rows and the seven prespecified samples")
     for sample_id in sample_ids:
         first, second = (maps[c][sample_id] for c in CONDITIONS)
-        _require(first.ndim == 2 and first.shape == second.shape
+        _require(first.ndim == 2 and min(first.shape) > 0 and first.shape == second.shape
                  and np.array_equal(first > 0, second > 0)
                  and all(labels.dtype == np.uint8 and np.all(labels <= K)
                          for labels in (first, second)), "Paired map coverage differs")
@@ -272,7 +279,7 @@ def write_report(
                 "LLA": "occupancy-adjusted local label agreement; windows 3, 5, 9",
                 "silhouette": "pooled all-valid-pixel cosine distances, then equal-sample mean",
                 "comparison": "common defined samples across both conditions and all three seeds",
-                "difference": "M11-75 minus M11-50, paired by sample and KMeans seed",
+                "difference": "M11-75 minus M11(-50), paired by sample and KMeans seed",
                 "sample_sd": "SD of per-sample three-repeat means, ddof=1",
                 "repeat_sd": "SD of three equal-sample macro means, ddof=1; KMeans variation only",
                 "occupancy": "per-sample used clusters and maximum fraction, including absent IDs",

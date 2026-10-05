@@ -103,7 +103,7 @@ def _new_kmeans(repeat: int, device: torch.device) -> CosineKMeans:
     _require(cluster_contract()["chemomae"] == experiment_config()["chemomae"]["version"],
              "ChemoMAE version differs")
     return CosineKMeans(K, tol=settings["tol"], max_iter=settings["max_iter"],
-                        device=device, random_state=global_kmeans_seed(repeat)).to(torch.float32)
+                        device=device, random_state=global_kmeans_seed(repeat)).to(dtype=torch.float32)
 
 
 def load_centers(path: Path, repeat: int, device: torch.device) -> CosineKMeans:
@@ -138,7 +138,12 @@ def check_cluster(
     _require(run["centers_sha256"] == _digest(weights / "centers_k8.npz"), "Centers changed")
     load_centers(weights / "centers_k8.npz", repeat, torch.device("cpu"))
     _require(run["fit"]["seed"] == global_kmeans_seed(repeat)
-             and sum(run["fit"]["occupancy"]) == data.train_pixel_count,
+             and run.get("center_roundtrip_exact") is True
+             and len(run["fit"]["occupancy"]) == K
+             and all(type(count) is int and count >= 0 for count in run["fit"]["occupancy"])
+             and sum(run["fit"]["occupancy"]) == data.train_pixel_count
+             and np.isfinite(run["fit"]["reference_inertia"])
+             and np.isfinite(run["fit"]["final_center_inertia"]),
              "Fit occupancy/seed differs")
     for sample in inventory.samples:
         read_label_map(results / "maps" / f"{sample.sample_id}.npz", sample)
@@ -331,12 +336,31 @@ def check_evaluation(
     _require([(row["sample_id"], row["repeat"]) for row in rows]
              == [(sample_id, repeat) for sample_id in data.train_sample_ids for repeat in REPEATS],
              "Evaluation sample/repeat coverage differs")
+    samples = {sample.sample_id: sample for sample in inventory.samples}
+    for row in rows:
+        occupancy = np.asarray(row["occupancy"], dtype=np.float64)
+        _require(occupancy.shape == (K,) and np.isfinite(occupancy).all()
+                 and np.all((occupancy >= 0) & (occupancy <= 1))
+                 and np.isclose(occupancy.sum(), 1, atol=1e-6, rtol=0)
+                 and row["valid_pixels"] == samples[row["sample_id"]].saved_pixel_count
+                 and row["used_clusters"] == np.count_nonzero(occupancy)
+                 and np.isclose(row["maximum_occupancy"], occupancy.max(), atol=1e-6, rtol=0),
+                 "Evaluation occupancy/counts differ")
+        for metric in METRICS:
+            value = row[metric]
+            if value is None:
+                _require(bool(row["undefined_reasons"].get(metric)), "Undefined score lacks reason")
+            else:
+                _require(not isinstance(value, bool) and isinstance(value, (int, float))
+                         and np.isfinite(value), "Invalid evaluation score")
     counts = _read_json(output / "run.json")["pooled_cluster_counts"]
     _require(all(len(counts[str(r)]) == K and sum(counts[str(r)])
                  == sum(s.saved_pixel_count for s in inventory.samples) for r in REPEATS),
              "Pooled occupancy coverage differs")
     with np.load(output / "snv_means.npz", allow_pickle=False) as saved:
+        means = saved["means"]
         _require(saved["sample_ids"].tolist() == list(data.train_sample_ids)
-                 and saved["means"].shape == (len(data.train_sample_ids), K, 256),
+                 and means.shape == (len(data.train_sample_ids), K, 256)
+                 and np.all(np.isfinite(means).all(axis=-1) | np.isnan(means).all(axis=-1)),
                  "SNV summary coverage differs")
     return completion
