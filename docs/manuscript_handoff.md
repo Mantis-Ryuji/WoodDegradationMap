@@ -70,17 +70,71 @@ Raman Table 4の主結果は`outputs/experiments/bacteria_id_table4_80_20_v1/tab
 | 主8条件の試料別分布 | [02_k8_distributions.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/02_k8_distributions.png)。$K_0=8$、試料別平均・macro平均・共通対象数 |
 | 主要3比較＋追加ablationのpaired差 | [03_paired_k_sweep.png](../outputs/experiments/production_v1/results/figures/main_oof_v1/03_paired_k_sweep.png)。M11−B0・M11−B1・M11−M00・A1−A0・M11−A1。ARI差は試料内3反復対平均同士の差 |
 | 主条件の表・出典 | `outputs/experiments/production_v1/results/figures/main_oof_v1/`のCSV 11個と[report.json](../outputs/experiments/production_v1/results/figures/main_oof_v1/report.json)。Occupancyと交互作用は表のみ。内容一覧・再生成は[runbook](experiment_runbook.md#oof-reporting) |
+| Mask率25%・50%・75%のCV比較 | `outputs/experiments/production_v1/results/figures/mask_rate_oof_v1/`のPNG・CSV。未知試料での感度解析。[引き渡し一覧](#mask-rate-handoff) |
 | 全体fit・K8の6条件比較 | [01_representative_samples_6x7.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/01_representative_samples_6x7.png)。固定代表7試料を列、B0・B1・A0・A1・M00・M11を行に配置。CVの予測ではなく全体fitによる記述 |
+| 全体fitのmask率補助比較 | [01_representative_samples_2x7.png](../outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/01_representative_samples_2x7.png)。上段M11(-50)・下段M11-75、初回fitの固定7試料。付録に掲載し、数値比較と出典も[一式で渡す](#mask-rate-handoff) |
 | M11・K8の代表試料マップ | [07_representative_samples_1x7.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/labels/07_representative_samples_1x7.png)。同じ`labels/`の00〜06・08に全49試料を保存 |
 | M11の全体代表スペクトル | [01_representative_spectra.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/01_representative_spectra.png)。上段SNV・反射率、下段疑似吸光度のSG二次微分。試料等重み平均・試料間IQR |
 | M11の試料別スペクトル・寄与数 | [sample_spectra.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/sample_spectra.csv)、[spectrum_counts.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/spectrum_counts.csv)、[wavelengths.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/wavelengths.csv)。試料ID・表示Cluster ID・kindで選び、`band_000`〜`band_255`をnmへ対応づける。試料別詳細PNGは未実装 |
 | K8のmatching・出典 | [report.json](../outputs/experiments/global_v1/results/figures/global_k8_v1/report.json)、[M11/matching.csv](../outputs/experiments/global_v1/results/figures/global_k8_v1/M11/matching.csv)。元番号とM00基準の表示番号を区別。親図表はPNG 67枚・CSV 44個 |
-| 6条件のPCA補助図 | [01_pca_density_clusters.png](../outputs/experiments/global_v1/results/figures/global_k8_v1/pca-latent-2d/01_pca_density_clusters.png)。2行6列・共通401,408画素。B1は既存PC、他条件は別々のPCA。軸の対応・化学情報量・優劣を図の見栄えから推定しない。掲載は未定 |
+| 6条件のPCA補助図（現行PNGなし） | [座標データ](../outputs/experiments/global_v1/results/pca/global_k8_v1/)は保存済み。`01_pca_density_clusters.png`は現行出力に存在せず、掲載時は[再描画](experiment_runbook.md#global-pca)が必要。2行6列・共通401,408画素、B1は既存PC、他条件は別々のPCA。軸の対応・化学情報量・優劣を図の見栄えから推定しない。掲載は未定 |
 
 摂動例の選定・再生成は[runbook](experiment_runbook.md#input-preparation)を参照する。
 TGNの固定例は2.5・5・7.5度で採用上限5度を超える例を含み、shiftの符号は順に＋・−・＋である。
 固定値の説明図と学習時の一様分布を区別する。
 Cutoffのproxyはreferenceの検出器列間のばらつきに基づき、試料画素のSNRや時間方向の測定noiseを直接示さない。
+
+<a id="mask-rate-handoff"></a>
+
+### Mask率補助実験の引き渡し（生成済み）
+
+CV・OOFと全体fitは別の比較として記載する。mask率比較での50%の表示名は**M11(-50)**、
+保存条件IDは`M11`である。図表の完了記録はいずれも`status=mask_rate_report_completed`、
+`checks_passed=true`。以下は保存済み記録に基づく引き継ぎであり、文書更新時の実験再実行を意味しない。
+
+#### CV・OOF：25%・50%・75%の感度解析
+
+[mask_rate_oof_v1の図表ディレクトリ](../outputs/experiments/production_v1/results/figures/mask_rate_oof_v1/)
+の5ファイルを渡す。3条件・5 folds×3学習反復・全49試料・全7Kの比較であり、50%は主条件M11を再利用している。
+
+| ファイル | 用途 |
+| --- | --- |
+| [01_mask_rate_metrics_k_sweep.png](../outputs/experiments/production_v1/results/figures/mask_rate_oof_v1/01_mask_rate_metrics_k_sweep.png) | 2×2のK依存性。上段LLA 3・5、下段LLA 9・LFR(TGN+FS)。実線はmacro平均、破線等は3学習反復 |
+| [metrics_all_k.csv](../outputs/experiments/production_v1/results/figures/mask_rate_oof_v1/metrics_all_k.csv) | 全7K・11指標の値、SD、対象数・未定義情報 |
+| [metrics_k8.csv](../outputs/experiments/production_v1/results/figures/mask_rate_oof_v1/metrics_k8.csv) | 代表K=8で3条件を並べた11指標の表 |
+| [report.json](../outputs/experiments/production_v1/results/figures/mask_rate_oof_v1/report.json)・[completion.json](../outputs/experiments/production_v1/results/figures/mask_rate_oof_v1/completion.json) | 定義・45 source runs・出典hashと図表の完了記録 |
+
+元集計は[OOF snapshot](../outputs/experiments/production_v1/results/oof/mask_rate_oof_v1/)、
+確認・再生成は[runbook](experiment_runbook.md#mask-rate-sweep)を参照する。
+ARIは試料内の3反復対平均を使い、`repeat_sd`を付けない。
+
+#### 付録：全体fitのM11(-50)・M11-75比較
+
+[global_mask_rate_k8_v1の図表ディレクトリ](../outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/)
+の**次の8ファイルを一式で渡す**。各表現の学習は1回で、共通401,408画素を使用し、
+固定表現でKMeansだけを既存と同じ3 seedで反復した。詳細な方法は
+[全体fit補助比較の設計](design/visualization_and_interpretation.md#global-mask-rate)を参照する。
+
+| ファイル | 用途 |
+| --- | --- |
+| [01_representative_samples_2x7.png](../outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/01_representative_samples_2x7.png) | 付録掲載図。上段M11(-50)・下段M11-75、K=8の初回fit（repeat 1） |
+| [summary.csv](../outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/summary.csv) | LLA 3・5・9、silhouette、使用クラスタ数、最大占有率の6指標。各条件とM11-75 − M11(-50)のpaired差、平均・SD・対象数 |
+| [summary.json](../outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/summary.json) | 条件別の定義済み範囲と、共通対象での比較集計の詳細 |
+| [sample_metrics.csv](../outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/sample_metrics.csv) | 条件・試料・KMeans反復別の指標とoccupancy。個別試料の差を追う資料 |
+| [matching.csv](../outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/matching.csv) | M11-75の元Cluster IDとM00基準の表示ID、SNV cosine類似度 |
+| [captions.csv](../outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/captions.csv) | 付録用captionの元文 |
+| [run.json](../outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/run.json) | 比較定義、参照した主図・評価、学習時間、code/runtime、表示名の修正履歴 |
+| [completion.json](../outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/completion.json) | 図表の完了状態と成果物hash |
+
+現行の数値比較は6指標とも共通49試料で、除外試料はない。`sample_sd`は試料ごとの3反復平均の標本SD、
+`repeat_sd`は3つの試料macro平均の標本SD（ddof=1）である。後者は**KMeans初期化のみ**のばらつきであり、
+CVの学習3反復のばらつきと混同しない。図には良いseedを選ばずrepeat 1を用いた。
+
+7列の順序はKYOw02752、KYOw02772、KYOw02777、KYOw02787、KYOw02790、KYOw16744、KYOw16750。
+年輪に沿う区分、周縁部と内部の区分、細かな混在、領域の連続性を観察・記述するための補助図である。
+図の生成だけでこれらの対応を確認済みとはしない。全49試料をfitに含めた記述的比較であり、
+未知試料への評価、正式な目視評価、最適mask率の選択としては扱わない。
+既存成果物の確認コマンドは[runbook](experiment_runbook.md#global-mask-rate)を参照する。
 
 ### 執筆を進める順序
 
@@ -90,8 +144,8 @@ Cutoffのproxyはreferenceの検出器列間のばらつきに基づき、試料
 
 空間的一貫性の改善と物理化学的な意味の同定は別の主張である。外観との対応、観測スペクトル差、
 化学的帰属を区別して記載し、ARI等でbaselineを下回る比較や解釈できない例も残す。
-mask率25%・50%・75%の補助実験は実施し、専用OOF集計後に感度解析として結果を追記する。
-結果を待つ間も既存の主条件結果で執筆を進められる。帯域積分map・PCAの追加色分けは保留中の候補として扱う。
+mask率25%・50%・75%のOOF感度解析と、全体fitの50%・75%の付録用比較は上記の完成済み成果物を使う。
+帯域積分map・PCAの追加色分けは保留中の候補として扱う。
 
 ### 解析フロー図
 
@@ -106,7 +160,7 @@ mask率25%・50%・75%の補助実験は実施し、専用OOF集計後に感度�
 
 - 試料由来・採取関係・状態、撮像装置・測定条件。解析49試料と取得試料全体を区別し、未確認情報を補完しない。
 - Multi-Otsu、SNV、PCA、球面クラスタリング、Transformer、MAE、denoisingの原典・引用箇所・書誌。
-- mask率補助実験の完了状況と、FT-IRの[Open事項](design/README.md#open-items)。正式な目視評価などの未採用案を実施済みと扱わない。
+- mask率補助比較のCV／全体fitの区別、`M11(-50)`の表記、反復とSDの定義、およびFT-IRの[Open事項](design/README.md#open-items)。正式な目視評価などの未採用案を実施済みと扱わない。
 - A1とA1−A0・M11−A1は、既存7条件の結果を得た後の追加ablationであること。M11−A1はmaskとloss対象の両方が異なること。
 - 採用runの実行環境・完了状況、図表の出典、提出書式。
 - 指標名と保存キーの対応：補正前LLA（$\mathrm{LLA}^{\mathrm{raw}}$）は`lla`、LLA（$\mathrm{LLA}$）は`adjusted_lla`。

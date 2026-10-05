@@ -2,17 +2,18 @@
 
 ## 1. 役割
 
-固定設計を`production_v1`で実行する手順を示す。条件・seed・split・評価方法の定義は
+固定設計をCV用の`production_v1`と全体fit用の`global_v1`で実行する手順を示す。条件・seed・split・評価方法の定義は
 [研究設計](design/README.md)、現在の進捗は[ToDo](../ToDo.md)を参照する。
 
 本書のclustering・評価・OOFコマンドはCosine-KMeansの主実験・mask率補助実験用である。
-mask率補助実験の範囲と実施順序は[第8.1節](#mask-rate-sweep)を参照する。
+mask率補助実験は[CV・OOF](#mask-rate-sweep)と[全体fitの付録用比較](#global-mask-rate)を分けて扱う。
 Bacteria-IDの現行Table 5は[HPO runbook](bacteria_id_hpo_runbook.md)、既存事前学習・Table 4は[専用runbook](bacteria_id_runbook.md)を参照する。
 
 ChemoMAE v0.2.2の環境で、リポジトリrootからPowerShellで実行する。
 本番実行例は`uv run --no-sync`とし、環境構築・更新をrun開始時の処理から分ける。
 
-主条件CV・OOF、全体fit・K8図表、PCAは生成済み。本書のコマンドは再現・再検証用である。
+主条件CV・OOF、全体fit・K8図表、PCA座標、mask率のCV・OOFと全体fit補助比較は生成済み。
+本書のコマンドは再現・再検証用である。
 Bacteria-IDは[Table 4](bacteria_id_runbook.md)と[Table 5](bacteria_id_hpo_runbook.md)、
 執筆用の図表は[引き継ぎ資料](manuscript_handoff.md)を参照する。
 
@@ -21,6 +22,7 @@ Bacteria-IDは[Table 4](bacteria_id_runbook.md)と[Table 5](bacteria_id_hpo_runb
 - [clean test map](#6-clean-test-map)・[評価](#7-評価)
 - [OOF集計](#oof-aggregation)・[OOF sanity図](#oof-sanity)・[主条件OOF図表](#oof-reporting)
 - [全体fitの準備・一括学習](#global-fit-pipeline)・[PCA一枚](#global-pca)・[保存規約](#artifact-records)
+- [Mask率CV・OOF図表](#mask-rate-sweep)・[Mask率全体fit・2×7図](#global-mask-rate)
 
 各CLIの終了後に `$LASTEXITCODE -eq 0` を確認し、非0なら後続工程へ進まない。JSONのstatus確認は
 終了codeの確認に加えて行う。
@@ -37,6 +39,9 @@ Bacteria-IDは[Table 4](bacteria_id_runbook.md)と[Table 5](bacteria_id_hpo_runb
 | B0・B1・A0・M00 OOF sanity | `outputs/sanity_checks/a0_m00_oof_visualization/` |
 | 主条件OOF snapshot | `outputs/experiments/production_v1/results/oof/main_oof_v1/` |
 | 主条件OOF図表 | `outputs/experiments/production_v1/results/figures/main_oof_v1/` |
+| Mask率OOF snapshot・図表 | `outputs/experiments/production_v1/results/{oof,figures}/mask_rate_oof_v1/` |
+| 全体fit | `outputs/experiments/global_v1/` |
+| Mask率全体fitの付録用図表 | `outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/` |
 
 smokeやpreflightの成果物を本番rootへコピーしない。本番開始後はmanifestを作り直さず、
 `outputs/experiments/production_v1/manifests/` を同じ実験系列の固定入力として扱う。
@@ -103,7 +108,7 @@ uv run --no-sync python scripts/experiments/prepare_manifests.py check --experim
 
 ## 4. ニューラルネットの1 run
 
-対象はToDoの未完了runから選び、PowerShell変数へ直接代入する。以下はmask率補助条件M11-25・fold 1・repeat 1の例である。
+以下はmask率補助条件M11-25・fold 1・repeat 1の再現用の例である。現在は主条件・mask率補助とも完了済み。
 完了済みrunは再学習せず、保存済み成果物の確認には各工程の`check`を使う。
 
 ```powershell
@@ -321,29 +326,54 @@ KMeans、評価処理はこの数に含めない。3反復はseed選別に使わ
 
 <a id="mask-rate-sweep"></a>
 
-### 8.1 mask率補助実験の実施
+### 8.1 mask率補助実験：CV・OOF（完了）
 
-M11のmask率25%・50%・75%を比較する補助実験を実施する。
-50%は完了済みの主条件M11を再利用し、M11-25・M11-75を各5 folds×3反復、計30 runs追加する。
+M11のmask率25%・50%・75%を比較する補助実験は完了した。
+50%は主条件M11を再利用し、M11-25・M11-75を各5 folds×3反復、計30 runs追加した。
 800 epoch、split、抽出画素、seed、augmentation強度、全7Kと評価指標は主実験の固定条件を継承する。
 最良mask率の選択ではなく感度解析として報告し、主条件M11を事後的に置き換えない。
+保存済みOOFと図表の完了記録はいずれも`checks_passed=true`で、49試料・45 source runsを含む。
 
 1. 第4節の学習・再開手順でM11-25・M11-75を実行し、各runをcheckする。
 2. 第6〜7節に従い、各runでCosine-KMeans・全test画素の予測・評価・checkを完了する。
 3. M11-25・M11・M11-75の3条件を[OOF集計](#oof-aggregation)の`mask_rate_oof_v1`へまとめる。主条件のsnapshotは保持する。
-4. mask率比較の図表生成対応を追加し、LLA・LFR・ARI・Cosine-Silhouette・occupancyとK依存性を報告する。
+4. 以下の専用CLIでLLA・LFR・ARI・Cosine-Silhouette・occupancyとK依存性を出力する。
 
-主条件の図表用CLIを、そのままmask率snapshotへ流用しない。mask率図表への対応は未実装である。
-条件の定義は[実験プロトコル](design/experiment_protocol.md#mask-rate-sweep)、
-残作業は[ToDo第4節](../ToDo.md#4-mask率補助実験)を参照する。
-この実験の着手に、追加の潜在空間図や物理化学的解釈の完了を要求しない。
+<a id="mask-rate-reporting"></a>
+
+#### mask率OOF図表の再生成
+
+主条件用CLIとは別に`export_mask_rate_oof.py`を使う。次は既存の図表を再生成するコマンドである。
+
+```powershell
+uv run --no-sync python scripts/experiments/export_mask_rate_oof.py `
+    --experiment-dir outputs/experiments/production_v1 `
+    --snapshot mask_rate_oof_v1 --with-figure --overwrite
+if ($LASTEXITCODE -ne 0) { throw 'Mask-rate OOF reporting failed' }
+```
+
+CPUで保存済みOOF値を読み、学習・推論・評価をやり直さない。既定出力先は
+`outputs/experiments/production_v1/results/figures/mask_rate_oof_v1/`、既定240 dpi。
+`--output-dir`で保存先を変更でき、`--overwrite`はこのreportが管理するファイルだけを置換する。
+`--with-figure`を省略するとCSVと出典・完了記録のみを生成する。
+
+出力はPNG 1枚、`metrics_all_k.csv`、`metrics_k8.csv`、`report.json`、`completion.json`の5ファイル。
+PNGは2×2（上段LLA 3・5、下段LLA 9・LFR(TGN+FS)）で、50%の表示名は`M11(-50)`とする。
+実線はmacro平均、破線・点線・一点鎖線は学習反復1・2・3。表は全7K・K8の11指標を保持する。
+終了code 0、`status=mask_rate_report_completed`・`checks_passed=true`、文字・凡例・曲線を確認する。
+このexportは消費するsnapshotのhash・試料/fold/repeat対応を確認するが、OOF全体のcheckを再実行しない。
+保存済みOOFの再検証は[第9節](#oof-aggregation)の`aggregate_oof.py check`を使う。
+
+条件は[実験プロトコル](design/experiment_protocol.md#mask-rate-sweep)、
+引き渡すファイルと出典は[Thesis向け一覧](manuscript_handoff.md#mask-rate-handoff)を参照する。
 
 <a id="global-fit-pipeline"></a>
 
 ### 8.2 全体fitと解釈
 
-主条件OOF図表、全体fit、K8クラスタリング・図表、PCA一枚は生成済みである。
-残作業はmask率sweep（[第8.1節](#mask-rate-sweep)）と位置対応FT-IRとし、執筆はThesisで管理する。
+主条件OOF図表、全体fit、K8クラスタリング・図表、PCA座標は生成済みである。
+mask率の[CV比較](#mask-rate-sweep)と[全体fit補助比較](#global-mask-rate)も生成済みである。
+残る実験は位置対応FT-IRとし、執筆はThesisで管理する。
 
 [全体可視化設計](design/visualization_and_interpretation.md)に従い、全49試料の共通抽出画素で
 B1 PCAとA0・A1・M00・M11をfitする。B0を加えた6条件の表現で、$K_0=8$のCosine-KMeansを6 fits行う。
@@ -473,11 +503,11 @@ B0/PCAとA0・A1・M00・M11の更新数、AMP skip数、保存復元結果は
    保存復元・対象数・ラベル範囲・出典のcheckを行う。試料ごとのクラスタリング再fitは行わない。
 3. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋HungarianでM00＋Cosine-KMeansへラベルを整列する。
    クラスタmap・occupancy・対応表と、反射率・SNV・疑似吸光度のSG二次微分の代表線・ばらつきをPNG・CSVにする。
-4. [PCA一枚](#global-pca)は生成済み。以降の詳細図は、執筆で不足した根拠に応じて選ぶ。
+4. [PCA一枚](#global-pca)は保存済み座標から描画する。以降の詳細図は、執筆で不足した根拠に応じて選ぶ。
    試料別スペクトルCSVを先に参照でき、帯域積分mapや追加のPCA色分けは必須工程ではない。
 
 帯域選択・平滑化・積分の数値設定は未確定である。採用時の定義は[可視化設計](design/visualization_and_interpretation.md#spectral-band-selection)を参照する。
-mask率sweepは[第8.1節](#mask-rate-sweep)に従って実施する。
+完了済みmask率比較の操作は[CV・OOF](#mask-rate-sweep)と[全体fit](#global-mask-rate)を参照する。
 
 ##### 実行コマンド：クラスタリングと可視化
 
@@ -623,7 +653,10 @@ B1は保存済みbaseline PCAの特異値の降順に上位2成分を選び、L2
 条件間で座標尺度が異なるため表示範囲は条件別とし、同じ条件の上下段では一致させる。hexbinの色範囲は全条件で共通。
 詳細は[設計書](design/visualization_and_interpretation.md#latent-spectral-maps)を参照。
 
-**A1を含む入力・6条件の投影・2×6 PNG一枚とCSV 5個は生成済み。**
+**A1を含む入力・6条件の投影は保存済み。** 2026-10-05の文書整理時点では、図表出力先の
+`results/figures/global_k8_v1/pca-latent-2d/`が存在せず、PNG一枚・CSV 5個は現在の引き渡し対象に含められない。
+座標は`results/pca/global_k8_v1/`に残っている。掲載する場合は本節の`visualize_global_pca.py run`で描画し、
+完了・表示を確認する。今回の文書更新ではPCAのcheck・再描画を実行していない。
 コード変更時の小規模CPUテストは次のとおり。
 
 ```powershell
@@ -636,7 +669,7 @@ if ($LASTEXITCODE -ne 0) { throw 'PCA export/report tests failed' }
 出力先の`global_k8_v1/pca-latent-2d/`は親のクラスタ図表と独立してcheckする。
 親の図表の再生成時には既存`pca-latent-2d/`を引き継ぎ、親のPNG 67枚・CSV 44個の件数へ加算しない。
 入力準備には、現行コードと整合した親図表・matchingが必要である。
-既存成果物は揃っているため、通常は末尾のcheckまたは描画だけを使う。
+保存済み座標を使う場合は末尾の座標checkと描画を使う。図のcheckは描画後に行う。
 入力・座標を新規に用意する場合は、親図表の生成後、リポジトリrootのPowerShellで次を実行する。
 
 ```powershell
@@ -668,17 +701,70 @@ PCA fitに乱数seedは使わず、scatterの重なり順だけROOT_SEEDで固�
 | `results/figures/global_k8_v1/pca-latent-2d/01_pca_density_clusters.png` | 指定の2行6列PNG一枚 |
 | `results/figures/global_k8_v1/pca-latent-2d/`内のCSV | `pixels.csv`・`hexbin_counts.csv`・`centroids.csv`・`explained_variance.csv`・`captions.csv` |
 
-描画だけの変更時は`visualize_global_pca.py run`だけを実行する。新しい図が完成してから`pca-latent-2d/`を置換する。
-checkだけを行う場合は次を使う。
+保存済み座標から図を再生成・確認する場合は次を使う。新しい図が完成してから`pca-latent-2d/`を置換する。
+描画のみの変更には`visualize_global_pca.py run`を使い、既存図のcheckだけを行う場合は`run`の行を省く。
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_pca.py check
 if ($LASTEXITCODE -ne 0) { throw 'PCA coordinate check failed' }
+uv run --no-sync python scripts/experiments/visualize_global_pca.py run
+if ($LASTEXITCODE -ne 0) { throw 'PCA plotting failed' }
 uv run --no-sync python scripts/experiments/visualize_global_pca.py check
 if ($LASTEXITCODE -ne 0) { throw 'PCA figure check failed' }
 ```
 
 metadata・帯域指標による追加の色分けは保留中であり、執筆時に必要性を判断する。
+
+<a id="global-mask-rate"></a>
+
+### 8.4 全体fitのmask率補助比較（付録、完了）
+
+既存M11の抽出画素・設定・seedを共有してM11-75を1回学習し、固定表現でK8のCosine-KMeansを
+既存と同じ3 seedでfit・評価した。初回fitの2×7図は上段`M11(-50)`・下段`M11-75`で、
+既選定7試料の列順を維持する。範囲・指標・反復・matchingは
+[可視化設計第1.4節](design/visualization_and_interpretation.md#global-mask-rate)に従う。
+
+既定rootは`outputs/experiments/global_v1/`。50%の既存学習・3 seed診断・主図表を出典として参照するため、
+それらの成果物とmanifestを保持する。既存成果物の確認には次を使う。
+
+```powershell
+uv run --no-sync python scripts/experiments/global_mask_rate.py check
+if ($LASTEXITCODE -ne 0) { throw 'Global mask-rate report check failed' }
+```
+
+CPUで入力・出典・保存ラベル・契約・成果物hashを検証し、学習や全画素推論は行わない。
+終了code 0と`status=mask_rate_report_completed`・`checks_passed=true`を確認する。
+保存済みの学習記録は800 epoch完了、図表の完了記録も上記statusである。
+
+未着手・中断工程の実行順序は次のとおり。現在は全工程の成果物が揃っている。
+
+```powershell
+& {
+    foreach ($step in @('train', 'cluster', 'evaluate', 'report')) {
+        uv run --no-sync python scripts/experiments/global_mask_rate.py $step --resume
+        if ($LASTEXITCODE -ne 0) { throw "Global mask-rate step failed: $step" }
+    }
+}
+```
+
+`train`はM11-75のみを学習し、`--resume`で同じrunのcheckpointから再開する。
+`cluster`は固定重みで3 fits、`evaluate`は全49試料の6指標、`report`は保存結果から比較表・図を作る。
+`train`・`training-check`・`cluster`・`evaluate`はCUDA必須（既定`--device 0`）、
+`report`・`check`はCPU。学習は長時間GPU処理で、所要時間・更新数は条件別の学習完了記録を参照する。
+全画素処理の`--chunk-pixels`は既定1,024、図の`--dpi`は既定240。
+各工程は出力後に検証し、`--resume`で完了済み出力を検証してskipする。`report --resume`は既存図を描き直さない。
+契約・code・runtimeが一致しない出力や不完全な出力は自動置換しない。このCLIに`--overwrite`はない。
+
+| 保存先（global_v1配下） | 内容 |
+| --- | --- |
+| `results/neural/M11-75/repeat_1/` | 1回の学習のrun・history・attempt・完了記録 |
+| `checkpoints/neural/M11-75/repeat_1/` | `last_model.pt`と再開用`checkpoints/last.pt` |
+| `results/global_mask_rate_k8_v1/clustering/M11-75/repeat_{1,2,3}/` | K8・3 seedのmapと出典・完了記録。中心は対応する`checkpoints/global_mask_rate_k8_v1/`配下 |
+| `results/global_mask_rate_k8_v1/conditions/M11-75/` | 試料別指標、SNV平均、評価の出典・完了記録 |
+| `results/figures/global_mask_rate_k8_v1/` | 2×7 PNG・集計表・matching・caption・出典・完了記録の計8ファイル |
+
+Thesisへは最後のディレクトリの8ファイルを一式で渡す。
+ファイル別の用途と統計量の読み方は[引き継ぎ一覧](manuscript_handoff.md#mask-rate-handoff)にまとめる。
 
 <a id="oof-aggregation"></a>
 
@@ -701,13 +787,14 @@ uv run --no-sync python scripts/experiments/aggregate_oof.py check `
     --experiment-dir outputs/experiments/production_v1
 ```
 
-mask率補助実験は、M11-25・M11-75の全fold・全反復の評価完了後に、完了済みのM11を加えて集計する。
-主条件のsnapshotを保持し、3条件を別snapshotにする。
+mask率補助実験の`mask_rate_oof_v1`も集計済みで、保存完了記録は`checks_passed=true`である。
+主条件のsnapshotを保持し、M11-25・M11・M11-75の49試料・45 source runsを別snapshotにまとめた。
+以下は再集計例であり、既存snapshotの再確認には`check`だけを実行する。
 
 ```powershell
 uv run --no-sync python scripts/experiments/aggregate_oof.py run `
     --conditions M11-25 M11 M11-75 `
-    --snapshot mask_rate_oof_v1 `
+    --snapshot mask_rate_oof_v1 --overwrite `
     --experiment-dir outputs/experiments/production_v1
 if ($LASTEXITCODE -ne 0) { throw 'OOF aggregation failed' }
 uv run --no-sync python scripts/experiments/aggregate_oof.py check `

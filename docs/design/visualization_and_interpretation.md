@@ -2,20 +2,23 @@
 
 ## 1. ステータス
 
-**全体fit・K8比較・PCA一枚の設定Fixed / 試料ごとの詳細図・追加PCA・連続指標mapの採否と詳細Open / FT-IR・正式な目視評価の詳細Open**
+**全体fit・K8比較・PCA一枚・mask率付録比較の設定Fixed / 試料ごとの詳細図・追加PCA・連続指標mapの採否と詳細Open / FT-IR・正式な目視評価の詳細Open**
 
 本書は全49試料を使った全体fit後の記述的解析を定義する。
 [OOF sanity可視化](oof_sanity_visualization.md)は、foldモデルの既存予測を読む別の工程である。
 実行記録は[プロトコル](experiment_protocol.md#execution-records)に従う。
 現在の観察粒度は$K_0=8$。A1を含む6条件の全体fit・
-Cosine-KMeans・マップ・代表スペクトル、6×7代表図、密度／Cluster IDの2×6 PCA図まで再生成済みである。
-残るToDoはmask ratio sweepと位置対応FT-IR。試料ごとの詳細図、PCA追加色分け、帯域積分map、
+Cosine-KMeans・マップ・代表スペクトル、6×7代表図、PCA座標は保存済みである。
+2×6 PCA図の現状と再描画手順は[runbook](../experiment_runbook.md#global-pca)を参照する。
+mask率のCV・OOF比較と、本書第1.4節の全体fit補助比較も生成済みである。
+残る実験は位置対応FT-IR。試料ごとの詳細図、PCA追加色分け、帯域積分map、
 正式な目視評価は未採用の候補として設計を保持し、現在の残作業には含めない。
 完了範囲・保存記録は[ToDo](../../ToDo.md#3-全体fitと解釈)、CLIと検証履歴は
 [runbook](../experiment_runbook.md#global-fit-pipeline)に集約する。
-mask率sweepは[CV補助実験](experiment_protocol.md#mask-rate-sweep)として実施する。本書の追加可視化・解釈の完了を着手条件にしない。
+mask率sweepの[CV補助実験](experiment_protocol.md#mask-rate-sweep)と、全体fitによる記述的比較のfit範囲・反復を区別する。
 
 - [全体fit条件](#global-fit)
+- [全体fitのmask率補助比較](#global-mask-rate)
 - [M00基準のmatching](#matching-reference)
 - [共通描画規約](#figure-style)・[代表試料](#representative-samples)
 - [PCAと連続スペクトル指標map](#latent-spectral-maps)・[帯域選択](#spectral-band-selection)
@@ -53,7 +56,7 @@ fit後はモデルを固定して全試料の全有効画素へ推論し、マ�
 
 ### 1.3 反復・seed・クラスタリング
 
-反復ID 1の事前固定seedで、各変換器・クラスタリングを1回fitする。
+初回の表示用fitは反復ID 1の事前固定seedで、各変換器・クラスタリングを1回fitする。
 ROOT_SEED=20260905と既存のSHA-256方式を使用し、
 seed導出のfold位置を文字列`global`へ置換する。用途は既存と同じで、抽出は`(sampling, global, sample_id)`、
 初期化・画素順・mask・augmentation・PCAは`(purpose, global, 1)`、クラスタリングは`(kmeans, global, 1, 8)`とする。
@@ -63,10 +66,44 @@ seed導出のfold位置を文字列`global`へ置換する。用途は既存と�
 A0・A1・M00・M11はCVと同じmask・loss・augmentation・800 epoch recipeで各1回、計4回学習する。
 6条件の表現でCosine-KMeansを各1回、計6 fits行う。
 補助条件を含むCVの計画120学習とは別枠で記録する。
-CVで良好なseedへの変更は行わず、反復間の再現性はCVのARIで報告する。
+CVで良好なseedへの変更は行わず、学習反復間の再現性はCVのARIで報告する。
+
+後続の`global_k8_3seed_v1`では各条件の表現を固定し、KMeans初期化のみを3 seedで反復した。
+反復1は元のfitを保持し、反復2・3は`(kmeans, global, repeat, 8)`から導出する。
+NNの再学習は行わず、表示図にも反復1を使う。この診断の反復間SDはKMeans初期化の変動のみを示す。
 
 全体解釈の成果物はCVの評価・OOF集計から分け、条件別のfit記録に元の表現・抽出座標・設定・
 source hashとの対応、完了・失敗の状態を残す。
+
+<a id="global-mask-rate"></a>
+
+### 1.4 全体fitのmask率補助比較（付録）
+
+M11-75を全49試料で1回だけ追加学習し、既存50%のM11と比較する。
+共通抽出画素は既存の49×8,192＝401,408座標をそのまま使い、モデル構成、800 epochのrecipe、
+初期化・画素順・mask・augmentationの事前固定seedを共有する。変更するのはmask率のみで、
+16 patch中のmask数を8から12にする。50%の学習済み重み・評価を再利用する。
+
+各条件のepoch 800の最終raw重みを固定し、全パッチ可視の16次元表現でK=8のCosine-KMeansを3反復する。
+seedは既存の全体fit診断と同じ反復1・2・3（1960870825・322674335・2051198256）とし、良いseedを選別しない。
+fit後は全49試料の全3,902,250有効画素を評価する。比較する指標は補正後LLA 3・5・9、
+Cosine-Silhouette、試料別使用クラスタ数、最大占有率であり、この補助比較にLFR・ARIは追加しない。
+silhouetteは全試料の有効画素をpoolした集合を対象に、既存と同じcosine距離・FP64集計で求める。
+各指標は両条件・全3反復で定義された共通試料を等重み集計し、M11-75 − M11(-50)のpaired差も保存する。
+`sample_sd`は試料ごとの3反復平均の標本SD、`repeat_sd`は3つの試料macro平均の標本SDである（いずれもddof=1）。
+後者はKMeans初期化だけの変動であり、NN再学習のばらつきを表さない。
+
+図は初回fit（反復1）の2行7列とし、上段`M11(-50)`・下段`M11-75`、
+列は[既選定7試料](#representative-samples)の順序を維持する。保存条件IDは`M11`と`M11-75`を維持する。
+50%側は既存6×7図と同じ表示ラベルを再利用し、75%側はM00の観測SNV代表線へ直接Hungarian matchingする。
+色の対応は表示だけに使用し、指標は元のラベルで計算する。全試料を通して不在の75%側クラスタはmatching対象から除き、
+残った表示番号を元番号順に割り当て、類似度を未定義として記録する。不在クラスタの画素を補うことはしない。
+
+掲載先は付録の補助比較とする。年輪に沿う区分、周縁部と内部の区分、細かな混在、領域の連続性を記述的に確認する。
+全試料をfitに含めた図であり、OOFの未知試料評価や正式な目視評価の実施結果とは扱わない。
+最適mask率の選択や主条件M11の置き換えには使わない。
+成果物は生成済みで、保存先・確認コマンドは[runbook](../experiment_runbook.md#global-mask-rate)、
+Thesisへ渡す8ファイルは[引き継ぎ一覧](../manuscript_handoff.md#mask-rate-handoff)を参照する。
 
 ## 2. ラベル規約
 
@@ -108,8 +145,9 @@ $$
 
 代表線をL2正規化して内積を取り、符号を保った類似度（−1〜1）を使用する。
 画素数による試料の重み付け、代表線の波長方向の再標準化、帯域選択は行わない。
-背景0は行列・割当から除外する。全試料を通して空のクラスタ、非有限またはノルム0の代表線があれば、
-条件・元クラスタ番号を示して停止する。試料内に存在しないクラスタの曲線は平均から除き、0で補完しない。
+背景0は行列・割当から除外する。主6条件では全試料を通して空のクラスタ、非有限またはノルム0の代表線があれば、
+条件・元クラスタ番号を示して停止する。75%補助比較の不在クラスタは[第1.4節](#global-mask-rate)に従う。
+試料内に存在しないクラスタの曲線は平均から除き、0で補完しない。
 潜在ベクトル、反射率、疑似吸光度、二次微分、metadataおよびIoUは割当の目的関数に含めない。
 
 Hungarian assignmentにより、SNVのcosine類似度の合計を最大にする。
@@ -325,7 +363,8 @@ CVの49試料、split、学習画素集合、評価対象は変更しない。�
 
 全体fit後の探索的解析では、表現空間・試料表面・観測スペクトルの
 対応を重点的に調べる。出力図は論文用の静的なPNGとし、表と図の元数値はCSVで保存する。
-密度・Cluster IDのPCA一枚は生成済みである。追加色分け・連続指標map・対応詳細図は候補として保持し、
+密度・Cluster IDのPCA一枚は実装済みである。保存状況は[runbook](../experiment_runbook.md#global-pca)を参照する。
+追加色分け・連続指標map・対応詳細図は候補として保持し、
 執筆で必要性を確認してから実施範囲を選ぶ。帯域・平滑化・積分の未確定値を既定値で補って実装しない。
 6条件で比較する場合の共通座標・色値の規約を以下に示す。
 
@@ -414,7 +453,7 @@ OHなどへの帰属は候補であり、対象帯域と一次文献の対応を
 
 | 図 | 構成案と用途 |
 | --- | --- |
-| PCA比較（生成済み） | 列をB0・B1・A0・A1・M00・M11、上段は画素数hexbin、下段はSNV整列後Cluster ID＋centroidの2行6列。PC名・寄与率・少数の数値目盛りを表示 |
+| PCA比較（実装済み） | 列をB0・B1・A0・A1・M00・M11、上段は画素数hexbin、下段はSNV整列後Cluster ID＋centroidの2行6列。PC名・寄与率・少数の数値目盛りを表示 |
 | metadata・帯域指標のPCA（保留） | 同じ座標を試料ID・樹種など、または選択帯域で色分けする |
 | 連続スペクトル指標map（保留） | 試料表面上で帯域積分値を連続色表示する。条件別に同じmapを複製せず、クラスタmapとの対応を示す |
 | 対応の詳細図（構成Open） | 対象試料のマップと観測スペクトルを対応づける。PCA・選択帯域を含めるかは解釈の目的に応じて決める |

@@ -401,10 +401,12 @@ paired ARIも報告pipelineで算出し、元OOF snapshotのscore・集約値・
 ### 8.3 必須の表・図
 
 本節は対象条件の全fold・全反復のCVとOOF集計が完了した報告図表に適用する。
-主8条件のOOF snapshotからA1を含む主条件の図表を再生成済みである。mask率依存性の図表は、
-M11-25・M11・M11-75のOOF集計完了後に、専用の図表生成対応を追加して作成する。
+主8条件のOOF snapshotからA1を含む主条件の図表を再生成済みである。
+M11-25・M11・M11-75のmask率OOF図表も専用pipelineで生成済みである。
 [OOF sanity可視化](oof_sanity_visualization.md)は、
 label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様である。
+
+以下は主8条件の図表構成と報告規約である。mask率比較の構成は本節末尾に示す。
 
 - 表はCSV形式とし、代表指標の優先順に保存する。$K_0=8$と全7Kについて、平均・試料間SD・
   反復間SD・対象数・未定義理由を区別する。ARIとそのpaired差には反復間SDを付けない。
@@ -422,13 +424,21 @@ label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様であ�
 - Cluster Occupancyと2×2交互作用はCSV表のみとし、単独PNGや分布panelを作らない。
   現行のoccupancy表はclean testが対象で、試料別の使用クラスタ数・最大占有率・単一クラスタ化と、
   fold・反復ごとの分布を保持する。未整列の番号をfold・反復間で平均しない。
-- 残りの計画比較もCSVへ保存する。mask率比較にも本節の指標・表記・集計規約を適用し、図の構成は専用pipelineの実装時に定める。
+- 残りの計画比較もCSVへ保存する。mask率比較にも本節の指標・表記・集計規約を適用する。
 - 指標間で結論が異なる場合は、総合順位に潰さずtrade-offとして報告する。
 - Hungarian matchingは表示ラベルの整列に用い、CV指標の計算には使用しない。
   [OOF sanity](oof_sanity_visualization.md)ではfold内B0基準で一致画素数を最大化する。[全体fit後](visualization_and_interpretation.md#matching-reference)ではM00のCosine-KMeansを表示基準に、試料等重みの観測SNV代表線のcosine類似度の合計を最大化する。全体fitのIoU・contingency・一致画素数も確認用に保存する。
 
 主条件の実装済み成果物はPNG 3枚・CSV 11個である。ファイル名・保存先・再生成方法は
 [runbook](../experiment_runbook.md#oof-reporting)を参照する。PNGは01〜03の連番とし、再生成時は旧PNGを整理する。
+
+mask率比較は3条件のLLA 3・5・9とLFR(TGN+FS)を同じ2×2構成で示すPNG 1枚と、
+全7K・K8のCSV 2個にまとめる。図の実線はmacro平均、破線・点線・一点鎖線は学習反復1・2・3とする。
+表はLLA 3窓、LFR 3種類、ARI、Cosine-Silhouette、使用クラスタ数・最大占有率・単一クラスタ化率の11指標を含む。
+50%の表示名は`M11(-50)`、保存条件IDは`M11`を維持する。出典・完了記録と再生成方法は
+[mask率OOF runbook](../experiment_runbook.md#mask-rate-reporting)を参照する。
+全体fitで表現を固定した3 seedの数値比較は、学習3反復のOOF集計と分けて
+[付録用比較の定義](visualization_and_interpretation.md#global-mask-rate)に従う。
 
 ## 9. 方法論上の参考文献
 

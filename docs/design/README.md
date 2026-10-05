@@ -15,7 +15,7 @@
 | [Bacteria-ID Table 5 HPO](bacteria_id_hpo_protocol.md) | 分類条件・実績 | M11の5-fold CVで64設定完了、先頭60設定で選択し、M00/M11を全件学習してtest評価 |
 | [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA（補正後）、LFR、ARI、silhouette、occupancy、補正前LLA、未定義値、集約、比較・報告 |
 | [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1・A0・M00のPNG・CSV、fold内B0基準のmatching |
-| [全体可視化と解釈](visualization_and_interpretation.md) | 全体fit・K8比較・PCA一枚Fixed / 詳細図・連続指標map・FT-IR等Open | M00基準のmatching、代表例、試料別／全体スペクトル、PC1/PC2、追加解析候補 |
+| [全体可視化と解釈](visualization_and_interpretation.md) | 全体fit・K8比較・PCA一枚・mask率付録比較Fixed / 詳細図・連続指標map・FT-IR等Open | M00基準のmatching、代表例、試料別／全体スペクトル、PC1/PC2、mask率2×7比較、追加解析候補 |
 
 ## 条件の参照先
 
@@ -31,12 +31,14 @@
 | --- | --- | ---: | --- |
 | 主実験 | B0、B1、A0、A1、M00、M10、M01、M11の5-fold・3反復 | 90回 | Cosine-KMeans、全7K |
 | Bacteria-ID補助 | RamanのM00・M11。出版版SMAE Table 4・5へ追加 | 旧事前学習30回は記録として保持。新80/20 Table 4の20回とTable 5のHPO・分類は完了 | 新Table 4はCosine-KMeans、K=4/6、計20 fits完了 |
-| Mask率補助 | M11-25・M11-75。50%はM11を再利用 | 30回 | Cosine-KMeans、全7K |
+| Mask率補助・CV | M11-25・M11-75。50%はM11を再利用 | 30回 | Cosine-KMeans、全7K |
 | OOF sanity | 完了済みB0・B1・A0・M00のOOF map・指標 | 0回 | 既存成果物のみ |
-| 全体解釈 | B0、B1、A0、A1、M00、M11を全49試料でfit・学習 | 4回 | Cosine-KMeans、$K_0=8$、6 fits |
+| 全体解釈 | B0、B1、A0、A1、M00、M11を全49試料でfit・学習 | 4回 | Cosine-KMeans、$K_0=8$。初回6 fitsの表示を保持し、固定表現で3 seed診断 |
+| Mask率補助・全体fit | M11-75を追加し、既存M11(-50)と付録で比較 | 1回 | Cosine-KMeans、K8・3 seed。50%の既存結果を再利用 |
 
 実験の完了状態は[ToDo](../../ToDo.md)、全体fitのmatching・表示規約は
 [可視化設計](visualization_and_interpretation.md)を参照する。
+全体fitのmask率比較は[専用の定義](visualization_and_interpretation.md#global-mask-rate)に従い、CVの3学習反復と区別する。
 A1は既存7条件の結果を得た後に追加したablationであり、主比較との区別は
 [実験プロトコル](experiment_protocol.md#planned-comparisons)に定義する。
 
@@ -44,7 +46,7 @@ A1は既存7条件の結果を得た後に追加したablationであり、主比
 
 ## Open事項と実施範囲
 
-Open事項のうち現在の残作業に含むのは位置対応FT-IR（mask ratio sweepの条件はFixed）。
+Open事項のうち現在の残作業に含むのは位置対応FT-IR。mask率のCV・OOFと全体fitの付録用比較は生成済みである。
 Bacteria-IDの未記載条件は[本研究の補完条件](bacteria_id_experiment_plan.md#open-items)として具体化済み。
 参照資料間の不一致は文献比較の留保として記載し、実装・実行の待機理由にはしない。
 以下のその他の項目は未採用の候補であり、完了したことや追加実施が必要なことを意味しない。
@@ -53,7 +55,7 @@ Bacteria-IDの未記載条件は[本研究の補完条件](bacteria_id_experimen
 | --- | --- | --- |
 | 任意の形状診断 | 採用する場合の近傍・connectivity・閾値・分母 | [診断](evaluation_metrics.md#occupancy) |
 | 試料ごとの詳細図 | M11・K8で注目する試料・領域、示したい差、panel構成。試料別平均CSVは既存成果物を利用可能 | [スペクトルの要約](visualization_and_interpretation.md#representative-spectra) |
-| PCAの追加色分け | PC1/PC2のPNG一枚は生成済み。追加metadata・帯域指標による図の採否・内容は執筆時に判断 | [表現空間の可視化](visualization_and_interpretation.md#latent-spectral-maps) |
+| PCAの追加色分け | PC1/PC2座標は保存済み。PNGの現状・再描画は[runbook](../experiment_runbook.md#global-pca)。追加metadata・帯域指標による図の採否・内容は執筆時に判断 | [表現空間の可視化](visualization_and_interpretation.md#latent-spectral-maps) |
 | 連続スペクトル指標map | 採否、3×3平均またはGaussianの選択・数値設定、帯域選択、積分・符号・共通color scale。クラスタ所属で近傍を制限しない | [帯域選択](visualization_and_interpretation.md#spectral-band-selection) |
 | 位置対応FT-IR | 対象、位置対応、測定・反復条件、前処理・指標、解釈範囲 | [FT-IR](visualization_and_interpretation.md#ftir-interpretation) |
 | 正式な目視評価 | 評価者、rubric、条件名・提示順、意見不一致の扱い | [証拠の統合](visualization_and_interpretation.md#evidence-triangulation) |

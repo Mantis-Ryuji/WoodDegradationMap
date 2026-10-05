@@ -13,6 +13,7 @@
 | 手法の理由を知る | [ChemoMAEの位置づけ](chemomae_positioning.md)・[関連研究](related_work.md) | 採用理由、先行研究との関係、主張の範囲 |
 | 条件と定義を確認する | [研究設計](design/README.md) | 前処理、実験条件、評価、可視化、Open事項 |
 | 実験を進める | [ToDo](../ToDo.md) → [runbook](experiment_runbook.md) | 現在の状態、残作業、CLI、再開・完了判定・保存先 |
+| Mask率補助比較を使う | [引き渡し一覧](manuscript_handoff.md#mask-rate-handoff)・[CV手順](experiment_runbook.md#mask-rate-sweep)・[全体fit手順](experiment_runbook.md#global-mask-rate) | 完了済みの25%・50%・75% OOF比較と、M11(-50)・M11-75の付録用2×7図・数値表 |
 | Raman補助実験の成果物を確認する | [Bacteria-ID計画](design/bacteria_id_experiment_plan.md)・[Table 4手順](bacteria_id_runbook.md)・[Table 5実行記録](bacteria_id_hpo_runbook.md)・[成果物整理記録](bacteria_id_artifact_reorganization_plan.md) | 新80/20 Table 4とTable 5は完了。旧60/20/20 Table 4は履歴として区別する |
 | Raman補助実験を解釈する | [Bacteria-ID解釈計画](bacteria_id_interpretation_plan.md) | Table 4・5の主張範囲、古材LLA・位置対応FT-IRとの関係、局所ラベルから面推定への将来構想 |
 | 結果を解釈する | [解釈メモ](interpretation_notes.md) | マップ・指標・再構成lossの読み方と限界 |
@@ -34,7 +35,8 @@
 | --- | --- |
 | raw SNV / B0 | 前処理済み256次元SNVを直接使うbaseline。センサのraw強度ではない |
 | 試料 | `KYOw...`で識別する分割・集計単位。同一原材との関係は確認できた範囲で扱う |
-| repeat | 同じsplit・画素集合に対する3回の学習・クラスタリング反復 |
+| CVのrepeat | 同じsplit・画素集合に対する3回の学習・クラスタリング反復 |
+| 全体fitのKMeans repeat | 各条件の表現を1回のfit・学習後に固定し、K8の初期化だけを変える3反復。NN再学習のばらつきは含まない |
 | draw | LFR用に各摂動を5回生成する評価摂動反復 |
 | OOF | 各試料をtrainに含めないfoldモデルから得る予測・評価 |
 | 全体fit | 全49試料からの共通抽出画素でfit・学習し、全試料を記述する解析 |

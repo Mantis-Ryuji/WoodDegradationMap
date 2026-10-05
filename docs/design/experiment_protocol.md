@@ -489,9 +489,9 @@ LLAとLFRは改善方向が逆である。contrastは指標の元の尺度で示
 
 ## 5. 補助実験
 
-mask率sweepを補助実験として実施する。
-追加の潜在空間図や物理化学的解釈の完了を着手条件にしない。
-本節の固定条件・比較範囲を維持し、結果が得られるまでは未実施の感度解析として扱う。
+mask率sweepは補助実験として実施済みであり、専用OOF snapshotと図表を保存した。
+本節は採用した固定条件・比較範囲を定義する。成果物と完了記録は
+[引き継ぎ資料](../manuscript_handoff.md#mask-rate-handoff)を参照する。
 
 <a id="mask-rate-sweep"></a>
 
@@ -505,15 +505,17 @@ mask率sweepを補助実験として実施する。
 | M11 | 50% | あり | あり |
 | M11-75 | 75% | あり | あり |
 
-50%の実行IDは主比較と同じ`M11`とし、別のIDで重複学習させない。
+50%の実行IDは主比較と同じ`M11`とし、別のIDで重複学習させない。mask率比較図での表示名は`M11(-50)`とする。
 M11-25・M11-75を各5 folds×3反復、計30 runs追加する。
 この実験は「最適mask率」の選択ではなく、提案条件のmask率依存性を確認する感度解析として扱う。
 結果は補助実験として報告し、主条件M11を事後的に置き換えない。
 fold、共通K集合、学習budget、3反復のseed一覧および評価指標は主比較と同一にする。
 
 Gaussian noiseのみ、shiftのみの条件ではmask率sweepを行わない。
-主条件とは別の`mask_rate_oof_v1`へ3条件を集計し、mask率比較の図表生成対応を追加する。
+主条件とは別の`mask_rate_oof_v1`へ3条件を集計し、専用pipelineで図表を生成した。
 実行手順は[runbook](../experiment_runbook.md#mask-rate-sweep)を参照する。
+全49試料でのM11(-50)・M11-75の付録用マップ比較は、CVとは別の
+[全体fit補助比較](visualization_and_interpretation.md#global-mask-rate)として扱う。
 
 <a id="cluster-counts"></a>
 
@@ -627,10 +629,12 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
    Cosine-KMeansを各1回fitする。
 7. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋Hungarian matchingでM00のCosine-KMeansを共通基準にラベルを直接整列し、SNV類似度行列・確認用IoU/contingency/overlapとともに6条件のマップとスペクトル、PCA（PC1・PC2）を保存する。
 8. [Bacteria-ID計画](bacteria_id_experiment_plan.md)に沿ってRamanの補助実験を先に行う。事前学習とTable 4は同計画書、現行Table 5は[HPO計画](bacteria_id_hpo_protocol.md)を参照する。
-9. M11のmask率補助実験を同じ3反復で再開し、独立したOOF snapshotとmask率依存性の図表を追加する。手順7の追加可視化・解釈の完了を待つ必要はない。
+9. M11のmask率補助実験を同じ3反復で評価し、独立したOOF snapshotとmask率依存性の図表を作成する。
+10. 全体fitのM11-75を1回追加学習し、固定表現・K8の3 seed診断と、初回fitのM11(-50)・M11-75の2×7比較図を付録用に作成する。
 
-手順1〜8は完了済み。mask率sweepは中断・完了runを確認してから第5.1節の固定条件で再開し、
-主条件と区別して報告する。現状の残作業は[ToDo](../../ToDo.md)、
+手順1〜10の学習・解析・集計は完了している。PCA図の現状と再描画は[runbook](../experiment_runbook.md#global-pca)を参照する。
+mask率のCV比較と全体fit比較は主条件と区別して報告する。
+現状の残作業と保存済みの完了記録は[ToDo](../../ToDo.md)、
 代表指標・表示構成は[評価の報告規約](evaluation_metrics.md#reporting)を参照する。
 
 ## 11. 実験条件の確定状況と実行記録
@@ -653,7 +657,7 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 | 実行環境 | GPU機種、実際に使用したlibrary version、学習AMP・抽出評価FP32・評価TF32無効の設定、seedと決定性の実設定、PCAの実solver、library既定epsilonと単位norm誤差 |
 | 学習処理 | 第4.2節のrecipeとの整合、run別のcheckpoint、予定・実更新回数、AMP skip回数、実行時間 |
 
-学習・clustering・評価のrun記録はschema 2とし、`contract`に現行の読込条件、`execution`に
+CVの学習・clustering・評価のrun記録はschema 2とし、`contract`に現行の読込条件、`execution`に
 実際の実行時config・runtime・source hashを保存する。読込条件は完全一致で検証し、実行由来と区別する。
 中断再開ではrun記録全体が同じであることを要求する。
 

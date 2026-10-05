@@ -26,11 +26,13 @@ FT-IRの詳細設計・結果と、他材料への有効性は未確認です。
 
 ## 現在の段階
 
-主8条件のCV・OOF図表、全体fitの6条件・K8マップとスペクトル・PCA、
+主8条件のCV・OOF図表、全体fitの6条件・K8マップとスペクトル・PCA座標、
 Raman Bacteria-IDの[Table 4](docs/bacteria_id_runbook.md)と
 [Table 5](docs/bacteria_id_hpo_runbook.md)は完了しました。
-残作業はmask率補助実験と位置対応FT-IRです。進捗と成果物は[ToDo](ToDo.md)、
+mask率25%・50%・75%のCV・OOF比較と、全体fitのM11(-50)・M11-75の付録用比較も生成済みです。
+残る実験は位置対応FT-IRです。進捗と成果物は[ToDo](ToDo.md)、
 実行・再開方法は[runbook](docs/experiment_runbook.md)にまとめています。
+mask率比較の引き渡しファイルは[Thesis向け一覧](docs/manuscript_handoff.md#mask-rate-handoff)を参照してください。
 
 ## 主な配置
 

@@ -31,7 +31,7 @@ M00もmasked reconstructionによる事前学習を行う条件であり、
 `w/o pretraining`ではない。
 
 Bacteria-IDを古材のmask ratio sweepより先に実施した。
-中断したmask sweepの再開前には、既存run・checkpointの状態を確認する。
+古材のmask率補助比較も現在は完了しており、成果物は[引き継ぎ一覧](../manuscript_handoff.md#mask-rate-handoff)を参照する。
 古材の主実験・mask sweepの固定条件は[既存プロトコル](experiment_protocol.md)に従う。
 
 ### 参照版と比較条件の扱い（Fixed）
