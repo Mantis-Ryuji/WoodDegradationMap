@@ -5,10 +5,14 @@ from __future__ import annotations
 from copy import deepcopy
 from itertools import combinations
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
 from PIL import Image
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
 
 from wood_degradation_map.experiments import spatial_reproducibility_reporting as reporting
 from wood_degradation_map.experiments.spatial_reproducibility_metrics import (
@@ -17,7 +21,7 @@ from wood_degradation_map.experiments.spatial_reproducibility_metrics import (
 
 
 def _fixture(
-    sample_id: str = "sample", *, empty_initial: bool = False,
+    sample_id: str = "sample", *, empty_initial: bool = False, swap_target: bool = False,
 ) -> tuple[dict[tuple[int, int], np.ndarray], np.ndarray, dict[str, object]]:
     mask = np.ones((5, 8), dtype=bool)
     mask[0, 0] = False
@@ -27,6 +31,8 @@ def _fixture(
     maps = {identity: labels.copy() for identity in reporting.MAP_IDS}
     if empty_initial:
         maps[1, 1][mask] = 1
+    if swap_target:
+        maps[1, 2] = np.array([0, 2, 1], dtype=np.uint8)[maps[1, 2]]
     rows = [{"encoder_repeat": encoder, "kmeans_repeat": kmeans,
              **map_diagnostics(maps[encoder, kmeans], mask)}
             for encoder, kmeans in reporting.MAP_IDS]
@@ -40,6 +46,91 @@ def _fixture(
             **compare_maps(maps[left], maps[right], mask),
         })
     return maps, mask, {"sample_id": sample_id, "maps": rows, "pairs": pairs}
+
+
+def _counts(
+    maps: dict[tuple[int, int], np.ndarray], mask: np.ndarray,
+) -> dict[tuple[int, int], np.ndarray]:
+    return {identity: reporting.label_overlap_counts(maps[1, 1], maps[identity], mask)
+            for identity in reporting.MAP_IDS}
+
+
+def test_display_mapping_recovers_permutations_without_mutating_labels_or_metrics() -> None:
+    reference = np.array([[0, 1, 2, 3, 4, 5, 6, 7, 8]], dtype=np.uint8)
+    permutation = np.array([0, 8, 7, 6, 5, 4, 3, 2, 1], dtype=np.uint8)
+    maps = {identity: (reference.copy() if identity == (1, 1) else permutation[reference])
+            for identity in reporting.MAP_IDS}
+    mask = reference > 0
+    before = {identity: labels.copy() for identity, labels in maps.items()}
+    metrics = compare_maps(maps[1, 1], maps[1, 2], mask, include_overlap=True)
+    counts = _counts(maps, mask)
+    original_counts = {identity: table.copy() for identity, table in counts.items()}
+    lookups, records = reporting.display_mappings(counts)
+    assert len(records) == 9
+    np.testing.assert_array_equal(lookups[1, 1], np.arange(9))
+    np.testing.assert_array_equal(lookups[1, 2], permutation)
+    for identity in reporting.MAP_IDS:
+        np.testing.assert_array_equal(lookups[identity][maps[identity]], reference)
+        np.testing.assert_array_equal(maps[identity], before[identity])
+        np.testing.assert_array_equal(counts[identity], original_counts[identity])
+    assert compare_maps(maps[1, 1], maps[1, 2], mask, include_overlap=True) == metrics
+
+
+def test_display_assignment_uses_pooled_samples_even_if_a_local_assignment_differs() -> None:
+    first = np.array([[1, 1, 1, 2, 2, 2]], dtype=np.uint8)
+    second = np.array([[1, 2]], dtype=np.uint8)
+    first_maps = {identity: first.copy() for identity in reporting.MAP_IDS}
+    second_maps = {identity: second.copy() for identity in reporting.MAP_IDS}
+    first_maps[1, 2] = 3 - first
+    pooled = _counts(first_maps, first > 0)
+    local = _counts(second_maps, second > 0)
+    for identity in reporting.MAP_IDS:
+        pooled[identity] += local[identity]
+    lookups, records = reporting.display_mappings(pooled)
+    local_lookups, _ = reporting.display_mappings(local)
+    assert lookups[1, 2][1:3].tolist() == [2, 1]
+    assert local_lookups[1, 2][1:3].tolist() == [1, 2]
+    assert records[1]["valid_pixels"] == 8
+    assert sum(row["overlap_pixels"] for row in records[1]["assignments"]) == 6
+
+
+def test_split_and_absent_clusters_remain_a_permutation_with_unsupported_colors_recorded() -> None:
+    reference = np.array([[1, 1, 1, 1, 2, 2]], dtype=np.uint8)
+    split = np.array([[5, 5, 5, 6, 7, 7]], dtype=np.uint8)
+    maps = {identity: reference.copy() for identity in reporting.MAP_IDS}
+    maps[1, 2] = split
+    lookups, records = reporting.display_mappings(_counts(maps, reference > 0))
+    lookup = lookups[1, 2]
+    assert lookup[0] == 0 and sorted(lookup[1:]) == list(range(1, 9))
+    assert lookup[5] == 1 and lookup[7] == 2
+    assert lookup[6] not in (1, 2)  # The split is not merged to make the picture agree.
+    assert len(np.unique(lookup[split])) == 3
+    unsupported = records[1]["assignments"][5]
+    assert unsupported["target_pixels"] == 1 and unsupported["reference_pixels"] == 0
+    assert unsupported["overlap_pixels"] == 0 and unsupported["zero_overlap"] is True
+    assert all(row["zero_overlap"] for row in records[1]["assignments"]
+               if row["target_pixels"] == 0)
+
+
+@pytest.mark.parametrize("change", ["missing_run", "negative", "noninteger", "shape",
+                                     "reference", "different_pixels"])
+def test_invalid_alignment_counts_are_rejected(change: str) -> None:
+    maps, mask, _ = _fixture()
+    counts = _counts(maps, mask)
+    if change == "missing_run":
+        counts.pop((3, 3))
+    elif change == "negative":
+        counts[1, 2][0, 0] = -1
+    elif change == "noninteger":
+        counts[1, 2] = counts[1, 2].astype(float)
+    elif change == "shape":
+        counts[1, 2] = counts[1, 2][:, :-1]
+    elif change == "reference":
+        counts[1, 1][0, 1] = 1
+    else:
+        counts[1, 2][0, 0] += 1
+    with pytest.raises(ValueError):
+        reporting.display_mappings(counts)
 
 
 def test_complete_pairs_and_equal_sample_macro_do_not_weight_pair_counts() -> None:
@@ -147,11 +238,28 @@ def test_malformed_evaluations_are_rejected(failure: str) -> None:
         reporting.summarize_samples(evaluations)
 
 
-def test_figures_preserve_frequency_values_and_all_initial_comparisons(tmp_path: Path) -> None:
-    maps, mask, evaluation = _fixture()
+def test_figures_preserve_frequency_values_and_all_initial_comparisons(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    maps, mask, evaluation = _fixture(swap_target=True)
     before = {identity: labels.copy() for identity, labels in maps.items()}
-    paths = reporting.render_sample("sample", maps, mask, evaluation, tmp_path / "sample", dpi=40)
+    original_evaluation = deepcopy(evaluation)
+    lookups, _ = reporting.display_mappings(_counts(maps, mask))
+    drawn = []
+    save = reporting._save
+
+    def capture(figure: Figure, path: Path, dpi: int) -> Path:
+        if path.name == "01_nine_maps.png":
+            drawn.extend(np.asarray(axis.images[0].get_array()).copy() for axis in figure.axes[:9])
+        return save(figure, path, dpi)
+
+    monkeypatch.setattr(reporting, "_save", capture)
+    paths = reporting.render_sample("sample", maps, mask, evaluation, tmp_path / "sample",
+                                    dpi=40, display_lookups=lookups)
     assert len(paths) == 12
+    assert len(drawn) == 9
+    assert all(np.array_equal(labels, maps[1, 1]) for labels in drawn)
+    assert evaluation == original_evaluation
     assert len(list((tmp_path / "sample").glob("initial_vs_*.png"))) == 8
     for path in paths:
         assert path.is_file()
@@ -177,4 +285,22 @@ def test_rendering_rejects_missing_maps_before_writing(tmp_path: Path) -> None:
     maps.pop((3, 3))
     with pytest.raises(ValueError, match="exactly all nine"):
         reporting.render_sample("sample", maps, mask, evaluation, tmp_path / "figures")
+    assert not (tmp_path / "figures").exists()
+
+
+@pytest.mark.parametrize("change", ["missing_run", "background", "merge", "initial"])
+def test_rendering_rejects_invalid_display_permutations(tmp_path: Path, change: str) -> None:
+    maps, mask, evaluation = _fixture()
+    lookups, _ = reporting.display_mappings(_counts(maps, mask))
+    if change == "missing_run":
+        lookups.pop((3, 3))
+    elif change == "background":
+        lookups[1, 2][0] = 1
+    elif change == "merge":
+        lookups[1, 2][2] = lookups[1, 2][1]
+    else:
+        lookups[1, 1][1:3] = [2, 1]
+    with pytest.raises(ValueError):
+        reporting.render_sample("sample", maps, mask, evaluation, tmp_path / "figures",
+                                display_lookups=lookups)
     assert not (tmp_path / "figures").exists()

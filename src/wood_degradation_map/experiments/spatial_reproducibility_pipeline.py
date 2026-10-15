@@ -30,7 +30,10 @@ from .global_manifest import GlobalData
 from .input_validation import InputInventory, SampleInput
 from .manifests import _digest, _read_json, _require, _write_json
 from .spatial_reproducibility_metrics import WINDOWS, compare_maps, map_diagnostics, validate_map
-from .spatial_reproducibility_reporting import render_sample, render_summary, summarize_samples
+from .spatial_reproducibility_reporting import (
+    color_alignment_contract, display_mappings, label_overlap_counts,
+    render_sample, render_summary, summarize_samples,
+)
 from .spatial_reproducibility_training import load_representation, seed_plan, training_source
 from .training import runtime_record
 
@@ -461,9 +464,10 @@ def check_evaluation(
 
 
 def _report_contract(experiment: Path, *, dpi: int) -> dict[str, object]:
-    return {"schema_version": 1, "scope": SCOPE, "dpi": dpi,
+    return {"schema_version": 2, "scope": SCOPE, "dpi": dpi,
             "evaluation_sha256": _digest(experiment / "results/evaluation/completion.json"),
             "matplotlib": version("matplotlib"), "numpy": np.__version__,
+            "scipy": version("scipy"), "color_alignment": color_alignment_contract(),
             "code_sha256": _code_hashes((Path(__file__).name,
                                           "spatial_reproducibility_reporting.py",
                                           "spatial_reproducibility_metrics.py"))}
@@ -480,20 +484,33 @@ def write_report(
     contract = _report_contract(experiment, dpi=dpi)
     evaluation_root = experiment / "results/evaluation"
     samples = {sample.sample_id: sample for sample in inventory.samples}
+    # One permutation per run across ALL samples preserves the meaning of colors
+    # between specimen panels. Counts use source labels; never relabel saved maps.
+    counts = {identity: np.zeros((8, 8), dtype=np.int64) for identity in MAP_IDS}
+    for sample_id in data.train_sample_ids:
+        maps, mask = _read_maps(experiment, source, samples[sample_id])
+        for identity in MAP_IDS:
+            counts[identity] += label_overlap_counts(maps[1, 1], maps[identity], mask)
+    display_lookups, assignments = display_mappings(counts)
     with TemporaryDirectory(prefix=".spatial-report-", dir=experiment) as temporary:
         stage = Path(temporary) / "report"
         stage.mkdir()
+        _write_json(stage / "color_matching.json", {
+            "schema_version": 1, "contract": color_alignment_contract(),
+            "sample_ids": list(data.train_sample_ids), "mappings": assignments,
+        })
         for sample_id in data.train_sample_ids:
             maps, mask = _read_maps(experiment, source, samples[sample_id])
             evaluation = _read_json(evaluation_root / "samples" / f"{sample_id}.json")
-            render_sample(sample_id, maps, mask, evaluation, stage / "samples" / sample_id, dpi=dpi)
+            render_sample(sample_id, maps, mask, evaluation, stage / "samples" / sample_id,
+                          dpi=dpi, display_lookups=display_lookups)
             print(f"{sample_id}: spatial figures saved", flush=True)
         render_summary(_read_json(evaluation_root / "summary.json"), stage / "summary", dpi=dpi)
         check_evaluation(experiment, source, data, inventory)
         _require(_report_contract(experiment, dpi=dpi) == contract, "Report source changed")
         _write_json(stage / "run.json", {"contract": contract, "sample_ids": list(data.train_sample_ids),
                                         "execution": runtime_record(torch.device("cpu")),
-                                        "label_colors": "raw IDs; no cross-map color alignment"})
+                                        "label_colors": "pooled overlap to initial (1,1); display only"})
         completion = seal(stage, "spatial_report_completed")
         output.parent.mkdir(parents=True, exist_ok=True)
         stage.rename(output)
@@ -509,6 +526,18 @@ def check_report(
     completion = check_sealed(output, "spatial_report_completed",
                               _report_contract(experiment, dpi=run["contract"]["dpi"]))
     _require(run["sample_ids"] == list(data.train_sample_ids), "Report sample coverage differs")
+    matching = _read_json(output / "color_matching.json")
+    _require(matching.get("schema_version") == 1
+             and matching.get("contract") == color_alignment_contract()
+             and matching.get("sample_ids") == list(data.train_sample_ids),
+             "Report color-alignment provenance differs")
+    mappings = matching["mappings"]
+    _require([(row["encoder_repeat"], row["kmeans_repeat"]) for row in mappings] == list(MAP_IDS),
+             "Report color mappings must cover all nine maps")
+    _, expected_mappings = display_mappings({
+        (row["encoder_repeat"], row["kmeans_repeat"]): np.asarray(row["contingency"])
+        for row in mappings})
+    _require(mappings == expected_mappings, "Saved display mappings differ from overlap counts")
     _require({path.name for path in (output / "samples").iterdir()}
              == set(data.train_sample_ids), "Report sample directories differ")
     expected = {"01_nine_maps.png", "02_boundary_overlays.png", "03_boundary_frequency.png",

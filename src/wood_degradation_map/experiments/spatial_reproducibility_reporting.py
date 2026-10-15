@@ -19,6 +19,7 @@ from .spatial_reproducibility_metrics import (
     boundary_frequency,
     boundary_lattice,
     boundary_neighborhood,
+    validate_map,
 )
 
 MAP_IDS = tuple((encoder, kmeans) for encoder in (1, 2, 3) for kmeans in (1, 2, 3))
@@ -33,6 +34,103 @@ GROUP_LABELS = {
     "between_encoder": "Between encoders (training + KMeans)",
 }
 COLORS = ("#0072B2", "#D55E00", "#009E73")
+
+
+def color_alignment_contract() -> dict[str, object]:
+    """Describe the display-only assignment independently of numerical evaluation."""
+    return {
+        "reference": [1, 1], "K": 8, "background": 0,
+        "method": "Hungarian maximum total pixel overlap; one-to-one permutation",
+        "scope": "all valid pixels pooled over all planned samples; one mapping per run",
+        "direction": "target raw label -> initial (1,1) display label",
+        "ties": "SciPy assignment on ascending raw IDs; absent target IDs use unused colors in order",
+        "application": "3x3 label-map display only; source labels and all metrics unchanged",
+    }
+
+
+def label_overlap_counts(
+    reference: np.ndarray, target: np.ndarray, mask: np.ndarray,
+) -> np.ndarray:
+    """Count initial/raw label pairs on exactly the original valid-pixel set."""
+    validate_map(reference, mask)
+    validate_map(target, mask)
+    valid = mask.astype(bool, copy=False)
+    pairs = (reference[valid].astype(np.int64) - 1) * 8 + target[valid].astype(np.int64) - 1
+    return np.bincount(pairs, minlength=64).reshape(8, 8)
+
+
+def display_mappings(
+    counts: Mapping[tuple[int, int], np.ndarray],
+) -> tuple[dict[tuple[int, int], np.ndarray], list[dict[str, object]]]:
+    """Align each run directly to (1,1) using pooled counts, never merging labels.
+
+    Rows of each 8x8 table are initial raw IDs and columns are target raw IDs.
+    Empty target clusters receive the remaining colors in ascending order. Every
+    zero-overlap assignment is explicitly unsupported, including present clusters
+    assigned to an absent reference ID. Color similarity is not a scientific score.
+    """
+    from scipy.optimize import linear_sum_assignment
+
+    if set(counts) != set(MAP_IDS):
+        raise ValueError("Color alignment requires all nine overlap tables")
+    tables = {}
+    for identity in MAP_IDS:
+        table = counts[identity]
+        if (not isinstance(table, np.ndarray) or table.shape != (8, 8)
+                or table.dtype.kind not in "iu" or np.any(table < 0)
+                or np.any(table > np.iinfo(np.int64).max)):
+            raise ValueError("Expected nonnegative integer 8x8 overlap counts")
+        tables[identity] = table.astype(np.int64, copy=False)
+    initial = tables[1, 1]
+    reference_counts = initial.sum(axis=1)
+    total = int(reference_counts.sum())
+    if total <= 0 or not np.array_equal(initial, np.diag(reference_counts)):
+        raise ValueError("Initial overlap table must be a nonempty self-comparison")
+    lookups, records = {}, []
+    for identity in MAP_IDS:
+        table = tables[identity]
+        if not np.array_equal(table.sum(axis=1), reference_counts):
+            raise ValueError("Overlap tables must cover the same initial valid pixels")
+        target_counts = table.sum(axis=0)
+        present = np.flatnonzero(target_counts > 0)
+        lookup = np.arange(9, dtype=np.uint8)
+        if identity != (1, 1):
+            reference_ids, target_columns = linear_sum_assignment(table[:, present], maximize=True)
+            lookup[present[target_columns] + 1] = reference_ids + 1
+            unused = sorted(set(range(1, 9)) - set(int(value) for value in lookup[present + 1]))
+            lookup[np.flatnonzero(target_counts == 0) + 1] = unused
+        assignments = []
+        for target_id in range(1, 9):
+            display_id = int(lookup[target_id])
+            overlap = int(table[display_id - 1, target_id - 1])
+            assignments.append({
+                "raw_cluster": target_id, "display_cluster": display_id,
+                "overlap_pixels": overlap, "zero_overlap": overlap == 0,
+                "target_pixels": int(target_counts[target_id - 1]),
+                "reference_pixels": int(reference_counts[display_id - 1]),
+            })
+        lookups[identity] = lookup
+        records.append({
+            "encoder_repeat": identity[0], "kmeans_repeat": identity[1],
+            "target_to_display_including_background": lookup.tolist(),
+            "contingency_rows": "initial (1,1) raw IDs 1..8",
+            "contingency_columns": "target raw IDs 1..8",
+            "contingency": table.tolist(), "valid_pixels": total,
+            "assignments": assignments,
+        })
+    return lookups, records
+
+
+def _validate_display_lookups(lookups: Mapping[tuple[int, int], np.ndarray]) -> None:
+    if set(lookups) != set(MAP_IDS):
+        raise ValueError("Display mappings must cover all nine maps")
+    for lookup in lookups.values():
+        if (not isinstance(lookup, np.ndarray) or lookup.shape != (9,)
+                or lookup.dtype.kind not in "iu" or lookup[0] != 0
+                or not np.array_equal(np.sort(lookup[1:]), np.arange(1, 9))):
+            raise ValueError("Display mapping must preserve background and permute labels 1..8")
+    if not np.array_equal(lookups[1, 1], np.arange(9)):
+        raise ValueError("Initial (1,1) display labels must remain unchanged")
 
 
 def _record(value: object, context: str) -> Mapping[str, object]:
@@ -333,11 +431,13 @@ def _coverage_text(direction: Mapping[str, object]) -> str:
 def render_sample(
     sample_id: str, maps: Mapping[tuple[int, int], np.ndarray], mask: np.ndarray,
     evaluation: dict[str, object], output: Path, *, dpi: int = 160,
+    display_lookups: Mapping[tuple[int, int], np.ndarray] | None = None,
 ) -> list[Path]:
     """Save all nine maps, boundary locations, frequency arrays, and initial comparisons.
 
-    The same image coordinates are used in every panel. Cluster colors are raw
-    labels without cross-run alignment and do not imply chemical correspondence.
+    The production reporter supplies one pooled display mapping per run. Only
+    the nine-map panel uses it; boundary/frequency calculations use original
+    labels. Omitting it preserves raw-ID display for existing low-level callers.
     """
     from matplotlib.colors import BoundaryNorm, ListedColormap
 
@@ -347,6 +447,8 @@ def render_sample(
         raise ValueError("DPI must be a positive integer")
     if evaluation.get("sample_id") != sample_id:
         raise ValueError("Figure sample_id differs from its evaluation")
+    if display_lookups is not None:
+        _validate_display_lookups(display_lookups)
     # Validation is shared with the metrics; no mask intersection or label repair.
     lattices = {identity: boundary_lattice(maps[identity], mask) for identity in MAP_IDS}
     _sample_summary(evaluation)
@@ -361,7 +463,9 @@ def render_sample(
     image = None
     for (encoder, kmeans), labels in maps.items():
         axis = axes[encoder - 1, kmeans - 1]
-        image = axis.imshow(labels, cmap=palette, norm=BoundaryNorm(np.arange(-0.5, 9), 9),
+        display_labels = (labels if display_lookups is None
+                          else display_lookups[encoder, kmeans][labels])
+        image = axis.imshow(display_labels, cmap=palette, norm=BoundaryNorm(np.arange(-0.5, 9), 9),
                             interpolation="nearest", origin="upper")
         axis.set_title(f"Encoder {encoder}, KMeans {kmeans}" +
                        (" (initial map)" if (encoder, kmeans) == (1, 1) else ""))
@@ -369,8 +473,12 @@ def render_sample(
         axis.set_ylabel("Row (pixels)")
     if image is not None:
         figure.colorbar(image, ax=axes.ravel().tolist(), ticks=range(9), shrink=0.6,
-                        label="Raw cluster ID; 0 = excluded/background")
-    figure.suptitle(f"{sample_id}: nine maps, raw label colors (not aligned across runs)")
+                        label=("Raw cluster ID" if display_lookups is None
+                               else "Display ID of initial (1,1)") + "; 0 = excluded/background")
+    caption = ("raw label colors (not aligned across runs)" if display_lookups is None else
+               "colors aligned to initial (1,1) by pooled overlap\n"
+               "Display only; one-to-one assignment does not establish chemical correspondence")
+    figure.suptitle(f"{sample_id}: nine maps, {caption}")
     paths.append(_save(figure, output / "01_nine_maps.png", dpi))
 
     figure, axes = _figure(2, 3, height=8)

@@ -283,6 +283,59 @@ def test_changed_evaluation_contract_never_publishes_partial_results(
     assert not list(experiment.glob(".spatial-evaluation-*"))
 
 
+def test_report_saves_one_pooled_color_mapping_without_changing_evaluation_or_source_maps(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment, source, data, inventory, _ = _fixture(tmp_path)
+    _mock_evaluation_provenance(monkeypatch)
+    pipeline.evaluate(experiment, source, data, inventory)
+    evaluation_root = experiment / "results/evaluation"
+    evaluation_before = {path: path.read_bytes() for path in evaluation_root.rglob("*")
+                         if path.is_file()}
+    maps_before = {path: path.read_bytes() for directory in (experiment, source)
+                   for path in directory.rglob("*.npz")}
+    mappings_seen = []
+
+    def render_small(
+        sample_id: str, maps: dict, mask: np.ndarray, evaluation: dict, output: Path,
+        *, dpi: int, display_lookups: dict,
+    ) -> list[Path]:
+        # Actual raster colors and invariance are covered by the renderer tests.
+        mappings_seen.append({identity: lookup.tolist()
+                              for identity, lookup in display_lookups.items()})
+        output.mkdir(parents=True)
+        names = ["01_nine_maps.png", "02_boundary_overlays.png", "03_boundary_frequency.png",
+                 "boundary_frequency.npz",
+                 *(f"initial_vs_e{e}_k{k}.png" for e, k in pipeline.MAP_IDS[1:])]
+        for name in names:
+            (output / name).write_bytes(b"rendered fixture")
+        return [output / name for name in names]
+
+    def summary_small(summary: dict, output: Path, *, dpi: int) -> list[Path]:
+        output.mkdir(parents=True)
+        names = ["01_ari_vs_boundary_coverage.png", "02_boundary_sample_distributions.png",
+                 "03_ari_sample_distribution.png"]
+        for name in names:
+            (output / name).write_bytes(b"summary fixture")
+        return [output / name for name in names]
+
+    monkeypatch.setattr(pipeline, "render_sample", render_small)
+    monkeypatch.setattr(pipeline, "render_summary", summary_small)
+    completion = pipeline.write_report(experiment, source, data, inventory, dpi=40)
+    assert completion["status"] == "spatial_report_completed"
+    assert "color_matching.json" in completion["artifact_sha256"]
+    assert pipeline.check_report(experiment, source, data, inventory)["samples"] == 2
+    assert len(mappings_seen) == 2 and mappings_seen[0] == mappings_seen[1]
+    matching = _read_json(experiment / "results/report/color_matching.json")
+    assert matching["sample_ids"] == list(data.train_sample_ids)
+    assert len(matching["mappings"]) == 9
+    assert matching["contract"]["reference"] == [1, 1]
+    assert matching["mappings"][0]["target_to_display_including_background"] == list(range(9))
+    assert all(row["valid_pixels"] == 14 for row in matching["mappings"])
+    assert all(path.read_bytes() == value for path, value in evaluation_before.items())
+    assert all(path.read_bytes() == value for path, value in maps_before.items())
+
+
 def _cli() -> ModuleType:
     path = Path(__file__).resolve().parents[2] / "scripts/experiments/global_spatial_reproducibility.py"
     spec = importlib.util.spec_from_file_location("spatial_reproducibility_cli", path)
