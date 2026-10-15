@@ -16,6 +16,7 @@
 | Mask率補助比較を使う | [引き渡し一覧](manuscript_handoff.md#mask-rate-handoff)・[CV手順](experiment_runbook.md#mask-rate-sweep)・[全体fit手順](experiment_runbook.md#global-mask-rate) | 完了済みの25%・50%・75% OOF比較と、M11(-50)・M11-75の付録用2×7図・数値表 |
 | Raman補助実験の成果物を確認する | [Bacteria-ID計画](design/bacteria_id_experiment_plan.md)・[Table 4手順](bacteria_id_runbook.md)・[Table 5実行記録](bacteria_id_hpo_runbook.md)・[成果物整理記録](bacteria_id_artifact_reorganization_plan.md) | 新80/20 Table 4とTable 5は完了。旧60/20/20 Table 4は履歴として区別する |
 | Raman補助実験を解釈する | [Bacteria-ID解釈計画](bacteria_id_interpretation_plan.md) | Table 4・5の主張範囲、古材LLA・位置対応FT-IRとの関係、局所ラベルから面推定への将来構想 |
+| 空間マップの再現性を調べる | [補助実験計画](design/spatial_map_reproducibility_plan.md)・[専用runbook](spatial_map_reproducibility_runbook.md) | NIR-HSIと位置対応FT-IRを結ぶマップの基盤安定性。ARIと3×3・5×5・9×9近傍での境界比較。実装追加済み、実行・テストは未実施 |
 | 結果を解釈する | [解釈メモ](interpretation_notes.md) | マップ・指標・再構成lossの読み方と限界 |
 | 数理・数値処理を確認する | [数理的補足](mathematical_notes.md)・[数値実装の補足](numerical_implementation_notes.md) | 導出、混合精度、loss・inertiaの意味 |
 | 論文へ資料を渡す | [執筆への引き継ぎ](manuscript_handoff.md) | 出典、図表の扱い、原稿で確認する事項 |

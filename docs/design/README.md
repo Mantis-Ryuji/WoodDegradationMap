@@ -16,6 +16,7 @@
 | [評価指標](evaluation_metrics.md) | Fixed / 任意形状診断Open | LLA（補正後）、LFR、ARI、silhouette、occupancy、補正前LLA、未定義値、集約、比較・報告 |
 | [OOF sanity可視化](oof_sanity_visualization.md) | Fixed・実装済み | B0・B1・A0・M00のPNG・CSV、fold内B0基準のmatching |
 | [全体可視化と解釈](visualization_and_interpretation.md) | 全体fit・K8比較・PCA一枚・mask率付録比較Fixed / 詳細図・連続指標map・FT-IR等Open | M00基準のmatching、代表例、試料別／全体スペクトル、PC1/PC2、mask率2×7比較、追加解析候補 |
+| [空間マップ再現性の補助実験計画](spatial_map_reproducibility_plan.md) | Fixed・実装追加済み／実行・テスト未実施 | NIR-HSIと位置対応FT-IRを結ぶ基盤の安定性。M11・K8のencoder×KMeans反復、ARI、双方向の境界比較、位置を保った可視化 |
 
 ## 条件の参照先
 
