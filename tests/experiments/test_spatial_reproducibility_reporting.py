@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 from copy import deepcopy
 from itertools import combinations
 from pathlib import Path
@@ -11,17 +12,23 @@ import numpy as np
 import pytest
 from PIL import Image
 
+from wood_degradation_map.experiments import spatial_reproducibility_reporting as reporting
+from wood_degradation_map.experiments.global_k8_repeats import repeat_paths
+from wood_degradation_map.experiments.manifests import _digest, _write_json
+from wood_degradation_map.experiments.spatial_reproducibility_metrics import (
+    WINDOWS, boundary_frequency, compare_maps, map_diagnostics,
+)
+
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
-from wood_degradation_map.experiments import spatial_reproducibility_reporting as reporting
-from wood_degradation_map.experiments.spatial_reproducibility_metrics import (
-    WINDOWS, compare_maps, map_diagnostics,
-)
+PALETTE = ("#ffffff", "#0072b2", "#e69f00", "#009e73", "#cc79a7",
+           "#56b4e9", "#d55e00", "#f0e442", "#332288")
+GLOBAL_LOOKUP = np.array([0, 1, 2, 3, 4, 5, 7, 6, 8], dtype=np.uint8)
 
 
 def _fixture(
-    sample_id: str = "sample", *, empty_initial: bool = False, swap_target: bool = False,
+    sample_id: str = "sample", *, empty_initial: bool = False,
 ) -> tuple[dict[tuple[int, int], np.ndarray], np.ndarray, dict[str, object]]:
     mask = np.ones((5, 8), dtype=bool)
     mask[0, 0] = False
@@ -31,8 +38,6 @@ def _fixture(
     maps = {identity: labels.copy() for identity in reporting.MAP_IDS}
     if empty_initial:
         maps[1, 1][mask] = 1
-    if swap_target:
-        maps[1, 2] = np.array([0, 2, 1], dtype=np.uint8)[maps[1, 2]]
     rows = [{"encoder_repeat": encoder, "kmeans_repeat": kmeans,
              **map_diagnostics(maps[encoder, kmeans], mask)}
             for encoder, kmeans in reporting.MAP_IDS]
@@ -238,69 +243,172 @@ def test_malformed_evaluations_are_rejected(failure: str) -> None:
         reporting.summarize_samples(evaluations)
 
 
-def test_figures_preserve_frequency_values_and_all_initial_comparisons(
+def _publication_fixture() -> tuple[dict[tuple[int, int], np.ndarray], np.ndarray, dict[str, object]]:
+    labels = np.tile(np.arange(9, dtype=np.uint8), (4, 1))
+    mask = labels > 0
+    reverse = np.array([0, 8, 7, 6, 5, 4, 3, 2, 1], dtype=np.uint8)
+    maps = {key: (labels.copy() if key == (1, 1) else reverse[labels])
+            for key in reporting.MAP_IDS}
+    evaluation = {
+        "sample_id": "KYOw02752",
+        "maps": [{"encoder_repeat": e, "kmeans_repeat": k,
+                  **map_diagnostics(maps[e, k], mask)} for e, k in reporting.MAP_IDS],
+        "pairs": [{"encoder_a": a[0], "kmeans_a": a[1], "encoder_b": b[0], "kmeans_b": b[1],
+                   "group": "within_encoder" if a[0] == b[0] else "between_encoder",
+                   "initial_reference": a == (1, 1), **compare_maps(maps[a], maps[b], mask)}
+                  for a, b in combinations(reporting.MAP_IDS, 2)],
+    }
+    return maps, mask, evaluation
+
+
+def _global_reference(source: Path, *, duplicate: bool = False) -> Path:
+    root = source / "results/figures/global_k8_v1"
+    (root / "M11").mkdir(parents=True)
+    regenerated, _ = repeat_paths(source, "M11", 1)
+    regenerated.mkdir(parents=True)
+    _write_json(regenerated / "completion.json", {"fixture": "regenerated initial map"})
+    _write_json(root / "report.json", {
+        "sample_ids": ["KYOw02752"], "definitions": {"palette": list(PALETTE)},
+        "contract": {"K": 8, "repeat": 1, "reference": "M00+Cosine-KMeans",
+                     "sources": {"M11": _digest(regenerated / "completion.json")}},
+    })
+    with (root / "M11/matching.csv").open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["condition", "original_cluster", "display_cluster"])
+        writer.writerows(["M11", raw, int(GLOBAL_LOOKUP[raw]) if not duplicate else 1]
+                         for raw in range(1, 9))
+    _write_json(root / "completion.json", {
+        "status": "global_report_completed", "artifact_sha256": {
+            name: _digest(root / name) for name in ("report.json", "M11/matching.csv")},
+    })
+    return root
+
+
+def test_global_display_uses_saved_assignment_and_palette_and_rejects_changed_source(
+    tmp_path: Path,
+) -> None:
+    root = _global_reference(tmp_path)
+    reference = reporting.load_global_display(tmp_path, ("KYOw02752",))
+    np.testing.assert_array_equal(reference.lookup, GLOBAL_LOOKUP)
+    assert reference.palette == PALETTE
+    with pytest.raises(ValueError, match="different sample set"):
+        reporting.load_global_display(tmp_path, ("another",))
+    (root / "M11/matching.csv").write_text("changed", encoding="utf-8")
+    with pytest.raises(ValueError, match="display source changed"):
+        reporting.load_global_display(tmp_path, ("KYOw02752",))
+
+
+def test_global_display_rejects_many_to_one_assignment(tmp_path: Path) -> None:
+    _global_reference(tmp_path, duplicate=True)
+    with pytest.raises(ValueError, match="one-to-one"):
+        reporting.load_global_display(tmp_path, ("KYOw02752",))
+
+
+def test_composition_preserves_every_cluster_and_both_input_lookups() -> None:
+    maps, mask, _ = _publication_fixture()
+    raw, _ = reporting.display_mappings({key: reporting.label_overlap_counts(maps[1, 1], labels, mask)
+                                        for key, labels in maps.items()})
+    before = {key: lookup.copy() for key, lookup in raw.items()}
+    global_before = GLOBAL_LOOKUP.copy()
+    composed = reporting.compose_display_mappings(raw, GLOBAL_LOOKUP)
+    for key in reporting.MAP_IDS:
+        np.testing.assert_array_equal(composed[key][maps[key]], GLOBAL_LOOKUP[maps[1, 1]])
+        np.testing.assert_array_equal(raw[key], before[key])
+        assert sorted(composed[key].tolist()) == list(range(9))
+    np.testing.assert_array_equal(GLOBAL_LOOKUP, global_before)
+
+
+def test_publication_rasters_have_no_titles_or_pixel_axes_and_keep_data_unchanged(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    maps, mask, evaluation = _fixture(swap_target=True)
-    before = {identity: labels.copy() for identity, labels in maps.items()}
-    original_evaluation = deepcopy(evaluation)
-    lookups, _ = reporting.display_mappings(_counts(maps, mask))
-    drawn = []
-    save = reporting._save
+    from matplotlib.colors import to_rgba
+
+    maps, mask, evaluation = _publication_fixture()
+    maps_before, evaluation_before = deepcopy(maps), deepcopy(evaluation)
+    raw, _ = reporting.display_mappings({key: reporting.label_overlap_counts(maps[1, 1], labels, mask)
+                                        for key, labels in maps.items()})
+    composed = reporting.compose_display_mappings(raw, GLOBAL_LOOKUP)
+    saved = reporting._save
+    inspected = []
 
     def capture(figure: Figure, path: Path, dpi: int) -> Path:
-        if path.name == "01_nine_maps.png":
-            drawn.extend(np.asarray(axis.images[0].get_array()).copy() for axis in figure.axes[:9])
-        return save(figure, path, dpi)
+        assert figure._suptitle is None
+        assert all(not axis.get_title() for axis in figure.axes)
+        if path.parent.name == "sample":
+            count = {"01_nine_maps.png": 9, "03_boundary_frequency.png": 3}[path.name]
+            spatial_axes = figure.axes[:count]
+            assert all(not axis.axison and not axis.get_xlabel() and not axis.get_ylabel()
+                       for axis in spatial_axes)
+            footer = [text for text in figure.texts if text.get_text() == "KYOw02752"]
+            assert len(footer) == 1
+            assert footer[0].get_position()[1] < min(axis.get_position().y0 for axis in spatial_axes)
+            if path.name == "01_nine_maps.png":
+                for axis in spatial_axes:
+                    image = axis.images[0]
+                    np.testing.assert_array_equal(image.get_array().data, GLOBAL_LOOKUP[maps[1, 1]])
+                    np.testing.assert_allclose(image.to_rgba(np.array([6, 7, 8])),
+                                               [to_rgba(PALETTE[k]) for k in (6, 7, 8)])
+                    assert image.get_interpolation() == "nearest"
+                assert figure.axes[-1].get_xticks().tolist() == list(range(1, 9))
+        if path.name == "01_ari_vs_boundary_coverage.png":
+            for axis in figure.axes:
+                # One specimen, unchanged ARI and boundary values, both exactly one.
+                for points in axis.collections[1:]:
+                    np.testing.assert_allclose(points.get_offsets(), [[1, 1]])
+        inspected.append(path.name)
+        return saved(figure, path, dpi)
 
     monkeypatch.setattr(reporting, "_save", capture)
-    paths = reporting.render_sample("sample", maps, mask, evaluation, tmp_path / "sample",
-                                    dpi=40, display_lookups=lookups)
-    assert len(paths) == 12
-    assert len(drawn) == 9
-    assert all(np.array_equal(labels, maps[1, 1]) for labels in drawn)
-    assert evaluation == original_evaluation
-    assert len(list((tmp_path / "sample").glob("initial_vs_*.png"))) == 8
+    paths = reporting.render_sample("KYOw02752", maps, mask, evaluation, tmp_path / "sample",
+                                    display_lookups=composed, palette=PALETTE, dpi=30)
+    summary = reporting.summarize_samples([evaluation])
+    paths += reporting.render_summary(summary, tmp_path / "summary", dpi=30)
+    assert sorted(inspected) == sorted([
+        "01_nine_maps.png", "03_boundary_frequency.png", "01_ari_vs_boundary_coverage.png",
+    ])
+    assert {path.name for path in (tmp_path / "sample").iterdir()} == {
+        "01_nine_maps.png", "03_boundary_frequency.png", "boundary_frequency.npz",
+    }
+    assert {path.name for path in (tmp_path / "summary").iterdir()} == {
+        "01_ari_vs_boundary_coverage.png",
+    }
+    assert len(paths) == 4 and all(path.is_file() for path in paths)
     for path in paths:
-        assert path.is_file()
         if path.suffix == ".png":
             with Image.open(path) as image:
                 image.verify()
     with np.load(tmp_path / "sample/boundary_frequency.npz", allow_pickle=False) as payload:
-        assert np.array_equal(payload["valid_mask"], mask)
+        np.testing.assert_array_equal(payload["valid_mask"], mask)
         for window in WINDOWS:
-            values = payload[f"frequency_w{window}"]
-            assert values.shape == mask.shape
-            assert np.isnan(values[~mask]).all()
-            assert set(np.unique(values[mask])) <= {0, 1}
-    assert all(np.array_equal(maps[identity], before[identity]) for identity in maps)
-    summary_paths = reporting.render_summary(reporting.summarize_samples([evaluation]),
-                                             tmp_path / "summary", dpi=40)
-    assert len(summary_paths) == 3
-    assert all(path.is_file() for path in summary_paths)
+            np.testing.assert_allclose(payload[f"frequency_w{window}"],
+                                       boundary_frequency(list(maps.values()), mask, window),
+                                       equal_nan=True)
+    assert evaluation == evaluation_before
+    for key in maps:
+        np.testing.assert_array_equal(maps[key], maps_before[key])
+    notes = reporting.captions(summary)
+    assert notes["main_text"]["file"] == "summary/01_ari_vs_boundary_coverage.png"
+    assert all(panel["sample_count"] == 1 for panel in notes["main_text"]["panels"])
+    assert set(notes["sample_figure_templates"]) == {"01_nine_maps.png", "03_boundary_frequency.png"}
+    assert "Cosine-KMeans" in notes["sample_figure_templates"]["01_nine_maps.png"]
 
 
-def test_rendering_rejects_missing_maps_before_writing(tmp_path: Path) -> None:
-    maps, mask, evaluation = _fixture()
-    maps.pop((3, 3))
-    with pytest.raises(ValueError, match="exactly all nine"):
-        reporting.render_sample("sample", maps, mask, evaluation, tmp_path / "figures")
-    assert not (tmp_path / "figures").exists()
-
-
-@pytest.mark.parametrize("change", ["missing_run", "background", "merge", "initial"])
-def test_rendering_rejects_invalid_display_permutations(tmp_path: Path, change: str) -> None:
-    maps, mask, evaluation = _fixture()
-    lookups, _ = reporting.display_mappings(_counts(maps, mask))
+@pytest.mark.parametrize("change", ["missing_run", "background", "merge", "missing_map", "invalid_label"])
+def test_invalid_display_does_not_create_output(tmp_path: Path, change: str) -> None:
+    maps, mask, evaluation = _publication_fixture()
+    lookups = {key: GLOBAL_LOOKUP.copy() for key in maps}
     if change == "missing_run":
         lookups.pop((3, 3))
     elif change == "background":
-        lookups[1, 2][0] = 1
+        lookups[1, 1][0] = 1
     elif change == "merge":
-        lookups[1, 2][2] = lookups[1, 2][1]
+        lookups[1, 1][7] = lookups[1, 1][6]
+    elif change == "missing_map":
+        maps.pop((3, 3))
     else:
-        lookups[1, 1][1:3] = [2, 1]
+        maps[3, 3][0, 1] = 0
+    output = tmp_path / "figures"
     with pytest.raises(ValueError):
-        reporting.render_sample("sample", maps, mask, evaluation, tmp_path / "figures",
-                                display_lookups=lookups)
-    assert not (tmp_path / "figures").exists()
+        reporting.render_sample("KYOw02752", maps, mask, evaluation, output,
+                                display_lookups=lookups, palette=PALETTE)
+    assert not output.exists()

@@ -1,187 +1,150 @@
 # 空間マップ再現性補助実験の実行手順
 
-2026-10-15時点で実装を追加した。**学習・評価・描画・テスト・静的検査は未実行**。
-2026-10-16追記：前回案内した4テストファイルはユーザー環境で全通過したとの報告を受けた。
-その後、初回マップ基準の表示用色合わせと対応テストを追加した。**今回の変更後のテスト・描画は未実行**。
-研究条件と解釈は[実験計画](design/spatial_map_reproducibility_plan.md)を正とする。
-以下のコマンドは実行手順であり、実行済み記録ではない。
+M11・K=8の学習済みencoder 3組と、各encoderで共通のCosine-KMeans 3 seedを使い、
+全49試料の9マップを比較する。研究条件・指標・解釈は[実験計画](design/spatial_map_reproducibility_plan.md)を参照する。
 
-## 対象と保存先
-
-- M11・K=8、全49試料。既存の401,408 fit画素を共有する。
-- encoder 1は既存学習を参照する。encoder 2・3を各800 epoch学習し、それぞれ3 seedのKMeansをfitする。
-- encoder内9対とencoder間27対を分ける。初回マップからの8対はこの36対の内数。
-- 3×3・5×5・9×9近傍はChebyshev半径1・2・4画素。内部境界の中点を使い、方向別の被覆率を保存する。
-- 再現性の合否判定、FT-IRの採取範囲・位置の決定は行わない。
+## 入力と出力
 
 | 用途 | 既定path |
 | --- | --- |
-| 変更しない元実験 | `outputs/experiments/global_v1/` |
-| 変更しない入力 | `data/processed/production_v1/`・`data/metadata/古材メタデータ.csv` |
-| 本補助実験の出力 | `outputs/experiments/global_spatial_reproducibility_v1/` |
-| 専用CLI | `scripts/experiments/global_spatial_reproducibility.py` |
+| 全体fit・encoder 1・初回マップ | `outputs/experiments/global_v1/` |
+| 学習済みencoder 2・3と再利用マップ | `outputs/experiments/global_spatial_reproducibility_v1/` |
+| 前処理済み入力 | `data/processed/production_v1/` |
+| 試料メタデータ | `data/metadata/古材メタデータ.csv` |
+| 出力 | `outputs/experiments/global_spatial_reproducibility_v2/` |
+| CLI | `scripts/experiments/global_spatial_reproducibility.py` |
 
-元実験と補助実験の出力pathは、同一・親子関係とも拒否する。
-既存の`global_fit.py`や`global_k8_3seed.py`は変更していない。
-既存成果物を検証する際のcode hashも維持する。
+全体fitの入力先は`--source-experiment-dir`、学習済み成果物の入力先は`--artifacts-dir`、
+出力先は`--experiment-dir`で指定できる。入力先の成果物は読み取り専用とし、出力先とは分離する。
+学習済みencoderと再利用マップを参照するため、入力フォルダは残しておく。
 
-## 実行前の小規模確認
+| 反復 | 使用するマップ |
+| --- | --- |
+| `(1,1)` | 全体fitの`results/clustering/M11/repeat_1/maps/` |
+| `(1,3)` | 全体fitの`results/global_k8_3seed_v1/clustering/M11/repeat_3/maps/` |
+| `(2,1)`・`(2,3)`・`(3,1)`・`(3,3)` | 学習済み成果物の`results/clustering/M11/encoder_{e}/kmeans_{k}/maps/` |
+| `(1,2)`・`(2,2)`・`(3,2)` | 出力先の`results/clustering/M11/encoder_{e}/kmeans_2/maps/`に生成 |
 
-既存のPython 3.11.15環境とlockに従う。新しい依存関係は追加していない。
-リポジトリrootから実行する。`--no-sync`により、この操作で依存関係を更新しない。
+第1seedは1960870825、第3seedは2051198256。
+第2seedは`_seed("kmeans", "global_spatial_reproducibility", "seed2_v2", 2, 8)`から導出し、
+3encoderで共有する。整数値と衝突検査は`prepare`の出力と`protocol/run.json`で確認できる。
+encoderの学習は不要。既存の全体fitと`global_k8_3seed_v1`の集計はそのまま使用できる。
+
+## テスト
+
+リポジトリrootから実行する。既存のPython環境とlockを使い、`--no-sync`により依存関係を更新しない。
 
 ```powershell
 uv run --no-sync pytest tests/experiments/test_spatial_reproducibility_metrics.py tests/experiments/test_spatial_reproducibility_training.py tests/experiments/test_spatial_reproducibility_reporting.py tests/experiments/test_spatial_reproducibility_pipeline.py -q
 ```
 
-小規模配列・一時ディレクトリ・mockを使い、境界中点、距離換算、mask不一致、空境界、分裂側／合流側、
-ARI、seed、出典、集計の欠測規則、保存・表示処理を確認する。実データの学習や全件評価は行わない。
-通常のpytest cacheと一時ファイルは作成される。テストが通ったことだけでGPU学習・全件描画の成功とは扱わない。
+小規模配列・合成マップ・一時ファイルを使い、境界中点、距離換算、空境界、ARI、seed、入力検証、
+3組のfit、再開、集計、保存・描画を確認する。実データの学習・GPU処理・全件評価は行わない。
+pytest cacheと一時ファイル・図が作成される。
 
-## 準備と元成果物の監査
+## 準備から図表出力まで
+
+既定pathを使用する場合は、次の順に実行する。
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py prepare
-```
-
-CPUで元manifest・encoder重み・KMeans中心・全試料mapの由来、hash、shape、maskを検証する。
-入力検証に伴うファイル読み取りとhash照合がある。新しい抽出座標やmapは生成しない。
-全seed一覧と衝突検査、9マップの反復ID、36対、境界定義version、元成果物の参照を`protocol/`に固定する。
-
-初回$(e,k)=(1,1)$には元の`results/clustering/M11/repeat_1/maps/`を使う。
-`results/global_k8_3seed_v1/clustering/M11/repeat_1/`が存在する場合、元の初回mapとの
-ラベル配列一致・変更画素数・ARI・境界比較を`protocol/initial_map_audit.json`に記録する。
-この再生成版は9マップに数えず、差があっても初回mapを差し替えない。
-再生成版が存在しない場合は監査表にその旨を残す。正本とKMeans repeat 2・3は必須。
-
-再実行時は次で保存済みprotocolと現在の出典を照合する。
-
-```powershell
-uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py prepare --resume
-```
-
-## encoderの追加学習
-
-```powershell
-uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py train --encoders 2 3 --device 0
-uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py training-check --encoders 2 3 --device 0
-```
-
-GPU 0で2回を逐次学習する。各回800 epoch、FP16 AMP・FP32パラメータ・最終raw重みを使用する。
-全fitスペクトルのCPU配列、モデル・optimizer・batchのGPUメモリ、各epochのcheckpoint I/Oが必要。
-実測所要時間・ピークメモリは未確認。原データ・既存全体fitの出力は上書きしない。
-
-中断時は同じ引数に`--resume`を追加する。最新の完了epochの`checkpoints/last.pt`から再開し、
-中断したepochはやり直す。完了済みencoderはcheckpointと最終重みを照合してskipする。
-`--encoders 2`のように一方だけの実行も可能。seedの選び直しやepoch数の変更は受け付けない。
-
-```powershell
-uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py train --encoders 2 3 --device 0 --resume
-```
-
-`training-check`は同じCUDA環境でcheckpoint・optimizer・RNG状態・履歴と最終raw重みの対応を確認する。
-学習・ファイル書き込みは行わない。通常の`check`は後述の全成果物のCPU監査である。
-
-## 各encoderのKMeansと全画素map
-
-```powershell
-uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py cluster --encoders 2 3 --device 0 --chunk-pixels 1024
-```
-
-各encoderのfit画素表現を一度抽出してCPU上に保持し、その3 seedで再利用する。
-全画素の表現はchunk単位で処理し、大量の中間表現をディスク保存しない。
-各KMeans fitの中心を保存・再ロードし、中心とprobe予測の一致を確認して全49試料のmapを作る。
-追加計算はKMeans fit 6回・追加map 6枚／試料。
-
-中断後は同じコマンドに`--resume`を付ける。完了したencoder×KMeans単位を検証してskipし、
-完了していないfitは同じseedで最初から処理する。部分map集合を評価へ流さない。
-stageは一時ディレクトリで作り、完成後に公開する。公開済み出力の改変や部分破損を検出したら停止する。
-
-## 評価と集計
-
-```powershell
-uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py evaluate
-```
-
-CPUで試料単位に9マップを読み、同じ元mask上の36対を評価する。
-欠けたmapやmask変更は入力エラーにする。境界が空の正しいmapは保持し、
-「境界あり→空」は0、「空→境界あり」は未定義として理由・分母を残す。
-境界が空の両者を一致率1へ置き換えない。
-
-主集計は比較群×指標ごとのcomplete-caseとする。境界一致率の小さい側・大きい側は、
-同一encoder内9対またはencoder間27対の全方向が定義されることを要求し、近傍幅間の対象試料を揃える。
-部分欠測の値は診断表に残すが、残存対だけの平均で主集計を補わない。
-試料等重みのmacro平均・試料間分布を報告し、36対を独立標本として検定・CIを計算しない。
-
-分裂・合流の重なり表とVI成分も保存する場合は、最初の評価実行時に次を使う。
-計算対象は全36対で、結果を見て都合のよい対だけを選ぶ機能は設けない。
-
-```powershell
+uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py cluster --encoders 1 2 3 --device 0 --chunk-pixels 1024
 uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py evaluate --include-overlap
-```
-
-評価済み出力の確認・skipは`--resume`で行う。`--include-overlap`は元の実行と同じ指定が必要。
-既存出力を上書きしてオプションを変更しない。
-
-## 図表と完了確認
-
-```powershell
 uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py report --dpi 160
 uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py check
 ```
 
-CPUで全49試料の3×3一覧、境界重ね描き、3尺度の境界頻度、初回からの方向別比較、
-全体のARIと境界一致率の対応・分布を保存する。全試料分のPNGを生成するため、図の数と出力容量が増える。
-`--dpi`は描画解像度のみを変え、計算上の画素座標・許容距離は変えない。
-3×3一覧は初回`(1,1)`を基準に色を揃える。全49試料の有効画素を合算し、各反復との
-重なり画素数が最大になる一対一の対応を求め、同じ対応を全試料に使用する。
-背景0・初回の表示番号を維持し、元ラベル配列や指標値は変更しない。境界図・頻度図も元ラベルから作る。
-全体の対応表は`results/report/color_matching.json`へ保存する。重なり0の割当も記録し、
-分裂したクラスタを同じ色へ統合することはしない。色の一致は化学的意味の一致を保証しない。
-頻度は共有encoderを含む9マップの記述量であり、独立試行の確率や化学的確信度ではない。
+| 段階 | 処理と負荷 |
+| --- | --- |
+| `prepare` | CPUで入力の完了記録、重み・中心・mapの出典、hash、shape、maskを確認し、seed・反復対・評価条件を`protocol/`へ保存する。モデル・多数のmapの読み取りを伴う |
+| `cluster` | GPU 0で各encoderのfit画素表現を抽出し、第2seedを計3回fitする。全49試料を推論し、計147マップと3組の中心を保存する |
+| `evaluate` | CPUで各試料の9マップ・36対を評価し、49試料を等重みで集計する。`--include-overlap`は全36対の重なり表とVI成分も保存する |
+| `report` | CPUで3種類・99枚のPNG、49試料の境界頻度配列、captionと配色対応表を保存する |
+| `check` | 出典・hash・対象数・評価と図表の対応を検証する。再現性の合否判定ではない |
 
-描画の再実行も`--resume`で検証・skipする。DPIは保存済み設定と一致する必要がある。
-`check`は由来・hash・対象数・集計整合性を確認する技術的な完了確認であり、再現性の合否判定ではない。
+fit画素は既存の401,408座標を共有する。Cosine-KMeansはK=8、`max_iter=500`、`tol=1e-4`、FP32を使用する。
+全画素の表現は`--chunk-pixels`単位で処理し、中間表現をディスクへ保存しない。
+各fitの中心は保存・再ロードして中心とprobe予測の一致を確認する。
+
+## 中断後の再開
+
+生成段階は同じ引数に`--resume`を付ける。完了済みの段階・反復は検証してskipする。
+
+```powershell
+uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py prepare --resume
+uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py cluster --encoders 1 2 3 --device 0 --chunk-pixels 1024 --resume
+uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py evaluate --include-overlap --resume
+uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py report --dpi 160 --resume
+uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py check
+```
+
+clusteringは未完了fit単位、評価・描画は未完了stage単位で再試行する。
+`--encoders 2`のように対象encoderを限定できる。`--include-overlap`・DPI・入力先などは保存済み設定と揃える。
+`check`に`--resume`は付けない。
+
+入力・設定・code・runtimeの不整合や、成果物の破損を検出した場合は停止する。
+完了記録を手編集して通さず、エラーに示された入力や出力を確認する。
+部分生成物やOS停止時の残存stageは自動削除・上書きしない。
+
+## 評価と集計の確認点
+
+- 同一encoder内9対とencoder間27対を分ける。初回`(1,1)`からの8対は36対の内数。
+- ARIは元ラベルで計算する。境界一致率は内部境界の中点に対して双方向に計算し、
+  3×3・5×5・9×9近傍をChebyshev半径1・2・4画素として扱う。
+- 9マップは同じ有効画素集合を使う。欠けたmapやmask変更は入力エラーとする。
+- 境界がある側から空の側への一致率は0、対応元が空の場合は未定義とする。
+  両方が空でも一致率1にはしない。
+- 主集計は比較群×指標ごとのcomplete-caseとする。境界一致率は予定した全対・全方向が定義された試料を使い、
+  近傍幅間の対象試料を揃える。部分欠測は診断表に残し、残存対の平均で補わない。
+- 試料等重みのmacro平均・試料間分布を報告する。36対を独立標本として検定・信頼区間を計算しない。
+
+## 図の読み方と論文での使い方
+
+| 図 | 読み取る内容 | 用途 |
+| --- | --- | --- |
+| `summary/01_ari_vs_boundary_coverage.png` | 横軸は試料ごとの対平均ARI、縦軸は対平均の境界一致率。上段はencoder内、下段はencoder間、左から3・5・9近傍 | 本文主図1枚 |
+| `samples/{sample_id}/01_nine_maps.png` | 行がencoder、列がCosine-KMeans初期化。同じ行で初期化間、行をまたいで再学習を含む違いを見る | 全49試料。代表7試料を付録候補とする |
+| `samples/{sample_id}/03_boundary_frequency.png` | 左から3×3・5×5・9×9近傍に内部境界が存在したマップの割合 | 全49試料。代表7試料を付録候補とする |
+
+本文主図の青は対ごとの双方向の小さい側の平均、橙は大きい側の平均で、縦線は2値を結ぶ。
+信頼区間ではない。ARIが低く境界一致率が高い点は、分割の変動に対して境界配置に共通性がある試料の候補となる。
+境界密度が高いと近接対応も増えるため、密度・占有率と3×3マップを併読する。
+対平均では特定の反復のずれが見えにくいため、個々の差は3×3マップと`pair_metrics.csv`で確認する。
+
+境界頻度図の黄色（1）は9マップすべてで近傍内に境界があり、紫（0）はすべてで近傍内に境界がない場所を示す。
+紫は不安定を意味しない。中間色は反復によって境界の有無が変わる場所である。
+近傍幅を広げると頻度は下がらないため、9×9で黄色が増えることだけで安定とは判断しない。
+頻度は9マップの記述量であり、独立試行の確率や化学的な意味の一致を示す値ではない。
+
+3×3マップは全49試料の有効画素を合算した重なりから、初回`(1,1)`との一対一の対応を求める。
+この対応に`global_v1/results/figures/global_k8_v1/M11/matching.csv`の変換を合成し、
+同じ全体fit図の`report.json`のpaletteを使用する。全試料で同じ対応を使い、背景0を維持する。
+色合わせは表示だけに適用し、元ラベル・指標・境界頻度は変更しない。
+
+図・subplotにタイトルを付けず、マップ類のpixel軸・目盛・枠線は表示しない。
+試料IDは画像群の下に配置し、表記はCosine-KMeansに統一する。説明は`captions.json`へ保存する。
+`--dpi`は描画解像度だけを変え、画素座標・許容距離には影響しない。
 
 ## 成果物
 
-補助実験rootからの相対pathを示す。
+出力先からの相対pathを示す。学習済み重みと再利用6マップは入力先を参照し、コピーしない。
 
 | path | 内容 |
 | --- | --- |
-| `protocol/run.json` | seed・境界定義・組合せ・元manifest／モデル／mapの出典 |
-| `protocol/initial_map_audit.json` | 初回mapと同seed再生成版の監査 |
-| `results/neural/M11/encoder_{2,3}/` | 学習run・履歴・checkpoint記録・完了記録 |
-| `checkpoints/neural/M11/encoder_{2,3}/` | 最終raw重みと再開用checkpoint |
-| `results/clustering/M11/encoder_{e}/kmeans_{k}/` | 追加map・run・完了hash |
-| `checkpoints/clustering/M11/encoder_{e}/kmeans_{k}/centers_k8.npz` | KMeans中心。encoderの由来は対応するrunに結び付く |
-| `results/evaluation/map_sources.json` | 49×9 mapの元path・hash・shapeと二つの反復ID |
-| `results/evaluation/map_diagnostics.csv` | 画素数・有効隣接辺数・境界数／密度・占有率 |
-| `results/evaluation/pair_metrics.csv` | 49×36対×3尺度×2方向、分子／分母・未定義理由・ARI |
-| `results/evaluation/initial_reference_metrics.csv` | 初回からの8対の抜粋 |
-| `results/evaluation/samples/{sample_id}.json` | 対別の構造化値・退化flag・任意の重なり表／VI |
+| `protocol/run.json` | seed、境界定義、反復対、入力manifest・モデル・mapの参照 |
+| `protocol/initial_map_audit.json` | 初回mapと全体fit図が使用する同seed再生成版の照合 |
+| `results/clustering/M11/encoder_{e}/kmeans_2/` | 生成したmap・run・完了hash |
+| `checkpoints/clustering/M11/encoder_{e}/kmeans_2/centers_k8.npz` | Cosine-KMeans中心 |
+| `results/evaluation/map_sources.json` | 49×9 mapのpath・hash・shape・反復ID |
+| `results/evaluation/map_diagnostics.csv` | 有効画素数、隣接辺数、境界数・密度、占有率 |
+| `results/evaluation/pair_metrics.csv` | 49×36対×3尺度×2方向の境界一致率、分子・分母、未定義理由、ARI |
+| `results/evaluation/initial_reference_metrics.csv` | 初回からの8対 |
+| `results/evaluation/samples/{sample_id}.json` | 対別の値、退化flag、重なり表・VI |
 | `results/evaluation/summary.json` | 試料別要約、完全対数、除外理由、macro分布、共通試料による群差 |
-| `results/report/` | 全試料の図、境界頻度配列、全体図、描画条件・hash |
-| `results/report/color_matching.json` | 初回基準の表示用対応。全49試料を合算した重なり表、元番号→表示番号、重なり0の割当 |
-| `attempts/` | 実行段階・完了／失敗／中断・例外型・所要時間・再開設定 |
+| `results/report/` | 3種類・99枚のPNG、49試料の境界頻度配列、描画条件・hash |
+| `results/report/color_matching.json` | 初回との対応・重なり表、全体fit表示IDへの変換、合成対応・palette |
+| `results/report/captions.json` | 図の役割、panelの意味、試料数、表示上の説明 |
+| `attempts/` | 実行段階、完了・失敗・中断、例外型、所要時間、再開設定 |
 
-JSONの未定義値は`null`、CSVでは空欄＋理由。頻度配列の無効画素はNaNとし、有効画素の0とは区別する。
-重みは既存の`checkpoints/`のignore規則に従う。新しい`.pt`等をソース管理へ加えない。
-
-## 失敗時の扱いと確認点
-
-- 再実行時にrun・config・code・runtime・出典が違えば停止する。完了記録や元成果物を手編集して通さない。
-- 学習はepoch境界から、clusteringは未完了fit単位から、評価・描画は未完了stageから再試行する。
-- 初回checkpoint生成前の失敗、部分破損、OS停止時の残存stageは自動削除・上書きしない。状況を確認して復旧する。
-- `attempts/`は通常の例外・KeyboardInterruptを記録する。プロセス強制終了・OS停止時の記録を保証しない。
-- 境界密度が高いと近接一致も高くなり得る。指標だけで順位付けせず、密度・占有率・元map・方向別図を併読する。
-- 初回mapへの位置対応を保ち、境界の安定とクラスタの化学的意味の安定を区別する。
-
-本手順書の作成時点では、実データでの完了・所要時間・図の見た目は未確認。
-
-表示用色合わせの変更後は、次の2ファイルで割当・入力不変性・描画・対応表保存を確認する。
-小規模の一時ファイルと図を生成するテストであり、実データの学習は行わない。
-
-```powershell
-uv run --no-sync pytest tests/experiments/test_spatial_reproducibility_reporting.py tests/experiments/test_spatial_reproducibility_pipeline.py -q
-```
+JSONの未定義値は`null`、CSVでは空欄と理由を使う。境界頻度配列の無効画素はNaNとし、有効画素の0と区別する。
+中心等の学習済みpayloadは既存の`checkpoints/`のignore規則に従う。

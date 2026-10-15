@@ -1,9 +1,11 @@
-"""Complete-case summaries and spatially registered figures for nine M11 maps."""
+"""Complete-case summaries, display-only label alignment, and publication figures."""
 
 from __future__ import annotations
 
+import csv
 from collections import Counter
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from itertools import combinations
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -14,13 +16,9 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
 
-from .spatial_reproducibility_metrics import (
-    WINDOWS,
-    boundary_frequency,
-    boundary_lattice,
-    boundary_neighborhood,
-    validate_map,
-)
+from .global_k8_repeats import repeat_paths
+from .manifests import _digest, _read_json, _require
+from .spatial_reproducibility_metrics import WINDOWS, boundary_frequency, validate_map
 
 MAP_IDS = tuple((encoder, kmeans) for encoder in (1, 2, 3) for kmeans in (1, 2, 3))
 GROUPS = ("within_encoder", "between_encoder")
@@ -29,11 +27,12 @@ BOUNDARY_METRICS = tuple(
     f"boundary_{window}_{side}" for window in WINDOWS for side in ("lower", "upper")
 )
 METRICS = ("ari", *BOUNDARY_METRICS)
-GROUP_LABELS = {
-    "within_encoder": "Within encoder (KMeans initializations)",
-    "between_encoder": "Between encoders (training + KMeans)",
-}
 COLORS = ("#0072B2", "#D55E00", "#009E73")
+SAMPLE_FILES = (
+    "01_nine_maps.png", "03_boundary_frequency.png",
+    "boundary_frequency.npz",
+)
+SUMMARY_FILES = ("01_ari_vs_boundary_coverage.png",)
 
 
 def color_alignment_contract() -> dict[str, object]:
@@ -42,7 +41,8 @@ def color_alignment_contract() -> dict[str, object]:
         "reference": [1, 1], "K": 8, "background": 0,
         "method": "Hungarian maximum total pixel overlap; one-to-one permutation",
         "scope": "all valid pixels pooled over all planned samples; one mapping per run",
-        "direction": "target raw label -> initial (1,1) display label",
+        "direction": "target raw -> initial (1,1) raw -> saved global-fit M11 display ID",
+        "global_display": "reuse M11/matching.csv and the palette saved in global_k8_v1/report.json",
         "ties": "SciPy assignment on ascending raw IDs; absent target IDs use unused colors in order",
         "application": "3x3 label-map display only; source labels and all metrics unchanged",
     }
@@ -125,12 +125,86 @@ def _validate_display_lookups(lookups: Mapping[tuple[int, int], np.ndarray]) -> 
     if set(lookups) != set(MAP_IDS):
         raise ValueError("Display mappings must cover all nine maps")
     for lookup in lookups.values():
-        if (not isinstance(lookup, np.ndarray) or lookup.shape != (9,)
-                or lookup.dtype.kind not in "iu" or lookup[0] != 0
-                or not np.array_equal(np.sort(lookup[1:]), np.arange(1, 9))):
-            raise ValueError("Display mapping must preserve background and permute labels 1..8")
+        validate_permutation(lookup)
     if not np.array_equal(lookups[1, 1], np.arange(9)):
         raise ValueError("Initial (1,1) display labels must remain unchanged")
+
+
+def validate_permutation(lookup: np.ndarray) -> None:
+    """Require a display-only permutation that preserves background zero."""
+    if (not isinstance(lookup, np.ndarray) or lookup.shape != (9,)
+            or lookup.dtype.kind not in "iu" or lookup[0] != 0
+            or not np.array_equal(np.sort(lookup[1:]), np.arange(1, 9))):
+        raise ValueError("Display lookup must preserve background and permute labels 1..8")
+
+
+@dataclass(frozen=True)
+class GlobalDisplay:
+    """The saved M11 raw-to-display assignment and its exact saved palette."""
+
+    lookup: np.ndarray
+    palette: tuple[str, ...]
+    provenance: dict[str, object]
+
+
+def load_global_display(source: Path, sample_ids: tuple[str, ...]) -> GlobalDisplay:
+    """Verify the two display-source files without regenerating any global result."""
+    from matplotlib.colors import is_color_like, to_rgba
+
+    directory = source / "results/figures/global_k8_v1"
+    completion = _read_json(directory / "completion.json")
+    _require(completion.get("status") == "global_report_completed",
+             "The global-fit figure report is incomplete")
+    hashes = completion.get("artifact_sha256")
+    _require(isinstance(hashes, dict), "Global-fit report has no artifact hashes")
+    source_hashes = {}
+    for name in ("report.json", "M11/matching.csv"):
+        source_hashes[name] = _digest(directory / name)
+        _require(source_hashes[name] == hashes.get(name),
+                 f"Global display source changed: {name}")
+    report = _read_json(directory / "report.json")
+    contract = report["contract"]
+    _require(report["sample_ids"] == list(sample_ids)
+             and contract.get("K") == 8 and contract.get("repeat") == 1
+             and contract.get("reference") == "M00+Cosine-KMeans",
+             "Global display uses a different sample set, fit or reference")
+    regenerated, _ = repeat_paths(source, "M11", 1)
+    _require(contract["sources"]["M11"] == _digest(regenerated / "completion.json"),
+             "Global display refers to a different M11 source")
+    colors = report["definitions"]["palette"]
+    _require(isinstance(colors, list) and len(colors) == 9
+             and all(isinstance(color, str) and is_color_like(color) for color in colors),
+             "Global display requires nine valid saved colors")
+    _require(to_rgba(colors[0]) == to_rgba("white"), "Global background must be white")
+    with (directory / "M11/matching.csv").open(encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    _require(len(rows) == 8 and all(row["condition"] == "M11" for row in rows),
+             "Expected eight M11 display assignments")
+    originals = [int(row["original_cluster"]) for row in rows]
+    displays = [int(row["display_cluster"]) for row in rows]
+    _require(sorted(originals) == list(range(1, 9))
+             and sorted(displays) == list(range(1, 9)),
+             "Global M11 matching must be a one-to-one permutation")
+    lookup = np.zeros(9, dtype=np.uint8)
+    lookup[originals] = displays
+    validate_permutation(lookup)
+    return GlobalDisplay(lookup, tuple(colors), {
+        "directory": str(directory.resolve()),
+        "completion_sha256": _digest(directory / "completion.json"),
+        "artifact_sha256": source_hashes,
+        "initial_raw_to_global_display": lookup.tolist(), "palette": colors,
+        "reference": "saved global-fit M11 display, aligned to M00+Cosine-KMeans",
+        "initial_map": "canonical original map; not replaced by the regenerated copy",
+    })
+
+
+def compose_display_mappings(
+    initial_lookups: Mapping[tuple[int, int], np.ndarray], global_lookup: np.ndarray,
+) -> dict[tuple[int, int], np.ndarray]:
+    """Compose target raw -> initial raw -> global display; preserve each cluster."""
+    _validate_display_lookups(initial_lookups)
+    validate_permutation(global_lookup)
+    return {identity: global_lookup[initial_lookups[identity]] for identity in MAP_IDS}
 
 
 def _record(value: object, context: str) -> Mapping[str, object]:
@@ -159,7 +233,7 @@ def _number(value: object, context: str) -> float | None:
 def _pair_key(pair: Mapping[str, object]) -> tuple[tuple[int, int], tuple[int, int]]:
     values = tuple(pair.get(key) for key in ("encoder_a", "kmeans_a", "encoder_b", "kmeans_b"))
     if any(type(value) is not int for value in values):
-        raise ValueError("Pair identities must contain integer encoder and KMeans repeats")
+        raise ValueError("Pair identities must contain integer encoder and Cosine-KMeans repeats")
     encoder_a, kmeans_a, encoder_b, kmeans_b = cast(tuple[int, int, int, int], values)
     left, right = (encoder_a, kmeans_a), (encoder_b, kmeans_b)
     if left not in MAP_IDS or right not in MAP_IDS or left >= right:
@@ -251,7 +325,7 @@ def _sample_summary(evaluation: Mapping[str, object]) -> dict[str, object]:
     for row in map_rows:
         identity = (row.get("encoder_repeat"), row.get("kmeans_repeat"))
         if any(type(value) is not int for value in identity) or identity not in MAP_IDS:
-            raise ValueError("Map diagnostics have an invalid encoder/KMeans identity")
+            raise ValueError("Map diagnostics have an invalid encoder/Cosine-KMeans identity")
         key = cast(tuple[int, int], identity)
         if key in map_seen:
             raise ValueError(f"Duplicate map diagnostics in sample {sample_id}")
@@ -385,163 +459,10 @@ def summarize_samples(evaluations: Sequence[dict[str, object]]) -> dict[str, obj
     }
 
 
-def _figure(
-    rows: int, columns: int, *, width: float = 12.0, height: float = 8.0,
-) -> tuple[Figure, np.ndarray]:
-    from matplotlib.backends.backend_agg import FigureCanvasAgg
-    from matplotlib.figure import Figure
-
-    figure = Figure(figsize=(width, height), layout="constrained")
-    FigureCanvasAgg(figure)
-    axes = figure.subplots(rows, columns, squeeze=False)
-    return figure, axes
-
-
 def _save(figure: Figure, path: Path, dpi: int) -> Path:
     figure.savefig(path, dpi=dpi, facecolor="white")
     figure.clear()
     return path
-
-
-def _spatial_axis(axis: Axes, mask: np.ndarray) -> None:
-    axis.imshow(np.where(mask, 0.94, 1.0), cmap="gray", vmin=0, vmax=1,
-                interpolation="nearest", origin="upper")
-    axis.set_xlim(-0.5, mask.shape[1] - 0.5)
-    axis.set_ylim(mask.shape[0] - 0.5, -0.5)
-    axis.set_aspect("equal")
-    axis.set_xlabel("Column (pixels)")
-    axis.set_ylabel("Row (pixels)")
-
-
-def _points(axis: Axes, lattice: np.ndarray, *, color: str, label: str,
-            size: float = 3, alpha: float = 0.7) -> None:
-    points = np.argwhere(lattice)
-    axis.scatter(points[:, 1] / 2, points[:, 0] / 2, c=color, label=label,
-                 s=size, alpha=alpha, linewidths=0, rasterized=True)
-
-
-def _coverage_text(direction: Mapping[str, object]) -> str:
-    value = direction["value"]
-    if value is None:
-        return f"undefined ({direction['undefined_reason']})"
-    return (f"{cast(float, value):.3f} "
-            f"({direction['matched_count']}/{direction['boundary_count']})")
-
-
-def render_sample(
-    sample_id: str, maps: Mapping[tuple[int, int], np.ndarray], mask: np.ndarray,
-    evaluation: dict[str, object], output: Path, *, dpi: int = 160,
-    display_lookups: Mapping[tuple[int, int], np.ndarray] | None = None,
-) -> list[Path]:
-    """Save all nine maps, boundary locations, frequency arrays, and initial comparisons.
-
-    The production reporter supplies one pooled display mapping per run. Only
-    the nine-map panel uses it; boundary/frequency calculations use original
-    labels. Omitting it preserves raw-ID display for existing low-level callers.
-    """
-    from matplotlib.colors import BoundaryNorm, ListedColormap
-
-    if set(maps) != set(MAP_IDS):
-        raise ValueError("Sample figures and frequencies require exactly all nine maps")
-    if type(dpi) is not int or dpi <= 0:
-        raise ValueError("DPI must be a positive integer")
-    if evaluation.get("sample_id") != sample_id:
-        raise ValueError("Figure sample_id differs from its evaluation")
-    if display_lookups is not None:
-        _validate_display_lookups(display_lookups)
-    # Validation is shared with the metrics; no mask intersection or label repair.
-    lattices = {identity: boundary_lattice(maps[identity], mask) for identity in MAP_IDS}
-    _sample_summary(evaluation)
-    pair_lookup = {_pair_key(pair): pair for pair in _rows(evaluation.get("pairs"), "Pairs")}
-    if len(pair_lookup) != 36:
-        raise ValueError("Sample figures require all 36 evaluated pairs")
-    output.mkdir(parents=True, exist_ok=True)
-    paths: list[Path] = []
-    figure, axes = _figure(3, 3, height=11)
-    palette = ListedColormap(["white", "#0072B2", "#E69F00", "#009E73", "#CC79A7",
-                              "#56B4E9", "#D55E00", "#F0E442", "#666666"])
-    image = None
-    for (encoder, kmeans), labels in maps.items():
-        axis = axes[encoder - 1, kmeans - 1]
-        display_labels = (labels if display_lookups is None
-                          else display_lookups[encoder, kmeans][labels])
-        image = axis.imshow(display_labels, cmap=palette, norm=BoundaryNorm(np.arange(-0.5, 9), 9),
-                            interpolation="nearest", origin="upper")
-        axis.set_title(f"Encoder {encoder}, KMeans {kmeans}" +
-                       (" (initial map)" if (encoder, kmeans) == (1, 1) else ""))
-        axis.set_xlabel("Column (pixels)")
-        axis.set_ylabel("Row (pixels)")
-    if image is not None:
-        figure.colorbar(image, ax=axes.ravel().tolist(), ticks=range(9), shrink=0.6,
-                        label=("Raw cluster ID" if display_lookups is None
-                               else "Display ID of initial (1,1)") + "; 0 = excluded/background")
-    caption = ("raw label colors (not aligned across runs)" if display_lookups is None else
-               "colors aligned to initial (1,1) by pooled overlap\n"
-               "Display only; one-to-one assignment does not establish chemical correspondence")
-    figure.suptitle(f"{sample_id}: nine maps, {caption}")
-    paths.append(_save(figure, output / "01_nine_maps.png", dpi))
-
-    figure, axes = _figure(2, 3, height=8)
-    for encoder in (1, 2, 3):
-        axis = axes[0, encoder - 1]
-        _spatial_axis(axis, mask)
-        for kmeans, color in zip((1, 2, 3), COLORS, strict=True):
-            _points(axis, lattices[encoder, kmeans], color=color, label=f"KMeans {kmeans}")
-        if encoder == 1:
-            _points(axis, lattices[1, 1], color="black", label="Initial (1,1)", size=1)
-        axis.set_title(f"Within encoder {encoder}")
-        axis.legend(fontsize=7, loc="upper right")
-    for axis, (left, right) in zip(axes[1], combinations((1, 2, 3), 2), strict=True):
-        _spatial_axis(axis, mask)
-        for encoder in (left, right):
-            union = np.logical_or.reduce([lattices[encoder, kmeans] for kmeans in (1, 2, 3)])
-            _points(axis, union, color=COLORS[encoder - 1], label=f"Encoder {encoder}, all KMeans")
-        if left == 1:
-            _points(axis, lattices[1, 1], color="black", label="Initial (1,1)", size=1)
-        axis.set_title(f"Between encoders {left} and {right}")
-        axis.legend(fontsize=7, loc="upper right")
-    figure.suptitle(f"{sample_id}: internal boundary midpoints; background edges excluded")
-    paths.append(_save(figure, output / "02_boundary_overlays.png", dpi))
-
-    frequencies = {
-        window: boundary_frequency([maps[identity] for identity in MAP_IDS], mask, window)
-        for window in WINDOWS
-    }
-    frequency_path = output / "boundary_frequency.npz"
-    np.savez_compressed(frequency_path, valid_mask=mask.astype(bool),
-                        **{f"frequency_w{window}": value for window, value in frequencies.items()})
-    paths.append(frequency_path)
-    figure, axes = _figure(1, 3, height=4.6)
-    for axis, window in zip(axes[0], WINDOWS, strict=True):
-        image = axis.imshow(np.ma.masked_invalid(frequencies[window]), cmap="viridis",
-                            vmin=0, vmax=1, origin="upper", interpolation="nearest")
-        axis.set_title(f"{window} x {window}; radius {(window - 1) // 2} pixels")
-        axis.set_xlabel("Column (pixels)")
-        axis.set_ylabel("Row (pixels)")
-    figure.colorbar(image, ax=axes.ravel().tolist(), label="Fraction of 9 maps", shrink=0.8)
-    figure.suptitle(f"{sample_id}: nearby boundary frequency (descriptive, not confidence)")
-    paths.append(_save(figure, output / "03_boundary_frequency.png", dpi))
-
-    for identity in MAP_IDS[1:]:
-        pair = pair_lookup[((1, 1), identity)]
-        results = {cast(int, row["window"]): row for row in _rows(pair["boundaries"], "Boundaries")}
-        figure, axes = _figure(2, 3, height=8)
-        for row_index, (source, target, direction) in enumerate(
-            (((1, 1), identity, "a_to_b"), (identity, (1, 1), "b_to_a"))
-        ):
-            for axis, window in zip(axes[row_index], WINDOWS, strict=True):
-                _spatial_axis(axis, mask)
-                matched = lattices[source] & boundary_neighborhood(lattices[target], window)
-                unmatched = lattices[source] & ~matched
-                _points(axis, matched, color=COLORS[0], label="Matched source", size=4)
-                _points(axis, unmatched, color="#CC0077", label="Unmatched source", size=5, alpha=1)
-                _points(axis, lattices[target], color="black", label="Target", size=0.7, alpha=0.35)
-                score = _coverage_text(_record(results[window][direction], "Direction"))
-                axis.set_title(f"{source} -> {target}, w={window}\n{score}", fontsize=9)
-                axis.legend(fontsize=6, loc="upper right")
-        figure.suptitle(f"{sample_id}: initial map vs encoder {identity[0]}, KMeans {identity[1]}")
-        paths.append(_save(figure, output / f"initial_vs_e{identity[0]}_k{identity[1]}.png", dpi))
-    return paths
 
 
 def _summary_values(summary: Mapping[str, object], metric: str, group: str) -> dict[str, float]:
@@ -551,73 +472,177 @@ def _summary_values(summary: Mapping[str, object], metric: str, group: str) -> d
     return {key: cast(float, _number(value, "Sample value")) for key, value in values.items()}
 
 
-def _ecdf(axis: Axes, values: Mapping[str, float], *, label: str, color: str) -> None:
-    if values:
-        ordered = np.sort(list(values.values()))
-        axis.step(ordered, np.arange(1, len(ordered) + 1) / len(ordered), where="post",
-                  label=f"{label} (n={len(ordered)})", color=color)
-        axis.scatter(ordered, np.arange(1, len(ordered) + 1) / len(ordered), s=7, color=color)
-    else:
-        axis.plot([], [], color=color, label=f"{label} (n=0, undefined)")
+def _figure(rows: int, columns: int, *, height: float, spatial: bool) -> tuple[Figure, np.ndarray]:
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.figure import Figure
+
+    figure = Figure(figsize=(10, height))
+    FigureCanvasAgg(figure)
+    axes = figure.subplots(rows, columns, squeeze=False)
+    # Reserve the bottom band for the sample ID and shared legend/colorbar.
+    figure.subplots_adjust(left=0.025 if spatial else 0.08, right=0.98,
+                           bottom=0.22 if spatial else 0.19, top=0.98,
+                           wspace=0.04 if spatial else 0.25,
+                           hspace=0.07 if spatial else 0.22)
+    for index, axis in enumerate(axes.flat):
+        axis.text(0.02, 0.97, f"({chr(97 + index)})", transform=axis.transAxes,
+                  ha="left", va="top", fontsize=11,
+                  bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.85, "pad": 1})
+    return figure, axes
+
+
+def _spatial_axis(axis: Axes, mask: np.ndarray) -> None:
+    axis.set_xlim(-0.5, mask.shape[1] - 0.5)
+    axis.set_ylim(mask.shape[0] - 0.5, -0.5)
+    axis.set_aspect("equal")
+    axis.set_axis_off()
+
+
+def _sample_label(figure: Figure, sample_id: str) -> None:
+    figure.text(0.5, 0.165, sample_id, ha="center", va="center",
+                fontsize=15, fontweight="bold")
+
+
+def _legend(figure: Figure, axis: Axes, *, columns: int) -> None:
+    handles, labels = axis.get_legend_handles_labels()
+    figure.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0.025),
+                  ncol=columns, frameon=False, fontsize=9)
+
+
+def render_sample(
+    sample_id: str, maps: Mapping[tuple[int, int], np.ndarray], mask: np.ndarray,
+    evaluation: dict[str, object], output: Path, *, display_lookups: Mapping[
+        tuple[int, int], np.ndarray], palette: Sequence[str], dpi: int = 160,
+) -> list[Path]:
+    """Render raw maps through composed global display IDs without altering any input."""
+    from matplotlib.colors import BoundaryNorm, ListedColormap, is_color_like
+
+    if set(maps) != set(MAP_IDS) or set(display_lookups) != set(MAP_IDS):
+        raise ValueError("Publication figures require all nine maps and display lookups")
+    if type(dpi) is not int or dpi <= 0:
+        raise ValueError("DPI must be a positive integer")
+    if evaluation.get("sample_id") != sample_id:
+        raise ValueError("Figure sample_id differs from its evaluation")
+    for lookup in display_lookups.values():
+        validate_permutation(lookup)
+    if len(palette) != 9 or any(not is_color_like(color) for color in palette):
+        raise ValueError("Expected the nine saved global-fit colors, including background")
+    for identity in MAP_IDS:
+        validate_map(maps[identity], mask)
+    _sample_summary(evaluation)
+    pairs = {_pair_key(pair): pair for pair in _rows(evaluation.get("pairs"), "Pairs")}
+    if len(pairs) != 36:
+        raise ValueError("Sample figures require all 36 evaluated pairs")
+    output.mkdir(parents=True, exist_ok=True)
+    paths: list[Path] = []
+
+    figure, axes = _figure(3, 3, height=11, spatial=True)
+    # Background is masked, so it is not presented as a scientific cluster in the bar.
+    cmap = ListedColormap(palette[1:])
+    cmap.set_bad(palette[0])
+    for identity in MAP_IDS:
+        encoder, kmeans = identity
+        axis = axes[encoder - 1, kmeans - 1]
+        display = display_lookups[identity][maps[identity]]
+        image = axis.imshow(np.ma.array(display, mask=~mask.astype(bool)), cmap=cmap,
+                            norm=BoundaryNorm(np.arange(0.5, 9), 8),
+                            interpolation="nearest", origin="upper")
+        _spatial_axis(axis, mask)
+    _sample_label(figure, sample_id)
+    figure.colorbar(image, cax=figure.add_axes((0.22, 0.075, 0.56, 0.018)),
+                    orientation="horizontal", ticks=range(1, 9), label="Cluster ID")
+    paths.append(_save(figure, output / SAMPLE_FILES[0], dpi))
+
+    frequencies = {window: boundary_frequency([maps[key] for key in MAP_IDS], mask, window)
+                   for window in WINDOWS}
+    frequency_path = output / "boundary_frequency.npz"
+    np.savez_compressed(frequency_path, valid_mask=mask.astype(bool),
+                        **{f"frequency_w{w}": values for w, values in frequencies.items()})
+    paths.append(frequency_path)
+    figure, axes = _figure(1, 3, height=4.6, spatial=True)
+    for axis, window in zip(axes[0], WINDOWS, strict=True):
+        image = axis.imshow(np.ma.masked_invalid(frequencies[window]), cmap="viridis",
+                            vmin=0, vmax=1, origin="upper", interpolation="nearest")
+        _spatial_axis(axis, mask)
+    _sample_label(figure, sample_id)
+    figure.colorbar(image, cax=figure.add_axes((0.25, 0.085, 0.5, 0.022)),
+                    orientation="horizontal", label="Fraction of 9 maps")
+    paths.append(_save(figure, output / SAMPLE_FILES[1], dpi))
+    return paths
 
 
 def render_summary(summary: dict[str, object], output: Path, *, dpi: int = 160) -> list[Path]:
-    """Plot sample distributions and ARI/coverage correspondence without pair-level CI."""
+    """Render saved per-sample values; all panel definitions and counts live in captions."""
     if type(dpi) is not int or dpi <= 0:
         raise ValueError("DPI must be a positive integer")
     output.mkdir(parents=True, exist_ok=True)
-    paths: list[Path] = []
-    figure, axes = _figure(2, 3, height=7.5)
+    paths = []
+    figure, axes = _figure(2, 3, height=7.2, spatial=False)
     for row_index, group in enumerate(GROUPS):
         ari = _summary_values(summary, "ari", group)
-        for axis, window in zip(axes[row_index], WINDOWS, strict=True):
+        for column, window in enumerate(WINDOWS):
+            axis = axes[row_index, column]
             lower = _summary_values(summary, f"boundary_{window}_lower", group)
             upper = _summary_values(summary, f"boundary_{window}_upper", group)
             common = sorted(set(ari) & set(lower) & set(upper))
             x = [ari[sample] for sample in common]
             axis.vlines(x, [lower[sample] for sample in common],
                         [upper[sample] for sample in common], color="0.65", linewidth=0.8)
-            axis.scatter(x, [lower[sample] for sample in common], c=COLORS[0], s=16,
-                         label="Mean smaller directional coverage")
-            axis.scatter(x, [upper[sample] for sample in common], c=COLORS[1], s=16,
-                         label="Mean larger directional coverage")
-            axis.set_title(f"{GROUP_LABELS[group]}\nw={window}; common samples n={len(common)}",
-                           fontsize=9)
-            axis.set_xlabel("Mean pairwise ARI within sample")
-            axis.set_ylabel("Mean directional extrema within sample")
-            axis.set_xlim(-1.02, 1.02)
-            axis.set_ylim(-0.02, 1.02)
+            for values, color, label in ((lower, COLORS[0], "Smaller directional coverage"),
+                                          (upper, COLORS[1], "Larger directional coverage")):
+                axis.scatter(x, [values[sample] for sample in common], c=color, s=16, label=label)
+            axis.set(xlim=(-1.02, 1.02), ylim=(-0.02, 1.02))
+            if row_index == 1:
+                axis.set_xlabel("ARI")
+            if column == 0:
+                axis.set_ylabel("Boundary coverage")
             axis.grid(alpha=0.2)
-    axes[0, 0].legend(fontsize=6, loc="lower left")
-    figure.suptitle("ARI and boundary coverage: each point is one equally weighted sample")
-    paths.append(_save(figure, output / "01_ari_vs_boundary_coverage.png", dpi))
-
-    figure, axes = _figure(2, 3, height=7.5)
-    for row_index, side in enumerate(("lower", "upper")):
-        for axis, window in zip(axes[row_index], WINDOWS, strict=True):
-            for group, color in zip(GROUPS, COLORS[:2], strict=True):
-                _ecdf(axis, _summary_values(summary, f"boundary_{window}_{side}", group),
-                      label=GROUP_LABELS[group], color=color)
-            axis.set_title(f"w={window}; {side} directional coverage")
-            axis.set_xlabel("Mean over planned pairs within sample")
-            axis.set_ylabel("Cumulative fraction of complete samples")
-            axis.set_xlim(-0.02, 1.02)
-            axis.set_ylim(0, 1.02)
-            axis.legend(fontsize=6, loc="upper left")
-            axis.grid(alpha=0.2)
-    figure.suptitle("All complete-case sample values; common sample base across boundary scales")
-    paths.append(_save(figure, output / "02_boundary_sample_distributions.png", dpi))
-
-    figure, axes = _figure(1, 1, width=7, height=4.8)
-    axis = axes[0, 0]
-    for group, color in zip(GROUPS, COLORS[:2], strict=True):
-        _ecdf(axis, _summary_values(summary, "ari", group), label=GROUP_LABELS[group], color=color)
-    axis.set_xlim(-1.02, 1.02)
-    axis.set_ylim(0, 1.02)
-    axis.set_xlabel("Mean pairwise ARI within sample")
-    axis.set_ylabel("Cumulative fraction of complete samples")
-    axis.legend(fontsize=8, loc="upper left")
-    axis.grid(alpha=0.2)
-    figure.suptitle("ARI sample distribution; no pair-level inference")
-    paths.append(_save(figure, output / "03_ari_sample_distribution.png", dpi))
+    _legend(figure, axes[0, 0], columns=2)
+    paths.append(_save(figure, output / SUMMARY_FILES[0], dpi))
     return paths
+
+
+def captions(summary: dict[str, object]) -> dict[str, object]:
+    """Keep manuscript explanations outside the rasters, with actual sample counts."""
+    panels = []
+    for group in GROUPS:
+        ari = _summary_values(summary, "ari", group)
+        for window in WINDOWS:
+            lower = _summary_values(summary, f"boundary_{window}_lower", group)
+            upper = _summary_values(summary, f"boundary_{window}_upper", group)
+            panels.append({"panel": chr(97 + len(panels)), "group": group, "window": window,
+                           "radius_pixels": (window - 1) // 2,
+                           "sample_count": len(set(ari) & set(lower) & set(upper))})
+    counts = {metric: {group: len(_summary_values(summary, metric, group)) for group in GROUPS}
+              for metric in ("ari", *(f"boundary_{w}_{side}" for w in WINDOWS
+                                      for side in ("lower", "upper")))}
+    return {
+        "panel_order": "row-major; (a), (b), ...",
+        "main_text": {
+            "file": "summary/01_ari_vs_boundary_coverage.png", "panels": panels,
+            "caption": "M11の反復間ARIと境界一致率。上段は同一encoder内のCosine-KMeans反復9対、"
+                       "下段は異なるencoder間の27対。左から3×3、5×5、9×9近傍。"
+                       "各試料についてARIを対平均し、境界一致率は対ごとの双方向の小さい側・"
+                       "大きい側をそれぞれ平均した。線は同一試料の2値を結び、信頼区間ではない。"
+                       "右ほど分割が一致し、上ほど境界が許容距離内に対応する。"
+                       "対平均なので、特定の反復のずれは3×3マップと対別評価値で確認する。",
+        },
+        "sample_figure_templates": {
+            "01_nine_maps.png": "行はencoder反復1–3、列はCosine-KMeans反復1–3。"
+                                 "(a)が初回(1,1)。各反復を初回の元ラベルへ重なりで対応付け、"
+                                 "既存の全体fit図の表示IDと配色へ変換した。白は背景。"
+                                 "同じ行で初期化間の違いを、行をまたいで再学習を含む違いを確認する。"
+                                 "色合わせは表示専用で、化学的対応を保証しない。",
+            "03_boundary_frequency.png": "左から3×3、5×5、9×9近傍に境界が存在したマップの割合"
+                                          "（全9マップ）。許容距離は1、2、4画素。"
+                                          "1は全反復で近傍内に境界があり、0は全反復で近傍内に境界がない。"
+                                          "中間値は反復によって境界の有無が変わる場所を表す。"
+                                          "近傍幅を広げると頻度は下がらず、値の上昇だけで安定とは判断しない。"
+                                          "共有encoderを含む記述的頻度であり、信頼度や化学的対応ではない。",
+        },
+        "sample_counts": counts,
+        "appendix_selection": "既選定の代表7試料を候補とし、全49試料を保持する。"
+                              "追加例には選定理由を明記し、安定例だけで代表させない。",
+        "canonical_initial": "初回は元のglobal_v1のマップ。全体fit図が使う同seed再生成版へ"
+                             "置換しない。両者の微小なラベル差はprotocol/initial_map_audit.jsonを参照。",
+    }
