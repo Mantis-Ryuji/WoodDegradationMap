@@ -58,13 +58,42 @@ uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py ch
 | --- | --- |
 | `prepare` | CPUで入力の完了記録、重み・中心・mapの出典、hash、shape、maskを確認し、seed・反復対・評価条件を`protocol/`へ保存する。モデル・多数のmapの読み取りを伴う |
 | `cluster` | GPU 0で各encoderのfit画素表現を抽出し、第2seedを計3回fitする。全49試料を推論し、計147マップと3組の中心を保存する |
-| `evaluate` | CPUで各試料の9マップ・36対を評価し、49試料を等重みで集計する。`--include-overlap`は全36対の重なり表とVI成分も保存する |
+| `evaluate` | CPUで各試料の9マップ・36対を評価し、49試料を等重みで集計する。`--include-overlap`は全36対の重なり表とVI成分を保存し、2成分と合計VIを表にも出力する |
+| `summarize` | 保存済みの対別JSONから集計表を更新する。指標・学習・クラスタリングの再計算は行わず、入力検証とCPUでの集計・ファイル入出力を行う |
 | `report` | CPUで3種類・99枚のPNG、49試料の境界頻度配列、captionと配色対応表を保存する |
 | `check` | 出典・hash・対象数・評価と図表の対応を検証する。再現性の合否判定ではない |
 
 fit画素は既存の401,408座標を共有する。Cosine-KMeansはK=8、`max_iter=500`、`tol=1e-4`、FP32を使用する。
 全画素の表現は`--chunk-pixels`単位で処理し、中間表現をディスクへ保存しない。
 各fitの中心は保存・再ロードして中心とprobe予測の一致を確認する。
+
+## 保存済み評価から集計表を更新
+
+`evaluate --include-overlap`まで完了した出力では、保存済みのVI成分を使って更新できる。
+リポジトリrootから次を実行する。既定の対象は`global_spatial_reproducibility_v2`。
+
+```powershell
+uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py summarize
+uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py report --dpi 160 --replace
+uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py check
+```
+
+1行目で`results/evaluation/`の集計JSON・CSVを更新する。保存済みの対別JSONから読み取るため、
+ARI・境界一致率・VI成分の再計算も、encoder推論・Cosine-KMeansのfitも不要である。
+重み・中心・元マップ・対別JSONは変更しない。出典・hash・shape・maskの検証に伴う入力の読み取りは行う。
+集計表のみ必要な場合は1行目まででよい。更新後の評価との対応を図表の完了記録に反映する場合は、
+2・3行目まで実行する。
+
+`report --replace`は同じ3種類・99枚を再描画し、既存の`results/report/`を置き換える。
+図の構成・描画仕様は変わらず、VIの図は追加しない。CPUでの描画・境界頻度配列の生成と一時領域への保存を伴う。
+再集計・再描画とも一時領域で処理を完了してから出力を置き換える。
+`summarize`には`--resume`・`--include-overlap`を付けず、`--replace`は`report`だけに使用する。
+
+集計処理の確認に絞る場合のテストは次の2ファイルとする。
+
+```powershell
+uv run --no-sync pytest tests/experiments/test_spatial_reproducibility_reporting.py tests/experiments/test_spatial_reproducibility_pipeline.py -q
+```
 
 ## 中断後の再開
 
@@ -82,7 +111,9 @@ clusteringは未完了fit単位、評価・描画は未完了stage単位で再�
 `--encoders 2`のように対象encoderを限定できる。`--include-overlap`・DPI・入力先などは保存済み設定と揃える。
 `check`に`--resume`は付けない。
 
-入力・設定・code・runtimeの不整合や、成果物の破損を検出した場合は停止する。
+入力・設定・数値計算の依存コード・runtimeの不整合や、成果物の破損を検出した場合は停止する。
+完了済みの準備・クラスタリング・対別評価については、生成時のpipeline・集計コードのhashを保持し、
+集計コードの更新だけで再学習や再fitを要求しない。再集計に使ったコードは評価の`run.json`の`aggregation`に記録する。
 完了記録を手編集して通さず、エラーに示された入力や出力を確認する。
 部分生成物やOS停止時の残存stageは自動削除・上書きしない。
 
@@ -97,6 +128,25 @@ clusteringは未完了fit単位、評価・描画は未完了stage単位で再�
 - 主集計は比較群×指標ごとのcomplete-caseとする。境界一致率は予定した全対・全方向が定義された試料を使い、
   近傍幅間の対象試料を揃える。部分欠測は診断表に残し、残存対の平均で補わない。
 - 試料等重みのmacro平均・試料間分布を報告する。36対を独立標本として検定・信頼区間を計算しない。
+
+VIは次の3指標をbits単位で保存し、各指標についてencoder内9対・encoder間27対・初回基準8対を集計する。
+各試料の予定対の平均を求め、試料間は等重みでmacro平均する。初回基準8対は他の2群の内数である。
+
+| `metric`名 | 内容 |
+| --- | --- |
+| `h_b_given_a_bits` | $H(B\mid A)$：Aを基準にした分裂側の不一致 |
+| `h_a_given_b_bits` | $H(A\mid B)$：Aを基準にした合流側の不一致 |
+| `vi_bits` | $H(B\mid A)+H(A\mid B)$：合計VI。0で分割が一致し、小さいほど不一致が少ない |
+
+A・Bは保存された反復対の順序を維持する。`(encoder, Cosine-KMeans反復ID)`の辞書順でAを先に置き、
+初回基準では常にAが`(1,1)`となる。A・Bを交換すると2成分が入れ替わり、合計は変わらない。
+全対の成分平均だけから、学習によって分裂・合流のどちらが増えるかという時間的傾向は判断しない。
+VIは空間距離を含まないので、境界一致率と合わせて読む。
+
+`--include-overlap`なしの保存結果ではVIを未定義として残し、再集計時に0で補完しない。
+`pair_metrics.csv`ではARI・VIが3尺度×2方向の各行に繰り返されるため、
+試料別・全体の要約には`sample_summary.csv`・`summary.csv`を使う。
+前者の`sample_sd`は試料内の対間SD、後者の`sample_sd`は試料平均の試料間SDであり、信頼区間ではない。
 
 ## 図の読み方と論文での使い方
 
@@ -124,6 +174,7 @@ clusteringは未完了fit単位、評価・描画は未完了stage単位で再�
 図・subplotにタイトルを付けず、マップ類のpixel軸・目盛・枠線は表示しない。
 試料IDは画像群の下に配置し、表記はCosine-KMeansに統一する。説明は`captions.json`へ保存する。
 `--dpi`は描画解像度だけを変え、画素座標・許容距離には影響しない。
+本文主図のレイアウト改善は[実験計画の改訂案](design/spatial_map_reproducibility_plan.md#本文主図の改訂案未実装)にまとめる。
 
 ## 成果物
 
@@ -137,10 +188,12 @@ clusteringは未完了fit単位、評価・描画は未完了stage単位で再�
 | `checkpoints/clustering/M11/encoder_{e}/kmeans_2/centers_k8.npz` | Cosine-KMeans中心 |
 | `results/evaluation/map_sources.json` | 49×9 mapのpath・hash・shape・反復ID |
 | `results/evaluation/map_diagnostics.csv` | 有効画素数、隣接辺数、境界数・密度、占有率 |
-| `results/evaluation/pair_metrics.csv` | 49×36対×3尺度×2方向の境界一致率、分子・分母、未定義理由、ARI |
+| `results/evaluation/pair_metrics.csv` | 49×36対×3尺度×2方向の境界一致率、分子・分母、未定義理由、ARI、VIの2成分と合計 |
 | `results/evaluation/initial_reference_metrics.csv` | 初回からの8対 |
 | `results/evaluation/samples/{sample_id}.json` | 対別の値、退化flag、重なり表・VI |
 | `results/evaluation/summary.json` | 試料別要約、完全対数、除外理由、macro分布、共通試料による群差 |
+| `results/evaluation/sample_summary.csv` | 試料×3比較群×10指標の平均・最小・最大・SD、予定／観測／定義済み対数と欠測理由 |
+| `results/evaluation/summary.csv` | 3比較群×10指標の等重みmacro平均・試料間最小／最大／SD、対象試料数。3群はencoder内・encoder間・初回基準 |
 | `results/report/` | 3種類・99枚のPNG、49試料の境界頻度配列、描画条件・hash |
 | `results/report/color_matching.json` | 初回との対応・重なり表、全体fit表示IDへの変換、合成対応・palette |
 | `results/report/captions.json` | 図の役割、panelの意味、試料数、表示上の説明 |

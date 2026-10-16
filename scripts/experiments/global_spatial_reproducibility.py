@@ -16,14 +16,14 @@ from wood_degradation_map.experiments.input_validation import load_input_invento
 from wood_degradation_map.experiments.manifests import _read_json, _require, _write_json
 from wood_degradation_map.experiments.spatial_reproducibility_pipeline import (
     SpatialSources, check_evaluation, check_report, clustering_seed_plan, evaluate,
-    separate_roots, write_report,
+    resummarize, separate_roots, write_report,
 )
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "cluster", "evaluate", "report", "check"))
+    parser.add_argument("action", choices=("prepare", "cluster", "evaluate", "summarize", "report", "check"))
     parser.add_argument("--source-experiment-dir", type=Path,
                         default=root / "outputs/experiments/global_v1")
     parser.add_argument("--artifacts-dir", type=Path,
@@ -42,6 +42,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Also save overlap fractions and VI components during evaluate")
     parser.add_argument("--resume", action="store_true",
                         help="Verify and skip completed outputs")
+    parser.add_argument("--replace", action="store_true",
+                        help="Replace an existing report after successful redraw")
     args = parser.parse_args(argv)
     if args.chunk_pixels < 1 or args.dpi < 1 or args.device < 0:
         parser.error("Require positive chunk size/DPI and a nonnegative device index")
@@ -51,8 +53,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("Do not repeat encoder IDs")
     if args.include_overlap and args.action != "evaluate":
         parser.error("--include-overlap applies only to evaluate")
-    if args.resume and args.action == "check":
-        parser.error("Check does not take --resume")
+    if args.resume and args.action in ("check", "summarize"):
+        parser.error("Check and summarize do not take --resume")
+    if args.replace and (args.action != "report" or args.resume):
+        parser.error("--replace applies only to report and cannot be combined with --resume")
     args.encoders = args.encoders or [1, 2, 3]
     return args
 
@@ -78,6 +82,9 @@ def _run(args: argparse.Namespace) -> dict[str, object]:
         return {**sources.check_prepared(experiment, source, data, inventory),
                 "seed_plan": clustering_seed_plan()}
     sources.check_prepared(experiment, source, data, inventory)
+    if args.action == "summarize":
+        resummarize(experiment, source, data, inventory, sources=sources)
+        return check_evaluation(experiment, source, data, inventory, sources=sources)
     if args.action == "cluster":
         if not torch.cuda.is_available() or args.device >= torch.cuda.device_count():
             raise RuntimeError("A valid single CUDA device is required; no CPU fallback")
@@ -104,7 +111,8 @@ def _run(args: argparse.Namespace) -> dict[str, object]:
             _require(_read_json(output / "run.json")["contract"]["dpi"] == args.dpi,
                      "--dpi differs from saved report")
         else:
-            write_report(experiment, source, data, inventory, dpi=args.dpi, sources=sources)
+            write_report(experiment, source, data, inventory, dpi=args.dpi,
+                         sources=sources, replace=args.replace)
     return check_report(experiment, source, data, inventory, sources=sources)
 
 
@@ -127,6 +135,7 @@ def main() -> int:
                     "error_type": error_type.__name__ if error_type else None,
                     "wall_seconds": time.perf_counter() - started,
                     "encoders": args.encoders, "resume": args.resume,
+                    "replace": args.replace,
                     "include_overlap": args.include_overlap, "device_index": args.device,
                     "artifacts_dir": str(args.artifacts_dir.resolve()),
                 })

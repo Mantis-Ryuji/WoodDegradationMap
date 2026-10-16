@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import math
+import shutil
 import time
 from dataclasses import asdict, dataclass
 from importlib.metadata import version
@@ -35,7 +36,7 @@ from .spatial_reproducibility_metrics import WINDOWS, compare_maps, map_diagnost
 from .spatial_reproducibility_reporting import (
     SAMPLE_FILES, SUMMARY_FILES, captions, color_alignment_contract, compose_display_mappings,
     display_mappings, label_overlap_counts, load_global_display, render_sample, render_summary,
-    summarize_samples,
+    summarize_samples, summary_table_rows, vi_values,
 )
 from .spatial_reproducibility_training import load_representation, seed_plan, training_source
 from .training import runtime_record
@@ -133,6 +134,38 @@ def check_sealed(output: Path, status: str, contract: dict[str, object]) -> dict
              and all(_digest(path) == hashes[name] for name, path in files.items()),
              f"Spatial experiment artifact changed: {output}")
     return completion
+
+
+def _producer_hash(value: object) -> str:
+    _require(isinstance(value, str) and len(value) == 64
+             and all(char in "0123456789abcdef" for char in value), "Invalid producer code hash")
+    return value
+
+
+def _input_contract(
+    expected: dict[str, object], saved: dict[str, object], producers: tuple[str, ...],
+) -> dict[str, object]:
+    """Keep completed producers' identities while checking their inputs and numerical dependencies."""
+    hashes = dict(expected["code_sha256"])
+    for name in producers:
+        hashes[name] = _producer_hash(saved["code_sha256"][name])
+    return {**expected, "code_sha256": hashes}
+
+
+def _publish(stage: Path, output: Path, *, replace: bool = False) -> None:
+    """Publish a complete derived output, restoring the previous directory on rename failure."""
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if not output.exists():
+        stage.rename(output)
+        return
+    _require(replace, "Output exists; replacement must be explicit")
+    previous = stage.parent / "previous"
+    output.rename(previous)
+    try:
+        stage.rename(output)
+    except OSError:
+        previous.rename(output)
+        raise
 
 
 def _source_snapshot(source: Path, data: GlobalData, inventory: InputInventory) -> dict[str, object]:
@@ -370,8 +403,11 @@ class SpatialSources:
     def check_prepared(
         self, experiment: Path, source: Path, data: GlobalData, inventory: InputInventory,
     ) -> dict[str, object]:
-        return check_sealed(experiment / "protocol", "spatial_protocol_prepared",
-                            self._protocol_contract(experiment, source, data, inventory))
+        output = experiment / "protocol"
+        expected = self._protocol_contract(experiment, source, data, inventory)
+        saved = _read_json(output / "run.json")["contract"]
+        expected["code_sha256"] = _producer_hash(saved["code_sha256"])
+        return check_sealed(output, "spatial_protocol_prepared", expected)
 
     def _cluster_contract(
         self, experiment: Path, source: Path, data: GlobalData, encoder: int,
@@ -391,9 +427,10 @@ class SpatialSources:
         self, experiment: Path, source: Path, data: GlobalData, inventory: InputInventory, encoder: int,
     ) -> dict[str, object]:
         result, weights = cluster_paths(experiment, encoder, 2)
-        completion = check_sealed(result, "spatial_clustering_completed",
-                                           self._cluster_contract(experiment, source, data, encoder))
         run = _read_json(result / "run.json")
+        expected = _input_contract(self._cluster_contract(experiment, source, data, encoder),
+                                   run["contract"], (Path(__file__).name,))
+        completion = check_sealed(result, "spatial_clustering_completed", expected)
         path = weights / "centers_k8.npz"
         _require(run["centers_sha256"] == _digest(path) and run.get("center_roundtrip_exact") is True,
                  "Clustering centers changed")
@@ -529,16 +566,31 @@ def _flat_pair_rows(evaluations: list[dict]) -> list[dict[str, object]]:
         for pair in sample["pairs"]:
             identity = {key: pair[key] for key in (
                 "encoder_a", "kmeans_a", "encoder_b", "kmeans_b", "group", "initial_reference")}
+            vi = vi_values(pair)
             for boundary in pair["boundaries"]:
                 for direction in ("a_to_b", "b_to_a"):
                     rows.append({"sample_id": sample["sample_id"], **identity,
                                  "ari": pair["ari"]["value"],
                                  "ari_undefined_reason": pair["ari"]["undefined_reason"],
+                                 **vi, "vi_undefined_reason": (
+                                     "overlap_not_requested" if vi["vi_bits"] is None else None),
                                  "window": boundary["window"],
                                  "radius_pixels": boundary["radius_pixels"],
                                  "direction": direction, **boundary[direction],
                                  "lower": boundary["lower"], "upper": boundary["upper"]})
     return rows
+
+
+def _write_tables(output: Path, evaluations: list[dict]) -> None:
+    summary = summarize_samples(evaluations)
+    _write_json(output / "summary.json", summary)
+    samples, macro = summary_table_rows(summary)
+    _write_csv(output / "sample_summary.csv", samples)
+    _write_csv(output / "summary.csv", macro)
+    pairs = _flat_pair_rows(evaluations)
+    _write_csv(output / "pair_metrics.csv", pairs)
+    _write_csv(output / "initial_reference_metrics.csv", [row for row in pairs
+                                                         if row["initial_reference"]])
 
 
 def evaluate(
@@ -578,14 +630,9 @@ def evaluate(
             evaluations.append(evaluation)
             _write_json(stage / "samples" / f"{sample_id}.json", evaluation)
             print(f"{sample_id}: evaluated all 36 map pairs", flush=True)
-        summary = summarize_samples(evaluations)
-        _write_json(stage / "summary.json", summary)
+        _write_tables(stage, evaluations)
         _write_json(stage / "map_sources.json", {"maps": map_records})
         _write_csv(stage / "map_diagnostics.csv", diagnostics)
-        flat = _flat_pair_rows(evaluations)
-        _write_csv(stage / "pair_metrics.csv", flat)
-        _write_csv(stage / "initial_reference_metrics.csv", [row for row in flat
-                                                           if row["initial_reference"]])
         _require(_evaluation_contract(experiment, source, data, inventory,
                                       include_overlap=include_overlap, sources=sources) == contract,
                  "Evaluation inputs changed during computation")
@@ -598,15 +645,18 @@ def evaluate(
     return completion
 
 
-def check_evaluation(
+def _load_evaluation(
     experiment: Path, source: Path, data: GlobalData, inventory: InputInventory,
     *, sources: SpatialSources,
-) -> dict[str, object]:
+) -> tuple[dict[str, object], dict[str, object], list[dict]]:
     output = experiment / "results/evaluation"
-    include_overlap = _read_json(output / "run.json")["contract"]["include_overlap"]
+    run = _read_json(output / "run.json")
+    include_overlap = run["contract"]["include_overlap"]
     _require(type(include_overlap) is bool, "Invalid overlap option")
     contract = _evaluation_contract(experiment, source, data, inventory,
                                     include_overlap=include_overlap, sources=sources)
+    contract = _input_contract(contract, run["contract"],
+                               (Path(__file__).name, "spatial_reproducibility_reporting.py"))
     completion = check_sealed(output, "spatial_evaluation_completed", contract)
     records = _read_json(output / "map_sources.json")["maps"]
     _require([(row["sample_id"], row["encoder_repeat"], row["kmeans_repeat"]) for row in records]
@@ -626,9 +676,51 @@ def check_evaluation(
                  and [{key: row[key] for key in pair_plan()[0]}
                       for row in evaluation["pairs"]] == pair_plan(),
                  "Evaluation must contain all nine maps and all 36 planned pairs")
+        _require(all(("overlap" in pair) == include_overlap for pair in evaluation["pairs"]),
+                 "Saved overlap diagnostics differ from the evaluation option")
+    return completion, run, evaluations
+
+
+def check_evaluation(
+    experiment: Path, source: Path, data: GlobalData, inventory: InputInventory,
+    *, sources: SpatialSources,
+) -> dict[str, object]:
+    output = experiment / "results/evaluation"
+    completion, _, evaluations = _load_evaluation(experiment, source, data, inventory, sources=sources)
     _require(summarize_samples(evaluations) == _read_json(output / "summary.json"),
-             "Evaluation summary differs from pair records")
+             "Evaluation summary differs from current aggregation; run summarize")
+    _require((output / "sample_summary.csv").is_file() and (output / "summary.csv").is_file(),
+             "Summary tables are missing; run summarize")
     return completion
+
+
+def resummarize(
+    experiment: Path, source: Path, data: GlobalData, inventory: InputInventory,
+    *, sources: SpatialSources,
+) -> dict[str, object]:
+    """Rebuild tables from sealed pair results without fitting or recomputing map metrics."""
+    experiment, source = separate_roots(experiment, source)
+    output = experiment / "results/evaluation"
+    completion, run, evaluations = _load_evaluation(experiment, source, data, inventory, sources=sources)
+    derived = {"summary.json", "sample_summary.csv", "summary.csv", "pair_metrics.csv",
+               "initial_reference_metrics.csv", "run.json", "completion.json"}
+    started = time.perf_counter()
+    with TemporaryDirectory(prefix=".spatial-summary-", dir=experiment) as temporary:
+        stage = Path(temporary) / "evaluation"
+        shutil.copytree(output, stage)
+        for name in derived:
+            (stage / name).unlink(missing_ok=True)
+        _write_tables(stage, evaluations)
+        _require(_load_evaluation(experiment, source, data, inventory, sources=sources)[0] == completion,
+                 "Evaluation inputs changed during aggregation")
+        _write_json(stage / "run.json", {**run, "aggregation": {
+            "code_sha256": _code_hashes((Path(__file__).name, "spatial_reproducibility_reporting.py")),
+            "execution": runtime_record(torch.device("cpu")),
+            "wall_seconds": time.perf_counter() - started,
+        }})
+        updated = seal(stage, "spatial_evaluation_completed")
+        _publish(stage, output, replace=True)
+    return updated
 
 
 def _report_contract(
@@ -651,12 +743,12 @@ def _report_contract(
 
 def write_report(
     experiment: Path, source: Path, data: GlobalData, inventory: InputInventory, *, dpi: int = 160,
-    sources: SpatialSources,
+    sources: SpatialSources, replace: bool = False,
 ) -> dict[str, object]:
     experiment, source = separate_roots(experiment, source)
     _require(type(dpi) is int and dpi > 0, "DPI must be a positive integer")
     output = experiment / "results/report"
-    _require(not output.exists(), "Report exists; use --resume to verify and skip")
+    _require(replace or not output.exists(), "Report exists; use --resume to verify or --replace to redraw")
     check_evaluation(experiment, source, data, inventory, sources=sources)
     contract = _report_contract(experiment, source, data.train_sample_ids, dpi=dpi, sources=sources)
     global_display = load_global_display(source, data.train_sample_ids)
@@ -700,8 +792,7 @@ def write_report(
                                         "label_colors": "pooled overlap to initial raw IDs, then "
                                                         "saved global-fit display IDs and palette"})
         completion = seal(stage, "spatial_report_completed")
-        output.parent.mkdir(parents=True, exist_ok=True)
-        stage.rename(output)
+        _publish(stage, output, replace=replace)
     return completion
 
 

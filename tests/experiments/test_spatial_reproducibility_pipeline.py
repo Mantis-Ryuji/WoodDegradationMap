@@ -62,7 +62,10 @@ def _mock_evaluation_provenance(monkeypatch: pytest.MonkeyPatch) -> None:
         assert experiment != source
         assert set(data.train_sample_ids) == {sample.sample_id for sample in inventory.samples}
         return {"fixture": "frozen-provenance", "include_overlap": include_overlap,
-                "sample_ids": list(data.train_sample_ids), "pairs": pipeline.pair_plan()}
+                "sample_ids": list(data.train_sample_ids), "pairs": pipeline.pair_plan(),
+                "code_sha256": {"spatial_reproducibility_pipeline.py": "a" * 64,
+                                "spatial_reproducibility_reporting.py": "b" * 64,
+                                "spatial_reproducibility_metrics.py": "c" * 64}}
 
     monkeypatch.setattr(pipeline, "_evaluation_contract", contract)
     monkeypatch.setattr(pipeline, "runtime_record", lambda device: {"device": str(device)})
@@ -307,6 +310,11 @@ def test_evaluation_roundtrip_preserves_missingness_directions_and_sources(
     ).resolve())
     rows = _csv_rows(output / "pair_metrics.csv")
     assert len(rows) == 2 * 36 * 3 * 2
+    assert all(row["vi_bits"] == "0.0" for row in rows if row["sample_id"] == data.train_sample_ids[0])
+    macro = _csv_rows(output / "summary.csv")
+    assert next(row for row in macro if row["metric"] == "vi_bits"
+                and row["group"] == "initial_reference")["sample_count"] == "2"
+    assert any(row["metric"] == "h_b_given_a_bits" for row in _csv_rows(output / "sample_summary.csv"))
     assert len(_csv_rows(output / "map_diagnostics.csv")) == 18
     initial = _csv_rows(output / "initial_reference_metrics.csv")
     assert len(initial) == 2 * 8 * 3 * 2
@@ -320,6 +328,8 @@ def test_evaluation_roundtrip_preserves_missingness_directions_and_sources(
     assert all(row["value"] == "0.0" and row["matched_count"] == "0"
                and row["undefined_reason"] == "" for row in reverse)
     assert all(row["lower"] == row["upper"] == "" for row in empty_initial)
+    assert all(float(row["h_b_given_a_bits"]) > 0 and float(row["h_a_given_b_bits"]) == 0
+               for row in empty_initial)
     assert all(path.read_bytes() == before for path, before in source_before.items())
     with pytest.raises(ValueError, match="Evaluation exists"):
         pipeline.evaluate(experiment, source, data, inventory, sources=sources, include_overlap=True)
@@ -409,6 +419,49 @@ def test_report_saves_one_pooled_color_mapping_without_changing_evaluation_or_so
     assert len(figures) == 2 * len(inventory.samples) + 1
     assert all(path.read_bytes() == value for path, value in evaluation_before.items())
     assert all(path.read_bytes() == value for path, value in maps_before.items())
+    pipeline.resummarize(experiment, source, data, inventory, sources=sources)
+    pipeline.write_report(experiment, source, data, inventory, sources=sources, dpi=40, replace=True)
+    assert pipeline.check_report(experiment, source, data, inventory, sources=sources)["samples"] == 2
+    assert len(list((experiment / "results/report").rglob("*.png"))) == len(figures)
+
+
+def test_resummarize_uses_saved_pairs_and_preserves_inputs_and_metric_producer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    experiment, source, data, inventory, _, sources = _fixture(tmp_path)
+    _mock_evaluation_provenance(monkeypatch)
+    pipeline.evaluate(experiment, source, data, inventory, sources=sources, include_overlap=True)
+    output = experiment / "results/evaluation"
+    preserved = {path: path.read_bytes() for root in (source, sources.artifacts, output / "samples")
+                 for path in root.rglob("*") if path.is_file()}
+    preserved.update({path: path.read_bytes() for path in experiment.rglob("*.npz")})
+    run = _read_json(output / "run.json")
+    # A sealed summary from another aggregation version must be rebuilt from pair records.
+    (output / "summary.json").write_text('{"schema_version": 0}', encoding="utf-8")
+    (output / "summary.csv").unlink()
+    (output / "sample_summary.csv").unlink()
+    (output / "completion.json").unlink()
+    pipeline.seal(output, "spatial_evaluation_completed")
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Saved-pair aggregation must not fit or recompute map metrics")
+
+    monkeypatch.setattr(pipeline, "compare_maps", forbidden)
+    monkeypatch.setattr(pipeline, "fit_clusters", forbidden)
+    monkeypatch.setattr(pipeline, "load_representation", forbidden)
+    monkeypatch.setattr(pipeline, "_read_maps", forbidden)
+    with pytest.raises(ValueError, match="run summarize"):
+        pipeline.check_evaluation(experiment, source, data, inventory, sources=sources)
+    pipeline.resummarize(experiment, source, data, inventory, sources=sources)
+    pipeline.check_evaluation(experiment, source, data, inventory, sources=sources)
+    assert _read_json(output / "run.json")["contract"] == run["contract"]
+    assert all(path.read_bytes() == before for path, before in preserved.items())
+    assert (output / "summary.csv").is_file() and (output / "sample_summary.csv").is_file()
+    before = {path: path.read_bytes() for path in output.rglob("*") if path.is_file()}
+    monkeypatch.setattr(pipeline, "_write_tables", forbidden)
+    with pytest.raises(AssertionError):
+        pipeline.resummarize(experiment, source, data, inventory, sources=sources)
+    assert all(path.read_bytes() == value for path, value in before.items())
 
 
 def _cluster_fixture(
@@ -513,6 +566,24 @@ def test_three_fits_resume_evaluate_and_report_without_mutating_consumed_artifac
     assert pipeline.check_report(experiment, source, data, inventory, sources=sources)["samples"] == 1
     assert len(list((experiment / "results/report").rglob("*.png"))) == 2 * len(inventory.samples) + 1
     assert all(path.read_bytes() == value for path, value in before.items())
+    producer_files = {path: path.read_bytes() for root in (
+        experiment / "protocol", experiment / "results/clustering", experiment / "checkpoints")
+        for path in root.rglob("*") if path.is_file()}
+    original_digest = pipeline._digest
+    revised_code = {Path(pipeline.__file__),
+                    Path(pipeline.__file__).with_name("spatial_reproducibility_reporting.py")}
+
+    def revised_digest(path: Path) -> str:
+        return "d" * 64 if path in revised_code else original_digest(path)
+
+    with monkeypatch.context() as updated:
+        updated.setattr(pipeline, "_digest", revised_digest)
+        pipeline.resummarize(experiment, source, data, inventory, sources=sources)
+        pipeline.check_evaluation(experiment, source, data, inventory, sources=sources)
+        assert all(path.read_bytes() == value for path, value in producer_files.items())
+        revised_code.add(Path(pipeline.__file__).with_name("spatial_reproducibility_metrics.py"))
+        with pytest.raises(ValueError, match="contract/completion differs"):
+            pipeline.check_evaluation(experiment, source, data, inventory, sources=sources)
     initial = pipeline.map_path(experiment, source, "KYOw02752", 1, 1, sources=sources)
     np.savez_compressed(initial, labels_k8=np.ones((2, 4), dtype=np.uint8))
     with pytest.raises(ValueError, match="contract/completion differs"):
@@ -575,6 +646,8 @@ def test_cli_exposes_fixed_repeats_and_separate_output_defaults() -> None:
     assert module.parse_args(["report", "--dpi", "180"]).dpi == 180
     assert module.parse_args(["cluster", "--artifacts-dir", "cached"]).artifacts_dir == Path("cached")
     assert module.parse_args(["cluster", "--encoders", "1"]).encoders == [1]
+    assert module.parse_args(["summarize"]).action == "summarize"
+    assert module.parse_args(["report", "--replace"]).replace is True
 
 
 @pytest.mark.parametrize("argv", [
@@ -584,6 +657,8 @@ def test_cli_exposes_fixed_repeats_and_separate_output_defaults() -> None:
     ["cluster", "--chunk-pixels", "0"], ["report", "--dpi", "0"],
     ["cluster", "--device", "-1"], ["cluster", "--reseed-from", "original"],
     ["cluster", "--encoders", "4"],
+    ["summarize", "--resume"], ["summarize", "--include-overlap"],
+    ["cluster", "--replace"], ["report", "--resume", "--replace"],
 ])
 def test_cli_rejects_inapplicable_or_invalid_options(argv: list[str]) -> None:
     with pytest.raises(SystemExit):

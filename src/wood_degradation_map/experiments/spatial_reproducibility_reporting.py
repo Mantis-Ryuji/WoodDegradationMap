@@ -22,11 +22,13 @@ from .spatial_reproducibility_metrics import WINDOWS, boundary_frequency, valida
 
 MAP_IDS = tuple((encoder, kmeans) for encoder in (1, 2, 3) for kmeans in (1, 2, 3))
 GROUPS = ("within_encoder", "between_encoder")
-EXPECTED_PAIRS = {"within_encoder": 9, "between_encoder": 27}
+SUMMARY_GROUPS = (*GROUPS, "initial_reference")
+EXPECTED_PAIRS = {"within_encoder": 9, "between_encoder": 27, "initial_reference": 8}
+VI_METRICS = ("h_b_given_a_bits", "h_a_given_b_bits", "vi_bits")
 BOUNDARY_METRICS = tuple(
     f"boundary_{window}_{side}" for window in WINDOWS for side in ("lower", "upper")
 )
-METRICS = ("ari", *BOUNDARY_METRICS)
+METRICS = ("ari", *VI_METRICS, *BOUNDARY_METRICS)
 COLORS = ("#0072B2", "#D55E00", "#009E73")
 SAMPLE_FILES = (
     "01_nine_maps.png", "03_boundary_frequency.png",
@@ -246,12 +248,26 @@ def _pair_key(pair: Mapping[str, object]) -> tuple[tuple[int, int], tuple[int, i
     return left, right
 
 
+def vi_values(pair: Mapping[str, object]) -> dict[str, float | None]:
+    """Read both conditional entropies in bits; an absent diagnostic is not zero."""
+    if "overlap" not in pair:
+        return dict.fromkeys(VI_METRICS)
+    overlap = _record(pair["overlap"], "Overlap")
+    components = {name: _number(overlap.get(name), name) for name in VI_METRICS[:2]}
+    if any(value is None or value < 0 for value in components.values()):
+        raise ValueError("VI components must both be finite nonnegative numbers")
+    return {**components, "vi_bits": sum(cast(float, value) for value in components.values())}
+
+
 def _metric_values(
     pair: Mapping[str, object],
 ) -> tuple[dict[str, float | None], dict[str, str], dict[str, object]]:
     ari = _record(pair.get("ari"), "ARI")
-    values = {"ari": _number(ari.get("value"), "ARI value")}
+    values = {"ari": _number(ari.get("value"), "ARI value"), **vi_values(pair)}
     reasons: dict[str, str] = {}
+    for name in VI_METRICS:
+        if values[name] is None:
+            reasons[name] = "overlap_not_requested"
     if values["ari"] is None:
         reasons["ari"] = str(ari.get("undefined_reason") or "unspecified")
     windows: dict[int, Mapping[str, object]] = {}
@@ -311,7 +327,7 @@ def _sample_summary(evaluation: Mapping[str, object]) -> dict[str, object]:
     seen: set[tuple[tuple[int, int], tuple[int, int]]] = set()
     by_group: dict[str, list[tuple[Mapping[str, object], dict[str, float | None],
                                         dict[str, str], dict[str, object]]]] = {
-        group: [] for group in GROUPS
+        group: [] for group in SUMMARY_GROUPS
     }
     for pair in pairs:
         key = _pair_key(pair)
@@ -320,6 +336,8 @@ def _sample_summary(evaluation: Mapping[str, object]) -> dict[str, object]:
         seen.add(key)
         values, reasons, diagnostics = _metric_values(pair)
         by_group[cast(str, pair["group"])].append((pair, values, reasons, diagnostics))
+        if pair["initial_reference"]:
+            by_group["initial_reference"].append((pair, values, reasons, diagnostics))
     map_rows = _rows(evaluation.get("maps"), "Map diagnostics")
     map_seen: set[tuple[int, int]] = set()
     for row in map_rows:
@@ -331,11 +349,12 @@ def _sample_summary(evaluation: Mapping[str, object]) -> dict[str, object]:
             raise ValueError(f"Duplicate map diagnostics in sample {sample_id}")
         map_seen.add(key)
     groups: dict[str, object] = {}
-    for group in GROUPS:
+    for group in SUMMARY_GROUPS:
         rows = by_group[group]
         expected = EXPECTED_PAIRS[group]
         planned = [pair for pair in combinations(MAP_IDS, 2)
-                   if (pair[0][0] == pair[1][0]) == (group == "within_encoder")]
+                   if (pair[0] == (1, 1) if group == "initial_reference" else
+                       (pair[0][0] == pair[1][0]) == (group == "within_encoder"))]
         metrics: dict[str, object] = {}
         for metric in METRICS:
             defined = [cast(float, values[metric]) for _, values, _, _ in rows
@@ -416,7 +435,7 @@ def summarize_samples(evaluations: Sequence[dict[str, object]]) -> dict[str, obj
         raise ValueError("Duplicate sample_id in evaluations")
     samples.sort(key=lambda sample: cast(str, sample["sample_id"]))
     complete: dict[tuple[str, str], set[str]] = {}
-    for group in GROUPS:
+    for group in SUMMARY_GROUPS:
         for metric in METRICS:
             complete[group, metric] = {
                 cast(str, sample["sample_id"]) for sample in samples
@@ -430,7 +449,7 @@ def summarize_samples(evaluations: Sequence[dict[str, object]]) -> dict[str, obj
     for metric in METRICS:
         groups: dict[str, object] = {}
         values: dict[str, dict[str, float]] = {}
-        for group in GROUPS:
+        for group in SUMMARY_GROUPS:
             values[group] = {
                 cast(str, sample["sample_id"]): cast(
                     float, _metric_row(sample, group, metric)["mean"])
@@ -447,16 +466,46 @@ def summarize_samples(evaluations: Sequence[dict[str, object]]) -> dict[str, obj
         }
         metrics[metric] = groups
     return {
-        "schema_version": 1, "sample_ids": sorted(sample_ids), "sample_count": len(samples),
+        "schema_version": 2, "sample_ids": sorted(sample_ids), "sample_count": len(samples),
         "windows": list(WINDOWS), "samples": samples, "metrics": metrics,
         "aggregation": {
             "unit": "equal-weight sample; average over all planned pairs within each sample",
             "boundary_sample_base": "common across 3/5/9 windows and lower/upper directions",
             "missingness": "complete case per group and metric; partial values retained separately",
             "group_difference": "paired intersection of complete-case samples",
+            "vi": "bits; H(B|A) split-side, H(A|B) merge-side; A/B follow saved pair order; "
+                  "sum is VI; absent overlap diagnostics are undefined",
+            "initial_reference": "eight pairs with A=(1,1); subset of the other two groups",
             "inference": "descriptive; no pair-level significance test or confidence interval",
         },
     }
+
+
+def summary_table_rows(
+    summary: Mapping[str, object],
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    """Flatten sample and equal-weight macro summaries without duplicating boundary directions."""
+    sample_rows, macro_rows = [], []
+    for metric in METRICS:
+        unit = "bits" if metric in VI_METRICS else "dimensionless"
+        for group in SUMMARY_GROUPS:
+            identity = {"group": group, "metric": metric, "unit": unit}
+            for sample in _rows(summary["samples"], "Sample summaries"):
+                row = _metric_row(sample, group, metric)
+                reasons = _record(row["undefined_pair_reasons"], "Undefined reasons")
+                sample_rows.append({"sample_id": sample["sample_id"], **identity,
+                                    **{key: row[key] for key in (
+                                        "expected_pairs", "observed_pairs", "defined_pairs",
+                                        "complete_case", "mean", "minimum", "maximum", "sample_sd")},
+                                    "undefined_pair_reasons": ";".join(
+                                        f"{reason}:{count}" for reason, count in sorted(reasons.items()))})
+            groups = _record(_record(summary["metrics"], "Metrics")[metric], metric)
+            row = _record(groups[group], group)
+            macro_rows.append({**identity, "total_samples": summary["sample_count"],
+                               **{key: row[key] for key in (
+                                   "expected_pairs_per_sample", "sample_count", "macro_mean",
+                                   "sample_minimum", "sample_maximum", "sample_sd", "undefined_reason")}})
+    return sample_rows, macro_rows
 
 
 def _save(figure: Figure, path: Path, dpi: int) -> Path:

@@ -222,6 +222,58 @@ def test_empty_summary_is_explicitly_undefined() -> None:
             assert result["undefined_reason"] == "no_complete_case_samples"
 
 
+def test_vi_components_distinguish_split_and_merge_and_sum_in_bits() -> None:
+    coarse = np.array([[1, 1, 1, 1, 2, 2, 2, 2]], dtype=np.uint8)
+    fine = np.array([[3, 3, 4, 4, 5, 5, 5, 5]], dtype=np.uint8)
+    split = reporting.vi_values(compare_maps(coarse, fine, coarse > 0, include_overlap=True))
+    merge = reporting.vi_values(compare_maps(fine, coarse, coarse > 0, include_overlap=True))
+    assert split == {"h_b_given_a_bits": 0.5, "h_a_given_b_bits": 0.0, "vi_bits": 0.5}
+    assert merge == {"h_b_given_a_bits": 0.0, "h_a_given_b_bits": 0.5, "vi_bits": 0.5}
+
+
+def test_vi_summaries_include_initial_reference_and_keep_samples_equally_weighted() -> None:
+    _, _, first = _fixture("first")
+    _, _, second = _fixture("second")
+    for evaluation, split, merge in ((first, 0.25, 0.75), (second, 0.5, 1.0)):
+        for pair in evaluation["pairs"]:
+            pair["overlap"] = {"h_b_given_a_bits": split, "h_a_given_b_bits": merge}
+    summary = reporting.summarize_samples([first, second])
+    for group, expected in (("within_encoder", 9), ("between_encoder", 27), ("initial_reference", 8)):
+        assert summary["metrics"]["h_b_given_a_bits"][group]["macro_mean"] == 0.375
+        assert summary["metrics"]["h_a_given_b_bits"][group]["macro_mean"] == 0.875
+        assert summary["metrics"]["vi_bits"][group]["macro_mean"] == 1.25
+        assert summary["metrics"]["vi_bits"][group]["expected_pairs_per_sample"] == expected
+    samples, macro = reporting.summary_table_rows(summary)
+    assert len(samples) == 2 * 3 * len(reporting.METRICS)
+    assert len(macro) == 3 * len(reporting.METRICS)
+    initial = next(row for row in macro if row["group"] == "initial_reference" and row["metric"] == "vi_bits")
+    assert initial["unit"] == "bits" and initial["macro_mean"] == 1.25
+    second["pairs"][0].pop("overlap")
+    partial = reporting.summarize_samples([first, second])
+    for metric in reporting.VI_METRICS:
+        assert partial["metrics"][metric]["within_encoder"]["common_sample_ids"] == ["first"]
+        assert partial["metrics"][metric]["initial_reference"]["common_sample_ids"] == ["first"]
+        assert partial["metrics"][metric]["between_encoder"]["sample_count"] == 2
+    assert partial["metrics"]["ari"]["within_encoder"]["sample_count"] == 2
+
+
+def test_unrequested_vi_stays_undefined_in_tables() -> None:
+    _, _, evaluation = _fixture()
+    summary = reporting.summarize_samples([evaluation])
+    sample_rows, macro_rows = reporting.summary_table_rows(summary)
+    for row in sample_rows:
+        if row["metric"] in reporting.VI_METRICS:
+            assert row["mean"] is None and row["defined_pairs"] == 0
+            assert "overlap_not_requested" in row["undefined_pair_reasons"]
+    assert all(row["macro_mean"] is None for row in macro_rows if row["metric"] in reporting.VI_METRICS)
+
+
+@pytest.mark.parametrize("bad", [None, -0.1, float("nan"), float("inf"), True])
+def test_invalid_vi_is_not_silently_treated_as_missing(bad: object) -> None:
+    with pytest.raises(ValueError):
+        reporting.vi_values({"overlap": {"h_b_given_a_bits": bad, "h_a_given_b_bits": 0.2}})
+
+
 @pytest.mark.parametrize("failure", ["duplicate_pair", "duplicate_sample", "wrong_group",
                                      "wrong_initial", "inconsistent_extrema", "missing_window"])
 def test_malformed_evaluations_are_rejected(failure: str) -> None:
