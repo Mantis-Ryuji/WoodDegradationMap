@@ -1,0 +1,280 @@
+# M11 / K8 の表示クラスタ番号。凡例は自試料の番号を昇順で表示する。
+# 別試料の参照線は自試料の後（右側）にまとめる。下のグループ分けは補足メモ用。
+# clusters を編集して visualize_ftir.py --nir-only --overwrite で再描画する。
+# note はユーザーの補足・仮説メモであり、確定ラベルでも凡例でもない。
+# source_sample_id を省略すると、この図の試料を参照する。
+# 別試料を参照する線の凡例には source_sample_id とクラスタ番号を表示する。
+schema_version: 1
+condition: M11
+samples:
+  KYOw02702:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [6, 7]
+      note: "内部"
+    - clusters: [5]
+      note: "あて材？"
+  KYOw02707:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [6, 7]
+      note: "内部"
+    - clusters: [5]
+      note: "あて材？"
+  KYOw02708:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+  KYOw02709:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [6, 7]
+      note: "内部"
+    - clusters: [5]
+      note: "あて材？"
+  KYOw02715:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5]
+      note: "内部"
+  KYOw02716:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [6]
+      note: "内部"
+  KYOw02717:
+    - clusters: [3, 4, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6]
+      note: "内部"
+  KYOw02719:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6]
+      note: "内部"
+  KYOw02720:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6, 7]
+      note: "内部"
+  KYOw02751:
+    - clusters: [3, 4, 8]
+      note: "劣化"
+    - clusters: [1, 5]
+      note: "内部"
+  KYOw02752:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6, 7]
+      note: "内部"
+  KYOw02754:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6]
+      note: "内部"
+  KYOw02756:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6, 7]
+      note: "内部"
+  KYOw02758:
+    - clusters: [3, 4, 8]
+      note: "劣化"
+    - clusters: [6, 7]
+      note: "内部"
+  KYOw02759:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+    - clusters: [2]
+      note: "不明"
+  KYOw02760:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [6, 7]
+      note: "内部"
+  KYOw02762:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [2]
+      note: "不明"
+    - clusters: [6]
+      note: "内部"
+    - clusters: [7]
+      note: "晩材"
+  KYOw02763:
+    - clusters: [3, 4, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+  KYOw02764:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+    - clusters: [2]
+      note: "不明"
+  KYOw02766:
+    - clusters: [3, 4, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+  KYOw02767:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [5, 7]
+      note: "内部"
+  KYOw02768:
+    - clusters: [3, 4, 8]
+      note: "不明"
+    - clusters: [7]
+      note: "晩材"
+    - clusters: [6]
+      note: "健全？"
+  KYOw02769:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+  KYOw02770:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [6, 7]
+      note: "内部"
+    - clusters: [2]
+      note: "不明"
+  KYOw02771:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 7]
+      note: "内部"
+  KYOw02772:
+    - clusters: [3, 4, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+  KYOw02773:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+  KYOw02774:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6, 7]
+      note: "内部"
+    - clusters: [2]
+      note: "不明"
+  KYOw02775:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+    - clusters: [5]
+      note: "虫食い周辺"
+  KYOw02776:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5]
+      note: "内部"
+  KYOw02777:
+    - clusters: [3, 4, 8]
+      note: "劣化"
+    - clusters: [1, 5]
+      note: "内部"
+  KYOw02780:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6, 7]
+      note: "内部"
+  KYOw02783:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6, 7]
+      note: "内部"
+  KYOw02784:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6, 7]
+      note: "内部"
+  KYOw02787:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5, 7]
+      note: "内部"
+    - clusters: [6]
+  KYOw02788:
+    - clusters: [3, 4, 8]
+      note: "不明"
+    - source_sample_id: KYOw02790
+      clusters: [5, 6]
+      note: "凡例にIDも書いておいて"
+  KYOw02789:
+    - clusters: [4]
+      note: "不明"
+    - source_sample_id: KYOw02790
+      clusters: [5, 6]
+      note: "凡例にIDも書いておいて"
+  KYOw02790:
+    - clusters: [3, 4, 8]
+      note: "劣化"
+    - clusters: [5, 6]
+      note: "内部"
+  KYOw16662:
+    - clusters: [3, 4, 8]
+      note: "劣化"
+    - clusters: [1, 5, 6, 7]
+      note: "内部"
+  KYOw16666:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [6, 7]
+      note: "内部"
+  KYOw16700:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+  # 元指定の KYOw16720 はユーザー確認済みの誤記。実試料IDは KYOw16702。
+  KYOw16702:
+    - clusters: [3, 4, 8]
+      note: "劣化"
+    - clusters: [6, 7]
+      note: "内部"
+  KYOw16711:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+  KYOw16714:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+  KYOw16716:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
+  KYOw16719:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 5]
+      note: "内部"
+  KYOw16737:
+    - clusters: [3, 8]
+      note: "側面,8は劣化混じってるはず"
+    - clusters: [1, 5, 6, 7]
+      note: "内部"
+  KYOw16744:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [6, 7]
+      note: "内部"
+  KYOw16750:
+    - clusters: [3, 8]
+      note: "劣化"
+    - clusters: [1, 6, 7]
+      note: "内部"
