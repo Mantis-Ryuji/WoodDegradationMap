@@ -24,6 +24,7 @@ from matplotlib.ticker import MultipleLocator
 
 DERIVATIVE_LIMIT = 2.5e-4
 WAVENUMBER_START = 10_000.0
+SPECTRUM_WIDTH_INCHES = 13.0
 
 
 @dataclass(frozen=True)
@@ -104,13 +105,15 @@ def parse_args() -> argparse.Namespace:
 
 def save_figure(
     figure: plt.Figure, path: Path, dpi: int, description: str, *, overwrite: bool = False,
-    pad_inches: float = 0.1,
+    pad_inches: float = 0.1, crop_to_content: bool = True,
 ) -> None:
     """Save a PNG with provenance, replacing an existing file only on request."""
     try:
         with path.open("wb" if overwrite else "xb") as handle:
             figure.savefig(
-                handle, format="png", dpi=dpi, bbox_inches="tight", pad_inches=pad_inches,
+                handle, format="png", dpi=dpi,
+                bbox_inches="tight" if crop_to_content else figure.bbox_inches,
+                pad_inches=pad_inches,
                 facecolor="white",
                 metadata={"Title": path.stem, "Description": description},
             )
@@ -158,7 +161,7 @@ def render_spectrum(
     wavenumber = 1e7 / wavelength
     visible = wavenumber <= WAVENUMBER_START
     band_names = [f"band_{index:03d}" for index in range(len(wavelength))]
-    figure, axis = plt.subplots(figsize=(13, 4.6))
+    figure, axis = plt.subplots(figsize=(SPECTRUM_WIDTH_INCHES, 4.2))
     overflow_curves = []
     curve_records = []
     # Keep cross-sample reference curves on the right, after ascending local IDs.
@@ -210,15 +213,18 @@ def render_spectrum(
                   ha="right", va="top", fontsize=8, color="0.35",
                   bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.85})
     if any(record["plotted"] for record in curve_records):
+        handles, labels = axis.get_legend_handles_labels()
         axis.legend(
-            title="Cluster ID", ncol=8, loc="upper center", bbox_to_anchor=(0.5, -0.16),
-            frameon=False, handlelength=2, columnspacing=1.2, fontsize=14, title_fontsize=16,
-            borderaxespad=0, borderpad=0, labelspacing=0.25,
+            handles, labels, title="Cluster ID", ncol=len(handles), loc="upper left",
+            frameon=True, facecolor="white", edgecolor="0.85", framealpha=0.90,
+            handlelength=2, columnspacing=1.2, fontsize=14, title_fontsize=16,
+            borderaxespad=0.5, borderpad=0.4, labelspacing=0.25,
         )
     else:
         axis.text(0.5, 0.5, "No valid pseudoabsorbance spectra", ha="center",
                   va="center", transform=axis.transAxes)
-    figure.subplots_adjust(left=0.065, right=0.992, bottom=0.225, top=0.94)
+    # Fixed canvas and horizontal axes margins let the future FT-IR panel align exactly.
+    figure.subplots_adjust(left=0.07, right=0.992, bottom=0.145, top=0.94)
     save_figure(
         figure, path, dpi,
         f"{source}; {sample_id}; M11 K8 repeat 1; saved within-sample cluster means; "
@@ -226,10 +232,12 @@ def render_spectrum(
         "mode=interp); x=1e7/wavelength_nm; y remains d2A/dlambda2 in nm^-2; "
         f"x-limits={WAVENUMBER_START:g} to {wavenumber[-1]:.6f} cm^-1; "
         f"y-limits=+/-{DERIVATIVE_LIMIT}; major x-ticks=500 cm^-1; minor=100 cm^-1; "
+        f"canvas-width={SPECTRUM_WIDTH_INCHES:g} inches at {dpi} dpi; "
+        "legend=inside upper left, single row, 14 pt labels / 16 pt title; "
         f"out-of-range curves={overflow_curves}; triangles mark overflow; "
         "absent clusters omitted; no IQR. "
         f"Selected curves={json.dumps(curve_records)}.",
-        overwrite=overwrite, pad_inches=0.03,
+        overwrite=overwrite, crop_to_content=False,
     )
 
 
