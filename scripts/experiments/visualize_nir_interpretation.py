@@ -114,8 +114,8 @@ def parse_args() -> argparse.Namespace:
                         help="Generate only the requested figure group; default: summary.")
     parser.add_argument("--sample-ids", nargs="+", help="Generate only these target samples.")
     parser.add_argument(
-        "--selection", type=Path, default=Path(__file__).with_name("ftir_plot_selection.yaml"),
-        help="Reuse the sample/cluster selection and cross-sample references from the FT-IR plots.",
+        "--selection", type=Path, default=Path(__file__).with_name("nir_plot_selection.yaml"),
+        help="Editable NIR sample/cluster selection and cross-sample references.",
     )
     parser.add_argument("--dpi", type=int, default=240)
     parser.add_argument("--overwrite", action="store_true", help="Replace this script's outputs.")
@@ -497,7 +497,7 @@ def render_sample(
     summary: NirSummary, sample_id: str, selection: tuple[SelectedCurve, ...],
     path: Path, dpi: int, source: Path, *, overwrite: bool = False,
 ) -> None:
-    """Use the same saved means, selected clusters and reference curves as FT-IR NIR plots."""
+    """Plot selected saved means and any explicitly configured cross-sample references."""
     curves, records = [], []
     ordered = sorted(selection, key=lambda curve: (
         curve.source_sample_id != sample_id, curve.source_sample_id, curve.cluster,
@@ -532,7 +532,7 @@ def render_sample(
     add_legend(figure, derivative_axis)
     description = (
         f"{source}; {sample_id}; M11 K8 repeat 1; saved within-sample cluster means; "
-        "same aggregation and selected curves as outputs/ftir/nir; no across-sample averaging. "
+        "same aggregation as outputs/ftir/nir; no across-sample averaging. "
         "Pixelwise A=-log10(R); SG(window=7, polyorder=2, deriv=2, delta in nm, mode=interp); "
         "x=1e7/wavelength_nm; y remains d2A/dlambda2 in nm^-2. "
         "Derivative overview and zooms only; no title or IQR. "
