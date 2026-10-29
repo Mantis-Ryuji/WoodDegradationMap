@@ -1,20 +1,21 @@
 # ChemoMAEの特徴とケモメトリクスにおける位置づけ
 
-本書はChemoMAE v0.2.2の採用理由と、構成から言えること・評価で確かめることを整理する。
+本書はChemoMAE v0.2.2の採用理由、モデルの数学的性質、評価の範囲を説明する。
 固定条件は[実験プロトコル](design/experiment_protocol.md)、導出は[数理的補足](mathematical_notes.md)、
-文献の確認範囲は[関連研究](related_work.md)、結果の読み方は[解釈メモ](interpretation_notes.md)を参照する。
+先行研究との対応は[関連研究](related_work.md)、結果の読み方は[結果の解釈](interpretation_notes.md)を参照する。
 
 - [MAEと追加corruptionの採用理由](#1-この構成をどう捉えるか)
 - [モデルと損失](#2-実装で確認できる構成)
 - [PCA・L2正規化・SAM](#pca-comparison)
 - [TGN・shift](#spectral-augmentation)・[VRM的な解釈](#augmentation-vicinity)
-- [主張と検証範囲](#5-本研究で主張できる特徴と評価を待つ事項)
+- [評価と解釈の範囲](#claims)
 
 ## 1. この構成をどう捉えるか
 
 ChemoMAEは、状態の区分や正解ラベルをあらかじめ定めにくい材料について、帯域間の予測関係から
 スペクトルを圧縮し、状態差を探索する座標系を学ぶ役割を担う。古材NIR-HSIを実証対象とし、
-固定encoderによるクラスタマップをCVで比較し、NIRと位置対応FT-IRから領域差を解釈する計画である。
+固定encoderによるクラスタマップをCVで比較し、NIRスペクトルの特徴と空間分布を
+文献帰属・材組織・環境履歴・試料情報に対応づけて領域差を解釈する。
 研究全体の問いと証拠の対応は[研究概要](research_overview.md#research-focus)に示す。
 
 **PCAと同じく、ラベルなしで得た低次元座標を可視化・クラスタリングに使う**という用途である。
@@ -70,7 +71,8 @@ Vincentらの分類実験等はこの原理を支えるが、古材NIRで化学�
 化学成分や教師ラベルを表さない。「構造推論」も帯域間関係の推定を指し、分子構造の同定ではない。
 再構成lossはクラスタの生成・分離を直接要求しない。
 
-既定の主要比較M11対B0・B1・M00と、M00・M10・M01・M11の2×2 ablationで調べる。
+入力の直接利用B0、PCAのB1、AEのA0、denoising AEのA1、M00・M11の主要6条件と、
+M00・M10・M01・M11の2×2 ablationで調べる。
 MAEへの追加corruptionの効果をLLA（補正後）・LFRと既定診断で評価する。
 
 ## 2. 実装で確認できる構成
@@ -117,7 +119,6 @@ M00では $g$ は恒等写像、M10・M01・M11ではTGN・shift・両方を用�
 適用確率・強度は[実験プロトコル §4.1.3](design/experiment_protocol.md)に従う。
 A0は追加摂動なし・全可視で、内側の和と分母を全256チャネルへ変える。
 A1は全可視・全256チャネルのlossを維持し、入力にM11と同じTGN＋shiftを加えるdenoising AEである。
-既存7条件の結果を得た後の追加ablationとして扱う。
 
 MAE条件の各stepのlossは不可視帯域だけだが、画素・stepごとのrandom maskにより全帯域が復元対象となる。
 ただし予測自体がmaskに依存するため、mask平均した目的関数も全可視・全帯域lossとは同一でない。
@@ -210,7 +211,7 @@ $$
 後式の $W^{\mathsf T}W$ には等方性がなく、復元とcosineで各方向の重みは異なる。
 入力角度の保存もcollapse防止も保証されない。表現内の分離と退化は既定のsilhouette・occupancy等で診断し、
 どの入力差が強調・抑制されたかは、それらの指標や式だけから結論づけない。PCA側の操作の読み方は
-[解釈メモ](interpretation_notes.md#pca-snv-geometry-note)に示す。
+[結果の解釈](interpretation_notes.md#pca-snv-geometry-note)に示す。
 
 ### 3.4 SAMとの関係: 方向によるスペクトル比較の先行例
 
@@ -258,8 +259,7 @@ SNV制約を満たす生成点が実在の化学状態に対応する保証も�
 ### 4.2 提案するaugmentation: Tangent Gaussian NoiseとFractional Shift
 
 提案内容は、SNV制約を保つTGN・Fractional Shiftの定義とmasked denoisingへの組込みである。
-操作の発想は[著者解説 §3.2–3.3](https://zenn.dev/mantis_ryuji/articles/e17b4d223cd7da)、設定は
-[固定仕様](design/experiment_protocol.md)とChemoMAE v0.2.2の `SpectraAugmenter` に基づく。
+設定は[実験プロトコル](design/experiment_protocol.md)とChemoMAE v0.2.2の `SpectraAugmenter` に対応する。
 
 理想演算で $C=256$、$r=\sqrt{C-1}$、平均ゼロ・norm $r$ の入力 $x$、$u=x/r$ とする。
 TGNはGaussian方向から平均方向と半径方向を除き、接方向へ回転する。
@@ -288,18 +288,10 @@ $$
 $\lVert y\rVert_2>0$ ならSNV制約へ戻るが、同じshift幅でも角度変化は入力形状に依存する。
 実装は `eps=1e-8` で退化候補を保護し、元入力を保持する。等式の保存は理想演算についての記述である。
 
-著者記事との違いは次のとおりであり、その設定をそのまま本研究へ移さない。
-
-| 項目 | 記事 | 本研究 |
-| --- | --- | --- |
-| SNV半径 | 母標準偏差に対応する $\sqrt C$ | 標本標準偏差に対応する $\sqrt{C-1}$ |
-| TGN強度の抽選 | cosine $\rho$ の一様分布 | 角度 $\theta$ の一様分布。$\rho=\cos\theta$ でも分布は一致しない |
-| shift軸 | 波数軸の説明 | 等間隔波長grid |
-
 M11は各操作を画素ごとに確率0.5で適用し、順序をbatchごとにランダム化する。
 固定順序で常に両操作を行う構成ではない。角度制御・制約保存の導出は
 [数理的補足](mathematical_notes.md)を参照する。
-現行ablationには加法noiseや再投影なしshiftとの比較がなく、幾何保存そのものの優位性は単独に検証しない。
+加法noiseや再投影なしshiftとの比較は含まず、幾何保存そのものの優位性は単独に検証しない。
 
 <a id="augmentation-vicinity"></a>
 
@@ -336,22 +328,24 @@ $$
 保証するのはmask前の全帯域入力の制約であり、可視部分・decoder出力・実データのsupportではない。
 この制約に沿う近傍を採用する価値は、次節の比較と解釈で検討する。
 
-## 5. 本研究で主張できる特徴と、評価を待つ事項
+<a id="claims"></a>
+
+## 5. 評価と解釈の範囲
 
 | 主張・問い | 根拠と上限 |
 | --- | --- |
 | 提案する設計 | SNV制約を保つTGN・shiftをmasked denoisingへ組み込み、単一16次元単位潜在へ集約する |
-| 固定表現の利用 | 学習後のencoderとtrainでfitした中心をtestへ適用する。後段fine-tuningを要しない現行pipelineの事実 |
+| 固定表現の利用 | 古材のCVでは学習後のencoderとtrainでfitした中心をtestへ適用し、後段fine-tuningを行わない |
 | 追加corruptionの効果 | MAE群の2×2比較・交互作用をLLA（補正後）・LFRと既定診断で評価する。化学状態をより安定して反映することは仮説であり、指標や再構成lossからは保証されない |
 | 指定摂動への安定性 | LFRで割当の維持を測る。学習と同じ種類・強度の人工摂動への結果であり、実測誤差全般や化学情報保持へ外挿しない |
-| どの差が強調・抑制されたか | 現行実験の実証範囲に含めない。[数理的補足第5節](mathematical_notes.md#latent-decoder)の関係式だけでは改善機構を同定できない |
-| 化学的な対応 | NIR代表・差スペクトルと位置対応FT-IRによる解釈。FT-IRの測定設計はOpen、結果未確認 |
+| どの差が強調・抑制されたか | [数理的補足第5節](mathematical_notes.md#latent-decoder)の関係式だけでは改善機構を同定できない |
+| 化学的な対応 | NIRのSNV・疑似吸光度二次微分と空間分布を文献帰属・試料情報に対応づける。成分量や劣化機構の因果的な同定とは区別する |
 | 構成の最適性 | 層数・潜在次元・線形decoder・正規化の最適性や、未比較SSLへの優位性は扱わない |
 
 5-fold・3反復のマップ評価は[評価指標](design/evaluation_metrics.md)に従う。
 LLA・LFRだけでなくoccupancy・反復間ARI等を併読し、単一クラスタ化等の退化を区別する。補正前LLAは補足として扱う。
 Cosine-silhouetteは各表現内の幾何診断であり、化学的妥当性の共通尺度ではない。
-化学的な対応は[FT-IR計画](design/visualization_and_interpretation.md#ftir-interpretation)に基づき別途検討する。
+化学的な対応の解析手順は[可視化と解釈の仕様](design/visualization_and_interpretation.md)を参照する。
 
 比較・解釈に必要な制約は次の四つである。
 
@@ -360,27 +354,12 @@ Cosine-silhouetteは各表現内の幾何診断であり、化学的妥当性の
 - **欠測への外挿：** 全帯域SNV後にmaskするため、未測定帯域があり同じSNVを計算できない条件への対応を実証しない。
 - **比較単位：** M00対A0は入力maskとloss領域の両方が違い、B1対NNも非線形性・正規化段階等が異なる。単一要素の効果に読み替えない。
 
-### 5.1 論文で説明する貢献と、新規性の確認範囲
-
-貢献は、(1) SNV制約を保つTGN・Fractional Shiftの具体的設計、(2) masked denoisingへの統合、
-(3) 正解劣化ラベルを用いない試料単位マップ比較、(4) 古材への適用と位置対応FT-IRによる解釈、に分けて説明する。
-(4)の未実施部分は計画であり、実証済みの貢献に含めない。
-
-提案の具体性、先行研究との差、有用性は別に確認する。Denoising一般・spectral MAE・SNV幾何には既報があり、
-TGNや統合構成の網羅的な優先性調査は未完了である。「初」を検討する場合は、名称の異なる操作も含め、
-SNV後のnoiseと再正規化、接方向・角度制御、shift再投影、masked targetを照合し、検索範囲・日付・差分を残す。
-
-方法論上は「既知のSNV幾何を、学習用近傍と復元課題の設計へ結びつける」と説明できる。
-この接続が従来存在しなかったという歴史的断定は、現在の文献確認からは支持できない。
-
-## 6. 出典と確認範囲
-
-### 6.1 関連研究との対応
+## 6. 関連研究との対応
 
 [関連研究](related_work.md)は非線形PCAの用途、Denoising AEの学習原理、Raman unmixing AEの線形decoder、
 Raman SMAEのmask・クラスタリング、LeafVAEの空間マッピングを整理する。各研究の性能は本古材NIRへ外挿しない。
 
-### 6.2 実装・文献の確認範囲
-
-実装の根拠は本書のコード参照とChemoMAE v0.2.2の参照ソースである。
-文献の書誌・確認箇所・未照合範囲は[関連研究 §2](related_work.md#2-参考文献と確認範囲)に残す。
+Denoising、spectral MAE、SNVの幾何には先行研究がある。本研究は既知のSNV幾何を
+摂動とmasked denoisingの設計へ結びつけ、古材の試料単位評価と空間分布の解釈に用いる。
+文献の書誌と参照版は[参考文献](related_work.md#references)、
+実装は本書のコード参照とChemoMAE v0.2.2の参照ソースに示す。

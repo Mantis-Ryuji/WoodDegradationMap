@@ -1,49 +1,45 @@
 # ドキュメント案内
 
-研究の問い・採用理由・現行仕様・実行手順をまとめる。論文の原稿と執筆進捗は
-`C:\Users\PC_User\Python\Thesis` で管理する。
+研究の目的、解析仕様、再現手順、結果の読み方をまとめる。
 
-完了範囲と残作業は[ToDo](../ToDo.md)、既存図表は[執筆への引き継ぎ](manuscript_handoff.md)を参照する。
+## 研究と手法
 
-## 目的別の入口
+| 文書 | 内容 |
+| --- | --- |
+| [研究概要](research_overview.md) | 研究の問い、解析の構成、結果と主張の範囲 |
+| [ChemoMAEの位置づけ](chemomae_positioning.md) | masked denoising、単位潜在、アフィンdecoderの役割 |
+| [関連研究](related_work.md) | 参照手法と本研究の関係、参考文献 |
+| [結果の読み方](interpretation_notes.md) | マップ・教師なし指標・スペクトル解釈の限界 |
+| [数理的補足](mathematical_notes.md) | SNV、摂動、loss、表現幾何の導出 |
+| [数値実装の補足](numerical_implementation_notes.md) | 混合精度、学習loss、クラスタリングの数値処理 |
 
-| 目的 | 文書 | 内容 |
+## 仕様と再現手順
+
+| 解析 | 仕様 | 実行・成果物 |
 | --- | --- | --- |
-| 研究の全体像をつかむ | [研究概要](research_overview.md) | 問い、方法、証拠の対応と日英の説明文 |
-| 手法の理由を知る | [ChemoMAEの位置づけ](chemomae_positioning.md)・[関連研究](related_work.md) | 採用理由、先行研究との関係、主張の範囲 |
-| 条件と定義を確認する | [研究設計](design/README.md) | 前処理、実験条件、評価、可視化、Open事項 |
-| 実験を進める | [ToDo](../ToDo.md) → [runbook](experiment_runbook.md) | 現在の状態、残作業、CLI、再開・完了判定・保存先 |
-| Mask率補助比較を使う | [引き渡し一覧](manuscript_handoff.md#mask-rate-handoff)・[CV手順](experiment_runbook.md#mask-rate-sweep)・[全体fit手順](experiment_runbook.md#global-mask-rate) | 完了済みの25%・50%・75% OOF比較と、M11(-50)・M11-75の付録用2×7図・数値表 |
-| Raman補助実験の成果物を確認する | [Bacteria-ID計画](design/bacteria_id_experiment_plan.md)・[Table 4手順](bacteria_id_runbook.md)・[Table 5実行記録](bacteria_id_hpo_runbook.md)・[成果物整理記録](bacteria_id_artifact_reorganization_plan.md) | 新80/20 Table 4とTable 5は完了。旧60/20/20 Table 4は履歴として区別する |
-| Raman補助実験を解釈する | [Bacteria-ID解釈計画](bacteria_id_interpretation_plan.md) | Table 4・5の主張範囲、古材LLA・位置対応FT-IRとの関係、局所ラベルから面推定への将来構想 |
-| 空間マップの再現性を調べる | [補助実験計画](design/spatial_map_reproducibility_plan.md)・[専用runbook](spatial_map_reproducibility_runbook.md) | NIR-HSIと位置対応FT-IRを結ぶマップの基盤安定性。ARIと3×3・5×5・9×9近傍での境界比較。実装追加済み、実行・テストは未実施 |
-| 結果を解釈する | [解釈メモ](interpretation_notes.md) | マップ・指標・再構成lossの読み方と限界 |
-| 数理・数値処理を確認する | [数理的補足](mathematical_notes.md)・[数値実装の補足](numerical_implementation_notes.md) | 導出、混合精度、loss・inertiaの意味 |
-| 論文へ資料を渡す | [執筆への引き継ぎ](manuscript_handoff.md) | 出典、図表の扱い、原稿で確認する事項 |
+| 古材NIR-HSI | [研究設計一覧](design/README.md) | [実験手順](experiment_runbook.md)・[成果物案内](results.md) |
+| Mask率感度解析 | [実験条件](design/experiment_protocol.md)・[全体fit条件](design/visualization_and_interpretation.md#global-mask-rate) | [CV手順](experiment_runbook.md#mask-rate-sweep)・[全体fit手順](experiment_runbook.md#global-mask-rate) |
+| 空間マップ再現性 | [評価仕様](design/spatial_map_reproducibility_plan.md) | [専用手順](spatial_map_reproducibility_runbook.md) |
+| Ramanクラスタリング | [Bacteria-ID仕様](design/bacteria_id_experiment_plan.md) | [実行手順](bacteria_id_runbook.md) |
+| Raman分類 | [HPO仕様](design/bacteria_id_hpo_protocol.md) | [実行手順](bacteria_id_hpo_runbook.md)・[解釈](bacteria_id_interpretation_plan.md) |
 
-## 文書の管理
-
-- 研究条件・定義・データ契約は`docs/design/`を正とする。
-- 進捗はToDo、操作はrunbookに集約する。実測値と実行由来は`outputs/`の各成果物を参照する。
-- 保存記録で確認できる内容と、現在のコードで再実行して確認した内容を区別する。
-- 仕様の定義は該当文書に置き、重複する説明はリンクにする。
-- **Fixed**は採用済み、**Open**は未確定を表す。実装・実行・検証の完了状況とは区別する。
-- **本研究の補完条件**は、参照論文の未記載事項をこちらで具体化した採用条件を表す。原論文の実設定とは区別する。
+研究条件・計算方法・データ契約は`docs/design/`に、操作方法は各実行手順に記載する。
+実測値と実行由来は、各出力のconfig・manifest・run記録・完了記録に対応付ける。
+`data/`・`outputs/`以下はGit管理対象外であり、文書中のパスはローカルの入力・出力先を示す。
 
 ## 用語
 
 | 用語 | 本リポジトリでの意味 |
 | --- | --- |
 | raw SNV / B0 | 前処理済み256次元SNVを直接使うbaseline。センサのraw強度ではない |
-| 試料 | `KYOw...`で識別する分割・集計単位。同一原材との関係は確認できた範囲で扱う |
+| 試料 | `KYOw...`で識別する分割・集計単位。同一元部材との対応や使用時の位置関係は確定していない |
 | CVのrepeat | 同じsplit・画素集合に対する3回の学習・クラスタリング反復 |
-| 全体fitのKMeans repeat | 各条件の表現を1回のfit・学習後に固定し、K8の初期化だけを変える3反復。NN再学習のばらつきは含まない |
+| 全体fitのKMeans repeat | 各条件の表現を固定し、K8の初期化だけを変える3反復。NN再学習のばらつきは含まない |
 | draw | LFR用に各摂動を5回生成する評価摂動反復 |
 | OOF | 各試料をtrainに含めないfoldモデルから得る予測・評価 |
 | 全体fit | 全49試料からの共通抽出画素でfit・学習し、全試料を記述する解析 |
-| matching | クラスタ所属を変えずに表示番号を対応づける操作。劣化順序や共通の化学的意味を与えない |
-| 物理化学的な特徴 | 化学組成に限定せず、組織・表面性状・散乱なども含めた解釈対象。クラスタやCV指標から原因を同定したことは意味しない |
+| matching | クラスタ所属を変えずに表示番号を対応付ける操作。劣化順序や共通の化学的意味を与えない |
 | clean | 追加noise・shiftを加える前の観測。測定ノイズのない真値ではない |
 
-可視化の仕様は[OOF sanity](design/oof_sanity_visualization.md)と
-[全体fit後の可視化](design/visualization_and_interpretation.md)で使い分ける。
+OOF図のfold内B0基準の整列と、全体fit図のM00基準の整列は異なる。
+それぞれ[OOF診断図](design/oof_sanity_visualization.md)と[全体fitの可視化仕様](design/visualization_and_interpretation.md)に定義する。

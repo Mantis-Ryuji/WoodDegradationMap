@@ -28,7 +28,7 @@ Libraryの除算保護だけで有効な中心とみなさず、プロジェク�
 目的関数である平均cosine不類似度と、反復中の特定時点の記録値を混同しない。
 初期化・停止条件・epsilonは[クラスタリング仕様](design/experiment_protocol.md#augmentation-clustering)を参照する。
 
-## 3. 照合先と残る確認
+## 3. 実装と実行環境の参照先
 
 - [モデル・抽出・schedule](../src/wood_degradation_map/experiments/neural.py)、[学習](../src/wood_degradation_map/experiments/training.py)、[クラスタリング](../src/wood_degradation_map/experiments/clustering.py)。
 - [設定](../src/wood_degradation_map/experiments/config.py)、[実行記録の規約](experiment_runbook.md#artifact-records)。

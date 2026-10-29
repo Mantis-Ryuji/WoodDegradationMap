@@ -1,14 +1,12 @@
 # 関連研究・参考文献
 
-本書は[ChemoMAEの採用理由](chemomae_positioning.md)を支える文献の対応と書誌を記録する。
-確認した版・箇所は第2節に示す。網羅的な新規性調査は未完了である。
+本書は[ChemoMAEの採用理由](chemomae_positioning.md)に対応する先行研究と参考文献をまとめる。
+各文献の参照版と対象範囲を示し、古材NIR-HSIにおける本研究の評価と区別する。
 
 ## 1. 関連研究の対応
 
 構成、学習課題、表現の用途に分けて先行研究と対応づける。
 いずれも本研究と同じ前処理・構成・評価を検証したものではなく、既報の性能を古材NIRへ外挿しない。
-
-### 1.1 前例の対応表
 
 | 文献 | 本構成とつながる点 | 相違点・引用の範囲 |
 | --- | --- | --- |
@@ -22,61 +20,18 @@
 | [Jensen et al. (2024), Ramanのdenoising VAE](https://www.nature.com/articles/s41598-024-56788-7) | noise・軸方向変動などを加えたスペクトルから元の観測を復元し、表現を学ぶ | 強度と周波数軸を別に扱うVAEが基礎で、SNV制約を保つTGNとmaskを用いる本構成とは異なる |
 | [Ji et al. (2026), LeafVAE](https://doi.org/10.1016/j.compag.2026.111971) | 画素スペクトルの教師なし圧縮、潜在のクラスタリング、空間マップ化。学習済みモデルと固定クラスタ中心を新規データへ適用する | 2次元VAEと非線形decoderを使い、mask再構成ではない。葉の診断にはクラスタ構成比を入力とする教師ありrandom forestとSHAPを使う |
 
-### 1.2 構成として特に近い例: Raman unmixing AE
+Georgievらのunmixingでは、非負性や総和制約によって潜在とdecoder重みを存在比・endmemberに対応づける。
+本研究の符号を許す単位潜在とアフィンdecoderには、この物理的制約はない。
+SMAEのRamanクラスタリング比較についても、データ分割・学習条件が本研究と同一とは限らない。
+補助実験での比較条件は[Bacteria-IDプロトコル](design/bacteria_id_experiment_plan.md)を参照する。
 
-Georgievらは、Ramanスペクトルからglobalな潜在を求める非線形encoderと、biasなしの線形decoderを組み合わせる。
-Encoder候補にDense・Convolutional・Transformerを含み、**復元を線形に制約する構成上の前例**となる。
-([Georgiev et al., Methods: Autoencoder architectures / Decoder choice](https://arxiv.org/html/2403.04526v1))
+単純なdecoderの採用は表現品質の保証ではない。原MAEのlinear probingにおけるdecoder深さの結果や、
+SimMIMの位置別の線形headから、単一16次元潜在の最適性は導けない。
+本構成の有用性は[試料単位の評価](design/evaluation_metrics.md)と観測スペクトルの解釈から検討する。
 
-同研究はdecoder重みの非負性、潜在の非負性・必要に応じた総和1を課し、重みをendmember、潜在を存在比として扱う。
-本研究はSNV入力、bias、符号を許す単位潜在を使い、その物理制約を持たない。
-構成の前例と、潜在を化学成分濃度として読むための制約の違いを説明する文献として引用する。
+<a id="references"></a>
 
-### 1.3 使い方として特に近い例: Raman SMAE
-
-RenらのSMAEはスペクトルpatchを隠して復元するTransformerで、§3.2では教師なしで得た表現を
-KMeansへ渡してPCA等と比較する。**Spectral MAEを固定特徴抽出器として使う目的**に近い。
-([Ren et al., §2.2 / §3.2](https://arxiv.org/html/2504.16130v1))
-
-その比較はreference subsetが対象で、別節の教師ありfine-tuning、本研究の試料単位OOFとは条件が異なる。
-またtoken列をdecoderへ渡すため、単一16次元潜在を使う本構成とは圧縮制約が異なる。
-
-### 1.4 学習課題として近い例: Ramanのdenoising VAE
-
-Jensenらは、RamanスペクトルへGaussian noise、波長校正の変動、clippingを加え、元のスペクトルを
-復元する自己教師あり学習を行う。VAEを基礎とし、強度と周波数軸を分けて扱い、下流では潜在を
-教師あり分類器へ渡す。**スペクトルのnoise・軸方向変動からの復元を表現学習に使う前例**である。
-([Jensen et al., 2024, Introduction](https://www.nature.com/articles/s41598-024-56788-7))
-
-本研究との差はSNV制約を保つcorruption、帯域mask、単一単位潜在、古材の教師なしマッピングにある。
-直接比較はしておらず、noise・shiftからの復元学習全般を新規提案とはしない。
-
-### 1.5 解析の流れとして特に近い例: LeafVAE
-
-JiらのLeafVAEは葉HSIの各画素を教師なし再構成で2次元潜在へ圧縮し、KMeansでspectral signatureへ分け、
-割当を空間マップと葉ごとの構成比にする。トウモロコシでは学習済みモデル・固定中心を別年・遺伝子型・
-撮像条件のデータへ適用する。**表現学習、クラスタリング、マップ化、新規データ適用の流れ**が近い。
-([Ji et al., §2.3 / §3, Figs. 1–4](https://doi.org/10.1016/j.compag.2026.111971))
-
-構成は全結合の非線形encoder・decoderを持つVAEで、再構成損失とKL正則化を用いる。
-教師なしなのは表現とクラスタの獲得で、窒素量・病害等の診断は構成比を入力する教師ありrandom forestとSHAPを使う。
-SHAPによる画素への寄与は化学量の直接測定ではない。本研究のmask・単位潜在とLLA（補正後）・LFR評価とは区別する。
-([Ji et al., §2.3 / §3–4](https://doi.org/10.1016/j.compag.2026.111971))
-
-### 1.6 比較を通じて残る問い: decoderの単純さと表現の品質
-
-Decoderの単純さは本研究の採用制約であり、固定表現の品質を保証する法則ではない。
-
-原MAEのdecoder深さの比較では、encoderを固定するlinear probingに十分なdecoder深さが
-重要だったと報告されている。著者らは、decoderに再構成への特化を担わせることで、
-潜在をより抽象的に保てると解釈している。([He et al., §4.1 Decoder design](https://arxiv.org/html/2111.06377v3))
-
-画像認識での結果から本decoderを深くすべきとは導けず、SimMIMの線形headもglobalな16次元bottleneckの最適性を検証していない。
-現行構成の説明と、MAE群の比較結果は分ける。有用性は[既定評価](design/evaluation_metrics.md)と観測スペクトルの解釈で検討し、構成や再構成lossから保証しない。
-
-## 2. 参考文献と確認範囲
-
-論文本文・著者公開原稿を優先し、abstract・技術資料等に確認を限った場合は各項目に明記する。
+## 2. 参考文献
 
 ### 2.1 再構成による次元削減とdenoising
 
@@ -124,20 +79,20 @@ Decoderの単純さは本研究の採用制約であり、固定表現の品質�
 
 11. Georgiev, D. et al. (2024).
     [Hyperspectral unmixing for Raman spectroscopy via physics-constrained autoencoders](https://doi.org/10.1073/pnas.2407439121).
-    *PNAS*。構成の詳細は[著者公開原稿のMethods](https://arxiv.org/html/2403.04526v1)を確認。
+    *PNAS*。構成の説明は[著者公開原稿のMethods](https://arxiv.org/html/2403.04526v1)に基づく。
 12. Ren, P., Zhou, R.-G. & Li, Y. (2025).
     [A Self-supervised Learning Method for Raman Spectroscopy based on Masked Autoencoders](https://arxiv.org/abs/2504.16130).
     本書の構成・実験の説明は[公開原稿v1](https://arxiv.org/html/2504.16130v1)に基づく。
-    [刊行版](https://doi.org/10.1016/j.eswa.2025.128576)の全文との差分は未照合。
+    補助実験で用いる[刊行版](https://doi.org/10.1016/j.eswa.2025.128576)の報告値とは参照版を区別する。
 13. Jensen, M. N. et al. (2024).
     [Identification of extracellular vesicles from their Raman spectra via self-supervised learning](https://www.nature.com/articles/s41598-024-56788-7).
-    *Scientific Reports*, 14, 6791。公開本文Introductionのcorruption・復元targetとVAEの説明を確認。
+    *Scientific Reports*, 14, 6791。Introductionのcorruption・復元targetとVAEの説明を参照。
     noise・軸方向変動を用いるdenoising表現学習の前例として参照する。
 14. Ji, K. et al. (2026).
     [Variational autoencoder enables unsupervised leaf diagnosis via hyperspectral imaging](https://doi.org/10.1016/j.compag.2026.111971).
     *Computers and Electronics in Agriculture*, 251, 111971。
-    ユーザー提供の刊行版PDFの§2.3、§3–4、Figs. 1–4を確認。
-    画素スペクトルのVAE表現、クラスタリング、固定中心による新規データへの適用、空間マップ化を参照。
+    §2.3、§3–4、Figs. 1–4の画素スペクトルのVAE表現、クラスタリング、
+    固定中心による新規データへの適用、空間マップ化を参照。
     教師なし表現学習と、ラベルを用いる下流の診断・SHAPによる説明を区別する。
 
 ### 2.4 SNV幾何・角度比較・augmentation
@@ -145,37 +100,33 @@ Decoderの単純さは本研究の採用制約であり、固定表現の品質�
 15. Fearn, T., Riccioli, C., Garrido-Varo, A. & Guerrero-Ginel, J. E. (2009).
     [On the geometry of SNV and MSC](https://doi.org/10.1016/j.chemolab.2008.11.006).
     *Chemometrics and Intelligent Laboratory Systems*, 96(1), 22–26。
-    出版社公開abstract・Introductionを確認。SNVの幾何とscore plotの曲線状構造の先行研究として参照し、
-    TGNの優先性を示す文献とはしない。[入力球面の次元・半径](chemomae_positioning.md#snv-geometry)は本研究のSNV定義から導いた。
+    出版社公開abstract・Introductionに示されたSNVの幾何とscore plotの曲線状構造を参照。
+    [入力球面の次元・半径](chemomae_positioning.md#snv-geometry)は本研究のSNV定義から導いた。
 16. Banerjee, A., Dhillon, I. S., Ghosh, J. & Sra, S. (2005).
     [Clustering on the Unit Hypersphere using von Mises-Fisher Distributions](https://jmlr.org/papers/v6/banerjee05a.html).
     *JMLR*, 6, 1345–1382。
 17. Kruse, F. A. et al. (1993).
     [The spectral image processing system (SIPS)—interactive visualization and analysis of imaging spectrometer data](https://doi.org/10.1016/0034-4257(93)90013-N).
     *Remote Sensing of Environment*, 44(2–3), 145–163。SAMに関してENVI公式資料が挙げる文献。
-    書誌とabstractを確認し、SAMの具体的な定義・説明は次項の公式資料で確認した。
+    SAMの定義・説明は次項の公式資料を参照。
 18. NV5 Geospatial Software / Exelis Visual Information Solutions.
     [Spectral Angle Mapper](https://www.nv5geospatialsoftware.com/docs/spectralanglemapper.html)および
     [ENVI Classic Tutorial: Mapping Methods、pp. 8–9](https://www.nv5geospatialsoftware.com/portals/0/pdfs/envi/Mapping_Methods.pdf).
     SAMの角度による比較、反射率データの前提、未知のgainに対する不変性を参照。
     本研究の潜在正規化やSNV後の角度の妥当性を検証した資料ではない。
-19. Mantis-Ryuji.
-    [分光データ拡張の著者解説、§3.2 Tangent Gaussian Noise・§3.3 Fractional Shift](https://zenn.dev/mantis_ryuji/articles/e17b4d223cd7da).
-    提案者自身の操作説明であり、第三者による優先性・有用性の検証ではない。
-    SNVの分母、noise強度の抽選、入力軸の違いは[ChemoMAEの位置づけ第4.2節](chemomae_positioning.md#spectral-augmentation)に記載した。
 
 ### 2.5 測定noiseと波長方向の変動
 
-20. Hamamatsu Photonics.
+19. Hamamatsu Photonics.
     [Image sensors product selection](https://hub.hamamatsu.com/us/en/technical-notes/image-sensors/image-sensors-product-selection.html).
     メーカー技術資料。§1.2–1.3のnoise源とSNRの定義を参照。
     本研究の装置のnoise分布を測定した資料ではない。
-21. Yamamoto, S., Tsuchida, S., Urai, M., Mizuochi, H., Iwao, K. & Iwasaki, A. (2022).
+20. Yamamoto, S., Tsuchida, S., Urai, M., Mizuochi, H., Iwao, K. & Iwasaki, A. (2022).
     [Initial Analysis of Spectral Smile Calibration of Hyperspectral Imager Suite (HISUI) Using Atmospheric Absorption Bands](https://doi.org/10.1109/TGRS.2022.3190486).
     *IEEE Transactions on Geoscience and Remote Sensing*, 60, 5534215, 1–15。
     [公開本文](https://www.researchgate.net/publication/362018335_Initial_Analysis_of_Spectral_Smile_Calibration_of_Hyperspectral_Imager_Suite_HISUI_using_Atmospheric_Absorption_Bands)の
     §IとVNIR・SWIRの解析結果を参照。衛星搭載HSIの事例であり、本研究の装置への発生頻度・大きさの外挿はしない。
-22. Cui, X., Cai, W. & Shao, X. (2016).
+21. Cui, X., Cai, W. & Shao, X. (2016).
     [Glucose induced variation of water structure from temperature dependent near infrared spectra](https://pubs.rsc.org/en/content/articlehtml/2016/ra/c6ra18912a).
     *RSC Advances*, 6, 105729–105736。§3.1の温度依存の見かけのピーク移動と、重なった帯域の
     相対強度による解釈を参照。古材の劣化や一様な波長shiftの物理モデルを検証した研究ではない。

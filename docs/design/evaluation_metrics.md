@@ -1,22 +1,20 @@
 # 評価指標
 
-## 1. ステータス
-
-**Fixed / 任意の形状診断の定義はOpen**
+## 1. 適用範囲
 
 本書は指標の計算・未定義値・集計・報告を定義する。結果の読み方と解釈の限界は
-[解釈メモ](../interpretation_notes.md)、実行時の確認・記録は[実験プロトコル第11.2節](experiment_protocol.md#execution-records)を参照する。
+[結果の解釈](../interpretation_notes.md)、実行時の確認・記録は[実験プロトコル第11.2節](experiment_protocol.md#execution-records)を参照する。
 
 現行CVには画素単位の正解劣化ラベルや独立した劣化測定がなく、教師あり分類精度・IoUは評価しない。
-化学的対応の探索的解釈と[位置対応FT-IR計画](visualization_and_interpretation.md#ftir-interpretation)は別に扱う。
+化学的対応の探索的解釈は[NIR解析](visualization_and_interpretation.md#nir-interpretation)で扱う。
 
 文書では、有効近傍対のラベル一致率を「補正前LLA」、占有率による偶然一致を補正した値を「LLA」と呼ぶ。
 数式ではそれぞれ$\mathrm{LLA}^{\mathrm{raw}}$、$\mathrm{LLA}$と表す。実装・保存データのキーは、
 `lla`が補正前LLA、`adjusted_lla`がLLAに対応する。
 
-OOF集計後に定めた報告規約では、代表指標を次の優先順で報告する。
+代表指標を次の優先順で報告する。
 **LLA（補正後） → LFR(TGN+FS) → ARI → Cosine-Silhouette → Cluster Occupancy**。
-これは報告指標・図表構成の更新であり、保存済みのCV評価値とOOF snapshotを出典として使用する。
+この報告順序はOOF集計後に定めたもので、保存済みのCV評価値とOOF snapshotを出典として使用する。
 
 | 位置づけ | 指標 | 評価する性質 |
 | --- | --- | --- |
@@ -326,8 +324,6 @@ occupancyは主評価の解釈に必須とし、主表または対応する診�
 | --- | --- |
 | cluster occupancy | 空クラスタ、単一クラスタへの集中、極端な不均衡の確認 |
 | cluster size distribution | 条件間および試料間のラベル分布の確認 |
-| isolated label rate | 孤立画素の確認 |
-| small component mass rate | 小連結成分への破片化の確認 |
 | label map | 空間構造の目視確認 |
 
 試料$m$について$n_{m,k}/N_m$をoccupancyとして保存し、使用クラスタ数、最大占有率、
@@ -338,10 +334,6 @@ fold全体のoccupancyは、画素をpoolした分布と試料別occupancyのmac
 試料内が単一クラスタであることは、均質な試料では妥当な可能性がある。試料内の単一クラスタ化、
 fold全体での単一クラスタ化、train fitでの空クラスタを区別する。全試料にK個のクラスタが出ることを
 要求せず、単一クラスタ試料を良好な例として選別したり、無条件に失敗として除外したりしない。
-
-isolated label rateとsmall component mass rateは任意の形状診断とする。採用する場合は近傍・
-connectivity・小領域の閾値・分母を結果を見る前に定義する。これらの実行定義はOpenであり、
-未定義のまま主評価や採否判定に使わない。
 
 <a id="reporting"></a>
 
@@ -388,8 +380,8 @@ ARIのpaired比較は、各条件で試料内の3反復対を平均した値ど�
 
 現行の報告pipelineでは、2×2交互作用をLLA-3/5/9とLFR(TGN+FS)・LFR(TGN)・LFR(FS)について、
 同一試料・K・反復の保存済みscoreから求める。4条件・3反復すべてで定義された共通試料を用いる。
-`main_oof_v1/interaction/`には旧報告規約の補正前LLAと3種類のLFRが保存されているため、
-補正後LLAの交互作用は報告pipelineで算出してCSVへ保存する。旧交互作用をLLAへ改名して流用しない。
+`main_oof_v1/interaction/`には補正前LLAと3種類のLFRが保存される。
+補正後LLAの交互作用は報告pipelineで算出してCSVへ保存し、補正前LLAと区別する。
 paired ARIも報告pipelineで算出し、元OOF snapshotのscore・集約値・出典記録は保持する。
 
 本計画では有意差検定やp値による採否判定を行わず、効果の大きさ、試料別の差、K依存性および
@@ -401,8 +393,8 @@ paired ARIも報告pipelineで算出し、元OOF snapshotのscore・集約値・
 ### 8.3 必須の表・図
 
 本節は対象条件の全fold・全反復のCVとOOF集計が完了した報告図表に適用する。
-主8条件のOOF snapshotからA1を含む主条件の図表を再生成済みである。
-M11-25・M11・M11-75のmask率OOF図表も専用pipelineで生成済みである。
+主8条件の図表はOOF snapshotから生成する。
+M11-25・M11・M11-75のmask率OOF図表には専用pipelineを使う。
 [OOF sanity可視化](oof_sanity_visualization.md)は、
 label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様である。
 
@@ -429,8 +421,8 @@ label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様であ�
 - Hungarian matchingは表示ラベルの整列に用い、CV指標の計算には使用しない。
   [OOF sanity](oof_sanity_visualization.md)ではfold内B0基準で一致画素数を最大化する。[全体fit後](visualization_and_interpretation.md#matching-reference)ではM00のCosine-KMeansを表示基準に、試料等重みの観測SNV代表線のcosine類似度の合計を最大化する。全体fitのIoU・contingency・一致画素数も確認用に保存する。
 
-主条件の実装済み成果物はPNG 3枚・CSV 11個である。ファイル名・保存先・再生成方法は
-[runbook](../experiment_runbook.md#oof-reporting)を参照する。PNGは01〜03の連番とし、再生成時は旧PNGを整理する。
+主条件の成果物はPNG 3枚・CSV 11個である。ファイル名・保存先・再生成方法は
+[runbook](../experiment_runbook.md#oof-reporting)を参照する。PNGは01〜03の連番とする。
 
 mask率比較は3条件のLLA 3・5・9とLFR(TGN+FS)を同じ2×2構成で示すPNG 1枚と、
 全7K・K8のCSV 2個にまとめる。図の実線はmacro平均、破線・点線・一点鎖線は学習反復1・2・3とする。

@@ -9,7 +9,7 @@
 | 表現と復元 | 入力差の拡大・縮小、クラスタ内外の変動、SVD・残差とmasked lossの対応 | [5](#latent-decoder) |
 | 数値実装 | 理想式の照合と退化条件 | [6](#numerical-geometry) |
 
-記号は各節で定義し、論文側の章番号・記号とは別に管理する。
+記号は各節で定義する。
 
 <a id="snv-geometry"></a>
 

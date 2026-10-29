@@ -1,7 +1,10 @@
 # 空間マップ再現性補助実験の実行手順
 
 M11・K=8の学習済みencoder 3組と、各encoderで共通のCosine-KMeans 3 seedを使い、
-全49試料の9マップを比較する。研究条件・指標・解釈は[実験計画](design/spatial_map_reproducibility_plan.md)を参照する。
+全49試料の9マップを比較する。研究条件・指標・解釈は[再現性評価仕様](design/spatial_map_reproducibility_plan.md)を参照する。
+
+本書は保存済み成果物からの再評価手順である。現行CLIにはencoder 2・3を学習するactionがないため、
+下記の学習済み重み・再利用マップを別途用意する必要がある。これらの成果物はGitに同梱しない。
 
 ## 入力と出力
 
@@ -28,7 +31,7 @@ M11・K=8の学習済みencoder 3組と、各encoderで共通のCosine-KMeans 3 
 第1seedは1960870825、第3seedは2051198256。
 第2seedは`_seed("kmeans", "global_spatial_reproducibility", "seed2_v2", 2, 8)`から導出し、
 3encoderで共有する。整数値と衝突検査は`prepare`の出力と`protocol/run.json`で確認できる。
-encoderの学習は不要。既存の全体fitと`global_k8_3seed_v1`の集計はそのまま使用できる。
+上記の入力が揃っていればencoderの再学習は不要。全体fitと`global_k8_3seed_v1`の集計を使用できる。
 
 ## テスト
 
@@ -148,15 +151,15 @@ VIは空間距離を含まないので、境界一致率と合わせて読む。
 試料別・全体の要約には`sample_summary.csv`・`summary.csv`を使う。
 前者の`sample_sd`は試料内の対間SD、後者の`sample_sd`は試料平均の試料間SDであり、信頼区間ではない。
 
-## 図の読み方と論文での使い方
+## 図の読み方
 
 | 図 | 読み取る内容 | 用途 |
 | --- | --- | --- |
-| `summary/01_ari_vs_boundary_coverage.png` | 横軸は試料ごとの対平均ARI、縦軸は対平均の境界一致率。上段はencoder内、下段はencoder間、左から3・5・9近傍 | 本文主図1枚 |
-| `samples/{sample_id}/01_nine_maps.png` | 行がencoder、列がCosine-KMeans初期化。同じ行で初期化間、行をまたいで再学習を含む違いを見る | 全49試料。代表7試料を付録候補とする |
-| `samples/{sample_id}/03_boundary_frequency.png` | 左から3×3・5×5・9×9近傍に内部境界が存在したマップの割合 | 全49試料。代表7試料を付録候補とする |
+| `summary/01_ari_vs_boundary_coverage.png` | 横軸は試料ごとの対平均ARI、縦軸は対平均の境界一致率。上段はencoder内、下段はencoder間、左から3・5・9近傍 | 全試料の数値比較 |
+| `samples/{sample_id}/01_nine_maps.png` | 行がencoder、列がCosine-KMeans初期化。同じ行で初期化間、行をまたいで再学習を含む違いを見る | 全49試料のマップ比較 |
+| `samples/{sample_id}/03_boundary_frequency.png` | 左から3×3・5×5・9×9近傍に内部境界が存在したマップの割合 | 全49試料の境界配置 |
 
-本文主図の青は対ごとの双方向の小さい側の平均、橙は大きい側の平均で、縦線は2値を結ぶ。
+サマリ図の青は対ごとの双方向の小さい側の平均、橙は大きい側の平均で、縦線は2値を結ぶ。
 信頼区間ではない。ARIが低く境界一致率が高い点は、分割の変動に対して境界配置に共通性がある試料の候補となる。
 境界密度が高いと近接対応も増えるため、密度・占有率と3×3マップを併読する。
 対平均では特定の反復のずれが見えにくいため、個々の差は3×3マップと`pair_metrics.csv`で確認する。
@@ -174,7 +177,6 @@ VIは空間距離を含まないので、境界一致率と合わせて読む。
 図・subplotにタイトルを付けず、マップ類のpixel軸・目盛・枠線は表示しない。
 試料IDは画像群の下に配置し、表記はCosine-KMeansに統一する。説明は`captions.json`へ保存する。
 `--dpi`は描画解像度だけを変え、画素座標・許容距離には影響しない。
-本文主図のレイアウト改善は[実験計画の改訂案](design/spatial_map_reproducibility_plan.md#本文主図の改訂案未実装)にまとめる。
 
 ## 成果物
 

@@ -1,9 +1,9 @@
-# each_nir_spectra 用の M11 / K8 表示クラスタ番号。FT-IR用の選別とは独立して編集する。
+# each_nir_spectra 用の M11 / K8 表示クラスタ番号と試料間の参照曲線。
 # 凡例は自試料の番号を昇順で表示する。
-# 別試料の参照線は自試料の後（右側）にまとめる。下のグループ分けは補足メモ用。
+# 別試料の参照線は自試料の後（右側）にまとめる。グループには解釈上の注記を付ける。
 # clusters を編集して visualize_nir_interpretation.py --scope samples --overwrite で再描画する。
 # 意味づけの指定がない追加クラスタには note を付けない。
-# note はユーザーの補足・仮説メモであり、確定ラベルでも凡例でもない。
+# note は解釈・仮説の注記であり、確定ラベルでも凡例でもない。
 # source_sample_id を省略すると、この図の試料を参照する。
 # 別試料を参照する線の凡例には source_sample_id とクラスタ番号を表示する。
 schema_version: 1

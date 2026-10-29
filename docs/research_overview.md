@@ -1,124 +1,62 @@
-# 研究の目的と説明文
+# 研究概要
 
-本書は研究の問い・方法・証拠の対応と、日本語・英語の説明文をまとめる。
-固定条件は[研究設計](design/README.md)、採用理由は[ChemoMAEの位置づけ](chemomae_positioning.md)、
-進捗は[ToDo](../ToDo.md)を参照する。説明文は研究目的と方法の文案であり、実測結果の要約ではない。
-現在は主条件CV・全体fit・K8図表・PCA一枚を用いて執筆を始める段階にある。
-採用する図表と主張の対応は[執筆への引き継ぎ](manuscript_handoff.md)、未確認の物理化学的解釈は[解釈メモ](interpretation_notes.md)を参照する。
+本研究は、状態区分や教師ラベルを定めにくい材料について、スペクトルの特徴と空間分布を対応付け、
+試料間の所見を共通の基準で比較する自己教師あり表現学習を扱う。
+対象は、歴史的建築物の部材に由来する7樹種・49試料の古材NIR-HSIである。
 
 <a id="research-focus"></a>
 
-## 1. 研究の問い
+## 研究の問い
 
-### 1.1 対象とする課題と実証の範囲
+化学状態の正解ラベルを与えずに帯域間の関係を学ぶことで、状態差の探索と解釈に有用な表現を得られるかを調べる。
+状態差に関わる共通のスペクトル特徴が得られれば、その空間的な連続性が未知試料の分割にも現れるという仮説の下で、
+学習に用いない空間情報によってマップを評価する。
 
-主軸は、**状態を事前に定義しにくい材料の化学的な違いを捉える、自己教師ありスペクトル表現学習**とする。
-本研究で主成果として扱うのは、NIRスペクトルの変動を量子化し、試料表面上で空間的に一貫した
-スペクトル状態として抽出・比較することである。劣化の検出・分類・劣化度推定を主目的とはしない。
-劣化は、抽出された状態の物理化学的意味を検討する際の候補の一つとして、樹種・年輪・材組織・含水・
-表面状態・散乱などの代替説明と区別して扱う。
-研究の中心となる問いは次のように表せる。
+古材のスペクトルには、経年変化、外部露出、水分履歴、樹種、材組織、含水、表面性状、散乱などの影響が重なり得る。
+クラスタをあらかじめ定義した劣化classとみなさず、連続的・複合的な状態差を調べるための区分として扱う。
 
-> 化学状態の正解ラベルを与えずに、スペクトルの帯域間関係を学ぶことで、
-> 状態の違いを探索・解釈できる表現を得られるか。
+## 方法
 
-状態区分の根拠が十分でなく、何を区別するか自体が探索課題となる場合を対象とする。
-化学状態は連続的・複合的かもしれず、クラスタを既存の離散classとは仮定しない。
-「化学状態を捉える」とは組成・構造に関わる違いが表現にどう現れるかを別の観測から解釈することで、
-潜在軸を成分・濃度として同定することではない。
+1. 試料領域を抽出し、反射率変換、波長範囲の選択、等間隔256点への補間、SNV変換を行う。
+2. ChemoMAEにより、画素ごとのスペクトルから16次元の単位潜在ベクトルを学ぶ。SNVの平均・ノルムを保つTGN・FSを加え、可視帯域からマスク帯域の摂動前の値を復元する。
+3. 学習済みencoderへ追加摂動なし・全帯域可視で入力し、Cosine-KMeansによる割当を画像座標へ戻す。
+4. 試料単位CVでマップの性質を比較し、全体fitのマップと観測NIRスペクトルから領域差を解釈する。
 
-古材NIR-HSIでは劣化・樹種・組織・含水・表面状態などの変動が重なり得る。
-ここから低次元座標を学び、スペクトル群の表面分布を調べる。現行比較の一般化範囲は古材の未知試料である。
-他材料・別測定条件への適用には、SNVで残す情報、corruptionの妥当性、化学的対応の根拠を改めて検討する。
+Encoderは1画素のスペクトルだけを受け取り、座標・近傍画素を用いない。
+Decoderは単一の潜在から全帯域を復元するアフィン写像であり、潜在を化学成分の濃度として拘束しない。
+構成の理由は[ChemoMAEの位置づけ](chemomae_positioning.md)、計算条件は[研究設計](design/README.md)に示す。
 
-### 1.2 提案する学習課題と解析の流れ
+## 評価と解析
 
-手法上の中心は、**SNV制約を保つTGN・Fractional Shiftをmasked reconstructionへ組み込むこと**である。
-Random maskもdenoisingのcorruptionと捉え、欠落に変形を追加する効果をMAE群で検討する。
-追加摂動前の観測を復元する課題が、状態差の探索に有用な表現を促すことを期待する。
+| 解析 | 目的と証拠 |
+| --- | --- |
+| 5-fold CV・3反復 | 学習に含めない試料で、入力直接利用・PCA・AE・denoising AE・ChemoMAEの分割を比較する |
+| LLA | クラスタ占有率を保ったランダム配置での偶然一致を補正し、近傍ラベルの空間的一貫性を測る |
+| LFR | TGN・FSによる指定摂動の前後で、固定モデル・固定中心への割当が変わる割合を測る |
+| 補助診断 | ARIによる反復間の分割再現性、cosine-silhouetteによる分離、使用クラスタ数・最大占有率による退化を確認する |
+| 全体fit | 全49試料を共通の表現とクラスタ中心で記述し、主要6条件・K8の領域分布を比較する |
+| 空間マップ再現性 | M11の3 encoder×3 KMeans初期化について、領域分割と境界配置の共通性を調べる |
+| NIR解釈 | 観測スペクトルと疑似吸光度の二次微分を、文献帰属・空間分布・試料情報に照らして解釈する |
+| Raman補助実験 | Bacteria-IDを別途学習し、保留スペクトルのクラスタリングと、教師ありfine-tuningによる分離株分類を調べる |
 
-| 研究内の役割 | 方法・観測 | 答える問い |
-| --- | --- | --- |
-| 表現を学ぶための提案 | SNV制約を保つTGN・shiftとmasked denoising | 帯域補完と追加摂動からの復元を学ぶことで、利用時の表現とマップがどう変わるか |
-| 表現を領域へ対応づける | CLS由来の単一単位潜在、Cosine-KMeans、空間マップ | 学習したスペクトル群が試料表面のどこに分布するか |
-| マップの性質を比較する | 試料単位CV、baseline・ablation、LLA（補正後）・LFR(TGN+FS)・ARI・Cosine-Silhouette・Cluster Occupancy | 未知試料でどの程度空間的にまとまり、指定摂動や学習反復でどう変わるか。退化やtrade-offはあるか |
-| 化学的な意味を検討する | NIRの代表・差スペクトル、試料情報、位置対応FT-IRの計画 | 分割された領域の差を化学状態とどう対応づけられるか。劣化以外の説明は何か |
+Mask率25%・50%・75%は感度解析として扱い、主条件50%の選び直しには用いない。
+CVの学習反復と、表現を固定した全体fitのKMeans初期化反復は区別する。
+詳細は[指標の定義](design/evaluation_metrics.md)と[成果物案内](results.md)を参照する。
 
-TGN・shiftの効果は、主要比較とMAE4条件の2×2比較・交互作用を既定指標で評価する。
-補助実験ではM11のmask率25%・50%・75%を比較し、主条件50%の結果を再利用してmask率依存性を確認する。
-主条件の置換や最良mask率の選択には使わない。
+## 論文の結果と解釈の範囲
 
-### 1.3 証拠から答えられること
+古材49試料のOOF評価では、ChemoMAEによる分割は入力直接利用やPCAより高い空間的一貫性を示した。
+全帯域復元からマスク帯域予測への変更による改善は、追加摂動による上積みより一貫していた。
+指定摂動に対する割当の安定化がLLAの向上を伴わない条件もあり、両者を別の性質として評価する。
 
-CVで比較できるのはマップの性質であり、化学的な意味は別の観測から検討する。
-例えば、補正前LLAが高くてもクラスタが一つへ集中していれば状態差を捉えやすくなったとは言えず、
-LFRが低くても化学的に重要な差を保持したとは限らない。逆に、一部領域のFT-IRで差が見つかっても、
-全画素の劣化分類精度や未知試料での性能が示されたことにはならない。
+全体fitでは、材組織や外部露出面に対応する分布を整理し、反復による領域・境界の共通性を確認した。
+NIRの特徴と空間分布を既報・部材情報に結び付け、経年変化と水の関与を考慮した内部劣化モデル、
+光劣化・侵食・溶脱と内部への水輸送・二次反応を考慮した表面劣化モデルを仮説として提案した。
+これらは観測に基づく探索的な解釈であり、反応過程や因果関係を実証したものではない。
 
-結果は「どの条件で、どの性質が変わったか」と「その領域差をどこまで化学的に解釈できたか」を対応づけて報告する。
-改善が限定的な場合や化学的対応が不明な場合も、その範囲を研究の結論に含める。
-現行の指標比較だけから、特定の入力差の選択的な強調・抑制や、それが指標改善を引き起こした機構を主張しない。
+Raman補助実験は、NIR以外のスペクトルからも識別に有用な表現を別途学習できることを示す。
+古材の学習済みモデルをRamanへ転用した実験ではなく、古材の化学的帰属の正しさを直接検証するものでもない。
 
-## 2. 論文・発表向けの説明文
-
-以下の3文案は第1節と同じ問い・提案・証拠の範囲を、用途に応じて書き分けたものである。
-方法と期待を説明する文案として用いる。結果の記述には既存CV・全体fitの成果物を参照し、
-未実施のFT-IRや未確認の化学的帰属を実証済みの内容へ書き換えない。
-
-### 2.1 日本語の短い説明
-
-> 状態の区分や正解ラベルを事前に定めにくい材料から、化学的な違いを捉えるスペクトル表現の学習を目指す。
-> SNVの幾何的制約を保つTangent Gaussian NoiseとFractional Shiftをマスク再構成へ組み込み、
-> 欠落・変形を与えた観測からの復元を通じて、状態差の探索に有用な座標系の獲得を目指す。
-> 古材NIR-HSIを実証対象に、得られた表現を教師なしでマッピングし、試料単位CVで空間的一貫性・摂動安定性・反復間再現性を比較する。
-> 化学的な意味はNIRスペクトルと位置対応FT-IRから検討する計画であり、他材料への有効性は今後の検証課題とする。
-
-### 2.2 日本語の詳しい説明
-
-> 本研究は、状態の区分や正解ラベルを事前に定めにくい材料に対し、化学状態の違いを探索・解釈するための
-> 自己教師ありスペクトル表現学習を検討する。可視帯域から隠した帯域を予測するマスク再構成を基礎とし、
-> SNV後の平均ゼロ・一定norm制約を保つTangent Gaussian NoiseとFractional Shiftを入力へ加える。
-> 復元targetには追加摂動前の観測を用い、欠落・変形からの復元を通じて、化学状態を反映する帯域間関係の
-> 学習を促すことを期待する。Transformer encoderは画素ごとのスペクトルをCLS由来の単一16次元単位ベクトルへ
-> 集約し、アフィンdecoderによる再構成を学ぶ。実証対象には、画素単位の正解劣化ラベルがない古材NIR-HSIを用いる。
-> 学習後は全帯域を可視としてencoderを固定し、表現のクラスタリングから試料表面の領域マップを得る。
-> 試料単位のheld-out評価では、raw SNV、PCA、AE、MAEとの比較とaugmentationのablationにより、
-> マップの空間的一貫性、指定摂動への安定性、反復間再現性を、占有率やクラスタ分離の診断と併せて調べる。
-> さらに、NIRの代表・差スペクトルと、クラスタの位置に対応するFT-IR測定によって、
-> 領域間の差を化学的に解釈する計画である。教師なし指標による比較と局所的な化学的観測を区別し、
-> 学習した表現がどのような状態差の探索に有用か、その根拠と限界を明らかにする。
-> 他材料への有効性は、この古材での実証とは分けて検証すべき課題として扱う。
-
-### 2.3 英語での短い説明
-
-> We investigate self-supervised spectral representation learning to capture chemical-state variation
-> in materials for which state categories or ground-truth labels are difficult to define in advance.
-> We combine masked reconstruction with Tangent Gaussian Noise and Fractional Shift,
-> which preserve the zero-mean and constant-norm constraints of SNV spectra. The model predicts the
-> original observed spectrum at masked channels from corrupted visible bands through a single
-> unit-norm latent vector and an affine decoder. We hypothesize that this task encourages
-> representations useful for exploring chemical-state differences. Aged-wood near-infrared hyperspectral
-> imaging serves as the empirical case study. The frozen encoder is applied to fully visible spectra
-> for clustering and spatial mapping. Sample-level held-out comparisons
-> assess spatial coherence, stability under specified perturbations, and repeatability, alongside
-> occupancy and geometric diagnostics. Spatially matched FT-IR measurements are planned to support
-> chemical interpretation of selected regions. These complementary observations will be used to
-> examine the utility and limits of the learned representation; the unsupervised metrics alone
-> do not establish chemical validity or degradation-detection accuracy. Transfer to other materials
-> remains to be evaluated.
-
-## 3. 説明を支える根拠と論文への展開
-
-### 3.1 採用理由と関連研究の役割
-
-MAE・追加corruption・単位潜在の採用理由は[ChemoMAEの位置づけ](chemomae_positioning.md)で説明する。
-利用目的（非線形PCA）、学習課題（denoising・MAE）、構成（Raman unmixing AE）、解析手順（LeafVAE）に分けた
-文献との対応と確認範囲は[関連研究](related_work.md)に集約する。
-
-### 3.2 説明順序と本文・付録の分担
-
-材料側の課題、表現学習、CV比較、化学的解釈の順を基本とする。投稿先と最終的な強調点はOpenであり、
-木材・文化財向けの領域差、分光・ケモメトリクス向けの摂動設計のどちらを厚くしても、主要比較・反例・trade-offは保持する。
-
-本文はSNV・TGN・shift・targetとloss、クラスタリング・LLA（補正後）・LFRの意味を説明し、導出・数値処理・再現詳細を付録で支える。
-具体的な掲載位置と執筆状況は外部の論文執筆先で管理する。資料・図表・未確認事項は[執筆への引き継ぎ](manuscript_handoff.md)を参照する。
+LLA・LFR・ARIは化学状態の正解との一致を測らない。全体fitは未知試料の性能評価ではなく、
+同一元部材への由来や使用時の位置関係が確定していない試料も含むため、CVは試料IDを単位とする範囲で解釈する。
+詳しい留保は[結果の読み方](interpretation_notes.md)にまとめる。

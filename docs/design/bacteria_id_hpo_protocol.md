@@ -1,6 +1,6 @@
-# Bacteria-ID Table 5: five-fold CV and final training
+# Bacteria-ID Table 5：5-fold CVと最終学習
 
-Table 4と事前学習は[Bacteria-ID実験計画](bacteria_id_experiment_plan.md)に従う。
+Table 4と事前学習は[Bacteria-ID実験仕様](bacteria_id_experiment_plan.md)に従う。
 Table 5では既存のreference30事前学習checkpointを使い、M11で分類学習の設定を
 選んでから、M00/M11の両方へ同じ設定を適用する。SMAE等の行は出版版Table 5の
 報告値を引用する。
@@ -45,9 +45,9 @@ Optunaの単一studyで異なる設定100件を上限として探索した。最
 以後はTPE提案とし、初期30件には$k=0,\ldots,8$を各3回以上含めた。
 同じ設定が再提案された場合は学習せずに棄却し、繰り返し重複するときは
 未評価設定をランダムに補充する。実際には64件の異なる設定が完了し、
-ユーザー指定で**先に完了した60件**を設定選択の対象とした。残り4件と未完了trialは
-選択に使わず、100件を完走したとは記載しない。
-同点の場合は先に完了したtrialを選ぶ。testは探索と設定選択に使用しない。
+**完了設定をtrial番号順に並べた先頭60件**を設定選択の対象とした。上限100件に対する
+途中確定であり、残り4件と未完了trialは選択に使わず、実行記録として保存する。
+同点の場合はtrial番号が小さい設定を選ぶ。testは探索と設定選択に使用しない。
 foldごとの分割index、設定、epoch 50のAccuracy、実行条件を保存する。
 
 ## 全件学習とtest
@@ -59,8 +59,7 @@ foldごとの分割index、設定、epoch 50のAccuracy、実行条件を保存�
 別に配布されたtest 3,000件を各runで一度採点する。
 
 Table 5にはM00/M11の5 seed平均Accuracy ± t分布による95%信頼区間半幅を
-w/ pretraining列へ追加する。個別seed値と完了64設定の5-fold値を保存し、
-採用設定の選択範囲が最初の60件であることを主表に明記する。
+w/ pretraining列へ掲載する。個別seed値、fold別の探索結果、設定選択の対象範囲を保存する。
 共通設定はM11のvalidationで最適化されたものであり、M00にとっての最適設定を
 探索したものではない。M00/M11間の比較と文献値による位置づけではこの点を明記する。
-Table 5の事前学習・split・HPO・分類・checkpointは新80/20 Table 4から独立に維持する。
+Table 5の事前学習・split・HPO・分類・checkpointはTable 4から独立している。

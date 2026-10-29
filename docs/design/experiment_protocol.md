@@ -1,14 +1,13 @@
 # 実験プロトコル
 
-## 1. ステータス
+## 1. 適用範囲
 
-主実験・mask率補助実験の研究条件は**Fixed**とする。
-第11.2節は実行前の確認・記録事項である。
+本書は、主実験・mask率補助実験の研究条件と実行時の記録を定義する。
 
 前処理とraw SNVの定義は[前処理仕様](preprocessing.md)に従う。
 
 実行環境はChemoMAE v0.2.2とする。各runの設定・環境・source hashを成果物に記録する。
-進捗は[ToDo](../../ToDo.md)、成果物の確認方法は[runbook](../experiment_runbook.md)を参照する。
+成果物の確認方法は[runbook](../experiment_runbook.md)を参照する。
 
 - [CV・seed・画素抽出](#cv-design)
 - [条件・表現・学習設定](#conditions)と[計画比較](#planned-comparisons)
@@ -31,8 +30,8 @@ MAEとaugmentationの採用理由は[ChemoMAEの位置づけ](../chemomae_positi
 
 mask率は提案条件の感度解析とし、最適化の主題にしない。
 CV指標は化学的な表現品質や劣化検出精度を直接測らない。劣化との対応は、マップ・代表／差スペクトル・
-試料情報に基づく探索的解釈とする。[位置対応FT-IR](visualization_and_interpretation.md#ftir-interpretation)は
-その解釈を深める別の計画で、詳細設計はOpen。現行CVの条件・指標・splitは変更しない。
+試料情報と文献帰属に基づく[NIRスペクトルの探索的解釈](visualization_and_interpretation.md#nir-interpretation)とする。
+化学的解釈に合わせてCVの条件・指標・splitを変更しない。
 
 <a id="cv-design"></a>
 
@@ -117,7 +116,7 @@ seed計画は乱数管理の契約であり、後続の学習・共通評価摂�
 800 epochで249,600または256,000予定更新/runとなる。
 1024の倍数なので、この$q$では`drop_last=True`でも端数除外が発生しない。
 
-この$q$は800 epoch・105学習の計算量と試料ごとの画素数を考慮して事前固定した値であり、
+この$q$は800 epochの学習の計算量と試料ごとの画素数を考慮して事前固定した値であり、
 精度や希少領域の捕捉率を検証して最適化した値ではない。画素を増やしても独立な試料数は増えない。
 試料集合や前処理データを変更した場合は、`sample_quality.parquet`の`saved_pixel_count`で
 抽出可能性を再確認する。test評価には引き続き全有効画素を使う。
@@ -153,7 +152,7 @@ A0・A1はChemoMAE v0.2.2の全領域再構成lossを使用する。
 `ChemoMAE(n_mask=0)`と`TrainerConfig(loss_region="all")`を組み合わせ、
 全パッチをencoderへ入力してclean targetの全スペクトルに再構成lossを計算する。
 A1はM11と同じTGN＋shiftを同じ強度・各適用確率0.5で入力に加える。targetは追加摂動前のclean SNVとする。
-A1は2026-09-22に既存7条件の結果を得た後で追加したablationであり、当初からの事前計画条件とは区別する。
+A1を含む比較は既存7条件の結果を得た後のablationであり、事前計画した検証とは区別する。
 M00を含むMAE条件では`loss_region="masked"`を使用する。
 本書の「標準MAE」M00は、本研究で共通のChemoMAE構成を用いたaugmentationなしの対照を指す。
 原MAE論文の画像用architectureを再現した条件という意味ではない。
@@ -170,7 +169,7 @@ augmentationの採用値・固定根拠は第4.1.3節に示す。
 
 <a id="representations"></a>
 
-#### 4.1.1 表現次元とL2正規化（Fixed）
+#### 4.1.1 表現次元とL2正規化
 
 B1のPCA成分数と、A0・A1・すべてのMAE条件の`latent_dim`を16に固定する。
 mask率補助実験および全体学習でも同じ16次元を使用する。B0は256次元の入力空間baselineとする。
@@ -224,7 +223,7 @@ silhouetteを各表現空間の診断とする方針は維持する。SNV入力�
 
 <a id="model-architecture"></a>
 
-#### 4.1.2 ChemoMAEの構成と初期化（Fixed）
+#### 4.1.2 ChemoMAEの構成と初期化
 
 Encoderと線形1層decoderを共通構成とし、初期化はChemoMAE v0.2.2の既定動作を採用する。
 
@@ -236,8 +235,8 @@ Encoderと線形1層decoderを共通構成とし、初期化はChemoMAE v0.2.2�
 | `num_layers` | 8 |
 | `dim_feedforward` | 1024 |
 | `dropout` | 0.0。全学習条件で共通 |
-| `decoder_num_layers` | 1（線形写像、Fixed） |
-| `latent_dim` / `latent_normalize` | 16 / True（Fixed） |
+| `decoder_num_layers` | 1（線形写像） |
+| `latent_dim` / `latent_normalize` | 16 / True |
 | `n_patches` | 16（1 patchは連続16チャネル） |
 
 この構成ではA0、mask率25%・50%・75%の`n_mask`はそれぞれ0、4、8、12となる。
@@ -285,7 +284,7 @@ Random maskもdenoisingのcorruptionである。学習augmentationはSNV制約�
 を使用し、noise角度は$U(0,5^\circ)$、shiftおよびその他の操作設定は既定値で固定する。
 主比較・mask率補助実験・全体学習に共通の設定は次のとおり。
 
-| 項目 | 採用設定（Fixed） |
+| 項目 | 採用設定 |
 | --- | --- |
 | shift | $\delta\sim U(-2,2)$、チャネルindex単位のfractional shift。`shift_delta_range=(-2.0, 2.0)`（既定値） |
 | shiftの補間・端点 | 線形補間。参照indexを端点へclampし、範囲外は端点値を延長する。循環shiftではない |
@@ -305,7 +304,7 @@ nmへの換算には保存済み波長間隔を使用し、波数軸の等間隔
 noiseのGaussianは方向の生成方法を指し、回転角の分布や最終的な加算残差がGaussianという意味ではない。
 
 [Cosine-KMeansの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/clustering/cosine_kmeans.py)
-の既定アルゴリズム・停止設定を採用する（Fixed）。実装から確認した値は次のとおりである。
+の既定アルゴリズム・停止設定を採用する。実装から確認した値は次のとおりである。
 
 | 設定 | 採用値・動作 |
 | --- | --- |
@@ -323,7 +322,7 @@ libraryに`n_init`引数はない。3反復と、1 fit内の初期化1回を区�
 
 <a id="evaluation-precision"></a>
 
-#### 4.1.4 表現抽出・評価の数値設定（Fixed）
+#### 4.1.4 表現抽出・評価の数値設定
 
 PCAのfit・transform、ChemoMAEの全可視抽出、評価摂動の生成、L2正規化、Cosine-KMeansおよび
 評価指標の連続値の計算はFP32とする。入力・モデルパラメータ・抽出表現はFP32に揃え、
@@ -343,7 +342,7 @@ GPUの並列reductionによる微小な非決定性まで消えたとは主張�
 
 <a id="training-recipe"></a>
 
-### 4.2 学習設定（Fixed）
+### 4.2 学習設定
 
 学習設定は、[MAE論文](https://arxiv.org/pdf/2111.06377)のTable 8およびTable 1のablationに対応する
 事前学習recipeを採用する。公式PyTorch実装はcommit
@@ -472,7 +471,7 @@ M00 vs A0ではmaskの有無とloss対象が同時に異なるため、mask率�
 A1 vs A0ではmask 0%・全領域lossを共通とし、TGN＋shiftの追加を比較する。
 M11 vs A1ではaugmentationを揃えるが、maskの有無とloss対象の両方が異なる。
 mask率だけの効果や、augmentationとmask modelingの組合せに固有の一般的な優位性とは解釈しない。
-この2比較は既存結果を得た後の追加ablationとして報告し、主要3比較と以下の2×2要因計画は維持する。
+この2比較の位置づけは第4節に従う。主要3比較と以下の2×2要因計画と併せて報告する。
 
 M00、M10、M01、M11は、Gaussian noiseの有無とshiftの有無による2×2要因計画として扱う。
 現行の報告ではLLA-3/5/9（補正後）とLFR(TGN+FS)・LFR(TGN)・LFR(FS)について、
@@ -489,9 +488,8 @@ LLAとLFRは改善方向が逆である。contrastは指標の元の尺度で示
 
 ## 5. 補助実験
 
-mask率sweepは補助実験として実施済みであり、専用OOF snapshotと図表を保存した。
-本節は採用した固定条件・比較範囲を定義する。成果物と完了記録は
-[引き継ぎ資料](../manuscript_handoff.md#mask-rate-handoff)を参照する。
+本節はmask率sweepの固定条件・比較範囲を定義する。専用OOF snapshotと図表は
+[結果と図表](../results.md#mask-rate-handoff)を参照する。
 
 <a id="mask-rate-sweep"></a>
 
@@ -512,7 +510,7 @@ M11-25・M11-75を各5 folds×3反復、計30 runs追加する。
 fold、共通K集合、学習budget、3反復のseed一覧および評価指標は主比較と同一にする。
 
 Gaussian noiseのみ、shiftのみの条件ではmask率sweepを行わない。
-主条件とは別の`mask_rate_oof_v1`へ3条件を集計し、専用pipelineで図表を生成した。
+主条件とは別の`mask_rate_oof_v1`へ3条件を集計し、専用pipelineで図表を生成する。
 実行手順は[runbook](../experiment_runbook.md#mask-rate-sweep)を参照する。
 全49試料でのM11(-50)・M11-75の付録用マップ比較は、CVとは別の
 [全体fit補助比較](visualization_and_interpretation.md#global-mask-rate)として扱う。
@@ -624,24 +622,23 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 2. 第11.2節の確認・記録を行う。固定済みの$q$、共通$\mathcal{K}$と代表表示$K_0$を含む実行configを作成する。
 3. 試料単位の共通5-fold splitとtrain画素のmanifestを作成する。
 4. A1を含む主比較8条件を3反復で評価する。
-5. 主8条件のOOF snapshotを作成・checkし、pairedな条件差、K依存性、2×2交互作用および反復間安定性を集計する。主条件の報告図表を生成・照合し、図表生成の実装と表示を固める。
+5. 主8条件のOOF snapshotを作成・checkし、pairedな条件差、K依存性、2×2交互作用および反復間安定性を集計する。主条件の報告図表を生成・照合する。
 6. B0、B1、A0、A1、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$K_0$で
    Cosine-KMeansを各1回fitする。
 7. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋Hungarian matchingでM00のCosine-KMeansを共通基準にラベルを直接整列し、SNV類似度行列・確認用IoU/contingency/overlapとともに6条件のマップとスペクトル、PCA（PC1・PC2）を保存する。
-8. [Bacteria-ID計画](bacteria_id_experiment_plan.md)に沿ってRamanの補助実験を先に行う。事前学習とTable 4は同計画書、現行Table 5は[HPO計画](bacteria_id_hpo_protocol.md)を参照する。
+8. Raman補助実験は独立した[Bacteria-IDプロトコル](bacteria_id_experiment_plan.md)と[HPOプロトコル](bacteria_id_hpo_protocol.md)に従う。
 9. M11のmask率補助実験を同じ3反復で評価し、独立したOOF snapshotとmask率依存性の図表を作成する。
 10. 全体fitのM11-75を1回追加学習し、固定表現・K8の3 seed診断と、初回fitのM11(-50)・M11-75の2×7比較図を付録用に作成する。
 
-手順1〜10の学習・解析・集計は完了している。PCA図の現状と再描画は[runbook](../experiment_runbook.md#global-pca)を参照する。
-mask率のCV比較と全体fit比較は主条件と区別して報告する。
-現状の残作業と保存済みの完了記録は[ToDo](../../ToDo.md)、
-代表指標・表示構成は[評価の報告規約](evaluation_metrics.md#reporting)を参照する。
+全体fitのマップ再現性は[再現性評価](spatial_map_reproducibility_plan.md)、
+化学的解釈は[NIR解析](visualization_and_interpretation.md#nir-interpretation)に従う。
+mask率のCV比較と全体fit比較は主条件と区別し、代表指標・表示構成は[評価の報告規約](evaluation_metrics.md#reporting)に従う。
 
-## 11. 実験条件の確定状況と実行記録
+## 11. 実行記録
 
-### 11.1 実験条件の確定状況（Fixed）
+### 11.1 設定の参照先
 
-第3〜5節の主条件・mask率補助実験の研究条件はFixed。
+主条件・mask率補助実験の設定は第3〜5節を参照する。保存済みrunの記録と対応付けて確認する。
 
 <a id="execution-records"></a>
 
@@ -661,7 +658,7 @@ CVの学習・clustering・評価のrun記録はschema 2とし、`contract`に�
 実際の実行時config・runtime・source hashを保存する。読込条件は完全一致で検証し、実行由来と区別する。
 中断再開ではrun記録全体が同じであることを要求する。
 
-表示例は[可視化設計](visualization_and_interpretation.md#representative-samples)、任意の形状診断は[評価規約](evaluation_metrics.md#occupancy)に従う。
+表示例は[可視化設計](visualization_and_interpretation.md#representative-samples)、occupancyは[評価規約](evaluation_metrics.md#occupancy)に従う。
 手順と成果物の確認方法は[runbook](../experiment_runbook.md)に従う。本番開始時は専用ディレクトリへ
 manifestを新規生成し、preflightとconfig・seed・split・抽出画素の一致を検証する。
 

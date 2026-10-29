@@ -1,9 +1,9 @@
-# 本番実験runbook
+# 実験の実行手順
 
 ## 1. 役割
 
 固定設計をCV用の`production_v1`と全体fit用の`global_v1`で実行する手順を示す。条件・seed・split・評価方法の定義は
-[研究設計](design/README.md)、現在の進捗は[ToDo](../ToDo.md)を参照する。
+[研究設計](design/README.md)を参照する。
 
 本書のclustering・評価・OOFコマンドはCosine-KMeansの主実験・mask率補助実験用である。
 mask率補助実験は[CV・OOF](#mask-rate-sweep)と[全体fitの付録用比較](#global-mask-rate)を分けて扱う。
@@ -12,10 +12,8 @@ Bacteria-IDの現行Table 5は[HPO runbook](bacteria_id_hpo_runbook.md)、既存
 ChemoMAE v0.2.2の環境で、リポジトリrootからPowerShellで実行する。
 本番実行例は`uv run --no-sync`とし、環境構築・更新をrun開始時の処理から分ける。
 
-主条件CV・OOF、全体fit・K8図表、PCA座標、mask率のCV・OOFと全体fit補助比較は生成済み。
-本書のコマンドは再現・再検証用である。
-Bacteria-IDは[Table 4](bacteria_id_runbook.md)と[Table 5](bacteria_id_hpo_runbook.md)、
-執筆用の図表は[引き継ぎ資料](manuscript_handoff.md)を参照する。
+本書のコマンドは新規実行と保存済み成果物の確認を区別して使う。
+図表・数値・出典の保存先は[成果物一覧](results.md)を参照する。
 
 - [入力確認](#input-preparation)・[manifest](#3-本番manifest)
 - [NNの1 runと再開](#neural-run)・[PCA](#5-b1-pca-fitとbaseline変換の検証)
@@ -23,6 +21,7 @@ Bacteria-IDは[Table 4](bacteria_id_runbook.md)と[Table 5](bacteria_id_hpo_runb
 - [OOF集計](#oof-aggregation)・[OOF sanity図](#oof-sanity)・[主条件OOF図表](#oof-reporting)
 - [全体fitの準備・一括学習](#global-fit-pipeline)・[PCA一枚](#global-pca)・[保存規約](#artifact-records)
 - [Mask率CV・OOF図表](#mask-rate-sweep)・[Mask率全体fit・2×7図](#global-mask-rate)
+- [NIRスペクトルの解釈図](#nir-interpretation)
 
 各CLIの終了後に `$LASTEXITCODE -eq 0` を確認し、非0なら後続工程へ進まない。JSONのstatus確認は
 終了codeの確認に加えて行う。
@@ -50,7 +49,7 @@ smokeやpreflightの成果物を本番rootへコピーしない。本番開始�
 
 ### 2.1 前処理と入力確認
 
-本番前処理は生成済みである。再生成が必要な別runで、両出力先が新規または空の場合に限り、
+前処理は、両出力先が新規または空の場合に限り、
 [前処理の固定仕様](design/preprocessing.md)に従って実行する。
 
 ```powershell
@@ -108,7 +107,7 @@ uv run --no-sync python scripts/experiments/prepare_manifests.py check --experim
 
 ## 4. ニューラルネットの1 run
 
-以下はmask率補助条件M11-25・fold 1・repeat 1の再現用の例である。現在は主条件・mask率補助とも完了済み。
+以下はmask率補助条件M11-25・fold 1・repeat 1の例である。
 完了済みrunは再学習せず、保存済み成果物の確認には各工程の`check`を使う。
 
 ```powershell
@@ -326,13 +325,13 @@ KMeans、評価処理はこの数に含めない。3反復はseed選別に使わ
 
 <a id="mask-rate-sweep"></a>
 
-### 8.1 mask率補助実験：CV・OOF（完了）
+### 8.1 mask率補助実験：CV・OOF
 
-M11のmask率25%・50%・75%を比較する補助実験は完了した。
-50%は主条件M11を再利用し、M11-25・M11-75を各5 folds×3反復、計30 runs追加した。
+M11のmask率25%・50%・75%を比較する。
+50%は主条件M11と共有し、M11-25・M11-75を各5 folds×3反復、計30 runs学習する。
 800 epoch、split、抽出画素、seed、augmentation強度、全7Kと評価指標は主実験の固定条件を継承する。
 最良mask率の選択ではなく感度解析として報告し、主条件M11を事後的に置き換えない。
-保存済みOOFと図表の完了記録はいずれも`checks_passed=true`で、49試料・45 source runsを含む。
+OOF集計の対象は49試料・45 source runsである。
 
 1. 第4節の学習・再開手順でM11-25・M11-75を実行し、各runをcheckする。
 2. 第6〜7節に従い、各runでCosine-KMeans・全test画素の予測・評価・checkを完了する。
@@ -365,49 +364,23 @@ PNGは2×2（上段LLA 3・5、下段LLA 9・LFR(TGN+FS)）で、50%の表示名
 保存済みOOFの再検証は[第9節](#oof-aggregation)の`aggregate_oof.py check`を使う。
 
 条件は[実験プロトコル](design/experiment_protocol.md#mask-rate-sweep)、
-引き渡すファイルと出典は[Thesis向け一覧](manuscript_handoff.md#mask-rate-handoff)を参照する。
+ファイルと出典は[成果物一覧](results.md#mask-rate-handoff)を参照する。
 
 <a id="global-fit-pipeline"></a>
 
 ### 8.2 全体fitと解釈
 
-主条件OOF図表、全体fit、K8クラスタリング・図表、PCA座標は生成済みである。
-mask率の[CV比較](#mask-rate-sweep)と[全体fit補助比較](#global-mask-rate)も生成済みである。
-残る実験は位置対応FT-IRとし、執筆はThesisで管理する。
-
 [全体可視化設計](design/visualization_and_interpretation.md)に従い、全49試料の共通抽出画素で
 B1 PCAとA0・A1・M00・M11をfitする。B0を加えた6条件の表現で、$K_0=8$のCosine-KMeansを6 fits行う。
 全体学習の4 runsと全体クラスタリングは、補助条件を含むCVの計画120学習とは別枠であり、OOF集計に含めない。
 
-完了範囲は[ToDo第3節](../ToDo.md#3-全体fitと解釈)を参照する。
 `global_fit.py`がmanifest・B0/PCA・A0/A1/M00/M11の一括学習・再開・checkを担当する。
 既存の`train_neural.py`は`--fold`必須のCV用であり、全体fitには使わない。
 
-以下は処理工程の参照である。手順1〜7は完了済み。手順8の執筆はThesis側で管理し、追加可視化案は現在の残ToDoに含めない。
-実行コマンドとその後の順序は[学習完了後の作業](#global-post-fit)を参照する。
-
-1. **全体runの実行契約を固定する（確定・実装済み）。** ROOT_SEED=20260905・SHA-256方式を維持し、
-   fold位置を`global`、反復IDを1とする。抽出・PCA・NNと後続の$K_0=8$クラスタリング用のseed計55個を保存する。
-   保存rootは`outputs/experiments/global_v1/`。
-2. **共通入力と専用pipelineを実装・小規模検証する。** 49試料から各8,192画素、計401,408画素を抽出し、
-   全6条件で座標を共有する。fit画素と推論対象の全有効画素を区別し、CPU小規模と必要最小限のGPU検証で、
-   入出力・seed・保存復元・完了判定を確認する。CVのmanifestと成果物は全体fitから分離する。
-3. **B0・B1を準備する。** B0は固定のSNV変換、B1は共通fit画素でPCAを1回fitする。
-   全体fit用の入力・表現抽出・保存復元を確認してから長時間のNN学習へ進む。
-4. **A0・A1・M00・M11を各800 epochで1回ずつ学習する。** CVと同じ条件別recipeを使用し、
-   最終重み・実際の更新回数・実行環境・seed・所要時間を保存する。学習は合計4 runs。
-5. **Cosine-KMeansを6 fits行う。** 各条件の共通fit画素の表現で$K_0=8$をfitし、
-   モデル・中心を固定して全49試料の全有効画素を予測する。試料ごとの再fitは行わない。
-6. **matching・スペクトル集計・可視化を行う。** 試料等重みの観測SNV代表線のcosine類似度で
-   M00＋Cosine-KMeansへ直接Hungarian matchingする。全49試料のマップ、対応表・類似度・overlap・occupancyと、
-   反射率・SNV・疑似吸光度のSG二次微分の代表線・四分位範囲・寄与数を保存する。
-   固定7代表試料はCosine-KMeansの6条件の比較図で確認する。
-7. **共通画素のPCAを保存する。** [第8.3節](#global-pca)の設定で6条件の座標と2行6列PNG一枚を保存する。
-   図は表現の補助表示とし、条件の優越性や化学的妥当性を図の分離だけで判断しない。
-8. **既存結果を書き、必要な詳細解析を絞る。** CVの未知試料評価と、全体fitの記述的なマップ・スペクトルを区別する。
-   M11・K8の試料内クラスタの観察を中心に検討し、追加図・帯域指標は採否と仕様を決めてから実装する。
-
-6条件・共通画素数・各1回・800 epoch・$K_0=8$の方針は維持する。
+全49試料から各8,192画素、計401,408画素を抽出して6条件で共有する。
+ROOT_SEED=20260905、fold位置`global`、反復ID 1の専用manifestを使い、CVのmanifestと分離する。
+準備・PCA・ニューラル学習の後、[クラスタリングと可視化](#global-post-fit)へ進む。
+全体fitのマップは記述的な解析であり、未知試料のOOF評価とは区別する。
 
 #### 準備・PCA・GPU smoke
 
@@ -429,15 +402,12 @@ foreach ($step in @("create", "check", "baseline-fit", "baseline-check", "smoke"
 途中失敗後は成功済みのcreate/fitを繰り返さず、失敗した段階を確認する。completionのない部分出力は自動再利用しない。
 PCAの復元では保存時のC/F配列配置を保持する。配置を変えるとFP32積和の丸めが変わるため、
 保存復元の許容差は`1e-6`のまま、同じ配置で照合する。復元checkは一時directoryで行い、合格後に本番出力先へ置く。
-初回の`Global PCA roundtrip mismatch`で残った2ファイルは`global_v1/recovery/pca_roundtrip_<timestamp>/`へ退避した。
-その後の`baseline-fit`・`baseline-check`・`smoke`は完了した。既存PCAを確認する際は`baseline-check`を使う。
 
 #### 4条件の一括学習と完了check
 
-以下は学習手順の参照である。既存`global_v1`の4条件は完了済みのため、新規学習として再実行しない。
-以下の一括resume・`training-check`は、同じ現行configで学習したrunが対象となる。
-A1追加時に記録を更新した旧完了学習のoptimizer checkpointは更新していないため、
-その旧runの再開・checkpoint照合には使わない。既存の最終重み・ラベルの確認は`global_cluster.py check`を使う。
+一括resume・`training-check`は、同じ現行configで学習したrunが対象となる。
+保存済み実験には現在の記録とoptimizer checkpoint内部の契約が一致しない完了runがあるため、
+それらを再開しない。保存済み最終重み・ラベルの確認は`global_cluster.py check`を使う。
 新規出力先で行う場合は上の全段階が正常終了してから実行し、1 GPUでA0 → A1 → M00 → M11を直列に各800 epoch学習する。
 392 batch/epoch、313,600 attempted updates/run、計1,254,400 attempted updatesが予定値である。
 AMP overflowによるskipと実optimizer更新数は別途記録し、実更新数を予定値と同一とは仮定しない。
@@ -478,7 +448,7 @@ if ($LASTEXITCODE -ne 0) { throw "Global training completion check failed" }
 | `results/neural_smoke/{timestamp}/{condition}/repeat_1/smoke.json` | 短いGPU検証の合否と再開誤差。対応するcheckpointは`checkpoints/neural_smoke/` |
 
 `training-check`は保存checkpointを実際に読み、epoch・更新数・manifest/config/code/runtime・重みhashと、
-checkpoint中の重みと最終raw重みの一致を確認する。全4条件の完了確認後に、手順5の全体Cosine-KMeansへ進む。
+checkpoint中の重みと最終raw重みの一致を確認する。全4条件の完了確認後に全体Cosine-KMeansへ進む。
 
 #### 全体fitの完了記録
 
@@ -491,10 +461,9 @@ B0/PCAとA0・A1・M00・M11の更新数、AMP skip数、保存復元結果は
 #### 学習完了後の作業
 
 保存済みモデルを利用する**表現抽出・Cosine-KMeans・全画素予測・check**を`global_cluster.py`へ、
-**matching・観測スペクトル集計・PNG/CSV生成・check**を`visualize_global.py`へ分離して実装した。
+**matching・観測スペクトル集計・PNG/CSV生成・check**を`visualize_global.py`が担当する。
 `global_fit.py`は引き続き準備・baseline・smoke・NN学習とcheckを担当する。
 既存の`cluster_representations.py`は`--fold`必須のCV用なので、`global_v1`へそのまま実行しない。
-以下の手順1〜3はA1を含めて完了済み。既存の6 fits・全画素ラベルを再利用できる。
 
 1. 保存済みPCA・最終NN重み・共通global manifestを読み、B0・B1・A0・A1・M00・M11の表現を抽出する。
    B0は256次元SNV、B1・NNは16次元で、既定のL2正規化・全可視抽出を用いる。
@@ -503,11 +472,9 @@ B0/PCAとA0・A1・M00・M11の更新数、AMP skip数、保存復元結果は
    保存復元・対象数・ラベル範囲・出典のcheckを行う。試料ごとのクラスタリング再fitは行わない。
 3. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋HungarianでM00＋Cosine-KMeansへラベルを整列する。
    クラスタmap・occupancy・対応表と、反射率・SNV・疑似吸光度のSG二次微分の代表線・ばらつきをPNG・CSVにする。
-4. [PCA一枚](#global-pca)は保存済み座標から描画する。以降の詳細図は、執筆で不足した根拠に応じて選ぶ。
-   試料別スペクトルCSVを先に参照でき、帯域積分mapや追加のPCA色分けは必須工程ではない。
+4. 表現の補助表示には[PCA図](#global-pca)、試料内スペクトルの比較には[NIR解釈図](#nir-interpretation)を用いる。
 
-帯域選択・平滑化・積分の数値設定は未確定である。採用時の定義は[可視化設計](design/visualization_and_interpretation.md#spectral-band-selection)を参照する。
-完了済みmask率比較の操作は[CV・OOF](#mask-rate-sweep)と[全体fit](#global-mask-rate)を参照する。
+mask率比較の操作は[CV・OOF](#mask-rate-sweep)と[全体fit](#global-mask-rate)を参照する。
 
 ##### 実行コマンド：クラスタリングと可視化
 
@@ -583,7 +550,7 @@ if ($LASTEXITCODE -ne 0) { throw "Global representative visualization failed" }
 
 対象の代表図は`{B0,B1,A0,A1,M00,M11}/labels/07_representative_samples_1x7.png`と
 rootの`01_representative_samples_6x7.png`。`report.json`の`representative_sample_ids`と
-`captions.csv`も新しい7試料・並び順へ更新される。既存図の検証だけを行う`--resume`は付けない。
+`captions.csv`にも指定した7試料・並び順が反映される。既存図の検証だけを行う`--resume`は付けない。
 終了code 0、図中のIDと列順、`report.json`の代表ID、実行末尾の`checks_passed=true`を確認する。
 既存のOOF sanity図はこの2コマンドの更新対象に含まれない。
 
@@ -629,7 +596,7 @@ matching表は`snv_cosine_similarity`、同じ基準クラスタに対する他�
 既存図表には空間平滑化・帯域積分を適用していない。
 個別試料の解釈には`sample_spectra.csv`と寄与・除外数のCSVを参照し、全試料macro平均と区別する。
 
-A1を含む49試料・PNG 67枚・CSV 44個は生成済み。生成物の整合性は保存済みの
+49試料・PNG 67枚・CSV 44個を出力する。生成物の整合性は
 `report.json`・`completion.json`と`visualize_global.py check`で確認する。
 図表生成の完了と、領域差の物理化学的な解釈の完了は区別する。
 
@@ -653,10 +620,8 @@ B1は保存済みbaseline PCAの特異値の降順に上位2成分を選び、L2
 条件間で座標尺度が異なるため表示範囲は条件別とし、同じ条件の上下段では一致させる。hexbinの色範囲は全条件で共通。
 詳細は[設計書](design/visualization_and_interpretation.md#latent-spectral-maps)を参照。
 
-**A1を含む入力・6条件の投影は保存済み。** 2026-10-05の文書整理時点では、図表出力先の
-`results/figures/global_k8_v1/pca-latent-2d/`が存在せず、PNG一枚・CSV 5個は現在の引き渡し対象に含められない。
-座標は`results/pca/global_k8_v1/`に残っている。掲載する場合は本節の`visualize_global_pca.py run`で描画し、
-完了・表示を確認する。今回の文書更新ではPCAのcheck・再描画を実行していない。
+座標の生成と図の描画は別工程である。`results/pca/global_k8_v1/`に座標があっても、
+PNG・CSVの存在や描画完了を保証しない。図を使用する場合は本節の描画・checkを行う。
 コード変更時の小規模CPUテストは次のとおり。
 
 ```powershell
@@ -713,14 +678,12 @@ uv run --no-sync python scripts/experiments/visualize_global_pca.py check
 if ($LASTEXITCODE -ne 0) { throw 'PCA figure check failed' }
 ```
 
-metadata・帯域指標による追加の色分けは保留中であり、執筆時に必要性を判断する。
-
 <a id="global-mask-rate"></a>
 
-### 8.4 全体fitのmask率補助比較（付録、完了）
+### 8.4 全体fitのmask率補助比較
 
-既存M11の抽出画素・設定・seedを共有してM11-75を1回学習し、固定表現でK8のCosine-KMeansを
-既存と同じ3 seedでfit・評価した。初回fitの2×7図は上段`M11(-50)`・下段`M11-75`で、
+M11の抽出画素・設定・seedを共有してM11-75を1回学習し、固定表現でK8のCosine-KMeansを
+同じ3 seedでfit・評価する。初回fitの2×7図は上段`M11(-50)`・下段`M11-75`で、
 既選定7試料の列順を維持する。範囲・指標・反復・matchingは
 [可視化設計第1.4節](design/visualization_and_interpretation.md#global-mask-rate)に従う。
 
@@ -734,9 +697,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Global mask-rate report check failed' }
 
 CPUで入力・出典・保存ラベル・契約・成果物hashを検証し、学習や全画素推論は行わない。
 終了code 0と`status=mask_rate_report_completed`・`checks_passed=true`を確認する。
-保存済みの学習記録は800 epoch完了、図表の完了記録も上記statusである。
-
-未着手・中断工程の実行順序は次のとおり。現在は全工程の成果物が揃っている。
+未着手・中断工程の実行順序は次のとおり。
 
 ```powershell
 & {
@@ -763,8 +724,30 @@ CPUで入力・出典・保存ラベル・契約・成果物hashを検証し、�
 | `results/global_mask_rate_k8_v1/conditions/M11-75/` | 試料別指標、SNV平均、評価の出典・完了記録 |
 | `results/figures/global_mask_rate_k8_v1/` | 2×7 PNG・集計表・matching・caption・出典・完了記録の計8ファイル |
 
-Thesisへは最後のディレクトリの8ファイルを一式で渡す。
-ファイル別の用途と統計量の読み方は[引き継ぎ一覧](manuscript_handoff.md#mask-rate-handoff)にまとめる。
+ファイル別の用途と統計量の読み方は[成果物一覧](results.md#mask-rate-handoff)にまとめる。
+
+<a id="nir-interpretation"></a>
+
+### 8.5 NIRスペクトルの解釈図
+
+全体fitのM11・K8の保存済み試料内クラスタ平均から、試料等重みの代表スペクトルと
+試料別の二次微分図をCPUで描画する。rawデータの全件読込やモデルの再fitは行わない。
+前節までの`global_k8_v1`にある`report.json`、波長・画素数・スペクトルのCSVが必要である。
+
+```powershell
+uv run --no-sync python scripts/experiments/visualize_nir_interpretation.py --scope both
+```
+
+試料別の表示クラスタ・参照曲線は
+[`nir_plot_selection.yaml`](../scripts/experiments/nir_plot_selection.yaml)を既定で読み込む。
+入力・出力先は`--report-dir`・`--output-dir`、対象試料は`--sample-ids`で指定できる。
+既存PNGの置換が必要な場合だけ`--overwrite`を付ける。
+
+既定出力先は`outputs/nir_interpretation/`で、代表図は`M11_equal_sample.png`、
+試料別図は`each_nir_spectra/{sample_id}.png`である。
+横軸は波数へ換算するが、縦軸は波長に関する二次微分のままである。
+保存済みSNV・疑似吸光度・二次微分の定義、表示クラスタ、試料ID・凡例を照合する。
+図中の18帯域番号は文献に基づく参照位置であり、このCLIは帯域強度の棒グラフや集計表を生成しない。
 
 <a id="oof-aggregation"></a>
 
@@ -773,8 +756,8 @@ Thesisへは最後のディレクトリの8ファイルを一式で渡す。
 指定する全conditionについて5 folds × 3 repeatsの評価が揃ってから実行する。
 既存snapshotの確認は`check`、同じ保存先への再集計は明示的な`--overwrite`を使う。
 
-`main_oof_v1`は主8条件で再集計・check完了済み。対象は49試料・120 source runs・82,320 score records。
-以下は同じv1への再生成例であり、現在のsnapshotの再確認には`check`だけを実行する。
+`main_oof_v1`は主8条件の49試料・120 source runs・82,320 score recordsをまとめる。
+以下は同じv1への再生成例であり、保存済みsnapshotの確認には`check`だけを実行する。
 
 ```powershell
 uv run --no-sync python scripts/experiments/aggregate_oof.py run `
@@ -787,8 +770,8 @@ uv run --no-sync python scripts/experiments/aggregate_oof.py check `
     --experiment-dir outputs/experiments/production_v1
 ```
 
-mask率補助実験の`mask_rate_oof_v1`も集計済みで、保存完了記録は`checks_passed=true`である。
-主条件のsnapshotを保持し、M11-25・M11・M11-75の49試料・45 source runsを別snapshotにまとめた。
+mask率補助実験は主条件のsnapshotを保持し、M11-25・M11・M11-75の49試料・45 source runsを
+別の`mask_rate_oof_v1`へまとめる。
 以下は再集計例であり、既存snapshotの再確認には`check`だけを実行する。
 
 ```powershell
@@ -830,7 +813,7 @@ sanity出力にはログやcompletion JSONを追加しない。
 
 <a id="oof-reporting"></a>
 
-### 9.2 主条件OOF図表（実装・生成済み）
+### 9.2 主条件OOF図表
 
 `main_oof_v1`を出典に、主8条件・全49試料・全7KのPNG 3枚とCSV 11個を生成する。
 代表指標はLLA（保存キー`adjusted_lla_*`）、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyの順。
@@ -838,7 +821,7 @@ LLAの窓3・5・9を個別に示し、Occupancyと交互作用はCSVだけに�
 LFRはCSVにTGN+FS・TGN単独・FS単独を保存し、PNGはLFR(TGN+FS)のみ表示する。
 `source_metric`は元の保存キー`lfr_both`・`lfr_noise`・`lfr_shift`を保持する。
 各PNGのLLA 3パネルは共通の縦軸範囲とし、01・02の縦軸目盛りは全パネル0.1刻みとする。
-03のLLAは既存の目盛り間隔を維持し、異なる指標の縦軸範囲は個別に設定する。
+03のLLAの目盛り間隔は描画側で設定し、異なる指標の縦軸範囲は個別に設定する。
 
 ```powershell
 uv run --no-sync python scripts/experiments/visualize_main_oof.py `
@@ -849,7 +832,7 @@ if ($LASTEXITCODE -ne 0) { throw 'OOF reporting failed' }
 
 既定の保存先は`outputs/experiments/production_v1/results/figures/main_oof_v1/`。
 `--output-dir`で変更でき、`--dpi`の既定値は240である。
-再生成時はこのrendererが管理する出力を上書きし、統合前のPNG・Occupancy図・paired分布図・交互作用図を削除する。
+再生成時はこのrendererが管理する出力を上書きし、管理対象の旧形式PNG・Occupancy図・paired分布図・交互作用図を削除する。
 元のOOF snapshot、clustering・評価成果物と、出力先の無関係なファイルは保持する。
 失敗時は非0終了とする。入力検証後、出力の上書きを始める時点で旧`completion.json`を除去し、
 上書き途中の失敗・中断を更新前の成功記録で完了扱いにしない。
@@ -860,7 +843,7 @@ if ($LASTEXITCODE -ne 0) { throw 'OOF reporting failed' }
 | `02_k8_distributions.png` | 2×3。上段LLA 3・5・9、下段LFR(TGN+FS)・ARI・Cosine-Silhouette。$K_0=8$、黒線はmacro平均、`n`は共通対象数 |
 | `03_paired_k_sweep.png` | 分布図と同じ2×3にM11−B0・M11−B1・M11−M00・A1−A0・M11−A1の差を表示 |
 | `metrics_all_k.csv`、`metrics_k8.csv` | 代表指標・LFR 3種類・clean testのOccupancy、平均・試料間SD・反復間SD・対象数 |
-| `paired_all_k.csv`、`paired_k8.csv` | 既存10比較＋追加ablation 2比較。LLA・LFR 3種類・ARI・Cosine-Silhouetteのpaired差 |
+| `paired_all_k.csv`、`paired_k8.csv` | 12比較。LLA・LFR 3種類・ARI・Cosine-Silhouetteのpaired差 |
 | `interaction_all_k.csv`、`interaction_k8.csv` | LLA 3・5・9とLFR 3種類の2×2交互作用 |
 | `sample_values.csv` | 条件別・paired・交互作用の試料別値、反復値、共通対象への採否 |
 | `availability.csv` | 反復ごとの定義済み対象数と未定義の試料・理由 |
@@ -882,9 +865,10 @@ rawスペクトル・重み・mapは読み込まず、学習・推論・CV評価
 
 ## 10. 保存とGit
 
-`outputs/experiments/production_v1/` のconfig、manifest、数値結果、図、completion記録は保存する。
-`checkpoints/`、`weights/`、`*.pt`、`*.pth`、`*.safetensors` は `.gitignore` により
-Git管理対象外である。重みを削除する場合も、論文・再解析に必要なrunの由来とhashを数値記録に残す。
+config、manifest、数値結果、図、completion記録を実験出力と一緒に保存する。
+`outputs/`全体、`data/`、`*.pt`、`*.pth`、`*.safetensors`は
+`.gitignore`によりGit管理対象外であり、公開リポジトリには含まれない。
+再解析には対応する入力・重み・実行記録を別途用意する。
 
 各runで保存する記録は次のとおり。schemaと由来の扱いは[実験プロトコル第11.2節](design/experiment_protocol.md#execution-records)に従う。
 
@@ -895,7 +879,7 @@ Git管理対象外である。重みを削除する場合も、論文・再解�
 - clustering・評価のcompletionとcheck結果
 
 本番学習completionはGPU peakを保存しない。学習時の値を事後推定せず、preflightの実測値は
-工学的参考値として区別する。本番CV中にこの不足を補う記録コードの変更は行わない。
+工学的参考値として区別する。
 上記は本番実験の記録規約であり、PNG・CSVだけを保存するOOF sanityとは分ける。
 
 本番CVではコード、設計条件、入力データ、manifestを固定する。

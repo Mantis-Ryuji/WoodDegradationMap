@@ -1,10 +1,8 @@
 # B0・B1・A0・M00 OOF sanity可視化
 
-**Fixed / 実装済み**
-
 B0・B1・A0・M00の全CV完了後に、既存のclean OOF mapと評価成果物から探索的な確認図を作る。
 PCA・KMeansのfit、表現抽出、評価を再実行しない。実行方法は[runbook](../experiment_runbook.md#oof-sanity)、
-結果の読み方は[解釈メモ](../interpretation_notes.md)を参照する。
+結果の読み方は[結果の解釈](../interpretation_notes.md)を参照する。
 
 ## 1. 保存物
 
@@ -28,7 +26,7 @@ PCA・KMeansのfit、表現抽出、評価を再実行しない。実行方法�
 
 $K_0=8$、repeat 1で[固定7試料](visualization_and_interpretation.md#representative-samples)を
 試料番号の昇順（ヒノキ、マツ、ケヤキ、ツガ、クリ、スギ、モミ）に並べ、B0・B1・A0・M00各1枚へ保存する。
-代表試料の現行定義を適用する。保存済みPNGと試料IDが異なる場合は再生成する。
+代表試料の定義と保存図の試料IDを照合する。
 
 各試料の下に`KYOw...`試料IDを表示し、背景0・クラスタ1〜8の共通凡例を付ける。
 [共通描画規約](visualization_and_interpretation.md#figure-style)を適用する。
