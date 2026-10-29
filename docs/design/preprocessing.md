@@ -44,7 +44,7 @@ rawデータは原本として扱い、変更、改名、移動または上書�
 - headerとraw本体の対応およびraw byte数
 - HSIが3次元であり、高さが正、幅が320、band数が256であること
 - sample IDが重複していないこと
-- white/dark referenceが$1 \times 320 \times 256$であること
+- white/dark referenceが$`1 \times 320 \times 256`$であること
 - white、darkおよび全試料で波長軸と`x start`が一致すること
 - 波長が有限かつ単調増加であること
 
@@ -63,38 +63,38 @@ SNR閾値、mask条件、補間点数などの固定値はoptionとして公開�
 
 ### 5.1 200 Hz referenceによる自動cutoff
 
-whiteとdarkの差を、列$x$、band$b$について
+whiteとdarkの差を、列$`x`$、band$`b`$について
 
-$$
+```math
 Q_b(x) = W_{200}(x,b) - D_{200}(x,b)
-$$
+```
 
 とする。band別のreference由来SNR proxyは
 
-$$
+```math
 \operatorname{SNR}^{\mathrm{ref}}_{200}(b)
 =
 \frac{\operatorname{mean}_x Q_b(x)}
 {\operatorname{std}_{x,\mathrm{ddof}=0} Q_b(x)+\varepsilon},
 \qquad \varepsilon=10^{-12}
-$$
+```
 
 で定義する。これはreferenceの列方向のばらつきに対する分母安定性のproxyであり、反復撮像から求める
 時間方向SNRではない。
 
 低SNR flagを
 
-$$
+```math
 L_b =
 \begin{cases}
 1, & \operatorname{SNR}^{\mathrm{ref}}_{200}(b) \le 10
      \text{ or non-finite} \\
 0, & \text{otherwise}
 \end{cases}
-$$
+```
 
-とする。最終bandまで連続する$L_b=1$の区間を除外し、その直前までを保持する。
-終端区間より前にも$L_b=1$のbandがある場合は、単一の上限cutoffでは表現できないためfail fastする。
+とする。最終bandまで連続する$`L_b=1`$の区間を除外し、その直前までを保持する。
+終端区間より前にも$`L_b=1`$のbandがある場合は、単一の上限cutoffでは表現できないためfail fastする。
 試料スペクトル、劣化情報、CV結果またはモデル結果はcutoff決定に使用しない。
 
 現在のreferenceでは、次が自動選択される。
@@ -107,15 +107,15 @@ $$
 
 ### 5.2 木材領域mask
 
-200 Hz生強度cubeを$I_{200}$として、各画素のscoreを
+200 Hz生強度cubeを$`I_{200}`$として、各画素のscoreを
 
-$$
+```math
 A(y,x) = \sum_{b=0}^{255} I_{200}(y,x,b)
-$$
+```
 
 とする。反射率、SNV、030 HzまたはRGBはmask生成に使用しない。
 
-試料ごとに$A(y,x)$へ3-class Multi-Otsuを適用し、強度順のclass 0、1、2へ分ける。
+試料ごとに$`A(y,x)`$へ3-class Multi-Otsuを適用し、強度順のclass 0、1、2へ分ける。
 class 0を背景候補、class 1とclass 2の和集合を木材候補とする。class名は強度順を表すだけで、
 材組織や劣化classを意味しない。
 
@@ -129,14 +129,14 @@ class 0を背景候補、class 1とclass 2の和集合を木材候補とする�
 
 ### 5.3 反射率変換
 
-試料強度$I_{200}$を、同じ列$x$のwhiteとdarkを用いて
+試料強度$`I_{200}`$を、同じ列$`x`$のwhiteとdarkを用いて
 
-$$
+```math
 R(y,x,b)
 =
 \frac{I_{200}(y,x,b)-D_{200}(x,b)}
 {W_{200}(x,b)-D_{200}(x,b)}
-$$
+```
 
 へ変換する。referenceは列方向の情報を保ったまま試料の行方向へbroadcastし、空間平均した単一の
 referenceスペクトルへ置き換えない。
@@ -153,20 +153,20 @@ clipは行わない。補間後の負値は第5.5節の規則で背景化する�
 
 ### 5.5 256点線形補間
 
-cutoff後の実測波長を$\lambda_0,\ldots,\lambda_{C_s-1}$とし、出力波長を
+cutoff後の実測波長を$`\lambda_0,\ldots,\lambda_{C_s-1}`$とし、出力波長を
 
-$$
+```math
 \tilde{\lambda}_j
 =
 \lambda_0
 + \frac{j}{255}\left(\lambda_{C_s-1}-\lambda_0\right),
 \qquad j=0,\ldots,255
-$$
+```
 
-とする。各$\tilde{\lambda}_j$を挟む2つの実測band間で線形補間する。
+とする。各$`\tilde{\lambda}_j`$を挟む2つの実測band間で線形補間する。
 補間区間は保持波長範囲の閉区間内に限定し、外挿、高次補間および平滑化を行わない。
 
-現在の入力では222点を913.10–2305.59 nm内の256点へ補間し、後段で$16 \times 16$ patchとして扱う。
+現在の入力では222点を913.10–2305.59 nm内の256点へ補間し、後段で$`16 \times 16`$ patchとして扱う。
 
 補間後の標本標準偏差が非有限または0以下の画素はSNVを定義できないため除外し、理由code 2を保存する。
 
@@ -181,37 +181,37 @@ SNV後に生じる負値にはこの規則を適用しない。
 
 ### 5.6 SNV
 
-補間後の有効な256次元反射率を$r_p(b)$とする。画素$p$ごとに
+補間後の有効な256次元反射率を$`r_p(b)`$とする。画素$`p`$ごとに
 
-$$
+```math
 \mu_p = \frac{1}{C}\sum_{b=1}^{C} r_p(b),
 \qquad C=256
-$$
+```
 
-$$
+```math
 s_p
 =
 \sqrt{
 \frac{1}{C-1}
 \sum_{b=1}^{C}\left(r_p(b)-\mu_p\right)^2
 }
-$$
+```
 
 を計算し、SNVを
 
-$$
+```math
 z_p(b) = \frac{r_p(b)-\mu_p}{s_p}
-$$
+```
 
 と定義する。標本標準偏差を使用するため、数値誤差を除けば
 
-$$
+```math
 \frac{1}{C}\sum_{b=1}^{C}z_p(b)=0,
 \qquad
 \operatorname{std}_{\mathrm{ddof}=1}\!\left(z_p\right)=1,
 \qquad
 \lVert z_p\rVert_2=\sqrt{255}
-$$
+```
 
 となる。実行時にこれらの不変量からの最大数値誤差を記録する。
 
@@ -219,13 +219,13 @@ $$
 
 空間確認用mapは、SNV前・256点補間後の反射率から
 
-$$
+```math
 M_{L2}(y,x)
 =
 \sqrt{\sum_{b=1}^{256}\widetilde{R}(y,x,b)^2}
-$$
+```
 
-として作成する。SNV後のL2 normは全有効画素でほぼ$\sqrt{255}$となるため、mapには使用しない。
+として作成する。SNV後のL2 normは全有効画素でほぼ$`\sqrt{255}`$となるため、mapには使用しない。
 品質条件で除外した画素と背景は非有限値として透過表示する。
 
 ## 6. 保存形式

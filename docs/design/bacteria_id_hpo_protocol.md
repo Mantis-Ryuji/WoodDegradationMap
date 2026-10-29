@@ -8,28 +8,28 @@ Table 5では既存のreference30事前学習checkpointを使い、M11で分類�
 ## モデルと探索範囲
 
 30クラスのCLS分類器は投影前CLS 256次元にLayerNorm→Linear(30)を接続する。
-最後の$k$個のTransformer blockと分類headを更新し、patch projection、
-CLS/位置パラメータ、$z$への投影、decoderは固定する。$k=0$はheadのみ、
-$k=8$もstemを含む全encoder解凍ではない。
+最後の$`k`$個のTransformer blockと分類headを更新し、patch projection、
+CLS/位置パラメータ、$`z`$への投影、decoderは固定する。$`k=0`$はheadのみ、
+$`k=8`$もstemを含む全encoder解凍ではない。
 
 AdamW（betas=(0.9, 0.95)、eps=1e-8）、CrossEntropyLoss、FP32を使う。
 headと更新blockは別の固定学習率とし、両groupの全学習パラメータに同じ
 weight decayを適用する。scheduler、early stopping、AMP、Optuna pruningは使わない。
-各学習は50 epoch固定で、epoch 1–5はheadのみ、epoch 6–50はheadと最後の$k$ blockを
-更新する。$k=0$では50 epochを通じてheadのみを更新する。
+各学習は50 epoch固定で、epoch 1–5はheadのみ、epoch 6–50はheadと最後の$`k`$ blockを
+更新する。$`k=0`$では50 epochを通じてheadのみを更新する。
 
 | 項目 | 候補 |
 | --- | --- |
-| $k$ | 0, 1, 2, 3, 4, 5, 6, 7, 8 |
-| head LR | $(1,2,\ldots,10)\times10^{-4}$ |
-| encoder block LR | $(1,2,\ldots,10)\times10^{-5}$。$k=0$では使用しない |
+| $`k`$ | 0, 1, 2, 3, 4, 5, 6, 7, 8 |
+| head LR | $`(1,2,\ldots,10)\times10^{-4}`$ |
+| encoder block LR | $`(1,2,\ldots,10)\times10^{-5}`$。$`k=0`$では使用しない |
 | batch size | 8, 16, 32, 64, 128 |
 | TGN / FS | off/off、on/off、off/on、on/on |
-| weight decay | 0、$10^{-5}$、$10^{-4}$、$10^{-3}$、$10^{-2}$ |
+| weight decay | 0、$`10^{-5}`$、$`10^{-4}`$、$`10^{-3}`$、$`10^{-2}`$ |
 
 TGN/FSの強度と独立適用確率0.5はWoodDegradationMapの既定値とする。
 finetuneのtrainスペクトルはSNV後に有効なaugmentationを適用する。
-validation/testにはaugmentationを適用しない。$k=0$でencoder LRを除いた
+validation/testにはaugmentationを適用しない。$`k=0`$でencoder LRを除いた
 実効探索空間は41,000設定である。
 
 ## 設定選択
@@ -42,7 +42,7 @@ foldごとの**epoch 50のvalidation Accuracy**を算術平均した値を最大
 途中epochの最大値は採点・checkpoint選択に使用しない。
 
 Optunaの単一studyで異なる設定100件を上限として探索した。最初の30件はランダム提案、
-以後はTPE提案とし、初期30件には$k=0,\ldots,8$を各3回以上含めた。
+以後はTPE提案とし、初期30件には$`k=0,\ldots,8`$を各3回以上含めた。
 同じ設定が再提案された場合は学習せずに棄却し、繰り返し重複するときは
 未評価設定をランダムに補充する。実際には64件の異なる設定が完了し、
 **完了設定をtrial番号順に並べた先頭60件**を設定選択の対象とした。上限100件に対する

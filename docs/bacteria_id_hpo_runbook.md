@@ -48,12 +48,12 @@ uv run --no-sync python scripts/experiments/bacteria_id_hpo.py select --complete
 
 | 項目 | 採用値 |
 | --- | --- |
-| 更新する末尾block数 $k$ | 8 |
-| head学習率 | $3\times10^{-4}$ |
-| encoder block学習率 | $8\times10^{-5}$ |
+| 更新する末尾block数 $`k`$ | 8 |
+| head学習率 | $`3\times10^{-4}`$ |
+| encoder block学習率 | $`8\times10^{-5}`$ |
 | batch size | 8 |
 | TGN / FS | off / off |
-| weight decay | $10^{-4}$ |
+| weight decay | $`10^{-4}`$ |
 
 新規studyの探索には`bacteria_id_hpo.py search`を使うが、実装上限は100設定である。
 このコマンドは保存済み60設定選択の照合ではない。cutoffによる選択が確定した出力先では、

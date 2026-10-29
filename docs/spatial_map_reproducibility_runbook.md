@@ -137,9 +137,9 @@ VIは次の3指標をbits単位で保存し、各指標についてencoder内9�
 
 | `metric`名 | 内容 |
 | --- | --- |
-| `h_b_given_a_bits` | $H(B\mid A)$：Aを基準にした分裂側の不一致 |
-| `h_a_given_b_bits` | $H(A\mid B)$：Aを基準にした合流側の不一致 |
-| `vi_bits` | $H(B\mid A)+H(A\mid B)$：合計VI。0で分割が一致し、小さいほど不一致が少ない |
+| `h_b_given_a_bits` | $`H(B\mid A)`$：Aを基準にした分裂側の不一致 |
+| `h_a_given_b_bits` | $`H(A\mid B)`$：Aを基準にした合流側の不一致 |
+| `vi_bits` | $`H(B\mid A)+H(A\mid B)`$：合計VI。0で分割が一致し、小さいほど不一致が少ない |
 
 A・Bは保存された反復対の順序を維持する。`(encoder, Cosine-KMeans反復ID)`の辞書順でAを先に置き、
 初回基準では常にAが`(1,1)`となる。A・Bを交換すると2成分が入れ替わり、合計は変わらない。

@@ -371,7 +371,7 @@ PNGは2×2（上段LLA 3・5、下段LLA 9・LFR(TGN+FS)）で、50%の表示名
 ### 8.2 全体fitと解釈
 
 [全体可視化設計](design/visualization_and_interpretation.md)に従い、全49試料の共通抽出画素で
-B1 PCAとA0・A1・M00・M11をfitする。B0を加えた6条件の表現で、$K_0=8$のCosine-KMeansを6 fits行う。
+B1 PCAとA0・A1・M00・M11をfitする。B0を加えた6条件の表現で、$`K_0=8`$のCosine-KMeansを6 fits行う。
 全体学習の4 runsと全体クラスタリングは、補助条件を含むCVの計画120学習とは別枠であり、OOF集計に含めない。
 
 `global_fit.py`がmanifest・B0/PCA・A0/A1/M00/M11の一括学習・再開・checkを担当する。
@@ -467,7 +467,7 @@ B0/PCAとA0・A1・M00・M11の更新数、AMP skip数、保存復元結果は
 
 1. 保存済みPCA・最終NN重み・共通global manifestを読み、B0・B1・A0・A1・M00・M11の表現を抽出する。
    B0は256次元SNV、B1・NNは16次元で、既定のL2正規化・全可視抽出を用いる。
-   既存の学習・PCAを再fitせず、共通401,408画素の表現で固定seedのCosine-KMeansを各1回、$K_0=8$でfitする。
+   既存の学習・PCAを再fitせず、共通401,408画素の表現で固定seedのCosine-KMeansを各1回、$`K_0=8`$でfitする。
 2. 各条件の固定モデル・中心を全49試料の全3,902,250有効画素へ適用し、画素座標と対応したラベルを保存する。
    保存復元・対象数・ラベル範囲・出典のcheckを行う。試料ごとのクラスタリング再fitは行わない。
 3. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋HungarianでM00＋Cosine-KMeansへラベルを整列する。
@@ -840,7 +840,7 @@ if ($LASTEXITCODE -ne 0) { throw 'OOF reporting failed' }
 | ファイル | 内容 |
 | --- | --- |
 | `01_main_metrics_k_sweep.png` | 単段幅2×2。上段LLA 3・5、下段LLA 9・LFR(TGN+FS)。主8条件の全K曲線 |
-| `02_k8_distributions.png` | 2×3。上段LLA 3・5・9、下段LFR(TGN+FS)・ARI・Cosine-Silhouette。$K_0=8$、黒線はmacro平均、`n`は共通対象数 |
+| `02_k8_distributions.png` | 2×3。上段LLA 3・5・9、下段LFR(TGN+FS)・ARI・Cosine-Silhouette。$`K_0=8`$、黒線はmacro平均、`n`は共通対象数 |
 | `03_paired_k_sweep.png` | 分布図と同じ2×3にM11−B0・M11−B1・M11−M00・A1−A0・M11−A1の差を表示 |
 | `metrics_all_k.csv`、`metrics_k8.csv` | 代表指標・LFR 3種類・clean testのOccupancy、平均・試料間SD・反復間SD・対象数 |
 | `paired_all_k.csv`、`paired_k8.csv` | 12比較。LLA・LFR 3種類・ARI・Cosine-Silhouetteのpaired差 |

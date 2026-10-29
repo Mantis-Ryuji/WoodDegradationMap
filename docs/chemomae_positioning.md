@@ -89,7 +89,7 @@ MAEへの追加corruptionの効果をLLA（補正後）・LFRと既定診断で�
 | loss | 追加摂動前のSNVへのMSE。MAEは不可視チャネル、A0・A1は全チャネル |
 | 利用時 | 全patch可視・augmentationなしの17 token。encoderを固定して単位潜在をCosine-KMeansへ渡す |
 
-Decoderへ渡る入力由来の情報は単一の $z$ のみで、patch別出力、skip connection、decoder用mask tokenは使わない。
+Decoderへ渡る入力由来の情報は単一の $`z`$ のみで、patch別出力、skip connection、decoder用mask tokenは使わない。
 `decoder_num_layers=1` とする本研究の設定についての説明であり、ライブラリの全設定を指すものではない。
 根拠は[固定設定](../src/wood_degradation_map/experiments/config.py)、
 [mask生成・抽出](../src/wood_degradation_map/experiments/neural.py)、[学習処理](../src/wood_degradation_map/experiments/training.py)、
@@ -97,25 +97,25 @@ Decoderへ渡る入力由来の情報は単一の $z$ のみで、patch別出力
 
 ### 2.2 学習している写像と損失
 
-追加摂動前の観測を $x_i\in\mathbb{R}^{256}$、追加corruptionを $g$、可視patch集合を $V_i$、
-CLSの射影までを含むencoderを $f_\theta$ とする。通常の非ゼロnorm領域では、
+追加摂動前の観測を $`x_i\in\mathbb{R}^{256}`$、追加corruptionを $`g`$、可視patch集合を $`V_i`$、
+CLSの射影までを含むencoderを $`f_\theta`$ とする。通常の非ゼロnorm領域では、
 
-$$
+```math
 u_i=f_\theta(g(x_i);V_i),\qquad z_i=\frac{u_i}{\lVert u_i\rVert_2},\qquad
 \hat{x}_i=Wz_i+b,\quad W\in\mathbb{R}^{256\times16},\quad b\in\mathbb{R}^{256}.
-$$
+```
 
 L2正規化にはepsilon保護があり、抽出時は正規化前の非有限値・ゼロnorm・極小normを検査する。
-上式は保護が作動しない場合を表す。隠したチャネル集合 $M_i$ は主比較のMAEでは128要素なので、
-batch sizeを $B$ とすると、
+上式は保護が作動しない場合を表す。隠したチャネル集合 $`M_i`$ は主比較のMAEでは128要素なので、
+batch sizeを $`B`$ とすると、
 
-$$
+```math
 \mathcal{L}_{\mathrm{MAE}}
 =\frac{1}{B}\sum_{i=1}^{B}\frac{1}{128}\sum_{j\in M_i}
 \left([Wz_i+b]_j-x_{ij}\right)^2.
-$$
+```
 
-M00では $g$ は恒等写像、M10・M01・M11ではTGN・shift・両方を用いる。Targetの値と波長位置は動かさない。
+M00では $`g`$ は恒等写像、M10・M01・M11ではTGN・shift・両方を用いる。Targetの値と波長位置は動かさない。
 適用確率・強度は[実験プロトコル §4.1.3](design/experiment_protocol.md)に従う。
 A0は追加摂動なし・全可視で、内側の和と分母を全256チャネルへ変える。
 A1は全可視・全256チャネルのlossを維持し、入力にM11と同じTGN＋shiftを加えるdenoising AEである。
@@ -135,17 +135,17 @@ Lossにはクラスラベル、KMeans割当、空間項、対比学習項を含�
 
 ### 3.1 「スペクトルの座標と復元方向を学ぶ」という見方
 
-16成分PCAのtrain平均を $\mu$、直交主成分を $P$ とすると、
+16成分PCAのtrain平均を $`\mu`$、直交主成分を $`P`$ とすると、
 
-$$
+```math
 t_i=P^{\mathsf T}(x_i-\mu),\qquad \hat{x}^{\mathrm{PCA}}_i=\mu+Pt_i,\qquad P^{\mathsf T}P=I_{16}.
-$$
+```
 
-ChemoMAEでは非線形encoderが座標 $z_i$ を求め、共通の $W$ で復元する。行に画素を並べれば、
+ChemoMAEでは非線形encoderが座標 $`z_i`$ を求め、共通の $`W`$ で復元する。行に画素を並べれば、
 
-$$
+```math
 \hat{X}=ZW^{\mathsf T}+\mathbf{1}b^{\mathsf T}
-$$
+```
 
 であり、非線形に推定した座標による制約付き低ランク再構成と読める。
 
@@ -163,9 +163,9 @@ $$
 
 ### 3.2 非線形なのは座標推定であり、復元可能な範囲には強い制約がある
 
-$$
+```math
 \hat{x}\in b+\operatorname{col}(W),\qquad \operatorname{rank}(W)\le16.
-$$
+```
 
 復元は高々16次元のアフィン部分空間に含まれ、bottleneck前後を非線形にする
 [Kramer (1991)](https://doi.org/10.1002/aic.690370209)とは制約が異なる。
@@ -183,12 +183,12 @@ $$
 **入力がSNVで一定normになることを踏まえ、潜在にもnormの自由度を持たせず、方向へ情報を集約する**
 という設計判断である。標本標準偏差によるSNVでは、非定数スペクトルについて、
 
-$$
+```math
 \mathcal{M}_{\mathrm{SNV}}
 =\{x\in\mathbb{R}^{C}:\mathbf{1}^{\mathsf T}x=0,\ \lVert x\rVert_2=\sqrt{C-1}\}.
-$$
+```
 
-$C=256$ では平均ゼロ超平面内の半径 $\sqrt{255}$、内在次元254の球面となる。
+$`C=256`$ では平均ゼロ超平面内の半径 $`\sqrt{255}`$、内在次元254の球面となる。
 方向から共通定数倍でSNV入力を復元できるが、非線形圧縮後のnormも必ず不要になるわけではない。
 潜在の正規化は意図的な制約であり、圧縮や正規化の無損失性を意味しない。
 潜在に平均ゼロ制約は課していない。
@@ -200,26 +200,26 @@ SNVがscore plotに曲線状構造を誘導しうることには既報があり�
 学習中から単位化すれば、復元に使う情報が潜在normのみに載り、後段cosineで無視される食い違いを抑えられる。
 単位潜在では、
 
-$$
+```math
 \lVert z_i-z_j\rVert_2^2=2\left(1-z_i^{\mathsf T}z_j\right),\qquad
 \lVert\hat{x}_i-\hat{x}_j\rVert_2^2
 =(z_i-z_j)^{\mathsf T}W^{\mathsf T}W(z_i-z_j).
-$$
+```
 
 前式は方向によるクラスタリングとの整合性を示す
 （[Banerjee et al., 2005](https://jmlr.org/papers/v6/banerjee05a.html)）。
-後式の $W^{\mathsf T}W$ には等方性がなく、復元とcosineで各方向の重みは異なる。
+後式の $`W^{\mathsf T}W`$ には等方性がなく、復元とcosineで各方向の重みは異なる。
 入力角度の保存もcollapse防止も保証されない。表現内の分離と退化は既定のsilhouette・occupancy等で診断し、
 どの入力差が強調・抑制されたかは、それらの指標や式だけから結論づけない。PCA側の操作の読み方は
 [結果の解釈](interpretation_notes.md#pca-snv-geometry-note)に示す。
 
 ### 3.4 SAMとの関係: 方向によるスペクトル比較の先行例
 
-Spectral Angle Mapper（SAM）は、非ゼロ観測スペクトル $r$ と参照 $s$ の角度を用いる。
+Spectral Angle Mapper（SAM）は、非ゼロ観測スペクトル $`r`$ と参照 $`s`$ の角度を用いる。
 
-$$
+```math
 \alpha(r,s)=\arccos\left(\frac{r^{\mathsf T}s}{\lVert r\rVert_2\lVert s\rVert_2}\right).
-$$
+```
 
 正のスカラーgainに不変な方向比較の先行例であり、NIR専用ではない。ENVIの標準的説明は反射率を対象とする。
 波長依存の照明変化や散乱全般への不変性は意味しない。
@@ -227,14 +227,14 @@ $$
 [公式チュートリアル pp. 8–9](https://www.nv5geospatialsoftware.com/portals/0/pdfs/envi/Mapping_Methods.pdf))
 
 SNVは平均も除くため、SNV後の角度は元反射率へのSAMと一般に異なる。
-同じ256帯域上の非定数スペクトル $r_i,r_k$ とそのSNV $x_i,x_k$ では、
+同じ256帯域上の非定数スペクトル $`r_i,r_k`$ とそのSNV $`x_i,x_k`$ では、
 
-$$
+```math
 \frac{x_i^{\mathsf T}x_k}{\lVert x_i\rVert_2\lVert x_k\rVert_2}
 =\frac{x_i^{\mathsf T}x_k}{255}=\rho(r_i,r_k)
-$$
+```
 
-となり、$\rho$ はPearson相関係数である。学習潜在のcosineがこの値を保存する制約はない。
+となり、$`\rho`$ はPearson相関係数である。学習潜在のcosineがこの値を保存する制約はない。
 SAMは方向比較の前例として引用し、潜在正規化の必要性・最適性の根拠とはしない。
 
 ## 4. SNVの幾何をaugmentationの設計へ結びつける
@@ -261,31 +261,31 @@ SNV制約を満たす生成点が実在の化学状態に対応する保証も�
 提案内容は、SNV制約を保つTGN・Fractional Shiftの定義とmasked denoisingへの組込みである。
 設定は[実験プロトコル](design/experiment_protocol.md)とChemoMAE v0.2.2の `SpectraAugmenter` に対応する。
 
-理想演算で $C=256$、$r=\sqrt{C-1}$、平均ゼロ・norm $r$ の入力 $x$、$u=x/r$ とする。
+理想演算で $`C=256`$、$`r=\sqrt{C-1}`$、平均ゼロ・norm $`r`$ の入力 $`x`$、$`u=x/r`$ とする。
 TGNはGaussian方向から平均方向と半径方向を除き、接方向へ回転する。
 
-$$
+```math
 P=I-\frac{\mathbf{1}\mathbf{1}^{\mathsf T}}{C},\qquad
 \epsilon\sim\mathcal{N}(0,I),\qquad
 v=P\epsilon-u\bigl(u^{\mathsf T}P\epsilon\bigr),\qquad q=\frac{v}{\lVert v\rVert_2}.
-$$
+```
 
-$$
+```math
 T_{\mathrm{TGN}}(x)=r\bigl(\cos\theta\,u+\sin\theta\,q\bigr),\qquad
 \theta\sim U(0,\pi/36).
-$$
+```
 
-$\lVert v\rVert_2>0$ なら $q$ は平均ゼロ・入力に直交・単位normで、出力もSNV制約を保つ。
-入力との角度は $\theta$、球面弧長は $r\theta$。Gaussianは方向候補の分布であり、角度や最終残差の分布ではない。
+$`\lVert v\rVert_2>0`$ なら $`q`$ は平均ゼロ・入力に直交・単位normで、出力もSNV制約を保つ。
+入力との角度は $`\theta`$、球面弧長は $`r\theta`$。Gaussianは方向候補の分布であり、角度や最終残差の分布ではない。
 
-等間隔波長grid上の線形補間・端点値延長を $S_\delta$ とすると、Fractional Shiftは、
+等間隔波長grid上の線形補間・端点値延長を $`S_\delta`$ とすると、Fractional Shiftは、
 
-$$
+```math
 y=P S_\delta(x),\qquad
 T_{\mathrm{FS}}(x)=r\frac{y}{\lVert y\rVert_2},\qquad \delta\sim U(-2,2).
-$$
+```
 
-$\lVert y\rVert_2>0$ ならSNV制約へ戻るが、同じshift幅でも角度変化は入力形状に依存する。
+$`\lVert y\rVert_2>0`$ ならSNV制約へ戻るが、同じshift幅でも角度変化は入力形状に依存する。
 実装は `eps=1e-8` で退化候補を保護し、元入力を保持する。等式の保存は理想演算についての記述である。
 
 M11は各操作を画素ごとに確率0.5で適用し、順序をbatchごとにランダム化する。
@@ -300,26 +300,26 @@ M11は各操作を画素ごとに確率0.5で適用し、順序をbatchごとに
 観測点の周囲に、SNVに即した近傍と復元targetを定める設計としても読める。
 VRMはこの設計の解釈に用い、採用条件の導出根拠とはしない。
 
-Mask前の追加corruption分布を $\nu(\tilde{x}\mid x_i)$（操作しない確率を含む）、
-encoder・decoder全体を $h_\psi$、隠した帯域のMSEを $\ell_M$ とすれば、
+Mask前の追加corruption分布を $`\nu(\tilde{x}\mid x_i)`$（操作しない確率を含む）、
+encoder・decoder全体を $`h_\psi`$、隠した帯域のMSEを $`\ell_M`$ とすれば、
 
-$$
+```math
 \widehat R_\nu(\psi)=\frac1n\sum_{i=1}^n
 \mathbb E_{\tilde x\sim\nu(\cdot\mid x_i)}\mathbb E_M
 \left[\ell_M\bigl(h_\psi(\tilde x;V(M)),x_i\bigr)\right].
-$$
+```
 
-$V(M)$ は可視patch集合である。近傍は生成入力だけでなく、元観測 $x_i$ への復元という仮定も含む。
+$`V(M)`$ は可視patch集合である。近傍は生成入力だけでなく、元観測 $`x_i`$ への復元という仮定も含む。
 VRMは学習信号の広げ方を説明する枠組みとして用い、教師ありVRMの保証を移さない。
 
 SNV制約集合上の二点には、
 
-$$
+```math
 d_{\mathcal M}(x,\tilde x)=r\arccos\left(\frac{x^{\mathsf T}\tilde x}{r^2}\right),\qquad
 \lVert x-\tilde x\rVert_2=2r\sin\left(\frac{d_{\mathcal M}(x,\tilde x)}{2r}\right)
-$$
+```
 
-が成立する。TGN単独は $d_{\mathcal M}=r\theta$ で強度を指定できるが、距離だけでは生成方向・targetは決まらない。
+が成立する。TGN単独は $`d_{\mathcal M}=r\theta`$ で強度を指定できるが、距離だけでは生成方向・targetは決まらない。
 弦長と測地距離は単調対応するため、Euclidean距離自体を不適切とはしない。
 再投影なしの非退化Gaussian加算は制約集合を確率1で外れるが、corruptionとして無意味という結論にはならない。
 加算後の再SNVなら集合へ戻るため、TGNとの差は生成方向・角度分布まで含めて扱う。
@@ -350,7 +350,7 @@ Cosine-silhouetteは各表現内の幾何診断であり、化学的妥当性の
 比較・解釈に必要な制約は次の四つである。
 
 - **学習と利用：** MAEは学習時8 patch、利用時16 patch可視。全可視maskを明示し、`eval()`だけで切り替わるとはしない。
-- **軸の非一意性：** 直交 $Q$ による $z'=Qz,\ W'=WQ^{\mathsf T}$ は復元とcosineを変えない。Decoder列を純粋成分や分散順序付きの軸とみなさない。
+- **軸の非一意性：** 直交 $`Q`$ による $`z'=Qz,\ W'=WQ^{\mathsf T}`$ は復元とcosineを変えない。Decoder列を純粋成分や分散順序付きの軸とみなさない。
 - **欠測への外挿：** 全帯域SNV後にmaskするため、未測定帯域があり同じSNVを計算できない条件への対応を実証しない。
 - **比較単位：** M00対A0は入力maskとloss領域の両方が違い、B1対NNも非線形性・正規化段階等が異なる。単一要素の効果に読み替えない。
 

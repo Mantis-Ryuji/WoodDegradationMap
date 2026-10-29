@@ -24,7 +24,7 @@ PCA・KMeansのfit、表現抽出、評価を再実行しない。実行方法�
 
 ## 2. 代表試料のlabel map
 
-$K_0=8$、repeat 1で[固定7試料](visualization_and_interpretation.md#representative-samples)を
+$`K_0=8`$、repeat 1で[固定7試料](visualization_and_interpretation.md#representative-samples)を
 試料番号の昇順（ヒノキ、マツ、ケヤキ、ツガ、クリ、スギ、モミ）に並べ、B0・B1・A0・M00各1枚へ保存する。
 代表試料の定義と保存図の試料IDを照合する。
 

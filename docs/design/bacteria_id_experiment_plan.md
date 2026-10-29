@@ -252,16 +252,16 @@ ACCの対応づけは[公開notebookのcluster_acc](https://github.com/pengjuRen
 ### NMI・AMIの定義
 
 SMAEの比較元であるRamanCluster本文§3.3、式(15)・(16)に明記された定義を採用する。
-正解ラベルを$Y$、クラスタ割当を$\hat{Y}$、相互情報量を$I$、エントロピーを$H$とすると、
+正解ラベルを$`Y`$、クラスタ割当を$`\hat{Y}`$、相互情報量を$`I`$、エントロピーを$`H`$とすると、
 
-$$
+```math
 \mathrm{NMI}=\frac{I(Y;\hat{Y})}{[H(Y)+H(\hat{Y})]/2}
-$$
+```
 
-$$
+```math
 \mathrm{AMI}=\frac{I(Y;\hat{Y})-\mathbb{E}[I(Y;\hat{Y})]}
 {\max\{H(Y),H(\hat{Y})\}-\mathbb{E}[I(Y;\hat{Y})]}
-$$
+```
 
 実装では[NMI](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.normalized_mutual_info_score.html)に
 `average_method="arithmetic"`、[AMI](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.adjusted_mutual_info_score.html)に
@@ -305,11 +305,11 @@ p.8、Table 5の報告値であり、本研究では再実行しない。
 実測値と引用値を合わせた表は`outputs/experiments/bacteria_id_table5_hpo_cv_v1/table5.md`に保存する。
 
 ChemoMAEは事前学習から独立した5 seedのtest Accuracyを百分率で集計し、
-標本標準偏差を$s$として、自由度4のt分布による半幅を用いる。
+標本標準偏差を$`s`$として、自由度4のt分布による半幅を用いる。
 
-$$
+```math
 \bar{x}\ \pm\ t_{0.975,4}\frac{s}{\sqrt{5}}
-$$
+```
 
 TCLPの82.30 ± 0.5%はSMAE著者がencoderを変更して報告した値であり、
 TCLP原論文の値ではない。出版版Table 5のencoder更新範囲、checkpoint選択、

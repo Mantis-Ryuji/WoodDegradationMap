@@ -74,7 +74,7 @@ test試料は、trainで得た変換器、encoder、クラスタ中心を固定�
 - B0は表現学習を行わない。B1のPCAが決定的な設定ならfoldごとのfit結果を再利用し、確率的な設定なら
   反復ごとにseedを記録してfitする。B0/B1を含めKMeansは各反復でfitする。
 
-主比較の学習6条件は$6\times5\times3=90$学習、追加mask率2条件は$2\times5\times3=30$学習で、
+主比較の学習6条件は$`6\times5\times3=90`$学習、追加mask率2条件は$`2\times5\times3=30`$学習で、
 CVのニューラルネット学習は合計120回となる。Kの数だけ表現学習を繰り返さず、同一fold・条件・反復の
 表現を全Kで共有する。PCA、KMeansおよび全体可視化用の学習はこの120回に含めない。
 
@@ -101,22 +101,22 @@ seed計画は乱数管理の契約であり、後続の学習・共通評価摂�
 
 ### 3.4 train画素の試料間均等化
 
-- 各foldの各train試料から同数$q=8192$の有効画素を、試料内の一様ランダム・非復元抽出で選ぶ。
-- $q$と抽出方法は全fold共通の固定条件とする。
+- 各foldの各train試料から同数$`q=8192`$の有効画素を、試料内の一様ランダム・非復元抽出で選ぶ。
+- $`q`$と抽出方法は全fold共通の固定条件とする。
 - 同じfoldでは、全条件・全K・全反復で同じ画素座標集合を共有する。
 - ChemoMAEの学習、PCAのfitおよびCosine-KMeansのfitは、この同じtrain画素集合を使用する。
 - 反復内の画素順序と学習augmentationは確率的でよいが、試料ごとの元画素数による寄与の差は作らない。
-- 有効画素数が$q$未満のtrain試料がある場合は、重複抽出や試料別の画素数変更で暗黙に補わず、
-  実行前に$q$の設定を見直す。
+- 有効画素数が$`q`$未満のtrain試料がある場合は、重複抽出や試料別の画素数変更で暗黙に補わず、
+  実行前に$`q`$の設定を見直す。
 - test評価は抽出せず、各test試料の全有効画素を用いる。背景・品質条件による除外は本番前処理に従う。
 
-本番入力の49試料はすべて$q=8192$の非復元抽出が可能である。
+本番入力の49試料はすべて$`q=8192`$の非復元抽出が可能である。
 品質条件は[前処理仕様](preprocessing.md)に従う。trainは39または40試料となり、
 319,488または327,680画素/fold、312または320 batch/epoch、
 800 epochで249,600または256,000予定更新/runとなる。
-1024の倍数なので、この$q$では`drop_last=True`でも端数除外が発生しない。
+1024の倍数なので、この$`q`$では`drop_last=True`でも端数除外が発生しない。
 
-この$q$は800 epochの学習の計算量と試料ごとの画素数を考慮して事前固定した値であり、
+この$`q`$は800 epochの学習の計算量と試料ごとの画素数を考慮して事前固定した値であり、
 精度や希少領域の捕捉率を検証して最適化した値ではない。画素を増やしても独立な試料数は増えない。
 試料集合や前処理データを変更した場合は、`sample_quality.parquet`の`saved_pixel_count`で
 抽出可能性を再確認する。test評価には引き続き全有効画素を使う。
@@ -125,7 +125,7 @@ seed計画は乱数管理の契約であり、後続の学習・共通評価摂�
 `check_sampling_pixels.py`のコマンドと終了codeを示す。これは画素数の確認であり、
 実際の抽出・split作成・スペクトル網羅性の評価ではない。
 
-抽出seed、$q$、試料IDおよび`pixel_row_col`に対応する抽出座標をmanifestへ保存する。
+抽出seed、$`q`$、試料IDおよび`pixel_row_col`に対応する抽出座標をmanifestへ保存する。
 空間近傍を使う補正前LLAは、抽出したtrain画素上では計算しない。各試料から同数を使うことは試料の重みを
 揃える操作であり、樹種や由来の構成比を均等にする操作ではない。
 
@@ -180,7 +180,7 @@ mask率補助実験および全体学習でも同じ16次元を使用する。B0
 | B1 | trainでfitしたPCAによる16次元得点 → 行ごとのL2正規化 |
 | A0・A1・MAE系 | 全可視encoderのCLS出力 → `to_latent`で16次元 → L2正規化 |
 
-正規化前の表現を$h$として、各画素で$z=h/\lVert h\rVert_2$とする。
+正規化前の表現を$`h`$として、各画素で$`z=h/\lVert h\rVert_2`$とする。
 PCAでは**次元削減後**に正規化し、PCA入力の正規化だけで代用しない。
 PCAの平均・基底などのfit対象は第3.4節のtrain画素集合に限定する。L2正規化自体は画素ごとの操作で、
 test集合から統計量を推定しない。clean・摂動後・train・testに同じ変換順序を適用する。
@@ -244,7 +244,7 @@ Encoderと線形1層decoderを共通構成とし、初期化はChemoMAE v0.2.2�
 
 [ChemoMAE v0.2.2のモデル実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/models/chemo_mae.py)
 では`decoder_num_layers=1`は`Linear(16, 256)`であり、Transformer decoderの1層ではない。
-この場合、再構成は$\hat{x}=Wz+b$で、出力集合は高々16次元のアフィン部分空間に含まれる。
+この場合、再構成は$`\hat{x}=Wz+b`$で、出力集合は高々16次元のアフィン部分空間に含まれる。
 さらに潜在の単位norm制約がある。非線形encoderから線形に復元可能な表現を学ぶ設計として扱い、
 decoderまで非線形なAEや原論文のViT-MAEと同一とは記述しない。
 単純な線形復元headを用いる方針は[SimMIM](https://arxiv.org/abs/2111.09886)と共通する。
@@ -259,7 +259,7 @@ dropout=0.0の最適性は検証していない。
 
 - CLS tokenと学習可能な位置埋め込みはChemoMAEが`nn.init.trunc_normal_(..., std=0.02)`で初期化する。
 - patch projection、`to_latent`、線形decoderなどは`nn.Linear`の既定初期化を使う。
-  重みとbiasは入力次元$d_{\mathrm{in}}$に対する$U(-1/\sqrt{d_{\mathrm{in}}},1/\sqrt{d_{\mathrm{in}}})$となる。
+  重みとbiasは入力次元$`d_{\mathrm{in}}`$に対する$`U(-1/\sqrt{d_{\mathrm{in}}},1/\sqrt{d_{\mathrm{in}}})`$となる。
 - attentionの結合QKV重みはPyTorchのXavier uniform、attentionのbiasは0、LayerNormはweight=1・bias=0とする。
 - `nn.TransformerEncoder`は初期化された1つのencoder layerをdeepcopyして8層を作る。
   対応するパラメータは層間で同じ初期値から始まるが、別のパラメータであり重み共有ではない。
@@ -281,15 +281,15 @@ Random maskもdenoisingのcorruptionである。学習augmentationはSNV制約�
 全帯域を学習する。採用理由は[ChemoMAEの位置づけ](../chemomae_positioning.md)に示す。
 
 [SpectraAugmenterの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/augmenter.py)
-を使用し、noise角度は$U(0,5^\circ)$、shiftおよびその他の操作設定は既定値で固定する。
+を使用し、noise角度は$`U(0,5^\circ)`$、shiftおよびその他の操作設定は既定値で固定する。
 主比較・mask率補助実験・全体学習に共通の設定は次のとおり。
 
 | 項目 | 採用設定 |
 | --- | --- |
-| shift | $\delta\sim U(-2,2)$、チャネルindex単位のfractional shift。`shift_delta_range=(-2.0, 2.0)`（既定値） |
+| shift | $`\delta\sim U(-2,2)`$、チャネルindex単位のfractional shift。`shift_delta_range=(-2.0, 2.0)`（既定値） |
 | shiftの補間・端点 | 線形補間。参照indexを端点へclampし、範囲外は端点値を延長する。循環shiftではない |
 | noise | Gaussian乱数から平均ゼロ・入力に直交する方向を作り、その方向へ指定角度だけ回転 |
-| noise角度 | $\theta\sim U(0,5^\circ)$。`noise_angle_deg_range=(0.0, 5.0)`。各チャネルへ独立なGaussian雑音を加算する方式とは異なる |
+| noise角度 | $`\theta\sim U(0,5^\circ)`$。`noise_angle_deg_range=(0.0, 5.0)`。各チャネルへ独立なGaussian雑音を加算する方式とは異なる |
 | 適用確率 | 学習時は有効な操作ごとに0.5、無効な操作は0。画素ごとに適用を抽選する |
 | 操作順序 | `shuffle_order_per_batch=True`。2操作の順序をbatchごとにランダム化（既定値） |
 | 再中心化・norm | `recenter_after_each_op=True`、`renorm_to_input_norm=True`。各操作後に画素内平均を0、normを操作前の値へ戻す（既定値） |
@@ -311,7 +311,7 @@ noiseのGaussianは方向の生成方法を指し、回転角の分布や最終�
 | 初期化 | cosine不類似度を用いたk-means++型の初期化を1 fitあたり1回。追加のrestartや最良run選択なし |
 | 最大反復 | `max_iter=500` |
 | 許容値 | `tol=1e-4` |
-| 停止規則 | 平均cosine不類似度の前回との差について、相対変化$<10^{-4}$または絶対変化$<10^{-7}$で停止。相対変化の分母は前回値の絶対値$+10^{-12}$ |
+| 停止規則 | 平均cosine不類似度の前回との差について、相対変化$`<10^{-4}`$または絶対変化$`<10^{-7}`$で停止。相対変化の分母は前回値の絶対値$`+10^{-12}`$ |
 | 空クラスタ | 現在の最近中心から遠いtrain画素で中心を置き換える |
 | 正規化・精度 | 入力・更新中心を行ごとにL2正規化。内部FP32、正規化の`eps=1e-6` |
 | device | `device="cuda"`（既定値） |
@@ -352,15 +352,15 @@ GPUの並列reductionによる微小な非決定性まで消えたとは主張�
 | 設定 | 採用値 |
 | --- | --- |
 | optimizer | AdamW |
-| betas | $(\beta_1,\beta_2)=(0.9,0.95)$ |
-| epsilon / AMSGrad | $10^{-8}$ / 無効 |
+| betas | $`(\beta_1,\beta_2)=(0.9,0.95)`$ |
+| epsilon / AMSGrad | $`10^{-8}`$ / 無効 |
 | weight decay | 0.05。biasと正規化層のパラメータは0 |
 | batch size | 1024スペクトル / GPU |
 | GPU数 | 単一GPUを前提とする（`world_size=1`） |
 | gradient accumulation | `accum_iter=1`。各batchで更新し、勾配を蓄積しない |
 | effective batch size | 1024 |
-| base learning rate | $1.5\times10^{-4}$。256のeffective batchに対する基準値 |
-| peak learning rate | $6.0\times10^{-4}$。下記の線形スケーリングによる |
+| base learning rate | $`1.5\times10^{-4}`$。256のeffective batchに対する基準値 |
+| peak learning rate | $`6.0\times10^{-4}`$。下記の線形スケーリングによる |
 | training epochs | 800 |
 | warmup | 最初の40 epochで0からpeak learning rateまで線形増加 |
 | warmup後のschedule | 残り760 epochでhalf-cycle cosine decay。restartなし |
@@ -377,42 +377,42 @@ GPUの並列reductionによる微小な非決定性まで消えたとは主張�
 全体可視化用のA0・A1・M00・M11にも、CVと同じ条件別のmask・loss対象・augmentation設定と、
 同じ800 epochのrecipeを適用する。
 参照は[公式PRETRAIN.mdの明示設定](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/PRETRAIN.md)
-を優先する。`main_pretrain.py`の引数既定値には400 epoch・base lr $10^{-3}$が含まれるが、
+を優先する。`main_pretrain.py`の引数既定値には400 epoch・base lr $`10^{-3}`$が含まれるが、
 それらを本研究の学習設定へ転記しない。
 
-effective batch sizeを$B_{\mathrm{eff}}$として、学習率は
+effective batch sizeを$`B_{\mathrm{eff}}`$として、学習率は
 
-$$
+```math
 B_{\mathrm{eff}}=1024\times1\times1=1024,\qquad
 \eta_{\max}=1.5\times10^{-4}\frac{B_{\mathrm{eff}}}{256}=6.0\times10^{-4}
-$$
+```
 
 とする。原論文のeffective batch size 4096を勾配蓄積で再現する設定ではない。
 複数GPUへ移行する場合は、GPU数・effective batch size・学習率を一体として再指定する。
 メモリ不足を理由に実装がbatch sizeやaccumulationを暗黙に変更しない。
 
-epoch進捗を$u=e+j/S_f$（$e$は0始まりのepoch、$j$は0始まりのbatch index）として、
+epoch進捗を$`u=e+j/S_f`$（$`e`$は0始まりのepoch、$`j`$は0始まりのbatch index）として、
 [公式scheduler](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/util/lr_sched.py)
 と同じく
 
-$$
+```math
 \eta(u)=
 \begin{cases}
 \eta_{\max}\,u/40, & 0\le u<40 \\
 \dfrac{\eta_{\max}}{2}\left[1+\cos\left(\pi\dfrac{u-40}{800-40}\right)\right], & 40\le u\le800
 \end{cases}
-$$
+```
 
 を用いる。epoch単位の段階的なschedulerに置き換えない。
 
-fold $f$のtrain試料数を$M_f$とすると、抽出集合の画素数と1 epochのbatch数、予定更新回数は
+fold $`f`$のtrain試料数を$`M_f`$とすると、抽出集合の画素数と1 epochのbatch数、予定更新回数は
 
-$$
+```math
 N_f=M_fq,\qquad S_f=\left\lfloor\frac{N_f}{1024}\right\rfloor,\qquad U_f=800S_f
-$$
+```
 
-となる。$S_f\ge1$を実行前に確認する。同じfold内では全条件・全反復で同じ$S_f$と$U_f$を用いる。
-train試料数が異なるfold間や全体学習では更新回数が異なるため、実際の$N_f$、$S_f$、$U_f$を保存する。
+となる。$`S_f\ge1`$を実行前に確認する。同じfold内では全条件・全反復で同じ$`S_f`$と$`U_f`$を用いる。
+train試料数が異なるfold間や全体学習では更新回数が異なるため、実際の$`N_f`$、$`S_f`$、$`U_f`$を保存する。
 AMPによる更新skipが生じた場合は、skip回数と実更新回数も記録する。
 
 `drop_last=True`では、shuffle後の端数batchをそのepochのニューラルネット学習から除く。
@@ -477,9 +477,9 @@ M00、M10、M01、M11は、Gaussian noiseの有無とshiftの有無による2×2
 現行の報告ではLLA-3/5/9（補正後）とLFR(TGN+FS)・LFR(TGN)・LFR(FS)について、
 同じ試料・K・反復における次の交互作用contrastをCSV表で報告する。
 
-$$
+```math
 (M11-M10)-(M01-M00)
-$$
+```
 
 LLAとLFRは改善方向が逆である。contrastは指標の元の尺度で示し、正負の意味を明記する。
 交互作用はこの指標・この強度設定に対する記述であり、augmentationの一般的な相乗効果とは断定しない。
@@ -527,9 +527,9 @@ paired比較が困難になるため、共通Kを用いる。
 
 このため、結果を見る前に、全fold・全条件・全反復で使用する共通K集合を次の7点に固定する。
 
-$$
+```math
 \mathcal{K}=\{2,4,6,8,10,12,14\}
-$$
+```
 
 全試料raw SNVのelbowによるK校正は行わない。test試料のスペクトル分布、CV指標、ラベルマップ、
 または劣化の解釈を用いて集合を変更しない。条件別の潜在空間から個別にKを選び、表現の違いと
@@ -542,31 +542,31 @@ $$
 
 主表・全体可視化の代表表示値は、共通集合の中央にあたる中間的な表示解像度8に固定する。
 
-$$
+```math
 K_0=8
-$$
+```
 
 この中間解像度に現象上の目安を与えるため、1試料内で観察され得る主要な変動を、早材・晩材に
 代表される年輪組織、相対的に健全・劣化した状態、環境に由来し得る表面状態について、それぞれ
 最小限の2水準へ粗視化する。概念上の組合せは次の8通りとなる。
 
-$$
+```math
 \underbrace{2}_{\text{年輪組織}}
 \times
 \underbrace{2}_{\text{相対的な劣化状態}}
 \times
 \underbrace{2}_{\text{環境由来の表面状態}}
 =8
-$$
+```
 
 木材のSNVスペクトルは主要な吸収構造を共有するため、樹種ごとの独立な離散状態を事前に仮定せず、
 樹種は組合せの水準数に加えない。樹種差は各要因の現れ方を修飾し、クラスタ形成にも寄与し得る。
-$2\times2\times2$は補助的なヒューリスティックである。実際の要因は連続的で相互作用するため、
+$`2\times2\times2`$は補助的なヒューリスティックである。実際の要因は連続的で相互作用するため、
 各クラスタへの事前割当や1対1対応を仮定しない。第一の根拠は共通K集合の中央という表示基準に置き、
 真のクラスタ数・最適K・8つの化学状態とは解釈しない。
 
-- $K_0$について主評価、診断および計画比較を表形式で報告する。
-- $\mathcal{K}$全体の曲線と計画比較の差を併記し、代表Kだけで結論を決めない。
+- $`K_0`$について主評価、診断および計画比較を表形式で報告する。
+- $`\mathcal{K}`$全体の曲線と計画比較の差を併記し、代表Kだけで結論を決めない。
 - 改善の方向がKによって変わる場合は、どのKで変わるかを明示する。
 - K方向の平均、最大値などを手法の総合scoreにしない。
 
@@ -619,11 +619,11 @@ outer train内の試料単位validationと選択規則を含む設計変更が�
 ## 10. 実行順序
 
 1. 固定済みの200 Hz本番前処理datasetと診断図を生成・確認する。
-2. 第11.2節の確認・記録を行う。固定済みの$q$、共通$\mathcal{K}$と代表表示$K_0$を含む実行configを作成する。
+2. 第11.2節の確認・記録を行う。固定済みの$`q`$、共通$`\mathcal{K}`$と代表表示$`K_0`$を含む実行configを作成する。
 3. 試料単位の共通5-fold splitとtrain画素のmanifestを作成する。
 4. A1を含む主比較8条件を3反復で評価する。
 5. 主8条件のOOF snapshotを作成・checkし、pairedな条件差、K依存性、2×2交互作用および反復間安定性を集計する。主条件の報告図表を生成・照合する。
-6. B0、B1、A0、A1、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$K_0$で
+6. B0、B1、A0、A1、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$`K_0`$で
    Cosine-KMeansを各1回fitする。
 7. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋Hungarian matchingでM00のCosine-KMeansを共通基準にラベルを直接整列し、SNV類似度行列・確認用IoU/contingency/overlapとともに6条件のマップとスペクトル、PCA（PC1・PC2）を保存する。
 8. Raman補助実験は独立した[Bacteria-IDプロトコル](bacteria_id_experiment_plan.md)と[HPOプロトコル](bacteria_id_hpo_protocol.md)に従う。
