@@ -1,45 +1,45 @@
-# ドキュメント案内
+# Documentation index
 
-研究の目的、解析仕様、再現手順、結果の読み方をまとめる。
+Research objectives, analysis specifications, reproduction guides, and guidance on interpreting results.
 
-## 研究と手法
+## Research and methods
 
-| 文書 | 内容 |
+| Document | Contents |
 | --- | --- |
-| [研究概要](research_overview.md) | 研究の問い、解析の構成、結果と主張の範囲 |
-| [ChemoMAEの位置づけ](chemomae_positioning.md) | masked denoising、単位潜在、アフィンdecoderの役割 |
-| [関連研究](related_work.md) | 参照手法と本研究の関係、参考文献 |
-| [結果の読み方](interpretation_notes.md) | マップ・教師なし指標・スペクトル解釈の限界 |
-| [数理的補足](mathematical_notes.md) | SNV、摂動、loss、表現幾何の導出 |
-| [数値実装の補足](numerical_implementation_notes.md) | 混合精度、学習loss、クラスタリングの数値処理 |
+| [Research overview](research_overview.md) | Research questions, analysis structure, and scope of results and claims |
+| [Positioning of ChemoMAE](chemomae_positioning.md) | Roles of masked denoising, unit latent vectors, and the affine decoder |
+| [Related work](related_work.md) | Connections to prior methods and references |
+| [Interpreting results](interpretation_notes.md) | Limits of maps, unsupervised metrics, and spectral interpretation |
+| [Mathematics of SNV and spectral perturbations](mathematical_notes.md) | Constraint preservation by SNV, TGN, and Fractional Shift |
+| [Numerical implementation notes](numerical_implementation_notes.md) | Mixed precision, training loss, and numerical handling in clustering |
 
-## 仕様と再現手順
+## Specifications and reproduction guides
 
-| 解析 | 仕様 | 実行・成果物 |
+| Analysis | Specification | Execution and outputs |
 | --- | --- | --- |
-| 古材NIR-HSI | [研究設計一覧](design/README.md) | [実験手順](experiment_runbook.md)・[成果物案内](results.md) |
-| Mask率感度解析 | [実験条件](design/experiment_protocol.md)・[全体fit条件](design/visualization_and_interpretation.md#global-mask-rate) | [CV手順](experiment_runbook.md#mask-rate-sweep)・[全体fit手順](experiment_runbook.md#global-mask-rate) |
-| 空間マップ再現性 | [評価仕様](design/spatial_map_reproducibility_plan.md) | [専用手順](spatial_map_reproducibility_runbook.md) |
-| Ramanクラスタリング | [Bacteria-ID仕様](design/bacteria_id_experiment_plan.md) | [実行手順](bacteria_id_runbook.md) |
-| Raman分類 | [HPO仕様](design/bacteria_id_hpo_protocol.md) | [実行手順](bacteria_id_hpo_runbook.md)・[解釈](bacteria_id_interpretation_plan.md) |
+| Historic wood NIR-HSI | [Research design index](design/README.md) | [Experiment runbook](experiment_runbook.md), [output guide](results.md) |
+| Mask-ratio sensitivity | [Experimental conditions](design/experiment_protocol.md), [global-fit conditions](design/visualization_and_interpretation.md#global-mask-rate) | [CV procedure](experiment_runbook.md#mask-rate-sweep), [global-fit procedure](experiment_runbook.md#global-mask-rate) |
+| Spatial map reproducibility | [Evaluation specification](design/spatial_map_reproducibility_plan.md) | [Dedicated runbook](spatial_map_reproducibility_runbook.md) |
+| Raman clustering | [Bacteria-ID specification](design/bacteria_id_experiment_plan.md) | [Runbook](bacteria_id_runbook.md) |
+| Raman classification | [HPO specification](design/bacteria_id_hpo_protocol.md) | [Runbook](bacteria_id_hpo_runbook.md), [interpretation](bacteria_id_interpretation_plan.md) |
 
-研究条件・計算方法・データ契約は`docs/design/`に、操作方法は各実行手順に記載する。
-実測値と実行由来は、各出力のconfig・manifest・run記録・完了記録に対応付ける。
-`data/`・`outputs/`以下はGit管理対象外であり、文書中のパスはローカルの入力・出力先を示す。
+Research conditions, calculations, and data contracts are defined in `docs/design/`; operational procedures are described in the runbooks.
+Measured values and execution provenance are linked to each output's configuration, manifests, run records, and completion records.
+Paths under `data/` and `outputs/` are not tracked by Git and refer to local inputs and outputs.
 
-## 用語
+## Terminology
 
-| 用語 | 本リポジトリでの意味 |
+| Term | Meaning in this repository |
 | --- | --- |
-| raw SNV / B0 | 前処理済み256次元SNVを直接使うbaseline。センサのraw強度ではない |
-| 試料 | `KYOw...`で識別する分割・集計単位。同一元部材との対応や使用時の位置関係は確定していない |
-| CVのrepeat | 同じsplit・画素集合に対する3回の学習・クラスタリング反復 |
-| 全体fitのKMeans repeat | 各条件の表現を固定し、K8の初期化だけを変える3反復。NN再学習のばらつきは含まない |
-| draw | LFR用に各摂動を5回生成する評価摂動反復 |
-| OOF | 各試料をtrainに含めないfoldモデルから得る予測・評価 |
-| 全体fit | 全49試料からの共通抽出画素でfit・学習し、全試料を記述する解析 |
-| matching | クラスタ所属を変えずに表示番号を対応付ける操作。劣化順序や共通の化学的意味を与えない |
-| clean | 追加noise・shiftを加える前の観測。測定ノイズのない真値ではない |
+| raw SNV / B0 | Baseline using the preprocessed 256-dimensional SNV input directly; not raw sensor intensity |
+| Specimen | Unit of splitting and aggregation identified by `KYOw...`. Correspondence to the same original timber member and relative positions during use have not been established |
+| CV repeat | Three training and clustering replicates using the same split and pixel sets |
+| Global-fit KMeans repeat | Three K8 initializations with each condition's representation fixed; these do not include variability from retraining the neural network |
+| draw | An evaluation perturbation replicate; each perturbation is generated five times for LFR |
+| OOF | Predictions and evaluations from the fold model whose training set excludes the specimen |
+| Global fit | Analysis fitted or trained on common pixel samples from all 49 specimens to describe the entire specimen set |
+| matching | Mapping display labels without changing cluster membership; it does not establish a degradation order or a shared chemical meaning |
+| clean | The observation before additional noise and shift; not a ground truth free of measurement noise |
 
-OOF図のfold内B0基準の整列と、全体fit図のM00基準の整列は異なる。
-それぞれ[OOF診断図](design/oof_sanity_visualization.md)と[全体fitの可視化仕様](design/visualization_and_interpretation.md)に定義する。
+Alignment to B0 within each fold in OOF figures differs from alignment to M00 in global-fit figures.
+They are defined in the [OOF diagnostic figure specification](design/oof_sanity_visualization.md) and the [global-fit visualization specification](design/visualization_and_interpretation.md), respectively.

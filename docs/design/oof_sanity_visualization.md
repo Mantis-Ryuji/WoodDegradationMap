@@ -1,57 +1,64 @@
-# B0・B1・A0・M00 OOF sanity可視化
+# B0, B1, A0, and M00 OOF Sanity Visualization
 
-B0・B1・A0・M00の全CV完了後に、既存のclean OOF mapと評価成果物から探索的な確認図を作る。
-PCA・KMeansのfit、表現抽出、評価を再実行しない。実行方法は[runbook](../experiment_runbook.md#oof-sanity)、
-結果の読み方は[結果の解釈](../interpretation_notes.md)を参照する。
+After all CV runs for B0, B1, A0, and M00 are complete, exploratory diagnostic figures are generated
+from the existing clean OOF maps and evaluation artifacts. PCA/KMeans fitting, representation extraction,
+and evaluation are not rerun. See the [runbook](../experiment_runbook.md#oof-sanity) for execution
+and [interpretation of results](../interpretation_notes.md) for guidance on reading the outputs.
 
-## 1. 保存物
+## 1. Saved Artifacts
 
-出力先は `outputs/sanity_checks/a0_m00_oof_visualization/`。
-保存物は次の5枚のPNGと3つのCSVだけとし、sanity用のログやrun/completion/failure JSONは作らない。
+The output directory is `outputs/sanity_checks/a0_m00_oof_visualization/`.
+Only the following five PNGs and three CSVs are saved; no sanity-specific logs or run/completion/failure JSON files are created.
 
-| ファイル | 内容 |
+| File | Contents |
 | --- | --- |
-| `labels/B0_representatives_k8_repeat1.png` | B0の代表7試料を1行に並べたlabel map |
-| `labels/B1_representatives_k8_repeat1.png` | 同じ7試料・順序のB1 label map |
-| `labels/A0_representatives_k8_repeat1.png` | 同じ7試料・順序のA0 label map |
-| `labels/M00_representatives_k8_repeat1.png` | 同じ7試料・順序のM00 label map |
-| `silhouette_k_sweep.png` | 単一axesのK-sweep。下段subplotなし |
-| `occupancy.csv` | 条件・試料・fold・repeat・K別のcluster画素数、使用数、最大占有率、単一cluster flag |
-| `matching.csv` | fold・比較条件ごとのraw IDからB0表示IDへの対応、contingency、overlap |
-| `metrics_summary.csv` | silhouette、補正前LLA-3/5/9、LLA-3/5/9、LFR noise・shift・両方の集計 |
+| `labels/B0_representatives_k8_repeat1.png` | B0 label maps for the seven representative specimens in a single row |
+| `labels/B1_representatives_k8_repeat1.png` | B1 label maps for the same seven specimens in the same order |
+| `labels/A0_representatives_k8_repeat1.png` | A0 label maps for the same seven specimens in the same order |
+| `labels/M00_representatives_k8_repeat1.png` | M00 label maps for the same seven specimens in the same order |
+| `silhouette_k_sweep.png` | K-sweep on a single axes; no lower subplot |
+| `occupancy.csv` | Pixel counts per cluster, number of used clusters, maximum occupancy, and single-cluster flag by condition, specimen, fold, replicate, and K |
+| `matching.csv` | Mapping from raw IDs to B0 display IDs, contingency, and overlap for each fold and comparison condition |
+| `metrics_summary.csv` | Aggregates for silhouette, uncorrected LLA-3/5/9, LLA-3/5/9, and LFR for noise, shift, and both |
 
-補正前LLA、LFR、occupancyはCSVで確認する。boundary mapと代表スペクトルは、この可視化の対象に含めない。
+Uncorrected LLA, LFR, and occupancy are inspected in the CSVs. Boundary maps and representative spectra are outside the scope of this visualization.
 
-## 2. 代表試料のlabel map
+## 2. Label Maps of Representative Specimens
 
-$`K_0=8`$、repeat 1で[固定7試料](visualization_and_interpretation.md#representative-samples)を
-試料番号の昇順（ヒノキ、マツ、ケヤキ、ツガ、クリ、スギ、モミ）に並べ、B0・B1・A0・M00各1枚へ保存する。
-代表試料の定義と保存図の試料IDを照合する。
+At $`K_0=8`$, replicate 1, the [fixed seven specimens](visualization_and_interpretation.md#representative-samples)
+are arranged in ascending specimen-number order (hinoki cypress, pine, zelkova, hemlock, chestnut, Japanese cedar, and fir),
+with one figure saved for each of B0, B1, A0, and M00. Specimen IDs in the saved figures are checked against the representative-specimen definition.
 
-各試料の下に`KYOw...`試料IDを表示し、背景0・クラスタ1〜8の共通凡例を付ける。
-[共通描画規約](visualization_and_interpretation.md#figure-style)を適用する。
+Each specimen is labeled with its `KYOw...` ID below the map, with a shared legend for background 0 and clusters 1–8.
+The [shared plotting conventions](visualization_and_interpretation.md#figure-style) apply.
 
-## 3. fold内Hungarian matching
+## 3. Within-Fold Hungarian Matching
 
-各foldの全test試料について、B0と各比較条件の共通有効画素のcontingencyを合算し、一致画素数を最大にする
-1対1対応を求める。B1・A0・M00をそれぞれB0へ直接整列し、同じfold・比較条件の全試料で同じ対応を使う。
-代表7試料だけでmatchingしたり、試料ごとに別の対応を使ったりしない。
+For all test specimens in each fold, contingency counts over valid pixels shared by B0 and each comparison condition
+are summed, and a one-to-one correspondence maximizing the number of matching pixels is obtained.
+B1, A0, and M00 are each aligned directly to B0, using the same correspondence for every specimen within the same fold and comparison condition.
+Matching is not restricted to the seven representative specimens, and a separate correspondence is not fitted for each specimen.
 
-対応は表示用mapのコピーに適用する。保存済みCVラベル・指標は変更せず、occupancyのcluster別画素数はraw ID順とする。
-fold間の同じ色が同じ状態を表すとは限らない。overlapが0または弱い対応はCSVで確認する。
-全体fit後の[M00＋Cosine-KMeans基準・観測SNV代表線のcosine類似度によるmatching](visualization_and_interpretation.md#matching-reference)とは適用範囲・目的関数が異なる。
+The correspondence is applied to copies of the maps used for display. Saved CV labels and metrics remain unchanged;
+per-cluster pixel counts in occupancy use raw ID order. The same color across folds does not necessarily represent the same state.
+Correspondences with zero or weak overlap are inspected in the CSVs.
+The scope and objective differ from the [M00 + Cosine-KMeans reference matching based on cosine similarity of observed SNV representative spectra](visualization_and_interpretation.md#matching-reference) used after global fitting.
 
-## 4. 数値集計とsilhouette
+## 4. Numerical Aggregation and Silhouette
 
-全49試料・5 folds・3反復・全7Kを対象とし、[評価の集計規約](evaluation_metrics.md#reporting)を使う。
-条件・K・指標ごとに3反復共通の定義済み試料を集計し、平均、試料間SD、反復間SD、
-反復別平均、有効対象数、除外試料と未定義理由をCSVへ保存する。未定義値を0へ置換しない。
+All 49 specimens, five folds, three replicates, and all seven K values are included, following the
+[evaluation aggregation conventions](evaluation_metrics.md#reporting). For each condition, K, and metric,
+specimens with defined values in all three replicates are aggregated. The mean, between-specimen SD,
+between-replicate SD, replicate-specific means, valid counts, excluded specimens, and reasons for undefined values
+are saved to CSV. Undefined values are not replaced with zero.
 
-silhouette図の太線は3反復の試料macro平均、細線は各反復のmacro平均、帯は反復間SD（`ddof=1`）。
-平均の対象試料と未定義理由はCSVで確認する。この図を条件・K・best runの選択に使わない。
+In the silhouette figure, the thick line is the specimen macro mean over three replicates, thin lines are the
+macro means for individual replicates, and the band is the between-replicate SD (`ddof=1`).
+The specimens included in the mean and reasons for undefined values are listed in the CSVs.
+This figure is not used to select a condition, K, or best run.
 
-## 5. 入出力の扱い
+## 5. Input and Output Handling
 
-入力のcompletion・score・OOF割当・map対応を検証し、既存CV成果物を変更しない。
-出力先が既に存在する場合は拒否する。再生成では明示した新規出力先を使う。
-全体fit後の解釈図や全CV完了後の論文用図表とは別の成果物として扱う。
+Input completion records, scores, OOF assignments, and map correspondence are validated; existing CV artifacts are not modified.
+An existing output directory is rejected. Regeneration uses an explicitly specified new output directory.
+These artifacts are separate from the interpretation figures after global fitting and the manuscript figures and tables after all CV runs are complete.

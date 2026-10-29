@@ -1,62 +1,63 @@
-# 研究概要
+# Research overview
 
-本研究は、状態区分や教師ラベルを定めにくい材料について、スペクトルの特徴と空間分布を対応付け、
-試料間の所見を共通の基準で比較する自己教師あり表現学習を扱う。
-対象は、歴史的建築物の部材に由来する7樹種・49試料の古材NIR-HSIである。
+This study addresses self-supervised representation learning for materials whose state categories and supervised labels are difficult to define.
+It relates spectral features to spatial distributions and compares findings across specimens using a common reference.
+The data comprise NIR-HSI of 49 historic wood specimens from seven tree species, originating from timber members of historic buildings.
 
 <a id="research-focus"></a>
 
-## 研究の問い
+## Research question
 
-化学状態の正解ラベルを与えずに帯域間の関係を学ぶことで、状態差の探索と解釈に有用な表現を得られるかを調べる。
-状態差に関わる共通のスペクトル特徴が得られれば、その空間的な連続性が未知試料の分割にも現れるという仮説の下で、
-学習に用いない空間情報によってマップを評価する。
+We examine whether learning relationships between spectral bands without ground-truth chemical-state labels can yield representations useful for exploring and interpreting state differences.
+Maps are evaluated using spatial information excluded from learning, under the hypothesis that shared spectral features associated with state differences
+will also produce spatial continuity in partitions of unseen specimens.
 
-古材のスペクトルには、経年変化、外部露出、水分履歴、樹種、材組織、含水、表面性状、散乱などの影響が重なり得る。
-クラスタをあらかじめ定義した劣化classとみなさず、連続的・複合的な状態差を調べるための区分として扱う。
+Spectra of historic wood may combine effects of aging, external exposure, moisture history, tree species, wood anatomy, moisture content, surface properties, and scattering.
+Clusters are treated as partitions for investigating continuous, overlapping state differences, rather than predefined degradation classes.
 
-## 方法
+## Methods
 
-1. 試料領域を抽出し、反射率変換、波長範囲の選択、等間隔256点への補間、SNV変換を行う。
-2. ChemoMAEにより、画素ごとのスペクトルから16次元の単位潜在ベクトルを学ぶ。SNVの平均・ノルムを保つTGN・FSを加え、可視帯域からマスク帯域の摂動前の値を復元する。
-3. 学習済みencoderへ追加摂動なし・全帯域可視で入力し、Cosine-KMeansによる割当を画像座標へ戻す。
-4. 試料単位CVでマップの性質を比較し、全体fitのマップと観測NIRスペクトルから領域差を解釈する。
+1. Extract specimen regions, convert to reflectance, select the wavelength range, interpolate to 256 equally spaced points, and apply SNV.
+2. Use ChemoMAE to learn a 16-dimensional unit latent vector from each pixel spectrum. Apply TGN and FS, which preserve the SNV mean and norm, and reconstruct the original, unperturbed values of masked bands from visible bands.
+3. Pass the spectra to the trained encoder with all bands visible and no additional perturbations, then map Cosine-KMeans assignments back to image coordinates.
+4. Compare map properties using specimen-level CV, and interpret regional differences using global-fit maps and observed NIR spectra.
 
-Encoderは1画素のスペクトルだけを受け取り、座標・近傍画素を用いない。
-Decoderは単一の潜在から全帯域を復元するアフィン写像であり、潜在を化学成分の濃度として拘束しない。
-構成の理由は[ChemoMAEの位置づけ](chemomae_positioning.md)、計算条件は[研究設計](design/README.md)に示す。
+The encoder receives only a single pixel spectrum, without coordinates or neighboring pixels.
+The decoder is an affine map that reconstructs all bands from one latent vector; the latent coordinates are not constrained to represent chemical concentrations.
+See [positioning of ChemoMAE](chemomae_positioning.md) for the architectural rationale and [research design](design/README.md) for computational settings.
 
-## 評価と解析
+## Evaluation and analyses
 
-| 解析 | 目的と証拠 |
+| Analysis | Purpose and evidence |
 | --- | --- |
-| 5-fold CV・3反復 | 学習に含めない試料で、入力直接利用・PCA・AE・denoising AE・ChemoMAEの分割を比較する |
-| LLA | クラスタ占有率を保ったランダム配置での偶然一致を補正し、近傍ラベルの空間的一貫性を測る |
-| LFR | TGN・FSによる指定摂動の前後で、固定モデル・固定中心への割当が変わる割合を測る |
-| 補助診断 | ARIによる反復間の分割再現性、cosine-silhouetteによる分離、使用クラスタ数・最大占有率による退化を確認する |
-| 全体fit | 全49試料を共通の表現とクラスタ中心で記述し、主要6条件・K8の領域分布を比較する |
-| 空間マップ再現性 | M11の3 encoder×3 KMeans初期化について、領域分割と境界配置の共通性を調べる |
-| NIR解釈 | 観測スペクトルと疑似吸光度の二次微分を、文献帰属・空間分布・試料情報に照らして解釈する |
-| Raman補助実験 | Bacteria-IDを別途学習し、保留スペクトルのクラスタリングと、教師ありfine-tuningによる分離株分類を調べる |
+| Five-fold CV with three replicates | Compare partitions from direct input, PCA, AE, denoising AE, and ChemoMAE on specimens excluded from training |
+| LLA | Measure spatial consistency of neighboring labels after correcting for chance agreement under random placement that preserves cluster occupancy |
+| LFR | Measure the fraction of assignments that change under specified TGN/FS perturbations with the model and centers fixed |
+| Supplementary diagnostics | Assess partition reproducibility across replicates with ARI, separation with cosine silhouette, and degeneracy with the number of occupied clusters and maximum occupancy |
+| Global fit | Describe all 49 specimens using common representations and cluster centers, and compare regional distributions across the six main conditions at K8 |
+| Spatial map reproducibility | Examine agreement of regional partitions and boundary locations across 3 M11 encoders × 3 KMeans initializations |
+| NIR interpretation | Interpret observed spectra and second derivatives of pseudo-absorbance in light of published band assignments, spatial distributions, and specimen information |
+| Raman supplementary experiments | Train separately on Bacteria-ID to examine clustering of held-out spectra and isolate classification through supervised fine-tuning |
 
-Mask率25%・50%・75%は感度解析として扱い、主条件50%の選び直しには用いない。
-CVの学習反復と、表現を固定した全体fitのKMeans初期化反復は区別する。
-詳細は[指標の定義](design/evaluation_metrics.md)と[成果物案内](results.md)を参照する。
+Mask ratios of 25%, 50%, and 75% are a sensitivity analysis and are not used to reselect the main 50% condition.
+Training replicates in CV are distinguished from KMeans initialization replicates with fixed representations in global fitting.
+See the [metric definitions](design/evaluation_metrics.md) and [output guide](results.md) for details.
 
-## 論文の結果と解釈の範囲
+## Paper findings and scope of interpretation
 
-古材49試料のOOF評価では、ChemoMAEによる分割は入力直接利用やPCAより高い空間的一貫性を示した。
-全帯域復元からマスク帯域予測への変更による改善は、追加摂動による上積みより一貫していた。
-指定摂動に対する割当の安定化がLLAの向上を伴わない条件もあり、両者を別の性質として評価する。
+In OOF evaluation of the 49 historic wood specimens, ChemoMAE partitions showed greater spatial consistency than direct input or PCA.
+The improvement from replacing full-band reconstruction with masked-band prediction was more consistent than the additional gains from perturbations.
+Some conditions improved assignment stability under the specified perturbations without increasing LLA, so these are evaluated as distinct properties.
 
-全体fitでは、材組織や外部露出面に対応する分布を整理し、反復による領域・境界の共通性を確認した。
-NIRの特徴と空間分布を既報・部材情報に結び付け、経年変化と水の関与を考慮した内部劣化モデル、
-光劣化・侵食・溶脱と内部への水輸送・二次反応を考慮した表面劣化モデルを仮説として提案した。
-これらは観測に基づく探索的な解釈であり、反応過程や因果関係を実証したものではない。
+Global fitting characterized distributions corresponding to wood anatomy and externally exposed surfaces, and repeated runs showed common regional and boundary patterns.
+Relating NIR features and spatial distributions to previous studies and timber-member information led to two hypotheses:
+an internal degradation model involving aging and water, and a surface degradation model involving photodegradation, erosion, leaching, inward water transport, and secondary reactions.
+These are exploratory interpretations based on observations, not demonstrations of reaction processes or causal relationships.
 
-Raman補助実験は、NIR以外のスペクトルからも識別に有用な表現を別途学習できることを示す。
-古材の学習済みモデルをRamanへ転用した実験ではなく、古材の化学的帰属の正しさを直接検証するものでもない。
+The Raman experiments show that useful discriminative representations can also be learned separately from spectra other than NIR.
+They do not transfer the model trained on historic wood to Raman data, nor do they directly validate the chemical assignments made for wood.
 
-LLA・LFR・ARIは化学状態の正解との一致を測らない。全体fitは未知試料の性能評価ではなく、
-同一元部材への由来や使用時の位置関係が確定していない試料も含むため、CVは試料IDを単位とする範囲で解釈する。
-詳しい留保は[結果の読み方](interpretation_notes.md)にまとめる。
+LLA, LFR, and ARI do not measure agreement with ground-truth chemical states. Global fitting is not a performance evaluation on unseen specimens.
+Because common origin from an original timber member and relative positions during use have not been established for all specimens,
+CV should be interpreted within the scope of specimen-ID-level splitting.
+Further limitations are described in [interpreting results](interpretation_notes.md).

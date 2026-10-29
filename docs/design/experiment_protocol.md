@@ -1,399 +1,405 @@
-# 実験プロトコル
+# Experimental Protocol
 
-## 1. 適用範囲
+## 1. Scope
 
-本書は、主実験・mask率補助実験の研究条件と実行時の記録を定義する。
+This document defines the research conditions and execution records for the main experiment and the supplementary mask-rate experiment.
 
-前処理とraw SNVの定義は[前処理仕様](preprocessing.md)に従う。
+Follow the [preprocessing specification](preprocessing.md) for preprocessing and the definition of raw SNV.
 
-実行環境はChemoMAE v0.2.2とする。各runの設定・環境・source hashを成果物に記録する。
-成果物の確認方法は[runbook](../experiment_runbook.md)を参照する。
+Use ChemoMAE v0.2.2. Record the configuration, environment, and source hashes for each run in its artifacts.
+See the [runbook](../experiment_runbook.md) for artifact inspection procedures.
 
-- [CV・seed・画素抽出](#cv-design)
-- [条件・表現・学習設定](#conditions)と[計画比較](#planned-comparisons)
-- [mask率補助実験](#mask-rate-sweep)、[Kの方針](#cluster-counts)
-- [実行時に保存する記録](#execution-records)
+- [CV, seeds, and pixel sampling](#cv-design)
+- [Conditions, representations, and training settings](#conditions), and [planned comparisons](#planned-comparisons)
+- [Supplementary mask-rate experiment](#mask-rate-sweep) and [K policy](#cluster-counts)
+- [Records to save during execution](#execution-records)
 
-## 2. 研究目的
+## 2. Research Objectives
 
-古材NIR-HSIを実証対象に、masked reconstructionへSNV制約を保つcorruptionを追加し、
-状態差の探索・解釈に有用なスペクトル表現を得られるかを調べる。
-研究全体の問いと証拠の役割は[研究の目的](../research_overview.md)、
-MAEとaugmentationの採用理由は[ChemoMAEの位置づけ](../chemomae_positioning.md)を参照する。
+Using historical-wood NIR-HSI as the empirical application, investigate whether adding corruption that preserves SNV constraints to masked reconstruction
+can produce spectral representations useful for exploring and interpreting differences in material state.
+See the [research objectives](../research_overview.md) for the overall research questions and the role of each type of evidence,
+and [the positioning of ChemoMAE](../chemomae_positioning.md) for the rationale for adopting MAE and augmentation.
 
-本プロトコルのCVが比較する問いは次の3点である。
+CV under this protocol addresses three questions:
 
-1. 提案Aug-MAEはraw SNV、PCA、標準MAEと比べ、空間的一貫性・指定摂動への安定性をどう変えるか。
-   指標間にtrade-offがあるか。
-2. 標準MAEのmasked reconstruction方式は、maskなし・全領域再構成AEと比べてどのような違いを与えるか。
-3. noiseと波長方向shiftは、それぞれ単独・併用でどのような効果を与えるか。
+1. How does the proposed Aug-MAE change spatial consistency and stability under specified perturbations relative to raw SNV, PCA, and standard MAE?
+   Are there trade-offs between metrics?
+2. How does standard MAE's masked reconstruction differ from an AE with no masking and reconstruction over all channels?
+3. What effects do noise and wavelength-axis shifts have separately and in combination?
 
-mask率は提案条件の感度解析とし、最適化の主題にしない。
-CV指標は化学的な表現品質や劣化検出精度を直接測らない。劣化との対応は、マップ・代表／差スペクトル・
-試料情報と文献帰属に基づく[NIRスペクトルの探索的解釈](visualization_and_interpretation.md#nir-interpretation)とする。
-化学的解釈に合わせてCVの条件・指標・splitを変更しない。
+Treat mask rate as a sensitivity analysis of the proposed condition, not as the main optimization target.
+CV metrics do not directly measure chemical representation quality or degradation-detection accuracy.
+Correspondence with degradation is examined through [exploratory interpretation of NIR spectra](visualization_and_interpretation.md#nir-interpretation)
+using maps, representative/difference spectra, specimen information, and literature assignments.
+Do not change CV conditions, metrics, or splits to match the chemical interpretation.
 
 <a id="cv-design"></a>
 
-## 3. 実験単位とcross-validation
+## 3. Experimental Unit and Cross-Validation
 
-### 3.1 試料単位
+### 3.1 Specimen Unit
 
-- 分割・集計単位は、ファイル名の `KYOw...` で識別される試料とする。
-- 同一 `KYOw` に属する画像、測定条件、画素は、必ず同じfoldへ割り当てる。
-- 画素を独立なsplit単位として使用しない。
-- metadataの参照元は `data/metadata/古材メタデータ.csv` とする。
+- The split and aggregation unit is the specimen identified by `KYOw...` in the filename.
+- Always assign images, measurement conditions, and pixels belonging to the same `KYOw` to the same fold.
+- Do not use pixels as independent split units.
+- The metadata source is `data/metadata/古材メタデータ.csv`.
 
-本番前処理済み49試料をKYOw単位で分割する。
-異なるKYOw間の同一原材関係は不明であり、由来的な独立性を仮定しない。同一KYOwがtrain/testの
-両方に含まれないことを検証し、上位の依存関係が判明した場合はsplit作成前に扱いを決める。
-樹種・由来・測定条件の確認できた構成を報告し、未知樹種・未知産地・別装置への汎化は主張しない。
+Split the 49 specimens processed by production preprocessing at the KYOw level.
+It is unknown whether different KYOw specimens originate from the same original timber, so independence of provenance is not assumed.
+Verify that no KYOw appears in both training and test sets. If higher-level dependencies are identified, decide how to handle them before creating splits.
+Report the verified composition by tree species, provenance, and measurement conditions; do not claim generalization to unseen species, unseen origins, or different instruments.
 
-### 3.2 5-fold CV
+### 3.2 Five-Fold CV
 
-- 試料をランダムな5-foldに分割する。
-- 各foldは概ねtrain:test = 8:2となり、各試料は一度だけtestに現れる。
-- 樹種による層化抽出は行わない。
-- split生成時のseedを明示的に固定し、split manifestとともに記録する。
-- すべての比較条件で同一のfoldを使用する。
+- Randomly divide specimens into 5 folds.
+- Each fold has approximately an 8:2 training-to-test ratio, and each specimen appears in the test set exactly once.
+- Do not stratify by tree species.
+- Explicitly fix the split-generation seed and record it with the split manifest.
+- Use identical folds for every comparison condition.
 
-各foldでは、表現学習、PCAのfit、Cosine-KMeansのfitをtrain試料だけで行う。
-test試料は、trainで得た変換器、encoder、クラスタ中心を固定した状態で評価する。
+Within each fold, perform representation learning, PCA fitting, and Cosine-KMeans fitting using only training specimens.
+Evaluate test specimens with the transformations, encoder, and cluster centers obtained from training held fixed.
 
 <a id="seed-plan"></a>
 
-### 3.3 3反復と乱数の管理
+### 3.3 Three Replicates and Random-Number Management
 
-- 同一の5-fold splitを固定し、主比較とmask率補助実験をそれぞれ3反復する。split自体は作り直さない。
-- 反復IDを1、2、3とし、対応するseed一覧をCV開始前に固定する。良いseedを選択する探索は行わない。
-- 同じ反復IDを全条件で対応付け、モデル初期化、画素順序、mask、学習augmentation、PCAの乱数、
-  KMeans初期化および評価摂動の乱数を区別して記録する。
-- 条件ごとの乱数消費順の違いで比較用の入力や評価摂動が変わらないよう、乱数系列を分離する。
-- trainに使う画素集合とtest画素集合は反復間で固定する。反復は、固定したsplitと画素集合に対する
-  学習・クラスタリングの確率的変動を確認するものであり、データ分割の不確実性は評価しない。
-- B0は表現学習を行わない。B1のPCAが決定的な設定ならfoldごとのfit結果を再利用し、確率的な設定なら
-  反復ごとにseedを記録してfitする。B0/B1を含めKMeansは各反復でfitする。
+- Keep the same 5-fold split fixed and run 3 replicates each of the main comparison and supplementary mask-rate experiment. Do not recreate the splits.
+- Use replicate IDs 1, 2, and 3, fixing the corresponding seed list before CV begins. Do not search for favorable seeds.
+- Match replicate IDs across all conditions, and separately record random-number streams for model initialization, pixel order, masking,
+  training augmentation, PCA, KMeans initialization, and evaluation perturbations.
+- Separate random-number streams so that differences in the order of random-number consumption between conditions do not change shared comparison inputs or evaluation perturbations.
+- Keep the training-pixel set and test-pixel set fixed across replicates. Replicates assess stochastic variation in training and clustering
+  for fixed splits and pixel sets; they do not evaluate uncertainty from data splitting.
+- B0 performs no representation learning. If B1's PCA settings are deterministic, reuse the fitted PCA for each fold; if they are stochastic,
+  fit PCA for each replicate and record its seed. Fit KMeans in every replicate, including B0/B1.
 
-主比較の学習6条件は$`6\times5\times3=90`$学習、追加mask率2条件は$`2\times5\times3=30`$学習で、
-CVのニューラルネット学習は合計120回となる。Kの数だけ表現学習を繰り返さず、同一fold・条件・反復の
-表現を全Kで共有する。PCA、KMeansおよび全体可視化用の学習はこの120回に含めない。
+The 6 training conditions in the main comparison require $`6\times5\times3=90`$ training runs, and the 2 additional mask-rate conditions require
+$`2\times5\times3=30`$, for a total of 120 neural-network training runs in CV.
+Do not repeat representation learning for each K; share representations across all K values within the same fold, condition, and replicate.
+PCA, KMeans, and training for global visualization are not included in these 120 runs.
 
-CV用seed計画の基準値は `20260905` とする。
-`["wood-degradation-map-seeds-v1", 基準値, 用途, ...文脈]` を空白なしのASCII JSONへ変換し、
-SHA-256の先頭4 byteをbig-endianの符号なし32 bit整数として用いる。
-用途間でseed値が衝突した場合は停止し、暗黙に別seedを選ばない。
+The base value for the CV seed plan is `20260905`.
+Convert `["wood-degradation-map-seeds-v1", base_value, purpose, ...context]` to whitespace-free ASCII JSON,
+then interpret the first 4 bytes of its SHA-256 digest as a big-endian unsigned 32-bit integer.
+If seed values collide across purposes, stop rather than silently choosing a different seed.
 
-| 用途 | seedに含める文脈 | 共有範囲 |
+| Purpose | Context included in the seed | Shared across |
 | --- | --- | --- |
-| split | なし | 全条件・全K・全反復 |
-| train画素抽出 | fold・KYOw | 全条件・全K・全反復・全epoch |
-| モデル構築・画素順序・mask・学習Aug・PCA | 用途ごとにfold・学習反復 | 全条件・全K |
-| KMeans | fold・学習反復・K | 全条件 |
-| 評価摂動 | KYOw・摂動種類・摂動反復1..5 | 全条件・全K・全学習反復 |
+| Split | None | All conditions, K values, and replicates |
+| Training-pixel sampling | Fold and KYOw | All conditions, K values, replicates, and epochs |
+| Model construction, pixel order, masking, training augmentation, and PCA | Fold and training replicate for each purpose | All conditions and K values |
+| KMeans | Fold, training replicate, and K | All conditions |
+| Evaluation perturbations | KYOw, perturbation type, and perturbation replicate 1..5 | All conditions, K values, and training replicates |
 
-splitはソートした試料IDへNumPy PCG64によるランダム置換を行い、5つに概ね等分する。
-抽出は試料内のHDF5行番号をPCG64の一様・非復元 `choice` で選び、保存時に行番号順へ並べる。
-使用versionとseed数値一覧をmanifestとともに保存する。再読込時は保存済み集合を使用し、
-library versionや呼び出し順の違いを理由にsplit・画素集合を作り直さない。
-seed計画は乱数管理の契約であり、後続の学習・共通評価摂動の動作検証を代用しない。
+Generate splits by randomly permuting sorted specimen IDs using NumPy PCG64, then dividing them into 5 approximately equal groups.
+For pixel sampling, select HDF5 row indices within each specimen using uniform PCG64 `choice` without replacement, and sort them by row index before saving.
+Save the software versions and the complete list of numerical seeds with the manifest.
+On reload, use the saved sets rather than recreating splits or pixel sets because of differences in library versions or call order.
+The seed plan is a contract for random-number management; it does not replace verification of subsequent training or shared evaluation perturbations.
 
 <a id="pixel-sampling"></a>
 
-### 3.4 train画素の試料間均等化
+### 3.4 Equal Training-Pixel Counts Across Specimens
 
-- 各foldの各train試料から同数$`q=8192`$の有効画素を、試料内の一様ランダム・非復元抽出で選ぶ。
-- $`q`$と抽出方法は全fold共通の固定条件とする。
-- 同じfoldでは、全条件・全K・全反復で同じ画素座標集合を共有する。
-- ChemoMAEの学習、PCAのfitおよびCosine-KMeansのfitは、この同じtrain画素集合を使用する。
-- 反復内の画素順序と学習augmentationは確率的でよいが、試料ごとの元画素数による寄与の差は作らない。
-- 有効画素数が$`q`$未満のtrain試料がある場合は、重複抽出や試料別の画素数変更で暗黙に補わず、
-  実行前に$`q`$の設定を見直す。
-- test評価は抽出せず、各test試料の全有効画素を用いる。背景・品質条件による除外は本番前処理に従う。
+- In each fold, select the same number $`q=8192`$ of valid pixels from each training specimen by uniform random sampling without replacement within that specimen.
+- Fix $`q`$ and the sampling method across all folds.
+- Within a fold, share the same set of pixel coordinates across all conditions, K values, and replicates.
+- Use this same training-pixel set for ChemoMAE training, PCA fitting, and Cosine-KMeans fitting.
+- Pixel order and training augmentation may be stochastic within each replicate, but do not let the original specimen pixel counts create unequal contributions.
+- If any training specimen has fewer than $`q`$ valid pixels, revise $`q`$ before execution rather than silently compensating
+  by sampling with replacement or changing the pixel count by specimen.
+- Evaluate all valid pixels of each test specimen without sampling. Follow production preprocessing for background and quality-based exclusions.
 
-本番入力の49試料はすべて$`q=8192`$の非復元抽出が可能である。
-品質条件は[前処理仕様](preprocessing.md)に従う。trainは39または40試料となり、
-319,488または327,680画素/fold、312または320 batch/epoch、
-800 epochで249,600または256,000予定更新/runとなる。
-1024の倍数なので、この$`q`$では`drop_last=True`でも端数除外が発生しない。
+All 49 production-input specimens support sampling $`q=8192`$ pixels without replacement.
+Quality criteria follow the [preprocessing specification](preprocessing.md).
+There are 39 or 40 training specimens, giving 319,488 or 327,680 pixels/fold, 312 or 320 batches/epoch,
+and 249,600 or 256,000 scheduled updates/run over 800 epochs.
+These pixel counts are multiples of 1024, so `drop_last=True` does not discard a partial batch at this $`q`$.
 
-この$`q`$は800 epochの学習の計算量と試料ごとの画素数を考慮して事前固定した値であり、
-精度や希少領域の捕捉率を検証して最適化した値ではない。画素を増やしても独立な試料数は増えない。
-試料集合や前処理データを変更した場合は、`sample_quality.parquet`の`saved_pixel_count`で
-抽出可能性を再確認する。test評価には引き続き全有効画素を使う。
+This $`q`$ was fixed in advance considering the computational cost of 800 epochs and the available pixel counts per specimen;
+it was not optimized by evaluating accuracy or rare-region coverage. More pixels do not increase the number of independent specimens.
+If the specimen set or preprocessed data changes, recheck sampling feasibility using `saved_pixel_count` in `sample_quality.parquet`.
+Continue to use all valid pixels for test evaluation.
 
-抽出可能数は既存の品質表から確認する。[runbookの入力確認](../experiment_runbook.md#input-preparation)に
-`check_sampling_pixels.py`のコマンドと終了codeを示す。これは画素数の確認であり、
-実際の抽出・split作成・スペクトル網羅性の評価ではない。
+Check available counts using the existing quality tables.
+The [runbook input checks](../experiment_runbook.md#input-preparation) provide the command and exit codes for `check_sampling_pixels.py`.
+This checks pixel counts; it does not perform sampling, create splits, or evaluate spectral coverage.
 
-抽出seed、$`q`$、試料IDおよび`pixel_row_col`に対応する抽出座標をmanifestへ保存する。
-空間近傍を使う補正前LLAは、抽出したtrain画素上では計算しない。各試料から同数を使うことは試料の重みを
-揃える操作であり、樹種や由来の構成比を均等にする操作ではない。
+Save the sampling seed, $`q`$, specimen IDs, and sampled coordinates corresponding to `pixel_row_col` in the manifest.
+Do not calculate uncorrected LLA, which uses spatial neighborhoods, on sampled training pixels.
+Using the same number from each specimen equalizes specimen weights; it does not balance the proportions of tree species or origins.
 
 <a id="conditions"></a>
 
-## 4. 主比較条件
+## 4. Main Comparison Conditions
 
-主比較のMAE条件ではmask率を50%に固定し、A0・A1は0%とする。通常の推論入力にはaugmentationを適用せず、
-学習時の各augmentationの適用確率は、有効な条件においてそれぞれ0.5とする。
-LFR評価では別途、固定モデルに対する評価摂動を明示的に生成する。
+Fix the mask rate at 50% for MAE conditions in the main comparison and 0% for A0/A1.
+Do not apply augmentation to normal inference inputs. During training, set each enabled augmentation's application probability to 0.5.
+For LFR evaluation, explicitly generate evaluation perturbations separately for the fixed models.
 
-| ID | 表現 | mask率 | Gaussian noise | shift | 役割 |
+| ID | Representation | Mask rate | Gaussian noise | Shift | Role |
 | --- | --- | ---: | ---: | ---: | --- |
-| B0 | raw SNV | - | - | - | 入力空間baseline |
-| B1 | PCA | - | - | - | 線形次元削減baseline |
-| A0 | AE | 0% | なし | なし | maskなし再構成baseline |
-| A1 | Denoising AE | 0% | あり | あり | maskなし・全領域再構成へのTGN＋shift追加 |
-| M00 | MAE | 50% | なし | なし | 標準MAE |
-| M10 | Noise-MAE | 50% | あり | なし | Gaussian noiseの単独効果 |
-| M01 | Shift-MAE | 50% | なし | あり | shiftの単独効果 |
-| M11 | Aug-MAE | 50% | あり | あり | 提案条件 |
+| B0 | raw SNV | - | - | - | Input-space baseline |
+| B1 | PCA | - | - | - | Linear dimensionality-reduction baseline |
+| A0 | AE | 0% | No | No | Unmasked reconstruction baseline |
+| A1 | Denoising AE | 0% | Yes | Yes | TGN + shift added to unmasked, full-channel reconstruction |
+| M00 | MAE | 50% | No | No | Standard MAE |
+| M10 | Noise-MAE | 50% | Yes | No | Effect of Gaussian noise alone |
+| M01 | Shift-MAE | 50% | No | Yes | Effect of shift alone |
+| M11 | Aug-MAE | 50% | Yes | Yes | Proposed condition |
 
-A0・A1はChemoMAE v0.2.2の全領域再構成lossを使用する。
-`ChemoMAE(n_mask=0)`と`TrainerConfig(loss_region="all")`を組み合わせ、
-全パッチをencoderへ入力してclean targetの全スペクトルに再構成lossを計算する。
-A1はM11と同じTGN＋shiftを同じ強度・各適用確率0.5で入力に加える。targetは追加摂動前のclean SNVとする。
-A1を含む比較は既存7条件の結果を得た後のablationであり、事前計画した検証とは区別する。
-M00を含むMAE条件では`loss_region="masked"`を使用する。
-本書の「標準MAE」M00は、本研究で共通のChemoMAE構成を用いたaugmentationなしの対照を指す。
-原MAE論文の画像用architectureを再現した条件という意味ではない。
+A0/A1 use the full-region reconstruction loss in ChemoMAE v0.2.2.
+Combine `ChemoMAE(n_mask=0)` with `TrainerConfig(loss_region="all")`,
+pass all patches to the encoder, and calculate reconstruction loss over the entire clean target spectrum.
+A1 applies the same TGN + shift as M11 to the input, with identical strengths and an application probability of 0.5 for each operation.
+The target is clean SNV before the added perturbations.
+Comparisons involving A1 are ablations added after results for the existing 7 conditions were obtained, and are distinguished from prespecified confirmatory comparisons.
+MAE conditions, including M00, use `loss_region="masked"`.
+Here, “standard MAE” M00 means the unaugmented control using the common ChemoMAE architecture in this study,
+not a reproduction of the image architecture in the original MAE paper.
 
-### 4.1 条件間で固定するもの
+### 4.1 Settings Held Fixed Across Conditions
 
-- ChemoMAE系条件のencoder、decoder、latent次元および学習budget
-- 学習データ、fold、前処理および画素mask
-- Cosine-KMeansの実装、初期化方針および共通クラスタ数
-- 評価対象の試料および画素
-- augmentationの強度とseed方針
+- Encoder, decoder, latent dimension, and training budget for ChemoMAE-based conditions
+- Training data, folds, preprocessing, and pixel masks
+- Cosine-KMeans implementation, initialization policy, and common cluster counts
+- Specimens and pixels used for evaluation
+- Augmentation strengths and seed policy
 
-augmentationの採用値・固定根拠は第4.1.3節に示す。
+The adopted augmentation values and the rationale for fixing them are given in Section 4.1.3.
 
 <a id="representations"></a>
 
-#### 4.1.1 表現次元とL2正規化
+#### 4.1.1 Representation Dimension and L2 Normalization
 
-B1のPCA成分数と、A0・A1・すべてのMAE条件の`latent_dim`を16に固定する。
-mask率補助実験および全体学習でも同じ16次元を使用する。B0は256次元の入力空間baselineとする。
+Fix B1's PCA component count and `latent_dim` for A0, A1, and all MAE conditions at 16.
+Use the same 16 dimensions for the supplementary mask-rate experiment and global training. B0 is the 256-dimensional input-space baseline.
 
-| 条件 | クラスタリング・評価へ渡す表現 |
+| Condition | Representation passed to clustering and evaluation |
 | --- | --- |
-| B0 | SNV 256次元 → 行ごとのL2正規化 |
-| B1 | trainでfitしたPCAによる16次元得点 → 行ごとのL2正規化 |
-| A0・A1・MAE系 | 全可視encoderのCLS出力 → `to_latent`で16次元 → L2正規化 |
+| B0 | 256-dimensional SNV → row-wise L2 normalization |
+| B1 | 16-dimensional scores from PCA fitted on training data → row-wise L2 normalization |
+| A0/A1/MAE conditions | CLS output from the fully visible encoder → 16 dimensions via `to_latent` → L2 normalization |
 
-正規化前の表現を$`h`$として、各画素で$`z=h/\lVert h\rVert_2`$とする。
-PCAでは**次元削減後**に正規化し、PCA入力の正規化だけで代用しない。
-PCAの平均・基底などのfit対象は第3.4節のtrain画素集合に限定する。L2正規化自体は画素ごとの操作で、
-test集合から統計量を推定しない。clean・摂動後・train・testに同じ変換順序を適用する。
-PCAは`sklearn.decomposition.PCA(n_components=16)`を使用し、成分数以外は既定設定を採用する。
-[scikit-learnのPCA](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html)に従い、
-train画素の波長ごとの平均で中心化し、`whiten=False`、`svd_solver="auto"`、`copy=True`とする。
-SNVに加えて波長ごとの標準偏差で割るautoscalingは行わない。SNVの画素内中心化と、
-PCAのtrain画素集合に基づく波長ごとの中心化は別の操作である。
-whiteningは成分ごとの分散を揃える操作であり、後段のL2正規化とは区別する。
+Let $`h`$ be the representation before normalization. For each pixel, use $`z=h/\lVert h\rVert_2`$.
+For PCA, normalize **after dimensionality reduction**; normalizing the PCA input alone is not a substitute.
+Restrict fitting of the PCA mean, basis, and other parameters to the training-pixel set in Section 3.4.
+L2 normalization itself is a pixel-wise operation and estimates no statistics from the test set.
+Use the same transformation order for clean, perturbed, training, and test inputs.
+Use `sklearn.decomposition.PCA(n_components=16)`, with default settings except for the component count.
+Following [scikit-learn PCA](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html),
+center each wavelength using its training-pixel mean, with `whiten=False`, `svd_solver="auto"`, and `copy=True`.
+Do not add autoscaling by wavelength-specific standard deviation after SNV.
+Within-pixel centering in SNV and wavelength-wise centering over the PCA training-pixel set are separate operations.
+Whitening equalizes component variances and is distinct from subsequent L2 normalization.
 
-中心化したスペクトルを共分散に基づいてPCAへ渡す設定を、通常の線形baselineとして用いる。
-スペクトルデータでは同じ単位の変数を扱うことが多く、autoscalingで小さな変動やnoiseを拡大しない
-平均中心化が一般的な選択肢となる（[Eigenvectorのケモメトリクス解説](https://eigenvector.com/wp-content/uploads/2022/12/Chemometrics_Crash_Course_Part_2.pdf)）。
-PCA得点のL2正規化は、本研究のcosineクラスタリングに接続するための後処理と位置づける。
+Use covariance-based PCA on mean-centered spectra as the conventional linear baseline.
+Spectral variables often share the same units, making mean centering a common choice that avoids amplifying small variations or noise through autoscaling
+([Eigenvector chemometrics guide](https://eigenvector.com/wp-content/uploads/2022/12/Chemometrics_Crash_Course_Part_2.pdf)).
+Treat L2 normalization of PCA scores as postprocessing that connects them to cosine clustering in this study.
 
-その他の引数も既定値（`tol=0.0`、`iterated_power="auto"`、`n_oversamples=10`、
-`power_iteration_normalizer="auto"`、`random_state=None`）とする。使用versionと実際に選ばれたsolverを保存する。
-`auto`は入力shapeとlibrary versionで決まる計算方式の選択であり、CV指標による手法選択ではない。
-乱数を使うsolverになった場合は、第3.3節に従いPCA用seedでNumPy乱数状態を制御してfitし、
-他の乱数系列と分離する。`random_state=None`を乱数管理不要という意味では扱わない。
+Keep the remaining arguments at their defaults: `tol=0.0`, `iterated_power="auto"`, `n_oversamples=10`,
+`power_iteration_normalizer="auto"`, and `random_state=None`. Save the software version and the solver actually selected.
+`auto` selects a computational method based on input shape and library version, not on CV metrics.
+If the selected solver uses randomness, control NumPy's random state with the PCA seed according to Section 3.3 during fitting,
+separately from other random-number streams. Do not interpret `random_state=None` as eliminating the need to manage randomness.
 
-ChemoMAEでは`latent_normalize=True`を明示し、学習時も正規化した16次元潜在をdecoderへ入力する。
-主理由は、SNV後の全帯域スペクトルが一定normであることを踏まえ、圧縮後もnormの自由度を採用せず、
-方向に情報を集約するという設計判断である。学習時とcosineクラスタリング時に使う表現の整合性は、
-そのうえで得られる利点とする。数学的な必然や入力の角度保存を意味するものではなく、
-採用意図とSAMとの関係は[ChemoMAEの位置づけ 第3.3〜3.4節](../chemomae_positioning.md)を参照する。
+For ChemoMAE, explicitly set `latent_normalize=True` and pass normalized 16-dimensional latent vectors to the decoder during training as well.
+The primary rationale is the design choice to concentrate information in direction without retaining a norm degree of freedom after compression,
+given the constant norm of full-band SNV spectra. Consistency between the representations used during training and cosine clustering
+is a resulting benefit. This is neither a mathematical necessity nor a guarantee of preserving input angles.
+See [SNV and Latent L2 Normalization](../chemomae_positioning.md#snv-geometry) for the rationale.
 
-抽出するのは最終CLS出力を`to_latent`へ通した潜在であり、256次元CLSやpatch平均を代用しない。
-全可視抽出には`Extractor`を使用するか、`model.eval()`と全要素Trueの`visible_mask`を明示して
-`model.encoder(x, visible_mask)`を呼ぶ。`model.eval()`だけでは`ChemoMAE.forward()`の
-ランダムmask生成は無効にならない。通常の抽出では`augmenter=None`とし、LFR用の共通摂動は別途生成する。
+Extract the latent vector obtained by passing the final CLS output through `to_latent`; do not substitute the 256-dimensional CLS output or a patch average.
+For full-visibility extraction, use `Extractor`, or explicitly set `model.eval()` and an all-True `visible_mask`
+before calling `model.encoder(x, visible_mask)`.
+`model.eval()` alone does not disable random mask generation in `ChemoMAE.forward()`.
+Use `augmenter=None` for normal extraction and generate shared LFR perturbations separately.
 
-Cosine-KMeansもfit・predict時の入力と更新中心をL2正規化する（第4.1.3節）。
-正規化前後の非有限値・ゼロnorm・単位化不能な表現は[評価規約第2.4節](evaluation_metrics.md)に従って記録する。
-精度とepsilonの扱いは第4.1.4節に従う。
+Cosine-KMeans also L2-normalizes its fit/predict inputs and updated centers (Section 4.1.3).
+Record non-finite values, zero norms, and representations that cannot be normalized before or after normalization according to
+[Evaluation Conventions, Section 2.4](evaluation_metrics.md).
+Follow Section 4.1.4 for precision and epsilon handling.
 
-16次元と単位normを揃えても、PCAとChemoMAEが作る画素間の角度や分布は異なる。
-silhouetteを各表現空間の診断とする方針は維持する。SNV入力・再構成target・保存済み前処理データは、
-この後段の単位化とは区別する。B0の単位化も、元のSNVで定義されるcosine距離を変えるものではない。
+Even with the same 16 dimensions and unit norm, PCA and ChemoMAE produce different inter-pixel angles and distributions.
+Continue to treat silhouette as a diagnostic within each representation space.
+Distinguish SNV inputs, reconstruction targets, and stored preprocessed data from this downstream unit normalization.
+Unit normalization of B0 likewise does not change the cosine distances defined on the original SNV spectra.
 
 <a id="model-architecture"></a>
 
-#### 4.1.2 ChemoMAEの構成と初期化
+#### 4.1.2 ChemoMAE Architecture and Initialization
 
-Encoderと線形1層decoderを共通構成とし、初期化はChemoMAE v0.2.2の既定動作を採用する。
+Use the common encoder and single-layer linear decoder architecture, with the default initialization behavior of ChemoMAE v0.2.2.
 
-| 設定 | 採用値 |
+| Setting | Adopted value |
 | --- | --- |
-| `seq_len` | 256（本番前処理と共通） |
+| `seq_len` | 256, matching production preprocessing |
 | `d_model` | 256 |
-| `nhead` | 8（headあたり32次元） |
+| `nhead` | 8, with 32 dimensions per head |
 | `num_layers` | 8 |
 | `dim_feedforward` | 1024 |
-| `dropout` | 0.0。全学習条件で共通 |
-| `decoder_num_layers` | 1（線形写像） |
+| `dropout` | 0.0 for all training conditions |
+| `decoder_num_layers` | 1, a linear mapping |
 | `latent_dim` / `latent_normalize` | 16 / True |
-| `n_patches` | 16（1 patchは連続16チャネル） |
+| `n_patches` | 16, with 16 consecutive channels per patch |
 
-この構成ではA0、mask率25%・50%・75%の`n_mask`はそれぞれ0、4、8、12となる。
-全可視ではCLSを含め17 token、主比較の50% maskでは9 tokenをencoderへ入力する。
+With this architecture, `n_mask` is 0 for A0 and 4, 8, and 12 for mask rates of 25%, 50%, and 75%, respectively.
+The encoder receives 17 tokens including CLS under full visibility, and 9 tokens under the 50% mask rate used in the main comparison.
 
-[ChemoMAE v0.2.2のモデル実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/models/chemo_mae.py)
-では`decoder_num_layers=1`は`Linear(16, 256)`であり、Transformer decoderの1層ではない。
-この場合、再構成は$`\hat{x}=Wz+b`$で、出力集合は高々16次元のアフィン部分空間に含まれる。
-さらに潜在の単位norm制約がある。非線形encoderから線形に復元可能な表現を学ぶ設計として扱い、
-decoderまで非線形なAEや原論文のViT-MAEと同一とは記述しない。
-単純な線形復元headを用いる方針は[SimMIM](https://arxiv.org/abs/2111.09886)と共通する。
-ただし[SimMIMの実装](https://github.com/microsoft/SimMIM/blob/main/models/simmim.py)は空間位置ごとの
-encoder特徴から画素を復元する。本研究はCLS由来の単一の16次元球面潜在から全スペクトルを復元し、
-このbottleneckを表現学習の制約として明示する。SimMIMの検証結果を本研究の性能保証には用いない。
+In the [ChemoMAE v0.2.2 model implementation](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/models/chemo_mae.py),
+`decoder_num_layers=1` means `Linear(16, 256)`, not one Transformer decoder layer.
+Reconstruction is $`\hat{x}=Wz+b`$, recovering the full spectrum from a single 16-dimensional unit latent vector derived from CLS.
 
-パラメータ数は実装の各層からの計算でencoder 6,331,152、decoder 4,352、合計6,335,504である（実行による計測は未実施）。
-dropout=0.0の最適性は検証していない。
+Parameter counts calculated from the implemented layers are 6,331,152 for the encoder, 4,352 for the decoder, and 6,335,504 in total; they have not been measured by executing the model.
+The optimality of dropout=0.0 has not been tested.
 
-初期化は、導入済みChemoMAE v0.2.2とPyTorch 2.13.0のソースで次の動作を確認し、そのまま採用する。
+The following initialization behavior was verified from the installed ChemoMAE v0.2.2 and PyTorch 2.13.0 sources and is adopted unchanged:
 
-- CLS tokenと学習可能な位置埋め込みはChemoMAEが`nn.init.trunc_normal_(..., std=0.02)`で初期化する。
-- patch projection、`to_latent`、線形decoderなどは`nn.Linear`の既定初期化を使う。
-  重みとbiasは入力次元$`d_{\mathrm{in}}`$に対する$`U(-1/\sqrt{d_{\mathrm{in}}},1/\sqrt{d_{\mathrm{in}}})`$となる。
-- attentionの結合QKV重みはPyTorchのXavier uniform、attentionのbiasは0、LayerNormはweight=1・bias=0とする。
-- `nn.TransformerEncoder`は初期化された1つのencoder layerをdeepcopyして8層を作る。
-  対応するパラメータは層間で同じ初期値から始まるが、別のパラメータであり重み共有ではない。
-  ChemoMAEは複製後に層ごとの再初期化を行わない。利用側でも追加の再初期化を行わない。
+- ChemoMAE initializes the CLS token and learnable positional embeddings using `nn.init.trunc_normal_(..., std=0.02)`.
+- The patch projection, `to_latent`, linear decoder, and similar layers use the default `nn.Linear` initialization.
+  Weights and biases follow $`U(-1/\sqrt{d_{\mathrm{in}}},1/\sqrt{d_{\mathrm{in}}})`$ for input dimension $`d_{\mathrm{in}}`$.
+- Combined attention QKV weights use PyTorch's Xavier uniform initialization; attention biases are 0, and LayerNorm uses weight=1 and bias=0.
+- `nn.TransformerEncoder` creates 8 layers by deep-copying a single initialized encoder layer.
+  Corresponding parameters start with identical values across layers but remain separate parameters, without weight sharing.
+  ChemoMAE does not reinitialize individual layers after copying, and the calling code must not add such reinitialization.
 
-用途別seedを設定してからモデルを構築する。同じfold・反復では同じ構築seedを全学習条件に対応付ける。
-原MAEの画像用モデルに対する初期化を上書きして混ぜない。
+Set the purpose-specific seed before constructing the model. Within the same fold and replicate, use the same construction seed across all training conditions.
+Do not overwrite this initialization with that of the original MAE image model.
 
 <a id="augmentation-clustering"></a>
 
-#### 4.1.3 参照実装とaugmentation・クラスタリングの確認
+#### 4.1.3 Reference Implementation, Augmentation, and Clustering
 
-参照版はプロジェクトが固定するChemoMAE v0.2.2、commit
-[`4ec7f6acecb82035c85001f5aee508910d40adac`](https://github.com/Mantis-Ryuji/ChemoMAE/commit/4ec7f6acecb82035c85001f5aee508910d40adac)
-とする。モデル・augmentation・抽出・optimizer・Trainer・Cosine-KMeans・正規化helperは同版を参照する。
+The reference version is ChemoMAE v0.2.2 pinned by the project, at commit
+[`4ec7f6acecb82035c85001f5aee508910d40adac`](https://github.com/Mantis-Ryuji/ChemoMAE/commit/4ec7f6acecb82035c85001f5aee508910d40adac).
+Use this version as the reference for the model, augmentation, extraction, optimizer, Trainer, Cosine-KMeans, and normalization helpers.
 
-Random maskもdenoisingのcorruptionである。学習augmentationはSNV制約を保つ追加corruptionとして
-入力側だけに適用し、追加摂動前の観測SNVをtargetに保つ。ランダムに不可視となる帯域への復元損失を通じて
-全帯域を学習する。採用理由は[ChemoMAEの位置づけ](../chemomae_positioning.md)に示す。
+Random masking is also a denoising corruption. Apply training augmentation only to the input as additional corruption that preserves SNV constraints,
+while retaining the observed SNV before the added perturbation as the target.
+Learn across all bands through reconstruction loss on randomly hidden bands.
+See [the positioning of ChemoMAE](../chemomae_positioning.md) for the rationale.
 
-[SpectraAugmenterの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/augmenter.py)
-を使用し、noise角度は$`U(0,5^\circ)`$、shiftおよびその他の操作設定は既定値で固定する。
-主比較・mask率補助実験・全体学習に共通の設定は次のとおり。
+Use the [SpectraAugmenter implementation](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/augmenter.py),
+with noise angles $`U(0,5^\circ)`$ and shift and other operation settings fixed at their defaults.
+The following settings are common to the main comparison, supplementary mask-rate experiment, and global training:
 
-| 項目 | 採用設定 |
+| Item | Adopted setting |
 | --- | --- |
-| shift | $`\delta\sim U(-2,2)`$、チャネルindex単位のfractional shift。`shift_delta_range=(-2.0, 2.0)`（既定値） |
-| shiftの補間・端点 | 線形補間。参照indexを端点へclampし、範囲外は端点値を延長する。循環shiftではない |
-| noise | Gaussian乱数から平均ゼロ・入力に直交する方向を作り、その方向へ指定角度だけ回転 |
-| noise角度 | $`\theta\sim U(0,5^\circ)`$。`noise_angle_deg_range=(0.0, 5.0)`。各チャネルへ独立なGaussian雑音を加算する方式とは異なる |
-| 適用確率 | 学習時は有効な操作ごとに0.5、無効な操作は0。画素ごとに適用を抽選する |
-| 操作順序 | `shuffle_order_per_batch=True`。2操作の順序をbatchごとにランダム化（既定値） |
-| 再中心化・norm | `recenter_after_each_op=True`、`renorm_to_input_norm=True`。各操作後に画素内平均を0、normを操作前の値へ戻す（既定値） |
-| 数値安定化 | `eps=1e-8`（既定値） |
+| Shift | $`\delta\sim U(-2,2)`$, a fractional shift in channel-index units; `shift_delta_range=(-2.0, 2.0)` (default) |
+| Shift interpolation and endpoints | Linear interpolation; clamp reference indices to the endpoints and extend endpoint values outside the range. This is not a circular shift |
+| Noise | Generate a zero-mean direction orthogonal to the input from Gaussian random numbers, then rotate toward that direction by the specified angle |
+| Noise angle | $`\theta\sim U(0,5^\circ)`$; `noise_angle_deg_range=(0.0, 5.0)`. This differs from adding independent Gaussian noise to each channel |
+| Application probability | During training, 0.5 for each enabled operation and 0 for disabled operations; sample application independently for each pixel |
+| Operation order | `shuffle_order_per_batch=True`; randomize the order of the 2 operations for each batch (default) |
+| Recentering and norm | `recenter_after_each_op=True` and `renorm_to_input_norm=True`; restore each pixel's mean to 0 and its norm to the pre-operation value after each operation (defaults) |
+| Numerical stabilization | `eps=1e-8` (default) |
 
-採用強度はSNVスペクトルの`sanity_check`を通じて恣意的に固定した値であり、実機の誤差分布や
-物理化学的な生成過程を同定した値ではない。CV指標による最適化・強度ablationは行わず、
-noiseとshiftの有無による2×2比較を行う。LFRは同じ強度分布・操作設定を用い、対象操作の適用確率を1にする。
+The adopted strengths were chosen subjectively and fixed through `sanity_check` inspection of SNV spectra;
+they do not identify an instrument error distribution or a physicochemical generative process.
+Do not optimize strengths using CV metrics or perform a strength ablation.
+Use a 2×2 comparison of noise and shift presence/absence.
+LFR uses the same strength distributions and operation settings, with the application probability of each evaluated operation set to 1.
 
-本研究の入力軸は等間隔の波長gridなので、shiftの単位は256点grid上のチャネルindexと記す。
-nmへの換算には保存済み波長間隔を使用し、波数軸の等間隔shiftとは記述しない。
-noiseのGaussianは方向の生成方法を指し、回転角の分布や最終的な加算残差がGaussianという意味ではない。
+Because the input axis is an equally spaced wavelength grid, express shift units as channel indices on the 256-point grid.
+Use the saved wavelength spacing for conversion to nm; do not describe the shift as equally spaced on a wavenumber axis.
+“Gaussian” in noise refers to generation of the direction, not to the distribution of rotation angles or the final additive residual.
 
-[Cosine-KMeansの実装](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/clustering/cosine_kmeans.py)
-の既定アルゴリズム・停止設定を採用する。実装から確認した値は次のとおりである。
+Adopt the default algorithm and stopping settings from the
+[Cosine-KMeans implementation](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/clustering/cosine_kmeans.py).
+The values verified from the implementation are:
 
-| 設定 | 採用値・動作 |
+| Setting | Adopted value or behavior |
 | --- | --- |
-| 初期化 | cosine不類似度を用いたk-means++型の初期化を1 fitあたり1回。追加のrestartや最良run選択なし |
-| 最大反復 | `max_iter=500` |
-| 許容値 | `tol=1e-4` |
-| 停止規則 | 平均cosine不類似度の前回との差について、相対変化$`<10^{-4}`$または絶対変化$`<10^{-7}`$で停止。相対変化の分母は前回値の絶対値$`+10^{-12}`$ |
-| 空クラスタ | 現在の最近中心から遠いtrain画素で中心を置き換える |
-| 正規化・精度 | 入力・更新中心を行ごとにL2正規化。内部FP32、正規化の`eps=1e-6` |
-| device | `device="cuda"`（既定値） |
+| Initialization | One k-means++-type initialization using cosine dissimilarity per fit; no additional restarts or best-run selection |
+| Maximum iterations | `max_iter=500` |
+| Tolerance | `tol=1e-4` |
+| Stopping rule | Stop when the change in mean cosine dissimilarity from the previous iteration is relatively $`<10^{-4}`$ or absolutely $`<10^{-7}`$; the relative-change denominator is the absolute previous value $`+10^{-12}`$ |
+| Empty clusters | Replace the center with a training pixel far from its current nearest center |
+| Normalization and precision | Row-wise L2 normalization of inputs and updated centers; internal FP32, with `eps=1e-6` for normalization |
+| Device | `device="cuda"` (default) |
 
-`n_components`は第6節の各K、`random_state`は第3.3節の用途別seedを指定する。
-これらは既に決めたK依存性と3反復のための指定であり、既定値のK=8・seed=42で全runを上書きしない。
-libraryに`n_init`引数はない。3反復と、1 fit内の初期化1回を区別する。
+Set `n_components` to each K in Section 6 and `random_state` to the purpose-specific seed in Section 3.3.
+These settings implement the established K-dependence analysis and 3 replicates; do not overwrite all runs with the defaults K=8 and seed=42.
+The library has no `n_init` argument. Distinguish the 3 replicates from the single initialization within each fit.
 
 <a id="evaluation-precision"></a>
 
-#### 4.1.4 表現抽出・評価の数値設定
+#### 4.1.4 Numerical Settings for Representation Extraction and Evaluation
 
-PCAのfit・transform、ChemoMAEの全可視抽出、評価摂動の生成、L2正規化、Cosine-KMeansおよび
-評価指標の連続値の計算はFP32とする。入力・モデルパラメータ・抽出表現はFP32に揃え、
-特徴抽出には`ExtractorConfig(amp=False)`を明示する。FP16/BF16で計算した結果を最後にFP32へcastする
-方式で代用しない。評価ではTF32も無効にする。学習は第4.2節のFP16 AMPを維持する。
+Use FP32 for PCA fitting and transformation, full-visibility ChemoMAE extraction, evaluation perturbation generation,
+L2 normalization, Cosine-KMeans, and continuous-valued metric calculations.
+Keep inputs, model parameters, and extracted representations in FP32, and explicitly use `ExtractorConfig(amp=False)` for feature extraction.
+Do not substitute FP16/BF16 computation followed by a final cast to FP32.
+Also disable TF32 during evaluation. Retain FP16 AMP for training as specified in Section 4.2.
 
-`silhouette_samples_cosine_gpu`は`dtype=torch.float32`を明示し、数値保護はlibrary既定値を採用する。
-ChemoMAEの潜在正規化とsilhouetteは`eps=1e-12`、Cosine-KMeansの正規化helperは`eps=1e-6`、
-SpectraAugmenterは`eps=1e-8`である。B0/PCA後の明示的な正規化には同じKMeans helperを用いる。
-各epsilonは除算保護であり、ゼロnormを有効なcosine入力と認める閾値ではない。
-非有限値・ゼロnormなどの扱いは評価文書第2.4節の既存規約に従う。
-単位normの誤差は診断値として保存し、結果に合わせた新しい画素除外閾値を作らない。
+Explicitly set `dtype=torch.float32` for `silhouette_samples_cosine_gpu` and use the library defaults for numerical protection.
+ChemoMAE latent normalization and silhouette use `eps=1e-12`, the Cosine-KMeans normalization helper uses `eps=1e-6`,
+and SpectraAugmenter uses `eps=1e-8`. Use the same KMeans helper for explicit normalization after B0/PCA.
+Each epsilon protects division; it is not a threshold that makes zero-norm vectors valid cosine inputs.
+Follow the existing conventions in Section 2.4 of the evaluation document for non-finite values, zero norms, and related cases.
+Save unit-norm errors as diagnostics, without introducing new pixel-exclusion thresholds based on the results.
 
-離散ラベル・画素数・一致件数・contingencyなどは整数で保持し、FP32指定を理由に整数の計数を
-浮動小数へ置き換えない。seed、実際の演算設定とlibrary versionは第11.2節に記録する。
-GPUの並列reductionによる微小な非決定性まで消えたとは主張しない。
+Keep discrete labels, pixel counts, agreement counts, and contingency tables as integers.
+Do not replace integer counting with floating-point operations because FP32 is specified.
+Record seeds, actual computation settings, and library versions under Section 11.2.
+Do not claim that small nondeterminism from parallel GPU reductions has been eliminated.
 
 <a id="training-recipe"></a>
 
-### 4.2 学習設定
+### 4.2 Training Settings
 
-学習設定は、[MAE論文](https://arxiv.org/pdf/2111.06377)のTable 8およびTable 1のablationに対応する
-事前学習recipeを採用する。公式PyTorch実装はcommit
-[`efb2a8062c206524e35e47d04501ed4f544c0ae8`](https://github.com/facebookresearch/mae/commit/efb2a8062c206524e35e47d04501ed4f544c0ae8)
-を参照する。batch sizeは1024、勾配蓄積はなしとする。
+Adopt the pretraining recipe corresponding to Table 8 and the ablations in Table 1 of the
+[MAE paper](https://arxiv.org/pdf/2111.06377).
+Use commit [`efb2a8062c206524e35e47d04501ed4f544c0ae8`](https://github.com/facebookresearch/mae/commit/efb2a8062c206524e35e47d04501ed4f544c0ae8)
+of the official PyTorch implementation as the reference. Use batch size 1024 without gradient accumulation.
 
-| 設定 | 採用値 |
+| Setting | Adopted value |
 | --- | --- |
-| optimizer | AdamW |
-| betas | $`(\beta_1,\beta_2)=(0.9,0.95)`$ |
-| epsilon / AMSGrad | $`10^{-8}`$ / 無効 |
-| weight decay | 0.05。biasと正規化層のパラメータは0 |
-| batch size | 1024スペクトル / GPU |
-| GPU数 | 単一GPUを前提とする（`world_size=1`） |
-| gradient accumulation | `accum_iter=1`。各batchで更新し、勾配を蓄積しない |
-| effective batch size | 1024 |
-| base learning rate | $`1.5\times10^{-4}`$。256のeffective batchに対する基準値 |
-| peak learning rate | $`6.0\times10^{-4}`$。下記の線形スケーリングによる |
-| training epochs | 800 |
-| warmup | 最初の40 epochで0からpeak learning rateまで線形増加 |
-| warmup後のschedule | 残り760 epochでhalf-cycle cosine decay。restartなし |
-| minimum learning rate | 0 |
-| learning rate更新 | 各batchの処理前に、epoch内の進捗を含めて更新 |
-| gradient clipping | 使用しない |
-| drop path | 0 |
-| 学習精度 | CUDA AMP（FP16 autocast）と動的GradScaler。モデルパラメータはFP32 |
-| train DataLoader | epochごとのshuffle、`drop_last=True` |
-| EMA | 使用しない（`use_ema=False`） |
-| checkpoint選択 | 800 epoch完了時のraw weights（`last_model.pt`）。EMA weightsを使用しない |
+| Optimizer | AdamW |
+| Betas | $`(\beta_1,\beta_2)=(0.9,0.95)`$ |
+| Epsilon / AMSGrad | $`10^{-8}`$ / disabled |
+| Weight decay | 0.05; 0 for biases and normalization-layer parameters |
+| Batch size | 1024 spectra / GPU |
+| GPU count | Assumes a single GPU (`world_size=1`) |
+| Gradient accumulation | `accum_iter=1`; update at every batch without accumulating gradients |
+| Effective batch size | 1024 |
+| Base learning rate | $`1.5\times10^{-4}`$, the reference value for an effective batch of 256 |
+| Peak learning rate | $`6.0\times10^{-4}`$, from the linear scaling below |
+| Training epochs | 800 |
+| Warmup | Linear increase from 0 to the peak learning rate over the first 40 epochs |
+| Schedule after warmup | Half-cycle cosine decay over the remaining 760 epochs, without restarts |
+| Minimum learning rate | 0 |
+| Learning-rate updates | Before each batch, including progress within the epoch |
+| Gradient clipping | Not used |
+| Drop path | 0 |
+| Training precision | CUDA AMP with FP16 autocast and dynamic GradScaler; FP32 model parameters |
+| Training DataLoader | Shuffle each epoch, `drop_last=True` |
+| EMA | Not used (`use_ema=False`) |
+| Checkpoint selection | Raw weights at completion of 800 epochs (`last_model.pt`); no EMA weights |
 
-この設定をA0、A1、M00、M10、M01、M11およびM11のmask率25%・75%へ共通適用する。
-全体可視化用のA0・A1・M00・M11にも、CVと同じ条件別のmask・loss対象・augmentation設定と、
-同じ800 epochのrecipeを適用する。
-参照は[公式PRETRAIN.mdの明示設定](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/PRETRAIN.md)
-を優先する。`main_pretrain.py`の引数既定値には400 epoch・base lr $`10^{-3}`$が含まれるが、
-それらを本研究の学習設定へ転記しない。
+Apply these settings to A0, A1, M00, M10, M01, M11, and M11 with mask rates of 25% and 75%.
+For A0, A1, M00, and M11 used in global visualization, also use the same condition-specific masking, loss region, and augmentation settings as CV,
+and the same 800-epoch recipe.
+Prioritize the [explicit settings in the official PRETRAIN.md](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/PRETRAIN.md).
+The argument defaults in `main_pretrain.py` include 400 epochs and base lr $`10^{-3}`$;
+do not copy these into the study's training settings.
 
-effective batch sizeを$`B_{\mathrm{eff}}`$として、学習率は
+For effective batch size $`B_{\mathrm{eff}}`$, set the learning rate as
 
 ```math
 B_{\mathrm{eff}}=1024\times1\times1=1024,\qquad
 \eta_{\max}=1.5\times10^{-4}\frac{B_{\mathrm{eff}}}{256}=6.0\times10^{-4}
 ```
 
-とする。原論文のeffective batch size 4096を勾配蓄積で再現する設定ではない。
-複数GPUへ移行する場合は、GPU数・effective batch size・学習率を一体として再指定する。
-メモリ不足を理由に実装がbatch sizeやaccumulationを暗黙に変更しない。
+This does not reproduce the original paper's effective batch size of 4096 through gradient accumulation.
+If moving to multiple GPUs, respecify GPU count, effective batch size, and learning rate together.
+The implementation must not silently change batch size or accumulation to address insufficient memory.
 
-epoch進捗を$`u=e+j/S_f`$（$`e`$は0始まりのepoch、$`j`$は0始まりのbatch index）として、
-[公式scheduler](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/util/lr_sched.py)
-と同じく
+Let epoch progress be $`u=e+j/S_f`$, where $`e`$ is the zero-based epoch and $`j`$ the zero-based batch index.
+Following the [official scheduler](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/util/lr_sched.py), use
 
 ```math
 \eta(u)=
@@ -403,265 +409,278 @@ epoch進捗を$`u=e+j/S_f`$（$`e`$は0始まりのepoch、$`j`$は0始まりの
 \end{cases}
 ```
 
-を用いる。epoch単位の段階的なschedulerに置き換えない。
+Do not replace this with a scheduler that changes in epoch-wise steps.
 
-fold $`f`$のtrain試料数を$`M_f`$とすると、抽出集合の画素数と1 epochのbatch数、予定更新回数は
+For $`M_f`$ training specimens in fold $`f`$, the sampled-pixel count, batches per epoch, and scheduled update count are
 
 ```math
 N_f=M_fq,\qquad S_f=\left\lfloor\frac{N_f}{1024}\right\rfloor,\qquad U_f=800S_f
 ```
 
-となる。$`S_f\ge1`$を実行前に確認する。同じfold内では全条件・全反復で同じ$`S_f`$と$`U_f`$を用いる。
-train試料数が異なるfold間や全体学習では更新回数が異なるため、実際の$`N_f`$、$`S_f`$、$`U_f`$を保存する。
-AMPによる更新skipが生じた場合は、skip回数と実更新回数も記録する。
+Verify $`S_f\ge1`$ before execution. Use the same $`S_f`$ and $`U_f`$ for all conditions and replicates within a fold.
+Update counts differ between folds with different training-specimen counts and in global training, so save the actual $`N_f`$, $`S_f`$, and $`U_f`$.
+If AMP skips updates, also record the skipped-update count and actual update count.
 
-`drop_last=True`では、shuffle後の端数batchをそのepochのニューラルネット学習から除く。
-同じfold・反復・epochでは全学習条件で同じ順序と端数の除外を共有する。試料ごとの同数保証は
-抽出集合に対するものであり、端数除外後に毎epoch厳密に同数の画素が寄与するとは記述しない。
-PCAとKMeansのfitは端数を除かず、抽出集合全体を使う。test評価でも端数を落とさない。
+With `drop_last=True`, omit the partial batch after shuffling from that epoch's neural-network training.
+Within the same fold, replicate, and epoch, share the order and partial-batch omission across all training conditions.
+Equal specimen counts are guaranteed for the sampled set, not necessarily for the pixels contributing in every epoch after the partial batch is dropped.
+Fit PCA and KMeans on the entire sampled set without dropping the remainder. Do not drop a partial batch during test evaluation either.
 
-optimizer・weight decay groupingは
-[main_pretrain.py](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/main_pretrain.py)、
-AMPとbatchごとのscheduler呼び出しは
+Optimizer construction and weight-decay grouping follow
+[main_pretrain.py](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/main_pretrain.py);
+AMP and per-batch scheduler calls follow
 [engine_pretrain.py](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/engine_pretrain.py)
-および[util/misc.py](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/util/misc.py)
-に基づく。epsilonとAMSGradは[PyTorch AdamWの既定値](https://docs.pytorch.org/docs/2.13/generated/torch.optim.AdamW.html)
-を明示したものである。
+and [util/misc.py](https://github.com/facebookresearch/mae/blob/efb2a8062c206524e35e47d04501ed4f544c0ae8/util/misc.py).
+Epsilon and AMSGrad explicitly use the [PyTorch AdamW defaults](https://docs.pytorch.org/docs/2.13/generated/torch.optim.AdamW.html).
 
-MAEから採用するのは本節の学習recipeであり、モデル・初期化・SNV・mask・augmentation・lossは
-第4.1節までの本研究仕様を使う。ImageNetの画像augmentation、RGB正規化、
-patch内target正規化（`norm_pix_loss`）は導入しない。
+Only the training recipe in this section is adopted from MAE.
+Use this study's specifications through Section 4.1 for the model, initialization, SNV, masking, augmentation, and loss.
+Do not introduce ImageNet image augmentation, RGB normalization, or within-patch target normalization (`norm_pix_loss`).
 
-ChemoMAE v0.2.2の
-[Trainer](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/trainer.py)
-を使う場合は`amp_dtype="fp16"`、`grad_clip=None`、`use_ema=False`を明示する。
-既定のBF16・clipping 1.0・EMA有効では本節と一致しない。独立runは`resume_from=None`で開始し、
-再開時は同じrunのcheckpointを明示する。別条件・別反復からの自動resumeを行わない。
+When using the ChemoMAE v0.2.2
+[Trainer](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/trainer.py),
+explicitly set `amp_dtype="fp16"`, `grad_clip=None`, and `use_ema=False`.
+The defaults of BF16, clipping at 1.0, and enabled EMA do not match this section.
+Start independent runs with `resume_from=None`; when resuming, explicitly identify a checkpoint from the same run.
+Do not automatically resume from another condition or replicate.
 
-[optimizer・scheduler helper](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/optim.py)
-にも差がある。`build_optimizer`はbias・LayerNormに加えてCLS tokenと学習可能な位置埋め込みを
-weight decayから除外する。既存の`build_scheduler`はwarmupに`step + 1`を使い、
-Trainerはbatch更新後にschedulerを進めるため、本節の0から始まる学習率列と完全一致しない。
-本リポジトリでは[利用側のoptimizer構築](../../src/wood_degradation_map/experiments/neural.py)と
-[ExperimentTrainer](../../src/wood_degradation_map/experiments/training.py)でparameter groupingとbatch前の学習率更新を実装する。
-この仕様はlibrary既定helperをそのまま使った場合と区別する。
+The [optimizer and scheduler helpers](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/optim.py)
+also differ from this specification. `build_optimizer` exempts the CLS token and learnable positional embeddings from weight decay in addition to biases and LayerNorm.
+The existing `build_scheduler` uses `step + 1` during warmup, and Trainer advances the scheduler after each batch update,
+so it does not exactly match the learning-rate sequence starting at 0 in this section.
+This repository implements parameter grouping and learning-rate updates before each batch in the
+[calling-side optimizer construction](../../src/wood_degradation_map/experiments/neural.py)
+and [ExperimentTrainer](../../src/wood_degradation_map/experiments/training.py).
+Distinguish this specification from using the library's default helpers unchanged.
 
 <a id="planned-comparisons"></a>
 
-### 4.3 計画比較
+### 4.3 Planned Comparisons
 
-| 比較 | 検証する内容 |
+| Comparison | Question examined |
 | --- | --- |
-| M11 vs B0 | 提案Aug-MAEと入力空間baselineの直接比較 |
-| M11 vs B1 | 提案Aug-MAEと線形次元削減baselineの直接比較 |
-| M11 vs M00 | 標準MAEに2種類のaugmentationを併用する効果 |
-| M00 vs B0 | 標準MAEと入力空間baselineの比較 |
-| M00 vs B1 | 標準MAEとPCAの比較 |
-| M00 vs A0 | maskなし・全領域再構成からmasked reconstruction方式へ変更する効果 |
-| M10 vs M00 | Gaussian noiseの単独効果 |
-| M01 vs M00 | shiftの単独効果 |
-| M11 vs M10 | shiftの追加効果 |
-| M11 vs M01 | Gaussian noiseの追加効果 |
-| A1 vs A0 | maskなし・全領域再構成AEへのTGN＋shift追加効果（追加ablation） |
-| M11 vs A1 | TGN＋shiftを揃えたdenoising AEとAug-MAEの比較（追加ablation） |
+| M11 vs B0 | Direct comparison of the proposed Aug-MAE with the input-space baseline |
+| M11 vs B1 | Direct comparison of the proposed Aug-MAE with the linear dimensionality-reduction baseline |
+| M11 vs M00 | Effect of combining 2 augmentations with standard MAE |
+| M00 vs B0 | Comparison of standard MAE with the input-space baseline |
+| M00 vs B1 | Comparison of standard MAE with PCA |
+| M00 vs A0 | Effect of moving from unmasked, full-region reconstruction to masked reconstruction |
+| M10 vs M00 | Effect of Gaussian noise alone |
+| M01 vs M00 | Effect of shift alone |
+| M11 vs M10 | Additional effect of shift |
+| M11 vs M01 | Additional effect of Gaussian noise |
+| A1 vs A0 | Effect of adding TGN + shift to an unmasked, full-region reconstruction AE (additional ablation) |
+| M11 vs A1 | Comparison of denoising AE and Aug-MAE with matched TGN + shift (additional ablation) |
 
-M11 vs B0、M11 vs B1、M11 vs M00を主要な計画比較とし、残りは構成要素を説明するablationとする。
-M00 vs B1では出力次元を16、normを1に揃えるが、学習目的と変換器が異なるため、非線形性だけの効果とは解釈しない。
-M00 vs A0ではmaskの有無とloss対象が同時に異なるため、mask率だけの効果とは解釈しない。
-A1 vs A0ではmask 0%・全領域lossを共通とし、TGN＋shiftの追加を比較する。
-M11 vs A1ではaugmentationを揃えるが、maskの有無とloss対象の両方が異なる。
-mask率だけの効果や、augmentationとmask modelingの組合せに固有の一般的な優位性とは解釈しない。
-この2比較の位置づけは第4節に従う。主要3比較と以下の2×2要因計画と併せて報告する。
+Treat M11 vs B0, M11 vs B1, and M11 vs M00 as the primary planned comparisons, and the remaining comparisons as ablations explaining individual components.
+M00 vs B1 matches output dimension at 16 and norm at 1, but differs in learning objective and transformation, so do not interpret it as the effect of nonlinearity alone.
+M00 vs A0 changes both masking and the loss region, so do not interpret it as the effect of mask rate alone.
+A1 vs A0 compares added TGN + shift with 0% masking and full-region loss held fixed.
+M11 vs A1 matches augmentation but differs in both masking and loss region.
+Do not interpret it as the effect of mask rate alone or as a general advantage specific to combining augmentation with masked modeling.
+Follow Section 4 for the status of these 2 comparisons. Report them alongside the 3 primary comparisons and the 2×2 factorial design below.
 
-M00、M10、M01、M11は、Gaussian noiseの有無とshiftの有無による2×2要因計画として扱う。
-現行の報告ではLLA-3/5/9（補正後）とLFR(TGN+FS)・LFR(TGN)・LFR(FS)について、
-同じ試料・K・反復における次の交互作用contrastをCSV表で報告する。
+Treat M00, M10, M01, and M11 as a 2×2 factorial design for the presence/absence of Gaussian noise and shift.
+The current report presents the following interaction contrast in CSV tables for corrected LLA-3/5/9 and LFR(TGN+FS), LFR(TGN), and LFR(FS),
+using the same specimen, K, and replicate:
 
 ```math
 (M11-M10)-(M01-M00)
 ```
 
-LLAとLFRは改善方向が逆である。contrastは指標の元の尺度で示し、正負の意味を明記する。
-交互作用はこの指標・この強度設定に対する記述であり、augmentationの一般的な相乗効果とは断定しない。
-現行の報告指標と、元snapshot・報告CSVの対応は
-[評価指標第8.2節](evaluation_metrics.md#reporting)に記録する。
+LLA and LFR have opposite directions of improvement.
+Show the contrast on the original metric scale and explicitly state the meaning of its sign.
+The interaction describes these metrics under these strength settings; do not assert a general synergistic effect of augmentation.
+The current reporting metrics and correspondence between the original snapshot and reporting CSVs are documented in
+[Evaluation Metrics, Section 8.2](evaluation_metrics.md#reporting).
 
-## 5. 補助実験
+## 5. Supplementary Experiments
 
-本節はmask率sweepの固定条件・比較範囲を定義する。専用OOF snapshotと図表は
-[結果と図表](../results.md#mask-rate-handoff)を参照する。
+This section defines the fixed conditions and comparison scope of the mask-rate sweep.
+See [Results and Figures](../results.md#mask-rate-handoff) for the dedicated OOF snapshot, figures, and tables.
 
 <a id="mask-rate-sweep"></a>
 
-### 5.1 mask率の補助実験
+### 5.1 Supplementary Mask-Rate Experiment
 
-提案条件M11について、mask率25%、50%、75%を比較する。
+Compare mask rates of 25%, 50%, and 75% for the proposed M11 condition.
 
-| ID | mask率 | Gaussian noise | shift |
+| ID | Mask rate | Gaussian noise | Shift |
 | --- | ---: | ---: | ---: |
-| M11-25 | 25% | あり | あり |
-| M11 | 50% | あり | あり |
-| M11-75 | 75% | あり | あり |
+| M11-25 | 25% | Yes | Yes |
+| M11 | 50% | Yes | Yes |
+| M11-75 | 75% | Yes | Yes |
 
-50%の実行IDは主比較と同じ`M11`とし、別のIDで重複学習させない。mask率比較図での表示名は`M11(-50)`とする。
-M11-25・M11-75を各5 folds×3反復、計30 runs追加する。
-この実験は「最適mask率」の選択ではなく、提案条件のmask率依存性を確認する感度解析として扱う。
-結果は補助実験として報告し、主条件M11を事後的に置き換えない。
-fold、共通K集合、学習budget、3反復のseed一覧および評価指標は主比較と同一にする。
+Use `M11`, the same execution ID as in the main comparison, for 50%; do not duplicate training under a different ID.
+Use `M11(-50)` as its display name in mask-rate comparison figures.
+Add M11-25 and M11-75, each with 5 folds × 3 replicates, for 30 additional runs.
+Treat this experiment as a sensitivity analysis of the proposed condition's dependence on mask rate, not as selection of an “optimal mask rate.”
+Report the results as a supplementary experiment, without replacing the main M11 condition after inspecting them.
+Use the same folds, common K set, training budget, seed list for 3 replicates, and evaluation metrics as the main comparison.
 
-Gaussian noiseのみ、shiftのみの条件ではmask率sweepを行わない。
-主条件とは別の`mask_rate_oof_v1`へ3条件を集計し、専用pipelineで図表を生成する。
-実行手順は[runbook](../experiment_runbook.md#mask-rate-sweep)を参照する。
-全49試料でのM11(-50)・M11-75の付録用マップ比較は、CVとは別の
-[全体fit補助比較](visualization_and_interpretation.md#global-mask-rate)として扱う。
+Do not sweep mask rates for the Gaussian-noise-only or shift-only conditions.
+Aggregate the 3 conditions into `mask_rate_oof_v1` separately from the main conditions, and generate figures and tables with the dedicated pipeline.
+See the [runbook](../experiment_runbook.md#mask-rate-sweep) for execution steps.
+Treat the appendix map comparison of M11(-50) and M11-75 over all 49 specimens as a
+[supplementary global-fit comparison](visualization_and_interpretation.md#global-mask-rate), separate from CV.
 
 <a id="cluster-counts"></a>
 
-## 6. 共通クラスタ数とK依存性
+## 6. Common Cluster Counts and Dependence on K
 
-### 6.1 結果に依存しない事前固定
+### 6.1 Prespecification Independent of Results
 
-クラスタ数は連続潜在空間を観察する粒度（resolution parameter）とする。
-全試料のelbowによる選択はheld-out分布を設計へ持ち込み、train foldだけの選択でもKが異なると
-paired比較が困難になるため、共通Kを用いる。
+Treat cluster count as the granularity for inspecting a continuous latent space, or a resolution parameter.
+An elbow-based choice using all specimens would introduce the held-out distribution into the design;
+even a choice based only on training folds would complicate paired comparisons if K differed. Therefore, use common K values.
 
-このため、結果を見る前に、全fold・全条件・全反復で使用する共通K集合を次の7点に固定する。
+Before inspecting results, fix the common K set used across all folds, conditions, and replicates at the following 7 values:
 
 ```math
 \mathcal{K}=\{2,4,6,8,10,12,14\}
 ```
 
-全試料raw SNVのelbowによるK校正は行わない。test試料のスペクトル分布、CV指標、ラベルマップ、
-または劣化の解釈を用いて集合を変更しない。条件別の潜在空間から個別にKを選び、表現の違いと
-クラスタ数の違いを混在させることもしない。
+Do not calibrate K using an elbow from raw SNV across all specimens.
+Do not change this set based on test-specimen spectral distributions, CV metrics, label maps, or degradation interpretations.
+Do not select K separately from each condition's latent space, which would mix representation differences with differences in cluster count.
 
-2から14まで2刻みで粗い分割から細かい分割を確認する設定であり、組織・表面状態の正解数や
-すべての異常を分離できる範囲とは仮定しない。
+This setting examines coarse to fine partitions from 2 to 14 in increments of 2.
+It is not assumed to represent the true number of tissue or surface states or a range capable of separating every anomaly.
 
-### 6.2 代表表示と全Kの報告
+### 6.2 Representative Display and Reporting All K Values
 
-主表・全体可視化の代表表示値は、共通集合の中央にあたる中間的な表示解像度8に固定する。
+Fix the representative display value for main tables and global visualizations at the intermediate resolution of 8, the center of the common set.
 
 ```math
 K_0=8
 ```
 
-この中間解像度に現象上の目安を与えるため、1試料内で観察され得る主要な変動を、早材・晩材に
-代表される年輪組織、相対的に健全・劣化した状態、環境に由来し得る表面状態について、それぞれ
-最小限の2水準へ粗視化する。概念上の組合せは次の8通りとなる。
+To provide a phenomenological guide for this intermediate resolution, coarsen the main variations potentially observed within one specimen
+into a minimal 2 levels each: growth-ring tissue represented by earlywood/latewood, relatively sound/degraded condition,
+and potentially environment-related surface condition. This gives the following 8 conceptual combinations:
 
 ```math
-\underbrace{2}_{\text{年輪組織}}
+\underbrace{2}_{\text{growth-ring tissue}}
 \times
-\underbrace{2}_{\text{相対的な劣化状態}}
+\underbrace{2}_{\text{relative degradation state}}
 \times
-\underbrace{2}_{\text{環境由来の表面状態}}
+\underbrace{2}_{\text{environment-related surface state}}
 =8
 ```
 
-木材のSNVスペクトルは主要な吸収構造を共有するため、樹種ごとの独立な離散状態を事前に仮定せず、
-樹種は組合せの水準数に加えない。樹種差は各要因の現れ方を修飾し、クラスタ形成にも寄与し得る。
-$`2\times2\times2`$は補助的なヒューリスティックである。実際の要因は連続的で相互作用するため、
-各クラスタへの事前割当や1対1対応を仮定しない。第一の根拠は共通K集合の中央という表示基準に置き、
-真のクラスタ数・最適K・8つの化学状態とは解釈しない。
+Because wood SNV spectra share major absorption structures, do not assume separate discrete states for each tree species in advance,
+and do not add species to the number of combination levels.
+Species differences may modify how each factor appears and contribute to cluster formation.
+The $`2\times2\times2`$ count is a supplementary heuristic.
+The actual factors are continuous and interact, so neither prior assignment to clusters nor a one-to-one correspondence is assumed.
+The primary rationale remains the display convention of using the center of the common K set.
+Do not interpret this as the true cluster count, optimal K, or 8 chemical states.
 
-- $`K_0`$について主評価、診断および計画比較を表形式で報告する。
-- $`\mathcal{K}`$全体の曲線と計画比較の差を併記し、代表Kだけで結論を決めない。
-- 改善の方向がKによって変わる場合は、どのKで変わるかを明示する。
-- K方向の平均、最大値などを手法の総合scoreにしない。
+- Report primary metrics, diagnostics, and planned comparisons for $`K_0`$ in tables.
+- Include curves across all of $`\mathcal{K}`$ and differences for planned comparisons; do not base conclusions only on the representative K.
+- If the direction of improvement changes with K, state where it changes.
+- Do not use the average or maximum over K as an overall method score.
 
-K依存性は、主実験で得た同じ表現を使う補助解析とする。追加の表現学習は行わず、各Kの
-クラスタリングと評価を実施する。Kの集合内で傾向が保たれることを、集合外への保証とは扱わない。
+Treat dependence on K as a supplementary analysis using the same representations obtained in the main experiment.
+Perform clustering and evaluation at each K without additional representation learning.
+A consistent trend within the chosen set is not a guarantee beyond it.
 
-## 7. fold内の処理
+## 7. Processing Within Each Fold
 
-各foldについて、固定したtrain/test試料と画素集合を準備する。各条件・各反復について次を行う。
+Prepare the fixed training/test specimens and pixel sets for each fold. For each condition and replicate:
 
-1. train試料だけを用いて、必要な表現変換器またはChemoMAEを学習する。
-2. train/testの木材領域画素から、第4.1.1節の次元・全可視抽出・L2正規化に従って表現を抽出する。
-3. 共通集合内の各Kについて、train表現だけでCosine-KMeansをfitする。
-4. 固定したtrain centroidsを用いて、cleanなtest表現と同一画素の摂動後表現へラベルを割り当てる。
-5. test試料に対して主評価指標と補助診断を計算する。
-6. 試料・K・反復単位の値、foldおよび全out-of-fold試料の結果を保存する。
+1. Fit the required representation transformation or train ChemoMAE using only training specimens.
+2. Extract representations from training/test wood-region pixels using the dimensions, full-visibility extraction, and L2 normalization in Section 4.1.1.
+3. For each K in the common set, fit Cosine-KMeans using only training representations.
+4. Assign labels to clean test representations and perturbed representations of the same pixels using the fixed training centroids.
+5. Calculate the primary metrics and supplementary diagnostics for the test specimens.
+6. Save specimen-, K-, and replicate-level values, fold results, and results across all out-of-fold specimens.
 
-全反復の完了後に、同一fold・条件・Kの反復間でラベル分割のARIを計算する。
-K間・反復間・条件間でクラスタ番号の意味が共通であるとは仮定しない。
+After all replicates are complete, calculate ARI between their label partitions for the same fold, condition, and K.
+Do not assume that cluster numbers have shared meanings across K values, replicates, or conditions.
 
-checkpointは、第4.2節の800 epoch完了時の最終時点を使用する。test再構成loss、test指標、
-可視化で停止時点を選ばない。early stoppingまたは別のcheckpoint選択を導入する場合は、
-outer train内の試料単位validationと選択規則を含む設計変更が必要となる。
+Use the final checkpoint at completion of 800 epochs, as specified in Section 4.2.
+Do not choose a stopping point based on test reconstruction loss, test metrics, or visualizations.
+Introducing early stopping or another checkpoint-selection rule requires a design change that includes specimen-level validation
+within the outer training set and an explicit selection rule.
 
-## 8. 条件選択の方針
+## 8. Condition-Selection Policy
 
-- CV結果から単一の「best条件」を選定しない。
-- 主評価の代表表示はLLA（補正後）とLFR(TGN+FS)とする。代表指標の優先順は
-  LLA、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyとする。
-- ARIは反復間再現性、Cosine-Silhouetteは表現空間内の幾何、occupancyは退化の診断として報告する。
-  補正前LLAとLFR noise・shiftも保存済み評価に保持する。どの指標も劣化精度の代用にしない。
-- 各指標を恣意的に合成した総合scoreを作らない。
-- 計画比較ごとに、各指標の方向とKに対する傾向を報告する。
-- 解釈・可視化結果を用いて主条件を事後選択しない。
+- Do not select a single “best condition” from the CV results.
+- Use corrected LLA and LFR(TGN+FS) as the principal displays of primary evaluation.
+  The metric priority order is LLA, LFR(TGN+FS), ARI, Cosine-Silhouette, and Cluster Occupancy.
+- Report ARI as reproducibility across replicates, Cosine-Silhouette as geometry within each representation space, and occupancy as a diagnostic of degeneracy.
+  Also retain uncorrected LLA and noise/shift LFR in the saved evaluations. Do not use any metric as a substitute for degradation accuracy.
+- Do not create an overall score by arbitrarily combining metrics.
+- For each planned comparison, report the direction of each metric and its trend with K.
+- Do not select the main condition after inspecting interpretation or visualization results.
 
-全体解釈の対象・fit条件は[可視化設計](visualization_and_interpretation.md)に従い、CV順位で選ばない。
+Follow the [visualization design](visualization_and_interpretation.md) for the targets and fitting conditions used in global interpretation,
+rather than selecting them by CV ranking.
 
-## 9. 実行しない探索
+## 9. Searches Not Performed
 
-- Encoder/Decoderの幅またはdepth sweep
-- CV評価指標を用いたGaussian noise強度sweep
-- CV評価指標を用いたshift強度sweep
-- Gaussian noise単独条件のmask率sweep
-- shift単独条件のmask率sweep
-- 条件別のK選択
-- CV結果によるbest条件探索
+- Encoder/decoder width or depth sweeps
+- Gaussian-noise strength sweeps using CV metrics
+- Shift-strength sweeps using CV metrics
+- Mask-rate sweeps for the Gaussian-noise-only condition
+- Mask-rate sweeps for the shift-only condition
+- Condition-specific K selection
+- Searches for the best condition based on CV results
 
-3反復は確率的変動の確認であり、seedの最適化または良好なrunの選別ではない。
+The 3 replicates assess stochastic variation; they are not seed optimization or selection of favorable runs.
 
-## 10. 実行順序
+## 10. Execution Order
 
-1. 固定済みの200 Hz本番前処理datasetと診断図を生成・確認する。
-2. 第11.2節の確認・記録を行う。固定済みの$`q`$、共通$`\mathcal{K}`$と代表表示$`K_0`$を含む実行configを作成する。
-3. 試料単位の共通5-fold splitとtrain画素のmanifestを作成する。
-4. A1を含む主比較8条件を3反復で評価する。
-5. 主8条件のOOF snapshotを作成・checkし、pairedな条件差、K依存性、2×2交互作用および反復間安定性を集計する。主条件の報告図表を生成・照合する。
-6. B0、B1、A0、A1、M00、M11を全試料でfitまたは学習し、同じ表現・抽出画素・事前指定した$`K_0`$で
-   Cosine-KMeansを各1回fitする。
-7. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋Hungarian matchingでM00のCosine-KMeansを共通基準にラベルを直接整列し、SNV類似度行列・確認用IoU/contingency/overlapとともに6条件のマップとスペクトル、PCA（PC1・PC2）を保存する。
-8. Raman補助実験は独立した[Bacteria-IDプロトコル](bacteria_id_experiment_plan.md)と[HPOプロトコル](bacteria_id_hpo_protocol.md)に従う。
-9. M11のmask率補助実験を同じ3反復で評価し、独立したOOF snapshotとmask率依存性の図表を作成する。
-10. 全体fitのM11-75を1回追加学習し、固定表現・K8の3 seed診断と、初回fitのM11(-50)・M11-75の2×7比較図を付録用に作成する。
+1. Generate and inspect the fixed 200 Hz production-preprocessed dataset and diagnostic figures.
+2. Perform the checks and recording in Section 11.2. Create the execution configuration including the fixed $`q`$, common $`\mathcal{K}`$, and representative display $`K_0`$.
+3. Create the common specimen-level 5-fold split and training-pixel manifests.
+4. Evaluate all 8 main comparison conditions, including A1, over 3 replicates.
+5. Create and check the main 8-condition OOF snapshot, then aggregate paired condition differences, dependence on K, 2×2 interactions, and stability across replicates. Generate and verify the main-condition reporting figures and tables.
+6. Fit or train B0, B1, A0, A1, M00, and M11 on all specimens, then fit Cosine-KMeans once for each using the same representations, sampled pixels, and prespecified $`K_0`$.
+7. Directly align labels to the common reference of M00 Cosine-KMeans using cosine similarity of observed-SNV representative spectra and Hungarian matching.
+   Construct those representative spectra by averaging within-specimen cluster means with equal weights across specimens.
+   Save maps, spectra, and PCA (PC1/PC2) for all 6 conditions, together with the SNV similarity matrix and inspection IoU/contingency/overlap.
+8. Follow the separate [Bacteria-ID protocol](bacteria_id_experiment_plan.md) and [HPO protocol](bacteria_id_hpo_protocol.md) for the supplementary Raman experiment.
+9. Evaluate the supplementary M11 mask-rate experiment over the same 3 replicates and create a separate OOF snapshot and mask-rate-dependence figures and tables.
+10. Add one global training run for M11-75, and prepare 3-seed diagnostics using fixed representations at K8 and a 2×7 comparison figure from the first fits of M11(-50) and M11-75 for the appendix.
 
-全体fitのマップ再現性は[再現性評価](spatial_map_reproducibility_plan.md)、
-化学的解釈は[NIR解析](visualization_and_interpretation.md#nir-interpretation)に従う。
-mask率のCV比較と全体fit比較は主条件と区別し、代表指標・表示構成は[評価の報告規約](evaluation_metrics.md#reporting)に従う。
+Follow the [reproducibility evaluation](spatial_map_reproducibility_plan.md) for global-fit map reproducibility,
+and the [NIR analysis](visualization_and_interpretation.md#nir-interpretation) for chemical interpretation.
+Keep the mask-rate CV and global-fit comparisons distinct from the main conditions, following the
+[evaluation reporting conventions](evaluation_metrics.md#reporting) for principal metrics and display layouts.
 
-## 11. 実行記録
+## 11. Execution Records
 
-### 11.1 設定の参照先
+### 11.1 Configuration References
 
-主条件・mask率補助実験の設定は第3〜5節を参照する。保存済みrunの記録と対応付けて確認する。
+Refer to Sections 3–5 for the main-condition and supplementary mask-rate settings.
+Check them against the records of the saved runs.
 
 <a id="execution-records"></a>
 
-### 11.2 データ確認と実行記録
+### 11.2 Data Checks and Execution Records
 
-確定した設計を実行する際に、次を確認・記録する。
+When executing the finalized design, check and record the following:
 
-| 項目 | 実行前に確認・固定・保存する内容 |
+| Item | Information to verify, fix, and save before execution |
 | --- | --- |
-| 試料集合と分割 | production manifestとmetadataの対応、採用試料数、上位の採取関係の確認状況。新たな依存関係が判明した場合はsplit前に扱いを決める |
-| 乱数 | split・画素抽出・3学習反復・KMeans・評価摂動などの用途別seed一覧。数値は実装時に事前固定し、結果を見て選び直さない |
-| manifest | fold割当、抽出座標、反復IDとseedの対応、全体学習用の画素集合 |
-| 実行環境 | GPU機種、実際に使用したlibrary version、学習AMP・抽出評価FP32・評価TF32無効の設定、seedと決定性の実設定、PCAの実solver、library既定epsilonと単位norm誤差 |
-| 学習処理 | 第4.2節のrecipeとの整合、run別のcheckpoint、予定・実更新回数、AMP skip回数、実行時間 |
+| Specimen set and splits | Correspondence between the production manifest and metadata, included specimen count, and the status of higher-level sampling relationships; resolve newly identified dependencies before splitting |
+| Randomness | Purpose-specific seed lists for splits, pixel sampling, 3 training replicates, KMeans, evaluation perturbations, and other uses; fix numerical values in advance during implementation and do not reselect them after inspecting results |
+| Manifests | Fold assignments, sampled coordinates, mapping between replicate IDs and seeds, and the pixel set for global training |
+| Execution environment | GPU model, actual library versions, training AMP, FP32 extraction/evaluation, disabled evaluation TF32, actual seed and determinism settings, actual PCA solver, library-default epsilons, and unit-norm errors |
+| Training process | Consistency with the recipe in Section 4.2, checkpoints per run, scheduled and actual update counts, AMP skips, and runtime |
 
-CVの学習・clustering・評価のrun記録はschema 2とし、`contract`に現行の読込条件、`execution`に
-実際の実行時config・runtime・source hashを保存する。読込条件は完全一致で検証し、実行由来と区別する。
-中断再開ではrun記録全体が同じであることを要求する。
+Use schema 2 for CV training, clustering, and evaluation run records.
+Save current loading requirements in `contract`, and the actual execution configuration, runtime, and source hashes in `execution`.
+Validate loading requirements by exact matching, distinguishing them from execution provenance.
+When resuming an interrupted run, require the entire run record to match.
 
-表示例は[可視化設計](visualization_and_interpretation.md#representative-samples)、occupancyは[評価規約](evaluation_metrics.md#occupancy)に従う。
-手順と成果物の確認方法は[runbook](../experiment_runbook.md)に従う。本番開始時は専用ディレクトリへ
-manifestを新規生成し、preflightとconfig・seed・split・抽出画素の一致を検証する。
+Follow the [visualization design](visualization_and_interpretation.md#representative-samples) for displayed examples and the
+[evaluation conventions](evaluation_metrics.md#occupancy) for occupancy.
+Use the [runbook](../experiment_runbook.md) for procedures and artifact checks.
+At production startup, generate new manifests in a dedicated directory and verify agreement with preflight for the configuration, seeds, splits, and sampled pixels.
 
-更新回数は第4.2節に従い、fold間の更新回数を揃えるために800 epochを変更しない。
-mask率で計算量・実行時間が異なるため等計算量の比較とは記述せず、実行時間を併記する。
-設定変更は事前の設計変更と結果を見た事後調整を区別し、異なる条件のrunを混合しない。
+Follow Section 4.2 for update counts; do not change the 800 epochs to equalize update counts across folds.
+Because computation and runtime vary with mask rate, do not describe the comparison as having equal computational cost; report runtimes alongside results.
+Distinguish design changes made in advance from adjustments made after inspecting results, and do not mix runs from different conditions.

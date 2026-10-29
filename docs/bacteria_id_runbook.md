@@ -1,67 +1,67 @@
-# Bacteria-ID Table 4の実行手順
+# Bacteria-ID Table 4 Runbook
 
-本書は入力準備と、80/20分割によるTable 4の事前学習・クラスタリングを扱う。
-Table 5の事前学習・分類は[専用runbook](bacteria_id_hpo_runbook.md)、
-条件の定義と比較上の制約は[実験仕様](design/bacteria_id_experiment_plan.md)を参照する。
-以下はリポジトリrootから、構築済み環境でPowerShellを使って実行する。
-各コマンドの終了codeが非0なら後続工程へ進まない。
+This document covers input preparation and Table 4 pretraining and clustering with an 80/20 split.
+For Table 5 pretraining and classification, see the [dedicated runbook](bacteria_id_hpo_runbook.md).
+For the condition definitions and limitations of the comparisons, see the [experimental specification](design/bacteria_id_experiment_plan.md).
+Run the commands below in PowerShell from the repository root, using the configured environment.
+Do not proceed to the next stage if a command returns a nonzero exit code.
 
-## 入力と準備
+## Inputs and preparation
 
-必要な原本は`data/raw/bacteria_id/`の`X_reference.npy`・`y_reference.npy`・
-`X_finetune.npy`・`y_finetune.npy`・`X_test.npy`・`y_test.npy`である。
-`wavenumbers.npy`があれば、軸の形状・単調性・範囲を記録する。
-採用入力の波数軸は1792.40から381.98 cm⁻¹の降順であり、チャネル順は反転しない。
-ラベル原本のfloat64値は有限な整数であることを検証してから整数IDへ変換する。
+The required original files in `data/raw/bacteria_id/` are `X_reference.npy`, `y_reference.npy`,
+`X_finetune.npy`, `y_finetune.npy`, `X_test.npy`, and `y_test.npy`.
+If `wavenumbers.npy` is available, record the axis shape, monotonicity, and range.
+The wavenumber axis of the adopted input descends from 1792.40 to 381.98 cm⁻¹; do not reverse the channel order.
+Verify that the original float64 labels are finite integers before converting them to integer IDs.
 
-入力は[bacteria-SANetの公開ミラー案内](https://github.com/DenglinGo/bacteria-SANet)経由で取得した。
-取得URL、アーカイブ、取り出したファイルの記録は`data/raw/bacteria_id/acquisition.json`にある。
-公式配布物とのバイト単位の同一性は未確認である。原本は書き換えない。
+The inputs were obtained through the [public mirror instructions in bacteria-SANet](https://github.com/DenglinGo/bacteria-SANet).
+The download URL, archive, and extracted files are recorded in `data/raw/bacteria_id/acquisition.json`.
+Byte-for-byte identity with the official distribution has not been verified. Do not modify the originals.
 
-未作成の出力先にSNV入力と分割を準備する。
+Prepare the SNV inputs and splits in an output location that does not yet exist.
 
 ```powershell
 uv run --no-sync python scripts/experiments/bacteria_id.py prepare
 ```
 
-準備先は`data/processed/bacteria_id_v1/`である。既存入力は再生成せず、そのmanifestと
-`splits.npz`をTable 4の分割準備へ渡す。分割の定義と由来は
-[実験仕様](design/bacteria_id_experiment_plan.md#table4-split)を参照する。
+The preparation destination is `data/processed/bacteria_id_v1/`. Do not regenerate existing inputs; pass their manifest and
+`splits.npz` to the Table 4 split preparation. For the split definition and provenance,
+see the [experimental specification](design/bacteria_id_experiment_plan.md#table4-split).
 
-## Table 4の分割準備
+## Table 4 split preparation
 
 ```powershell
 uv run --no-sync python scripts/experiments/bacteria_id_table4_80.py prepare
 ```
 
-保存済みのtrain・validation indexを結合し、test indexとその順序を保持して、
-`outputs/experiments/bacteria_id_table4_80_20_v1/`に80/20分割を作る。
-原本・SNV・入力分割は変更しない。読み取りはindexとラベルが主で、全スペクトルの再前処理はしない。
-出力先が既に存在する場合は停止する。
+Combine the saved train and validation indices, preserving the test indices and their order, to create
+an 80/20 split in `outputs/experiments/bacteria_id_table4_80_20_v1/`.
+The originals, SNV data, and input splits remain unchanged. Reads primarily involve indices and labels; the full spectra are not preprocessed again.
+The command stops if the output location already exists.
 
-`split_sizes`はBacteria-4がtrain 6,400/test 1,600、Bacteria-6がtrain 9,600/test 2,400、
-各クラスtrain 1,600/test 400であり、`planned_runs`が20であることを確認する。
-準備コードは分割の非重複・対象全件の網羅・test indexの完全一致を検証する。
-`manifest.json`には入力manifest・分割のhash、件数、run identity、用途別seedを保存する。
+Check that `split_sizes` reports train 6,400/test 1,600 for Bacteria-4, train 9,600/test 2,400 for Bacteria-6,
+train 1,600/test 400 per class, and that `planned_runs` is 20.
+The preparation code verifies split disjointness, coverage of all eligible entries, and exact agreement of test indices.
+`manifest.json` stores the input manifest and split hashes, counts, run identities, and seeds for each purpose.
 
-## 事前学習・クラスタリング
+## Pretraining and clustering
 
 ```powershell
 uv run --no-sync python scripts/experiments/bacteria_id_table4_80.py all --device 0
 ```
 
-Bacteria-4/6 × M00/M11 × seed 0–4の20 runを単一CUDA GPUで順次実行する。
-各runはtrainだけで初期化から800 epoch・batch size 1024で学習する。
-`drop_last=True`によりBacteria-4は6 batch/epoch・4,800更新試行、
-Bacteria-6は9 batch/epoch・7,200更新試行となる。AMP skip後の実更新数は`completion.json`を参照する。
-長時間のGPU処理であり、checkpointと評価結果を出力先へ保存する。
+Run the 20 combinations of Bacteria-4/6 × M00/M11 × seeds 0–4 sequentially on a single CUDA GPU.
+Each run trains from initialization on train data only for 800 epochs with batch size 1024.
+With `drop_last=True`, Bacteria-4 has 6 batches/epoch and 4,800 attempted updates;
+Bacteria-6 has 9 batches/epoch and 7,200 attempted updates. See `completion.json` for actual updates after AMP skips.
+This is a long GPU operation that saves checkpoints and evaluation results to the output location.
 
-`all`は完了済みrunを検証してスキップし、中断runは同じrunの`last.pt`から再開する。
-既知の未完成クラスタ出力（空のresults directoryと`centroids.npz`のみ）は除去して
-クラスタリングを再実行するが、他の不完全出力は停止して原因の確認を求める。
-Table 5のcheckpointは読み込まない。20件の評価が揃うと主表・seed別CSV・統計JSON・seed別図を作る。
+`all` validates and skips completed runs, and resumes interrupted runs from the same run's `last.pt`.
+Known incomplete clustering outputs (an empty results directory and only `centroids.npz`) are removed before
+clustering is rerun; other incomplete outputs stop processing and require the cause to be checked.
+Table 5 checkpoints are not loaded. Once all 20 evaluations are available, the command creates the main table, per-seed CSV, statistics JSON, and per-seed plot.
 
-個別実行の例：
+Example of separate execution:
 
 ```powershell
 uv run --no-sync python scripts/experiments/bacteria_id_table4_80.py pretrain --corpus bacteria4 --condition M00 --seed 0 --device 0
@@ -69,26 +69,26 @@ if ($LASTEXITCODE -ne 0) { throw 'Table 4 pretraining failed' }
 uv run --no-sync python scripts/experiments/bacteria_id_table4_80.py cluster --corpus bacteria4 --condition M00 --seed 0 --device 0
 ```
 
-中断した同じ事前学習runの再開例：
+Example of resuming the same interrupted pretraining run:
 
 ```powershell
 uv run --no-sync python scripts/experiments/bacteria_id_table4_80.py pretrain --corpus bacteria4 --condition M00 --seed 0 --device 0 --resume outputs/experiments/bacteria_id_table4_80_20_v1/checkpoints/pretrain/bacteria4/M00/seed_0/checkpoints/last.pt
 ```
 
-## 集計と確認
+## Aggregation and checks
 
-個別実行で20件を揃えた場合、または保存済み評価から表を作る場合は次を使う。
+Use the following after completing all 20 evaluations separately, or to produce tables from saved evaluations.
 
 ```powershell
 uv run --no-sync python scripts/experiments/bacteria_id_table4_80.py report
 ```
 
-出力先の`table4.md`を、`table4_seed_scores.csv`の20行全件と
-`table4_statistics.json`の平均・標本SD（`ddof=1`）に照合する。
-`table4_seed_scores.png`は各seed値と平均±標本SDを示す。
-`outputs/`とcheckpointはGit管理対象外である。
+Compare `table4.md` in the output location against all 20 rows of `table4_seed_scores.csv` and
+the means and sample SDs (`ddof=1`) in `table4_statistics.json`.
+`table4_seed_scores.png` shows each seed's value and the mean ± sample SD.
+`outputs/` and checkpoints are excluded from Git tracking.
 
-入力・分割・評価処理を変更した場合の小規模テストは次のとおり。実データやGPUは使用しない。
+The following small test applies when input, split, or evaluation processing is changed. It uses no real data or GPU.
 
 ```powershell
 uv run --no-sync python -m pytest tests/experiments/test_bacteria_table4_80.py

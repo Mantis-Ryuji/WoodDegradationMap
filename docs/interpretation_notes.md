@@ -1,133 +1,125 @@
-# 結果の読み方と解釈
+# Reading and interpreting results
 
-マップ・指標・再構成lossから言えることと、その限界を整理する。
-指標の定義と集計は[評価仕様](design/evaluation_metrics.md)、比較条件は[実験プロトコル](design/experiment_protocol.md)、
-化学的対応の検討は[全体可視化設計](design/visualization_and_interpretation.md#evidence-triangulation)に従う。
+This document explains what maps, metrics, and reconstruction loss can establish, and their limitations.
+Metric definitions and aggregation follow the [evaluation specification](design/evaluation_metrics.md); comparison conditions follow the [experiment protocol](design/experiment_protocol.md).
+Chemical interpretation follows the [global visualization design](design/visualization_and_interpretation.md#evidence-triangulation).
 
-## 1. マップと指標の関係
+## 1. Maps and metrics
 
-Encoderは1画素のスペクトルを入力し、座標・近傍画素は受け取らない。
-領域が空間的にまとまる理由として、組織や化学状態のまとまりが近隣スペクトルと割当の類似性に現れることが考えられる。
-本研究では照明などの撮像条件を可能な範囲でそろえたという前提と、試料自体の表面性状に由来する変動を分けて扱う。
-表面・組織・散乱に関わる差も解釈対象となるため、本書の「物理化学的な特徴」は化学組成だけに限定しない。
-ただし、条件をそろえたことだけで測定由来の変動を排除したとはせず、ラベル一致から原因を同定しない。
+The encoder takes one pixel spectrum as input and receives no coordinates or neighboring pixels.
+Spatially coherent regions may arise when coherent anatomy or chemical states are reflected in similar neighboring spectra and assignments.
+This study distinguishes the assumption that imaging conditions such as illumination were controlled as far as possible from variation due to the specimens' own surface properties.
+Because differences involving surfaces, anatomy, and scattering are also interpreted, "physicochemical features" here are not restricted to chemical composition.
+Controlling conditions does not by itself eliminate measurement-related variation, and label agreement does not identify its causes.
 
-| 指標 | 読み取れること | 解釈の限界 |
+| Metric | What it indicates | Limits of interpretation |
 | --- | --- | --- |
-| LLA | 占有率を保ったランダム配置を超える一致 | 孤立画素・連結性・小領域の正しさは直接測らない |
-| LFR(TGN+FS) | 指定したnoise + shift後の割当維持 | 潜在移動量・化学情報保持・実測誤差全般への頑健性は直接測らない |
-| ARI | 同一test画素に対する反復間の分割再現性 | 正解との一致や、異なるsplitに対する安定性ではない |
-| Cosine-Silhouette | 表現内のクラスタ内外の相対距離 | 化学的妥当性の共通尺度や、潜在の情報量ではない |
-| Cluster Occupancy | クラスタへの集中、使用クラスタ数、不均衡 | 単一クラスタ試料をそれだけで成功・失敗とは判定しない |
-| 補正前LLA（補足） | 表面上の局所ラベル一致 | 潜在距離・物理距離・化学状態の対応や境界の正しさは直接測らない |
+| LLA | Agreement beyond random placement that preserves occupancy | Does not directly measure isolated pixels, connectivity, or the correctness of small regions |
+| LFR(TGN+FS) | Assignment stability after specified noise and shift | Does not directly measure latent displacement, chemical information retention, or robustness to measurement errors in general |
+| ARI | Reproducibility of partitions across replicates on the same test pixels | Not agreement with ground truth or stability across different splits |
+| Cosine-Silhouette | Relative within- and between-cluster distances in a representation | Not a common measure of chemical validity or the information content of a latent representation |
+| Cluster Occupancy | Concentration in clusters, number of occupied clusters, and imbalance | A single-cluster specimen is not judged a success or failure on that basis alone |
+| Uncorrected LLA (supplementary) | Apparent local label agreement | Does not directly measure correspondence among latent distances, physical distances, and chemical states, or boundary correctness |
 
-主条件の代表表示は上表の先頭5指標の順とし、LLAは補正後の値を指す。
-Occupancyと2×2交互作用はCSV表で読む。LFR(TGN+FS)・LFR(TGN)・LFR(FS)は報告CSVに保存する。
-補正前LLAとLFRの元評価値はOOF snapshotにも保持する。
+The representative display for the main conditions follows the order of the first five metrics above; LLA denotes the corrected value.
+Occupancy and 2×2 interactions are reported in CSV tables. LFR(TGN+FS), LFR(TGN), and LFR(FS) are saved in the report CSVs.
+Uncorrected LLA and the original LFR evaluation values are also retained in OOF snapshots.
 
-低いsilhouette、高い補正前LLA、低いLFRは両立し得る。連続的な変動を固定Kで分ければ、
-分離が弱くてもまとまった表面領域を形成できるが、それだけでは連続的な化学勾配の証拠にならない。
-補正前LLAは占有率の偏りや単一クラスタ化でも上がり得るため、occupancy・使用クラスタ数・マップを併読する。
+Low silhouette, high uncorrected LLA, and low LFR can coexist. Partitioning continuous variation at a fixed K can produce coherent surface regions
+despite weak separation, but this alone is not evidence of a continuous chemical gradient.
+Uncorrected LLA can also increase with occupancy imbalance or collapse to a single cluster; read it alongside occupancy, the number of occupied clusters, and maps.
 
-潜在は、劣化・樹種・組織・含水・測定面などが重なった変動を表し得る。
-クラスタリングを連続表現の量子化として使い、代表スペクトルから領域差を探索する。
-クラスタ数を自然界の状態数、代表線を純粋成分・劣化段階・濃度尺度とはみなさない。
+Latent representations may capture overlapping variation due to degradation, tree species, anatomy, moisture content, and the measured surface.
+Clustering quantizes a continuous representation, and representative spectra help explore regional differences.
+The number of clusters is not the number of states in nature, and representative curves are not pure components, degradation stages, or concentration scales.
 
-LLAは指定した局所近傍での一致を測り、物理距離とスペクトル・潜在距離の単調な対応は要求しない。
-年輪などの繰り返し構造では、離れた位置に似た状態が現れ得る。近傍でのまとまりと、
-試料全体で「遠いほど異なる」という仮定を混同しない。
+LLA measures agreement within specified local neighborhoods and does not require a monotonic relationship between physical distance and spectral or latent distance.
+Repeated structures such as growth rings can place similar states far apart. Local coherence should not be confused
+with an assumption that greater distance always means greater difference throughout a specimen.
 
-### 1.1 スペクトル特徴と空間分布の対応
+### 1.1 Relating spectral features to spatial distributions
 
-本研究では、複数波長にわたるスペクトルの関係を表現へ集約し、クラスタリングで画素群をまとめることで、
-試料表面の状態差と化学的解釈の候補を探索しやすくすることを目指す。
-「化学状態の探索を助ける」は研究の狙いであり、化学状態が同定済みという意味ではない。
+The study aims to make it easier to explore differences in specimen surface states and candidate chemical interpretations
+by summarizing relationships across wavelengths in a representation and grouping pixels by clustering.
+"Supporting exploration of chemical states" is the research objective; it does not mean that chemical states have already been identified.
 
-この用途はB0の直接クラスタリングやB1のPCAにも共通する。ChemoMAEでは帯域間の予測関係を学ぶ
-表現を使う点に着目し、その表現がどのような領域・スペクトル差を整理するかを比較する。
-複数波長を使うこと自体をChemoMAE固有の利点とはせず、baselineを上回る解釈上の有用性は結果で確認する。
-構成と学習目的の位置づけは[ChemoMAEの説明](chemomae_positioning.md#1-この構成をどう捉えるか)に従う。
+This use is shared by direct clustering of B0 and PCA in B1. For ChemoMAE, the focus is on using a representation
+that learns predictive relationships between bands, and comparing the regional and spectral differences it organizes.
+Using multiple wavelengths is not unique to ChemoMAE; interpretive usefulness beyond the baselines must be assessed from results.
+The architecture and learning objective are described in the [ChemoMAE overview](chemomae_positioning.md#1-positioning-of-the-architecture).
 
-化学的な解釈には、全体fitのM11・K8の初回割当を用い、試料内クラスタ平均のSNVと
-疑似吸光度の二次微分を、年輪・外部露出面・虫孔などに対するクラスタの配置と対応づける。
-帯域帰属は文献に基づき、樹種・部材・環境履歴などの情報も併用する。
-同じクラスタ基準を試料間で共有することで、空間分布とスペクトルの共通点・相違を比較する。
+Chemical interpretation uses the first global-fit M11/K8 assignments. Within-specimen cluster means of SNV spectra and
+second derivatives of pseudo-absorbance are related to cluster locations relative to growth rings, externally exposed surfaces, and insect holes.
+Band assignments are based on the literature, together with information on tree species, timber members, and environmental history.
+Sharing a clustering reference across specimens allows comparison of similarities and differences in spatial distributions and spectra.
 
-二次微分の帯域値は吸収形状の曲率を表し、成分量そのものではない。
-負の谷の深さには成分の寄与だけでなく、吸収帯の幅や重なり、水素結合環境も関わる。
-水分履歴や劣化の関与は、スペクトルと分布・部材情報からの解釈であり、直接測定した履歴ではない。
-内部劣化・表面劣化のモデルは観測に基づく仮説で、輸送・反応過程の因果的実証とは区別する。
+Second-derivative band values describe curvature in absorption shapes, not component quantities.
+The depth of a negative trough depends on band width, overlap, and the hydrogen-bonding environment, as well as component contributions.
+The involvement of moisture history or degradation is inferred from spectra, distributions, and timber-member information; that history was not measured directly.
+Internal and surface degradation models are hypotheses based on observations and are distinguished from causal demonstrations of transport and reaction processes.
 
-### 1.2 集約と探索的解釈の範囲
+### 1.2 Scope of aggregation and exploratory interpretation
 
-CVは未知試料での空間的一貫性・指定摂動への安定性・反復間再現性を比較する。
-全49試料を含む全体fitのマップとスペクトルは、領域差の記述と探索的解釈に用いる。
-試料別の比較対象クラスタは分布を目視して選択しており、未使用データによる化学的検証ではない。
-M11の詳しい解釈は、全指標での優位性を意味しない。
+CV compares spatial consistency, stability under specified perturbations, and reproducibility across replicates on unseen specimens.
+Global-fit maps and spectra from all 49 specimens are used to describe regional differences and explore their interpretation.
+Clusters compared within each specimen were selected by visually examining their distributions; this is not chemical validation on unused data.
+Detailed interpretation of M11 does not imply superiority on every metric.
 
-全試料のmacro平均線は条件の概観には使えるが、個別試料の局所差を薄める場合がある。
-試料内クラスタ平均を反射率・SNV・疑似吸光度の二次微分で併読し、所属画素数と除外数を確認する。
-SNVで見える差が二次微分では小さくても、その差が無意味になったとは扱わない。
-疑似吸光度では全帯域が正かつ有限の反射率を持つ画素だけを用いるため、SNVの集計と寄与画素が異なり得る。
+Macro-average curves across specimens provide an overview of conditions but can dilute local differences within individual specimens.
+Read within-specimen cluster means in reflectance, SNV, and second derivatives of pseudo-absorbance together, and check membership and exclusion counts.
+A difference visible in SNV is not rendered meaningless if it is small in the second derivative.
+Pseudo-absorbance uses only pixels with positive, finite reflectance in every band, so its contributing pixels can differ from those in SNV summaries.
 
-帯域値の比較では、比較的健全と判断したクラスタから試料内の共通参照baselineを構成する。
-baselineは化学分析で確認した未劣化材ではない。状態別の棒は寄与試料の等重み平均、誤差棒は
-試料間の標本標準偏差であり、同一試料内の差は必要な状態がすべて揃う共通試料で比較する。
-欠測は補完しない。選択・集約の定義は[可視化と解釈の仕様](design/visualization_and_interpretation.md)を参照する。
+Band-value comparisons construct a common reference baseline within each specimen from clusters judged relatively sound.
+This baseline is not undegraded wood confirmed by chemical analysis. Bars for each state are equally weighted means across contributing specimens,
+and error bars are inter-specimen sample standard deviations. Within-specimen differences are compared using the common specimens for which all required states are available.
+Missing values are not imputed. See the [visualization and interpretation specification](design/visualization_and_interpretation.md) for selection and aggregation definitions.
 
-PCAのPC1・PC2は補助的な投影であり、図の分離やまとまりだけでM群の優位性を判断しない。
-指定摂動への割当安定性と反復間再現性はLFR・ARIで読み、探索図の見栄えで置き換えない。
+PCA PC1 and PC2 are supplementary projections; separation or grouping in these plots alone does not establish superiority of the M conditions.
+Use LFR and ARI to assess assignment stability under specified perturbations and reproducibility across replicates, rather than the appearance of exploratory plots.
 
 <a id="pca-snv-geometry-note"></a>
 
-## 2. PCAとSNVの幾何
+## 2. PCA and SNV geometry
 
-B1の各段階には次の作用がある。
+The stages of B1 have the following effects.
 
-| 操作 | 数学的な作用 |
+| Operation | Mathematical effect |
 | --- | --- |
-| train平均で中心化 | 角度の原点が変わる。画素内帯域平均0でも、train画素間の平均ベクトルは0とは限らない |
-| 16成分へ射影 | 方向とnormが変わり得る。入力の一定normは得点へ引き継がれない |
-| 得点をL2正規化 | 得点のnormに載った情報を後段では使わず、方向を比較する |
+| Centering by the training mean | Changes the origin for angles. A zero bandwise mean within each pixel does not imply a zero mean vector across training pixels |
+| Projection onto 16 components | Can change both direction and norm; constant input norm does not carry over to the scores |
+| L2 normalization of scores | Compares directions without using information in the score norms downstream |
 
-一定normの入力では二乗Euclidean距離とcosine不類似度が比例するため、球面であること自体をPCAとの不整合としない。
-マップだけから中心化・圧縮・正規化の寄与は分離できず、L2正規化だけへの原因帰属もできない。
-16次元へ圧縮できることと、化学的に有用な領域を分けられることは別の性質であり、NNにも入力角度や化学情報の保存保証はない。
+For constant-norm inputs, squared Euclidean distance is proportional to cosine dissimilarity; spherical geometry is not itself incompatible with PCA.
+Maps alone cannot separate the contributions of centering, compression, and normalization or attribute differences solely to L2 normalization.
+Compression to 16 dimensions and separation of chemically useful regions are distinct properties. Neural networks likewise provide no guarantee of preserving input angles or chemical information.
 
-## 3. noiseとshiftの比較
+## 3. Comparing noise and shift
 
-TGNは角度で指定する摂動、Fractional Shiftは波長grid上のチャネル幅で指定する摂動である。
-両者の強度を同一尺度で揃えていないため、LFRの差を摂動の一般的な厳しさの順位にしない。
-Shiftは波長軸の変形であり、画像座標の移動や敵対的摂動ではない。
+TGN is specified by an angle, whereas Fractional Shift is specified by a width in channels on the wavelength grid.
+Their strengths are not matched on a common scale, so differences in LFR do not rank the general severity of the perturbations.
+Shift deforms the wavelength axis; it is neither a displacement of image coordinates nor an adversarial perturbation.
 
-連続16チャネルのpatchと学習可能な位置埋め込みを使うため、shiftに伴う吸収構造のpatch内位置や
-所属tokenの変化は、感度の説明候補となる。固定中心の割当境界付近での潜在移動や、
-スペクトル情報自体の変化でもLFRは上がるため、patch化だけには原因を帰属できない。
-
-M01対M00、M11対M10はshiftを追加する効果を調べる比較である。
-A0対M00はmaskの有無とloss対象の両方が異なり、追加TGN・shiftの効果やmask率だけの効果を示す比較ではない。
-A1はA0と同じmask 0%・全領域再構成へM11と同じTGN＋shiftを加えるdenoising AEである。
-A1対M11もmaskとloss対象の両方が異なる。比較の位置づけは[実験プロトコル](design/experiment_protocol.md#planned-comparisons)を参照する。
+M01 versus M00 and M11 versus M10 examine the effect of adding shift.
+A0 versus M00 differs in both input masking and the loss region; it does not isolate additional TGN/shift or mask ratio alone.
+A1 is a denoising AE that adds the same TGN+shift as M11 to A0's 0% mask and full-region reconstruction.
+A1 versus M11 also differs in both masking and the loss region. See the [experiment protocol](design/experiment_protocol.md#planned-comparisons) for the roles of these comparisons.
 
 <a id="decoder-residual-discussion"></a>
 
-## 4. 再構成lossと潜在表現
+## 4. Reconstruction loss and latent representations
 
-Train lossは学習中のbatch MSEのepoch平均であり、固定した最終モデルの再評価値でも、未知試料の性能でもない。
-A0は全256チャネル、M11は追加摂動とmaskを伴う不可視128チャネルをloss対象とするため、値の比を同一課題の優劣に読み替えない。
-RMSEはSNV座標上の誤差であり、反射率の誤差率や化学情報の保持率ではない。
+Training loss is the epoch mean of batch MSE during training, not a reevaluation of the fixed final model or performance on unseen specimens.
+A0 uses all 256 channels, whereas M11 uses the 128 invisible channels with additional perturbations and masking; their loss ratio does not compare performance on the same task.
+RMSE is error in SNV coordinates, not a relative reflectance error or a rate of chemical information retention.
 
-小さなlossは共通の大きなスペクトル形状を復元できることと整合するが、材組織や劣化に関わる弱い差の保持までは保証しない。
-線形decoderの特異値は潜在変化から復元変化への倍率であり、化学的重要度や入力差の強調度そのものではない。
-入力差・潜在差・残差とmasked lossの関係は[数理的補足](mathematical_notes.md#latent-decoder)を参照する。
-これらの恒等式だけから、TGN・shiftによる指標改善の機構は結論づけられない。
+A small loss is consistent with reconstructing prominent, shared spectral shapes, but does not guarantee retention of subtle differences related to wood anatomy or degradation.
 
-学習時のAMPとFP32 lossの関係は[数値実装の補足](numerical_implementation_notes.md#training-precision)に示す。
-FP16の表現間隔とMSEを直接比較して精度限界とせず、FP32でlossを計算することだけでforward・逆伝播・学習軌道への影響を除外しない。
+The relationship between training AMP and FP32 loss is described in the [numerical implementation notes](numerical_implementation_notes.md#training-precision).
 
-## 5. 比較結果の報告
+## 5. Reporting comparisons
 
-- 代表$`K_0=8`$と固定全7Kを併記し、傾向の逆転や試料ごとの例外を示す。K間では同じ表現・試料を再利用するため、独立した追試とは数えない。
-- 一部foldの結果と全OOF集計を区別する。正式な比較には共通対象でのpaired差、試料間・反復間のばらつき、ARI・occupancyを用いる。
-- 成果物checkの合格は入力・出力の整合性の確認であり、化学的妥当性や条件の優越性を示さない。
-- 化学的な意味はマップ、NIRスペクトル、文献帰属、試料情報を対応づけて検討する。教師なし指標の改善だけで劣化検出精度を主張しない。
+- Report the representative $`K_0=8`$ and all seven fixed K values, including reversals in trends and specimen-specific exceptions. The same representations and specimens are reused across K, so these are not independent replications.
+- Distinguish results from individual folds from the full OOF aggregation. Formal comparisons use paired differences on common specimens, variability across specimens and replicates, ARI, and occupancy.
+- Passing artifact checks establishes input/output consistency, not chemical validity or superiority of a condition.
+- Examine chemical meaning by relating maps, NIR spectra, published band assignments, and specimen information. Improvements in unsupervised metrics alone do not establish degradation detection accuracy.

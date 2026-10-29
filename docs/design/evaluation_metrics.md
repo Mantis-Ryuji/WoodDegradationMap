@@ -1,147 +1,147 @@
-# 評価指標
+# Evaluation Metrics
 
-## 1. 適用範囲
+## 1. Scope
 
-本書は指標の計算・未定義値・集計・報告を定義する。結果の読み方と解釈の限界は
-[結果の解釈](../interpretation_notes.md)、実行時の確認・記録は[実験プロトコル第11.2節](experiment_protocol.md#execution-records)を参照する。
+This document defines metric computation, undefined values, aggregation, and reporting. For interpretation and its limits,
+see [Interpreting the Results](../interpretation_notes.md); for runtime checks and records, see [Experimental Protocol, Section 11.2](experiment_protocol.md#execution-records).
 
-現行CVには画素単位の正解劣化ラベルや独立した劣化測定がなく、教師あり分類精度・IoUは評価しない。
-化学的対応の探索的解釈は[NIR解析](visualization_and_interpretation.md#nir-interpretation)で扱う。
+The current CV has neither pixel-level ground-truth degradation labels nor independent degradation measurements, so supervised classification accuracy and IoU are not evaluated.
+Exploratory interpretation of chemical correspondence is covered in the [NIR analysis](visualization_and_interpretation.md#nir-interpretation).
 
-文書では、有効近傍対のラベル一致率を「補正前LLA」、占有率による偶然一致を補正した値を「LLA」と呼ぶ。
-数式ではそれぞれ$`\mathrm{LLA}^{\mathrm{raw}}`$、$`\mathrm{LLA}`$と表す。実装・保存データのキーは、
-`lla`が補正前LLA、`adjusted_lla`がLLAに対応する。
+In the documentation, “uncorrected LLA” denotes the label agreement rate among valid neighboring pairs, and “LLA” denotes the value corrected for chance agreement due to occupancy.
+In equations, these are written as $`\mathrm{LLA}^{\mathrm{raw}}`$ and $`\mathrm{LLA}`$, respectively.
+In the implementation and stored data, `lla` corresponds to uncorrected LLA, and `adjusted_lla` corresponds to LLA.
 
-代表指標を次の優先順で報告する。
-**LLA（補正後） → LFR(TGN+FS) → ARI → Cosine-Silhouette → Cluster Occupancy**。
-この報告順序はOOF集計後に定めたもので、保存済みのCV評価値とOOF snapshotを出典として使用する。
+Report the principal metrics in this priority order:
+**Corrected LLA → LFR(TGN+FS) → ARI → Cosine-Silhouette → Cluster Occupancy**.
+This reporting order was determined after OOF aggregation, using the saved CV evaluations and OOF snapshot as the sources.
 
-| 位置づけ | 指標 | 評価する性質 |
+| Role | Metric | Property evaluated |
 | --- | --- | --- |
-| 主評価・代表表示 | LLA-3/5/9 | 占有率を保ったランダム配置を超える空間的一致 |
-| 主評価・代表表示 | LFR(TGN+FS)：noise + shiftのlabel flip rate | 指定した複合摂動に対する安定性 |
-| 補助診断 | 3反復間のARI | 同一test画素に対する分割の再現性 |
-| 幾何学的診断 | 各表現空間のCosine-Silhouette | その表現・cosine距離でのクラスタ分離 |
-| 必須併記 | 試料別・fold別occupancy、使用クラスタ数 | 単一クラスタへの集中や不均衡、指標の退化の確認 |
-| CSV併記 | LFR(TGN)、LFR(FS) | TGN単独・Fractional Shift単独への安定性。条件別・paired・交互作用・試料別値をCSVへ保存 |
-| 補足・保存済み評価 | 補正前LLA-3/5/9 | 補正前の一致率。元の評価・OOF snapshotに保持 |
+| Primary evaluation and principal display | LLA-3/5/9 | Spatial agreement beyond random placement preserving occupancy |
+| Primary evaluation and principal display | LFR(TGN+FS): label flip rate for noise + shift | Stability under the specified combined perturbation |
+| Supplementary diagnostic | ARI across 3 replicates | Reproducibility of partitions on the same test pixels |
+| Geometric diagnostic | Cosine-Silhouette in each representation space | Cluster separation in that representation under cosine distance |
+| Required accompanying report | Specimen- and fold-level occupancy and number of occupied clusters | Concentration in a single cluster, imbalance, and metric degeneracy |
+| Accompanying CSV | LFR(TGN), LFR(FS) | Stability under TGN alone and Fractional Shift alone; save condition-specific, paired, interaction, and specimen-level values to CSV |
+| Supplementary, saved evaluation | Uncorrected LLA-3/5/9 | Agreement before correction, retained in the original evaluations and OOF snapshot |
 
-指標を単一scoreへ合成したり、総合的な「最良の表現」を選んだりしない。
-主評価の改善が示す範囲は表の性質に限り、劣化検出・化学的対応・境界の正確さは保証しない。
+Do not combine the metrics into a single score or select an overall “best representation.”
+Improvements in the primary metrics support only the properties listed in the table; they do not guarantee degradation detection, chemical correspondence, or boundary accuracy.
 
-## 2. 共通規約
+## 2. Shared Conventions
 
-### 2.1 ラベル
+### 2.1 Labels
 
-- 背景ラベルは0とする。
-- クラスタラベルは1からKまでとする。
-- Cosine-KMeansが返す0からK-1までのラベルは、ラベルマップへ格納するときに1を加える。
-- 背景画素はすべてのクラスタ評価から除外する。
-- 評価対象$`\Omega_m`$は本番前処理の`valid_spectrum_mask`に対応する有効画素集合とし、
-  `pixel_row_col`で画素を対応付ける。品質条件で除外された画素も近傍および分母に含めない。
-- 全条件・全K・全反復で同じ評価画素を使用する。表現抽出に失敗した画素を条件ごとに落とさない。
+- The background label is 0.
+- Cluster labels range from 1 to K.
+- Add 1 to the labels from 0 to K-1 returned by Cosine-KMeans when storing them in label maps.
+- Exclude background pixels from all cluster evaluations.
+- The evaluation set $`\Omega_m`$ is the set of valid pixels corresponding to `valid_spectrum_mask` from production preprocessing,
+  with pixels matched using `pixel_row_col`. Pixels excluded by quality filtering are also excluded from neighborhoods and denominators.
+- Use the same evaluation pixels across all conditions, K values, and replicates. Do not drop pixels separately by condition when representation extraction fails.
 
-### 2.2 評価単位
+### 2.2 Evaluation Unit
 
-集計単位は画素ではなく `KYOw...` で識別される試料である。試料間の独立性の扱いは
-[experiment_protocol.md](experiment_protocol.md)第3節に従う。
+The aggregation unit is the specimen identified by `KYOw...`, not the pixel. Follow Section 3 of
+[experiment_protocol.md](experiment_protocol.md) for the treatment of independence between specimens.
 
-1. 同一試料・条件・K・学習反復について、指標固有の定義に従って試料scoreを得る。
-2. LFRは評価摂動の反復を試料内で平均する。学習の3反復とは区別する。
-3. 学習反復ごとに5-foldのout-of-fold試料をまとめ、試料を同じ重みでmacro平均する。
-4. 3反復の結果を集約し、試料間のばらつきと学習・クラスタリング反復間のばらつきを分けて報告する。
+1. Obtain a specimen score for each specimen, condition, K, and training replicate according to the metric-specific definition.
+2. For LFR, average evaluation perturbation replicates within each specimen. Distinguish these from the 3 training replicates.
+3. For each training replicate, combine the out-of-fold specimens from all 5 folds and calculate a macro average with equal specimen weights.
+4. Aggregate the 3 replicates, reporting between-specimen variation separately from variation across training and clustering replicates.
 
-画素数の多い試料が結果を支配するpixel-weighted平均を、条件比較の代表値にしない。
-条件差は、同じ試料、fold、K、反復IDに対するpairedな値として扱う。
-画素、摂動反復、学習反復を独立試料として水増ししない。具体的な集約は第8節に従う。
+Do not use a pixel-weighted average dominated by specimens with more pixels as the principal value for condition comparisons.
+Treat condition differences as paired values for the same specimen, fold, K, and replicate ID.
+Do not inflate the independent specimen count by treating pixels, perturbation replicates, or training replicates as independent specimens. Follow Section 8 for the specific aggregation rules.
 
 ### 2.3 K
 
-事前固定した代表表示値$`K_0=8`$と共通集合$`\mathcal{K}=\{2,4,6,8,10,12,14\}`$を使用する。採用方針は
-[experiment_protocol.md](experiment_protocol.md)に従う。
-主表は$`K_0`$、K依存性は$`K\in\mathcal{K}`$の曲線とする。$`K_0`$だけで結論を決めない。
+Use the prespecified representative display value $`K_0=8`$ and the common set $`\mathcal{K}=\{2,4,6,8,10,12,14\}`$.
+Follow [experiment_protocol.md](experiment_protocol.md) for the selection policy.
+Use $`K_0`$ for the main table and curves over $`K\in\mathcal{K}`$ for dependence on K. Do not base conclusions solely on $`K_0`$.
 
-### 2.4 未定義値と共通の比較対象
+### 2.4 Undefined Values and Common Comparison Sets
 
-- 空の有効画素集合、非有限表現、cosine距離を定義できないゼロnormなどは入力またはrunの失敗として
-  原因を記録し、条件ごとの無言の除外で対処しない。
-- 正常な入力でも指標の定義域外となる場合は、未定義値とその理由を記録する。良好な値や0で埋めない。
-- 指標ごとに、値が定義された試料数と全対象試料数を併記する。失敗したrunを良好なrunで置き換えない。
-- 条件差は、比較する両条件で値が定義された同じ試料・反復だけで計算し、その共通対象数を示す。
-  欠測や単一クラスタ化が多い条件を、対象の異なる平均だけで優れていると判断しない。
+- Record an empty valid-pixel set, non-finite representations, or zero norms that make cosine distance undefined as input or run failures,
+  including the cause. Do not handle them through silent condition-specific exclusions.
+- If a metric is undefined despite valid input, record the undefined value and its reason. Do not fill it with a favorable value or 0.
+- For each metric, report both the number of specimens with defined values and the total number of eligible specimens. Do not replace failed runs with favorable ones.
+- Calculate condition differences only for the same specimens and replicates with defined values in both compared conditions, and report the size of this common set.
+  Do not judge conditions with frequent missing values or single-cluster assignments as superior based only on averages from different specimen sets.
 
 <a id="silhouette"></a>
 
-## 3. cosine-silhouette
+## 3. Cosine-Silhouette
 
-表現抽出・評価は[プロトコルの数値設定](experiment_protocol.md#evaluation-precision)に従う。
+Follow the [numerical settings in the protocol](experiment_protocol.md#evaluation-precision) for representation extraction and evaluation.
 
-### 3.1 定義
+### 3.1 Definition
 
-各条件のtest表現$`z_i`$と、固定train centroidsによるラベル$`c_i`$を用いる。
-表現・変換順序は[プロトコル](experiment_protocol.md#representations)に従い、cosine距離を
+Use each condition's test representations $`z_i`$ and labels $`c_i`$ assigned by the fixed training centroids.
+Follow the [protocol](experiment_protocol.md#representations) for representations and transformation order, and define cosine distance as
 
 ```math
 d_{\cos}(z_i,z_j)
 =1-\frac{z_i^\top z_j}{\lVert z_i\rVert_2\lVert z_j\rVert_2}
 ```
 
-とする。自分自身を除いた同一クラスタ内の平均距離を$`a_i`$、最も近い別クラスタへの平均距離を$`b_i`$として、
+Let $`a_i`$ be the mean distance to other members of the same cluster, excluding the pixel itself, and $`b_i`$ the mean distance to the nearest other cluster. Calculate
 
 ```math
 s_i=\frac{b_i-a_i}{\max(a_i,b_i)}
 ```
 
-を計算する。高いほど、同一クラスタ内で近く別クラスタから離れている。
+Higher values indicate greater proximity within the assigned cluster and greater separation from other clusters.
 
-### 3.2 計算方法
+### 3.2 Computation
 
-- foldの全test木材画素をまとめてpixel-wise silhouetteを計算する。
-- 得られた$`s_i`$を試料境界に従って分割し、試料内平均からmacro平均を求める。
-- 背景0は入力前に除外する。
-- singleton clusterの画素scoreは0とする。
-- test集合全体の使用クラスタ数が1、または全画素数と同じ場合は、silhouette全体を未定義として記録する。
-- $`a_i=b_i=0`$の画素scoreは0とする。
-- test集合の単一クラスタ割当とtrainでの学習collapseは区別する。train/testのoccupancyを確認せず、
-  未定義silhouetteだけで学習collapseと断定しない。
+- Pool all test wood pixels in the fold to calculate pixel-wise silhouette scores.
+- Split the resulting $`s_i`$ values by specimen boundaries, calculate within-specimen means, and then take the macro average.
+- Exclude background 0 before passing data to the calculation.
+- Assign a score of 0 to pixels in singleton clusters.
+- If the number of occupied clusters in the entire test set is 1 or equals the total number of pixels, record the entire silhouette evaluation as undefined.
+- Assign a score of 0 to pixels with $`a_i=b_i=0`$.
+- Distinguish single-cluster assignment in the test set from training collapse. Do not infer training collapse from an undefined silhouette alone
+  without checking training and test occupancy.
 
-実装にはChemoMAE v0.2.2の
-`silhouette_samples_cosine_gpu`を使用する。この関数はcosine距離の$`N\times N`$行列を作らず、
-cluster統計とchunk処理を用いてexactなsilhouetteを計算する。
-chunk sizeは計算結果を変えない実装パラメータとして扱う。
+Use `silhouette_samples_cosine_gpu` from ChemoMAE v0.2.2.
+This function calculates exact silhouette scores using cluster statistics and chunked processing,
+without constructing an $`N\times N`$ matrix of cosine distances.
+Treat chunk size as an implementation parameter that does not change the result.
 
-### 3.3 解釈範囲
+### 3.3 Scope of Interpretation
 
-各条件で表現と距離構造が変わるため、この値は「その空間でどの程度分離しているか」の診断である。
-条件間の数値差だけで表現の有用性や劣化との対応を順位付けしない。raw SNV空間で全条件を再評価する
-方法もraw SNVに基づく分割を有利に評価し得るため、代替の主評価として追加しない。
+Because the representation and distance structure differ by condition, this value diagnoses separation within each particular space.
+Do not rank representation utility or correspondence with degradation solely by numerical differences between conditions.
+Re-evaluating all conditions in raw SNV space could favor partitions based on raw SNV, so do not add it as an alternative primary evaluation.
 
-foldの全test画素から$`a_i`$、$`b_i`$を計算するため、最後に試料macro平均しても、距離平均の段階では
-画素数の多い試料の寄与が大きい。この定義を試料均等な距離計算とは記述しない。試料間・樹種間の
-違いによる分離と試料内の領域構造を混同しないよう、試料別occupancyとlabel mapを併読する。
+Since $`a_i`$ and $`b_i`$ are calculated from all test pixels in a fold, specimens with more pixels contribute more
+at the distance-averaging stage even if the final aggregation is a specimen macro average. Do not describe this as an equal-specimen-weighted distance calculation.
+Inspect specimen-level occupancy and label maps together to distinguish separation due to differences between specimens or tree species from within-specimen regional structure.
 
 <a id="lla"></a>
 
-## 4. 補正前LLAとLLA: Local Label Agreement
+## 4. Uncorrected LLA and LLA: Local Label Agreement
 
-### 4.1 補正前LLAの定義
+### 4.1 Definition of Uncorrected LLA
 
-補正前LLAは、試料内の有効な近傍対のうち、ラベルが一致する対の割合を表す。
-試料$`m`$の有効画素集合を$`\Omega_m`$、有効画素$`p`$のラベルを$`y_p\in\{1,\ldots,K\}`$とする。
-画素$`p`$を元画像上の整数座標と同一視し、クラスタ$`k`$の指示関数$`B_{m,k}`$と有効画素マスク$`M_m`$を
+Uncorrected LLA is the proportion of valid neighboring pairs within a specimen that have matching labels.
+Let $`\Omega_m`$ be the valid-pixel set of specimen $`m`$, and $`y_p\in\{1,\ldots,K\}`$ the label of valid pixel $`p`$.
+Identify pixel $`p`$ with its integer coordinates in the original image, and define the cluster-$`k`$ indicator $`B_{m,k}`$ and valid-pixel mask $`M_m`$ as
 
 ```math
 B_{m,k}(p)=
 \begin{cases}
 1, & p\in\Omega_m,\ y_p=k,\\
-0, & \text{それ以外},
+0, & \text{otherwise},
 \end{cases}
 \qquad
 M_m(p)=\sum_{k=1}^{K}B_{m,k}(p)
 ```
 
-と定義する。背景、品質条件による除外画素、画像外では、これらの関数をすべて0とする。
-幅$`r\in\{3,5,9\}`$の正方近傍は、中心を除いたカーネル
+Set all these functions to 0 for background, pixels excluded by quality filtering, and positions outside the image.
+Represent a square neighborhood of width $`r\in\{3,5,9\}`$ using the kernel that excludes its center:
 
 ```math
 h_r(\boldsymbol{u})
@@ -149,11 +149,11 @@ h_r(\boldsymbol{u})
 \qquad \boldsymbol{u}\in\mathbb{Z}^{2}
 ```
 
-で表す。$`\mathop{\mathrm{Ind}}\nolimits[\cdot]`$は条件が成り立つとき1、それ以外は0を返す指示関数、
-$`\boldsymbol{u}`$は画素座標の差、$`\|\boldsymbol{u}\|_\infty=\max(|u_1|,|u_2|)`$である。
-$`h_r(\boldsymbol{0})=0`$により、自己一致を除く。
+Here, $`\mathop{\mathrm{Ind}}\nolimits[\cdot]`$ is an indicator returning 1 when the condition holds and 0 otherwise;
+$`\boldsymbol{u}`$ is a difference between pixel coordinates, and $`\|\boldsymbol{u}\|_\infty=\max(|u_1|,|u_2|)`$.
+The condition $`h_r(\boldsymbol{0})=0`$ excludes self-agreement.
 
-二次元離散畳み込みと画素上の内積を
+Define two-dimensional discrete convolution and the inner product over pixels as
 
 ```math
 (h_r*f)(p)=\sum_{q\in\mathbb{Z}^{2}}h_r(p-q)f(q),
@@ -161,7 +161,7 @@ $`h_r(\boldsymbol{0})=0`$により、自己一致を除く。
 \langle f,g\rangle=\sum_{p\in\mathbb{Z}^{2}}f(p)g(p)
 ```
 
-とする。$`f,g`$は有限範囲の外では0となる実数値関数である。試料$`m`$の補正前LLA-rを
+where $`f,g`$ are real-valued functions that are zero outside a finite region. Define uncorrected LLA-r for specimen $`m`$ as
 
 ```math
 \mathrm{LLA}^{\mathrm{raw}}_{r,m}
@@ -174,62 +174,65 @@ $`h_r(\boldsymbol{0})=0`$により、自己一致を除く。
 }
 ```
 
-と定義する。分子は同じラベルの有効近傍対、分母は全有効近傍対を数える。
-両者とも$`(p,q)`$と$`(q,p)`$を含み、中心画素ごとに近傍を列挙する定義と一致する。
+The numerator counts valid neighboring pairs with matching labels, and the denominator counts all valid neighboring pairs.
+Both include $`(p,q)`$ and $`(q,p)`$, matching the definition that enumerates neighbors for each center pixel.
 
-境界やmask付近では有効近傍数が異なるが、ゼロ拡張と$`M_m`$により分子・分母から対象外の画素を除く。
-試料内で分子・分母をそれぞれ合計してから比を取り、中心画素ごとの局所一致率を単純平均しない。
-分母が0、すなわち有効な近傍対が存在しない場合は未定義とする。
+Although valid-neighbor counts vary near boundaries and masks, zero extension and $`M_m`$ exclude ineligible pixels from both numerator and denominator.
+Sum the numerator and denominator separately within each specimen before taking their ratio; do not take the simple mean of the local agreement rates at individual center pixels.
+The metric is undefined when the denominator is 0, meaning that no valid neighboring pairs exist.
 
-| 指標 | 中心以外の最大近傍数 | 主に確認する構造 |
+| Metric | Maximum neighbors excluding the center | Main structure examined |
 | --- | ---: | --- |
-| 補正前LLA-3 | 8 | salt-and-pepper状の局所変動 |
-| 補正前LLA-5 | 24 | 小から中スケールのまとまり |
-| 補正前LLA-9 | 80 | より広い面状・縞状構造 |
+| Uncorrected LLA-3 | 8 | Local salt-and-pepper variation |
+| Uncorrected LLA-5 | 24 | Small- to medium-scale coherence |
+| Uncorrected LLA-9 | 80 | Broader areal or stripe-like structures |
 
-補正前LLAは高いほど局所一致が多いが、占有率の偏りでも高くなるためoccupancyを併記する。
-補正前LLA-3/5/9は平均せず個別に報告する。
+Higher uncorrected LLA indicates more local agreement, but occupancy imbalance can also raise it, so report occupancy alongside it.
+Report uncorrected LLA-3/5/9 separately rather than averaging them.
 
-3、5、9は画素座標上の幅であり、物理的な長さが等しい尺度とは仮定しない。画素の実寸や走査方向の
-異方性が確認できる場合は記録する。補正前LLAは境界の正しさや小領域の保存を直接評価しない。
+The values 3, 5, and 9 are widths in pixel coordinates; do not assume that they represent equal scales in physical length.
+Record physical pixel dimensions and scan-direction anisotropy where available.
+Uncorrected LLA does not directly evaluate boundary correctness or preservation of small regions.
 
-### 4.2 LLA：占有率を保ったランダム配置に基づく補正
+### 4.2 LLA: Correction Based on Random Placement Preserving Occupancy
 
-試料$`m`$の有効画素数を$`N_m=\sum_p M_m(p)`$、クラスタ$`k`$の画素数を$`n_{m,k}=\sum_p B_{m,k}(p)`$とする。
-maskの形と各クラスタの画素数を保ったまま、ラベルを有効画素位置へ一様ランダムに置換する帰無配置を
-考える。異なる2画素のラベルが一致する確率は
+Let $`N_m=\sum_p M_m(p)`$ be the number of valid pixels in specimen $`m`$, and $`n_{m,k}=\sum_p B_{m,k}(p)`$ the number in cluster $`k`$.
+Consider a null arrangement that uniformly randomly permutes labels over valid-pixel positions while preserving
+the mask shape and each cluster's pixel count. The probability that two distinct pixels have matching labels is
 
 ```math
 P_m=\frac{\sum_{k=1}^{K}n_{m,k}(n_{m,k}-1)}{N_m(N_m-1)}
 ```
 
-となり、有効近傍対が存在するとき、どの$`r`$でも帰無配置における補正前LLAの期待値は$`P_m`$である。
-この期待値は解析的に計算し、ランダムなラベルマップの大量生成は行わない。
+When valid neighboring pairs exist, the expected uncorrected LLA under this null arrangement is $`P_m`$ for every $`r`$.
+Calculate this expectation analytically rather than generating large numbers of random label maps.
+
+Report
 
 ```math
 \mathrm{LLA}_{r,m}
 =\frac{\mathrm{LLA}^{\mathrm{raw}}_{r,m}-P_m}{1-P_m}
 ```
 
-をLLAとして代表報告する。0は帰無配置の期待値と同じ、正値はそれを上回る一致、負値はそれを
-下回る一致を表す。負値を0へclipしない。これは本研究で明示した帰無配置に対する補正であり、
-劣化の正解や正しい空間構造への一致率ではない。
+as the principal LLA value. Zero indicates the expectation under the null arrangement; positive values indicate more agreement,
+and negative values less agreement. Do not clip negative values to 0.
+This is a correction relative to the null arrangement specified in this study, not agreement with ground-truth degradation or correct spatial structure.
 
-$`N_m<2`$、有効近傍対がない場合、または$`P_m=1`$の単一クラスタ試料では未定義とする。
-特に単一クラスタ試料の補正値を1として扱わない。$`P_m`$が1に近いと補正値が小さな変化に敏感になるため、
-補正前LLA、$`P_m`$、使用クラスタ数および占有率を合わせて報告する。LLAでも過度な均一化の問題が
-完全に解決するとはみなさない。
+The metric is undefined when $`N_m<2`$, when no valid neighboring pairs exist, or for a single-cluster specimen with $`P_m=1`$.
+In particular, do not assign a corrected value of 1 to single-cluster specimens. As $`P_m`$ approaches 1, the corrected value becomes sensitive to small changes,
+so report uncorrected LLA, $`P_m`$, the number of occupied clusters, and occupancy together.
+Do not assume that LLA completely resolves the problem of excessive homogenization.
 
-LLA-3/5/9も補正前LLAと同じ近傍を使い、平均せず個別に報告する。
+LLA-3/5/9 uses the same neighborhoods as uncorrected LLA and is also reported separately rather than averaged.
 
 <a id="lfr"></a>
 
-## 5. label flip rate
+## 5. Label Flip Rate
 
-### 5.1 定義
+### 5.1 Definition
 
-clean入力に対するtest画素$`p`$のラベルを$`y_p`$、同じ画素の摂動入力に対するラベルを
-$`y_p^{(a)}`$とする。試料$`m`$、摂動$`a`$のlabel flip rateを
+Let $`y_p`$ be the label of test pixel $`p`$ under clean input, and $`y_p^{(a)}`$ its label under perturbed input.
+Define the label flip rate for specimen $`m`$ and perturbation $`a`$ as
 
 ```math
 \mathrm{LFR}_{m}^{(a)}
@@ -238,58 +241,59 @@ $`y_p^{(a)}`$とする。試料$`m`$、摂動$`a`$のlabel flip rateを
 \mathbf{1}[y_p\ne y_p^{(a)}]
 ```
 
-と定義する。低いほど摂動に対して安定している。
+Lower values indicate greater stability under the perturbation.
 
-### 5.2 固定事項
+### 5.2 Fixed Settings
 
-- cleanと摂動後で同一のtest画素を同じ順序で使用する。
-- B0では同じSNV入力へ摂動を加え、B1では固定したtrain PCA、ChemoMAE系では固定したencoderを通す。
-  その後、clean入力と同じく行ごとのL2正規化を適用する。
-- PCA、encoderとtrain centroidsを固定する。encoderは推論modeとし、dropoutやランダムmaskによる
-  変動を評価摂動へ混入させない。
-- 全可視抽出のAPIとmaskの指定は[プロトコル](experiment_protocol.md#representations)に従う。
-- 摂動後に再学習または再クラスタリングしない。
-- 評価時の対象augmentation適用確率は1とする。
-- ChemoMAEの`SpectraAugmenter`を評価時だけ明示的にtraining modeへ切り替えて摂動を生成する。
-- 摂動seedと反復数は評価開始前に固定し、全条件で同一の摂動系列を使用する。
-- 摂動は表現変換前のSNVスペクトルへ適用する。同一試料・画素・摂動反復の入力を全条件・全K・
-  全学習反復で共有する。波長shiftはスペクトル軸の摂動であり、空間座標を動かす操作ではない。
+- Use the same test pixels in the same order for clean and perturbed inputs.
+- For B0, perturb the same SNV input; for B1, pass it through the fixed training PCA; for ChemoMAE conditions, pass it through the fixed encoder.
+  Then apply row-wise L2 normalization as for clean input.
+- Keep PCA, the encoder, and the training centroids fixed. Use inference mode for the encoder so that dropout or random masking
+  does not introduce variation into the evaluation perturbations.
+- Follow the [protocol](experiment_protocol.md#representations) for the full-visibility extraction API and mask specification.
+- Do not retrain or recluster after perturbation.
+- Set the application probability of each evaluated augmentation to 1.
+- Explicitly switch ChemoMAE's `SpectraAugmenter` to training mode only for generating evaluation perturbations.
+- Fix perturbation seeds and replicate counts before evaluation, and use identical perturbation sequences for all conditions.
+- Apply perturbations to the SNV spectra before representation transformation. Share the input for each specimen, pixel, and perturbation replicate
+  across all conditions, K values, and training replicates. Wavelength shifts perturb the spectral axis; they do not move spatial coordinates.
 
-次の3条件を混合せず、個別に報告する。
+Report the following 3 settings separately rather than mixing them:
 
-| 摂動 | 評価時設定 |
+| Perturbation | Evaluation settings |
 | --- | --- |
-| noise | `noise_prob=1`, `shift_prob=0` |
-| shift | `noise_prob=0`, `shift_prob=1` |
-| noise + shift | `noise_prob=1`, `shift_prob=1` |
+| Noise | `noise_prob=1`, `shift_prob=0` |
+| Shift | `noise_prob=0`, `shift_prob=1` |
+| Noise + shift | `noise_prob=1`, `shift_prob=1` |
 
-強度分布・補間・端点処理・操作順・再中心化・norm復元は[プロトコル第4.1.3節](experiment_protocol.md#augmentation-clustering)と共通とする。
-評価時に変更するのは表の適用確率だけであり、LFRに合わせた強度sweepは行わない。
+Use the same strength distributions, interpolation, endpoint handling, operation order, recentering, and norm restoration as
+[Protocol Section 4.1.3](experiment_protocol.md#augmentation-clustering).
+Only the application probabilities in the table change at evaluation; do not perform a strength sweep tailored to LFR.
 
-### 5.3 摂動反復と解釈範囲
+### 5.3 Perturbation Replicates and Scope of Interpretation
 
-評価摂動の反復数を$`R=5`$に固定し、各試料・学習反復について5回のLFRを平均して報告する。
-5回それぞれの値も保存する。これは学習の3反復とは別の反復である。
-同じ試料について3種類の摂動を各5回生成し、計15回分の入力を全条件・全K・全学習反復で共有する。
-同一モデルの摂動後表現はK間で再利用し、Kごとにencoder推論を繰り返さない。
+Fix the number of evaluation perturbation replicates at $`R=5`$ and report the mean of the 5 LFR values for each specimen and training replicate.
+Also save the value from each of the 5 draws. These replicates are separate from the 3 training replicates.
+Generate each of the 3 perturbation types 5 times for the same specimen, sharing all 15 perturbed inputs across conditions, K values, and training replicates.
+Reuse a given model's perturbed representations across K values rather than repeating encoder inference for each K.
 
-これは計算量を抑える事前設定であり、5回での収束は仮定しない。各drawのばらつきを示し、
-独立試料数に数えたり、結果を見て条件別にdraw数を変更したりしない。
+This is a prespecified setting to limit computational cost, not an assumption that 5 draws provide convergence.
+Show variation across draws; do not count them as independent specimens or change their number separately by condition after inspecting results.
 
-この評価は、学習augmentationと同じ種類・強度分布で常に摂動を加えた場合の安定性を調べる。
-摂動後に再学習しないこと、共通入力で比較することは維持するが、未経験の摂動、装置間差、
-実際の反復撮像に対する頑健性とは区別する。単一クラスタ出力でもLFRが低くなるため、cleanおよび
-摂動後のoccupancyと使用クラスタ数を併記する。
+This evaluation examines stability when perturbations are always applied using the same types and strength distributions as the training augmentations.
+It retains evaluation without retraining and comparison on common inputs, but is distinct from robustness to unseen perturbations,
+differences between instruments, or actual repeated acquisitions. Single-cluster outputs can also have low LFR,
+so report occupancy and the number of occupied clusters for both clean and perturbed inputs.
 
 <a id="ari"></a>
 
-## 6. 学習・クラスタリング反復間のARI
+## 6. ARI Across Training and Clustering Replicates
 
-同じfold・条件・Kについて、3反復が生成したclean testラベルを比較する。
-反復対$`(1,2)`$、$`(1,3)`$、$`(2,3)`$ごとに、同じ試料の同じ有効画素に対するAdjusted Rand Index（ARI）を
-計算する。ラベル番号の置換に不変であるため、Hungarian matchingは行わない。
+Compare the clean test labels produced by the 3 replicates for the same fold, condition, and K.
+For each replicate pair $`(1,2)`$, $`(1,3)`$, and $`(2,3)`$, calculate the Adjusted Rand Index (ARI)
+on the same valid pixels of the same specimen. ARI is invariant to label permutations, so do not use Hungarian matching.
 
-2つの分割のcontingencyを$`n_{ij}`$、周辺和を$`a_i`$、$`b_j`$、試料の画素数を$`N`$とし、
+Let $`n_{ij}`$ be the contingency table for two partitions, $`a_i`$ and $`b_j`$ their marginal sums, and $`N`$ the specimen's pixel count. Define
 
 ```math
 T=\binom{N}{2},\qquad
@@ -302,48 +306,49 @@ C=\sum_{i,j}\binom{n_{ij}}{2}
 \mathrm{ARI}=\frac{C-AB/T}{(A+B)/2-AB/T}
 ```
 
-とする。1は分割の完全一致、0付近は周辺和を固定した偶然一致の基準付近を表し、負値も取り得る。
-試料ごとに3つの反復対のARIを平均した後、試料macro平均する。反復対は独立な3標本とは扱わない。
+A value of 1 indicates identical partitions, values near 0 indicate agreement near the chance baseline with fixed marginal sums, and negative values are possible.
+Average ARI over the 3 replicate pairs within each specimen, then take the specimen macro average.
+Do not treat the replicate pairs as 3 independent observations.
 
-$`N<2`$は未定義とする。両分割がともに単一クラスタ、またはともに全画素singletonである退化した
-完全一致では、標準的なARIの規約に従い1とし、退化flagと各分割の使用クラスタ数を必ず保存する。
-これらの試料でARI=1となることを、有用な領域分割の証拠とはみなさない。
+ARI is undefined for $`N<2`$. For degenerate exact agreement where both partitions contain a single cluster or both consist entirely of singleton pixels,
+use 1 according to the standard ARI convention, and always save a degeneracy flag and the number of occupied clusters in each partition.
+Do not treat ARI=1 for these specimens as evidence of useful segmentation.
 
-試料別ARIは試料内の分割再現性を評価し、試料をまたぐクラスタの意味的対応を保証しない。
-モデルとKMeansの両方が反復間で変動するため、encoderだけの安定性とは記述しない。
-LFRが固定モデルへの入力摂動を評価するのに対し、ARIはfitをやり直した場合の分割の変動を評価する。
+Specimen-level ARI evaluates reproducibility of the partition within each specimen; it does not guarantee semantic correspondence of clusters across specimens.
+Both the model and KMeans vary across replicates, so do not describe ARI as encoder stability alone.
+Whereas LFR evaluates input perturbations to a fixed model, ARI evaluates variation in partitions when fitting is repeated.
 
 <a id="occupancy"></a>
 
-## 7. occupancyとその他の診断
+## 7. Occupancy and Other Diagnostics
 
-次はCVにおける条件選択指標には使用せず、cluster collapseまたはラベルマップの異常を確認する。
-occupancyは主評価の解釈に必須とし、主表または対応する診断表から確認できるようにする。
+Use the following to inspect cluster collapse or label-map abnormalities, not to select conditions in CV.
+Occupancy is required for interpreting the primary metrics and must be available in the main table or an accompanying diagnostic table.
 
-| 診断 | 用途 |
+| Diagnostic | Purpose |
 | --- | --- |
-| cluster occupancy | 空クラスタ、単一クラスタへの集中、極端な不均衡の確認 |
-| cluster size distribution | 条件間および試料間のラベル分布の確認 |
-| label map | 空間構造の目視確認 |
+| Cluster occupancy | Check for empty clusters, concentration in a single cluster, and extreme imbalance |
+| Cluster size distribution | Inspect label distributions across conditions and specimens |
+| Label map | Visually inspect spatial structure |
 
-試料$`m`$について$`n_{m,k}/N_m`$をoccupancyとして保存し、使用クラスタ数、最大占有率、
-単一クラスタ試料数を条件・K・反復別に示す。trainのfit画素、clean testおよび各摂動後を区別する。
-fold全体のoccupancyは、画素をpoolした分布と試料別occupancyのmacro平均を区別して報告する。
-クラスタ番号はfold・反復ごとに異なるため、未整列の番号別occupancyをfoldや反復をまたいで平均しない。
+For specimen $`m`$, save $`n_{m,k}/N_m`$ as occupancy, and report the number of occupied clusters, maximum occupancy,
+and number of single-cluster specimens by condition, K, and replicate. Distinguish training fit pixels, clean test pixels, and each perturbed input.
+For fold-level occupancy, distinguish the distribution over pooled pixels from the macro average of specimen-level occupancies.
+Since cluster numbers differ by fold and replicate, do not average occupancy by unaligned cluster number across folds or replicates.
 
-試料内が単一クラスタであることは、均質な試料では妥当な可能性がある。試料内の単一クラスタ化、
-fold全体での単一クラスタ化、train fitでの空クラスタを区別する。全試料にK個のクラスタが出ることを
-要求せず、単一クラスタ試料を良好な例として選別したり、無条件に失敗として除外したりしない。
+A single cluster within a specimen may be appropriate for a homogeneous specimen. Distinguish a single-cluster specimen,
+a single-cluster fold, and empty clusters during training fitting. Do not require every specimen to contain K clusters,
+select single-cluster specimens as favorable examples, or unconditionally exclude them as failures.
 
 <a id="reporting"></a>
 
-## 8. 結果の報告と不確実性
+## 8. Reporting Results and Uncertainty
 
-### 8.1 試料差と反復差の分離
+### 8.1 Separating Specimen Variation from Replicate Variation
 
-条件とKを固定し、試料$`m`$、学習反復$`t\in\{1,2,3\}`$のscoreを$`s_{m,t}`$とする。
-LFRでは、これは評価摂動$`R`$回を試料内で平均した後の値である。
-全$`M`$試料で値が定義される場合、
+For a fixed condition and K, let $`s_{m,t}`$ be the score of specimen $`m`$ in training replicate $`t\in\{1,2,3\}`$.
+For LFR, this is the value after averaging the $`R`$ evaluation perturbations within the specimen.
+When values are defined for all $`M`$ specimens, calculate
 
 ```math
 \bar{s}_m=\frac{1}{3}\sum_{t=1}^{3}s_{m,t},\qquad
@@ -351,91 +356,98 @@ LFRでは、これは評価摂動$`R`$回を試料内で平均した後の値で
 \bar{\mu}=\frac{1}{3}\sum_{t=1}^{3}\mu_t
 ```
 
-を計算する。主表には$`\bar{\mu}`$、$`\bar{s}_m`$の試料間SD、$`\mu_t`$の3反復間SDを区別して載せる。
-SDは標本標準偏差（`ddof=1`）とし、3つの$`\mu_t`$も併記または補助表へ保存する。
-反復間SDを標準誤差や95%信頼区間として表示しない。
+In the main table, distinguish $`\bar{\mu}`$, the between-specimen SD of $`\bar{s}_m`$, and the SD of $`\mu_t`$ across the 3 replicates.
+Use sample standard deviations (`ddof=1`), and report the 3 individual $`\mu_t`$ values alongside them or in a supplementary table.
+Do not present the between-replicate SD as a standard error or 95% confidence interval.
 
-未定義値がある指標では、3反復すべてで値が定義された共通試料集合に上式を適用し、対象数を示す。
-反復別の利用可能試料数・未定義理由も別に保存する。共通対象が0なら集約値は未定義、1試料なら
-試料間SDは未定義とする。LLAやsilhouetteの対象が減った場合、全試料の結果と同じ母集団の
-代表値であるかのように扱わない。
+For metrics with undefined values, apply these equations to the common set of specimens with defined values in all 3 replicates and report its size.
+Separately save the number of available specimens and the reasons for undefined values for each replicate.
+If the common set is empty, the aggregate is undefined; if it contains 1 specimen, the between-specimen SD is undefined.
+If the eligible set shrinks for LLA or silhouette, do not treat the result as representing the same population as results for all specimens.
 
-ARIは反復対を比較する指標なので、3対を試料内で平均した値のmacro平均と試料間SDを報告する。
-3対のSDを独立した学習反復の不確実性として解釈しない。
+Because ARI compares replicate pairs, report the macro average and between-specimen SD of the values averaged over 3 pairs within each specimen.
+Do not interpret the SD over the 3 pairs as uncertainty across independent training replicates.
 
-### 8.2 計画比較
+### 8.2 Planned Comparisons
 
-主評価など反復ごとに定義される指標では、条件$`c`$と参照条件$`b`$について、同一試料・K・反復の差を
+For metrics defined for each replicate, including the primary metrics, save the difference between condition $`c`$ and reference condition $`b`$
+for the same specimen, K, and replicate as
 
 ```math
 \Delta_{m,t}=s^{(c)}_{m,t}-s^{(b)}_{m,t}
 ```
 
-として保存する。両条件・3反復で値が定義された共通試料集合を使い、反復平均後の試料別差、
-差のmacro平均および反復別のmacro差を報告する。LLAは正、LFRは負が各指標上の改善方向となる。
-主表と対応するpaired plotで、平均だけでなく改善・悪化が試料によって異なるかを示す。
-ARIのpaired比較は、各条件で試料内の3反復対を平均した値どうしの差として定義する。
-両条件でこの試料平均が定義された共通試料を使い、差のmacro平均と試料間SD、対象数・未定義理由を保存する。
-反復対を独立反復として扱わず、ARI差の反復別曲線や反復間SDは作らない。
+Use the common set of specimens with defined values for both conditions in all 3 replicates. Report specimen-level differences after averaging over replicates,
+the macro average of those differences, and the macro difference for each replicate.
+Positive LLA differences and negative LFR differences indicate improvement in the respective metrics.
+In the main table and corresponding paired plot, show whether improvement or deterioration varies by specimen, in addition to the mean.
+Define paired ARI comparisons as differences between each condition's specimen-level average over the 3 replicate pairs.
+Use common specimens for which this specimen average is defined in both conditions, and save the macro difference, between-specimen SD, eligible count, and reasons for undefined values.
+Do not treat replicate pairs as independent replicates or create replicate-specific curves or between-replicate SDs for ARI differences.
 
-現行の報告pipelineでは、2×2交互作用をLLA-3/5/9とLFR(TGN+FS)・LFR(TGN)・LFR(FS)について、
-同一試料・K・反復の保存済みscoreから求める。4条件・3反復すべてで定義された共通試料を用いる。
-`main_oof_v1/interaction/`には補正前LLAと3種類のLFRが保存される。
-補正後LLAの交互作用は報告pipelineで算出してCSVへ保存し、補正前LLAと区別する。
-paired ARIも報告pipelineで算出し、元OOF snapshotのscore・集約値・出典記録は保持する。
+The current reporting pipeline calculates 2×2 interactions for LLA-3/5/9 and LFR(TGN+FS), LFR(TGN), and LFR(FS)
+from saved scores for the same specimen, K, and replicate. Use common specimens with defined values in all 4 conditions and all 3 replicates.
+`main_oof_v1/interaction/` stores uncorrected LLA and the 3 LFR variants.
+The reporting pipeline calculates interactions for corrected LLA and saves them to CSV, distinguishing them from uncorrected LLA.
+The pipeline also calculates paired ARI while retaining scores, aggregates, and provenance records from the original OOF snapshot.
 
-本計画では有意差検定やp値による採否判定を行わず、効果の大きさ、試料別の差、K依存性および
-3反復での傾向を記述する。5つのfoldは学習集合が重なり、silhouetteはtest試料間でも距離計算を
-共有するため、foldやOOF試料scoreを無条件に独立とした検定・信頼区間を追加しない。
-単純な試料bootstrapを学習過程全体の不確実性とみなさない。区間推定を追加する場合は、
-対象とする不確実性、再標本化単位および学習のやり直しの有無を別途設計する。
+This plan does not use significance tests or p-value-based acceptance decisions. Describe effect sizes, specimen-level differences,
+dependence on K, and trends across the 3 replicates.
+The training sets overlap across the 5 folds, and silhouette distance calculations are shared across test specimens.
+Do not add tests or confidence intervals that unconditionally treat folds or OOF specimen scores as independent.
+Do not interpret a simple specimen bootstrap as uncertainty in the entire training process. If interval estimation is added,
+separately design the target uncertainty, resampling unit, and whether training is repeated.
 
-### 8.3 必須の表・図
+### 8.3 Required Tables and Figures
 
-本節は対象条件の全fold・全反復のCVとOOF集計が完了した報告図表に適用する。
-主8条件の図表はOOF snapshotから生成する。
-M11-25・M11・M11-75のmask率OOF図表には専用pipelineを使う。
-[OOF sanity可視化](oof_sanity_visualization.md)は、
-label mapとsilhouetteのPNG、数値CSVに限定する別の出力仕様である。
+This section applies to reporting figures and tables after CV and OOF aggregation have been completed for all folds and replicates of the target conditions.
+Generate the main 8-condition figures and tables from the OOF snapshot.
+Use a dedicated pipeline for mask-rate OOF figures and tables for M11-25, M11, and M11-75.
+[OOF sanity visualizations](oof_sanity_visualization.md) follow a separate output specification limited to
+label-map and silhouette PNGs and numerical CSVs.
 
-以下は主8条件の図表構成と報告規約である。mask率比較の構成は本節末尾に示す。
+The following specifies the figures, tables, and reporting conventions for the main 8 conditions. The mask-rate comparison layout is given at the end of this section.
 
-- 表はCSV形式とし、代表指標の優先順に保存する。$`K_0=8`$と全7Kについて、平均・試料間SD・
-  反復間SD・対象数・未定義理由を区別する。ARIとそのpaired差には反復間SDを付けない。
-  LFRはTGN+FS・TGN単独・FS単独の3種類を保存する。図ではTGN+FSのみを表示する。
-  保存キー`lfr_both`・`lfr_noise`・`lfr_shift`の表示名は、それぞれLFR(TGN+FS)・LFR(TGN)・LFR(FS)とする。
-- 主指標サマリは単段幅の2×2とし、上段にLLA 3・5、下段にLLA 9・LFR(TGN+FS)を置く。
-  横軸は全7K、各panelに主8条件のmacro平均と、同じ共通試料集合による反復別曲線を表示する。
-- $`K_0=8`$の試料別分布図は2×3で、上段LLA 3・5・9、下段LFR(TGN+FS)・ARI・Cosine-Silhouetteとする。各点は試料ごとの3反復平均
-  （ARIでは3反復対平均）、黒線はmacro平均、`n`は定義済み共通試料数を表す。
-- paired図はK依存図1枚とし、試料別分布図と同じ2×3に、M11−B0・M11−B1・M11−M00の主要3比較と追加ablationのA1−A0・M11−A1を重ねる。
-  ARI差には第8.2節の試料単位の定義を用いる。
-- 各図内のLLA 3・5・9は縦軸範囲を揃える。全点・反復曲線と余白を含む共通範囲とし、値を切り落とさない。
-  主指標サマリと試料別分布図の縦軸目盛りは全パネル0.1刻みとする。
-  異なる指標の縦軸範囲は個別とする。pairedのLLAは先頭パネルの既存の目盛り間隔を保って統一する。
-- Cluster Occupancyと2×2交互作用はCSV表のみとし、単独PNGや分布panelを作らない。
-  現行のoccupancy表はclean testが対象で、試料別の使用クラスタ数・最大占有率・単一クラスタ化と、
-  fold・反復ごとの分布を保持する。未整列の番号をfold・反復間で平均しない。
-- 残りの計画比較もCSVへ保存する。mask率比較にも本節の指標・表記・集計規約を適用する。
-- 指標間で結論が異なる場合は、総合順位に潰さずtrade-offとして報告する。
-- Hungarian matchingは表示ラベルの整列に用い、CV指標の計算には使用しない。
-  [OOF sanity](oof_sanity_visualization.md)ではfold内B0基準で一致画素数を最大化する。[全体fit後](visualization_and_interpretation.md#matching-reference)ではM00のCosine-KMeansを表示基準に、試料等重みの観測SNV代表線のcosine類似度の合計を最大化する。全体fitのIoU・contingency・一致画素数も確認用に保存する。
+- Save tables as CSVs in the priority order of the principal metrics. For $`K_0=8`$ and all 7 K values, distinguish the mean, between-specimen SD,
+  between-replicate SD, eligible count, and reasons for undefined values. Do not attach a between-replicate SD to ARI or its paired differences.
+  Save all 3 LFR variants: TGN+FS, TGN alone, and FS alone. Show only TGN+FS in the figures.
+  Display the saved keys `lfr_both`, `lfr_noise`, and `lfr_shift` as LFR(TGN+FS), LFR(TGN), and LFR(FS), respectively.
+- Use a single-column-width 2×2 layout for the primary-metric summary, with LLA 3 and 5 in the top row and LLA 9 and LFR(TGN+FS) in the bottom row.
+  Show all 7 K values on the horizontal axis. In each panel, show the macro average for all 8 main conditions and replicate-specific curves from the same common specimen set.
+- Use a 2×3 layout for specimen-level distributions at $`K_0=8`$: LLA 3, 5, and 9 in the top row, and LFR(TGN+FS), ARI, and Cosine-Silhouette in the bottom row.
+  Each point represents the mean over 3 training replicates for one specimen (the mean over 3 replicate pairs for ARI);
+  the black line is the macro average, and `n` is the number of common specimens with defined values.
+- Use one K-dependence figure for paired comparisons, with the same 2×3 layout as the specimen-level distribution figure.
+  Overlay the 3 primary comparisons M11−B0, M11−B1, and M11−M00, and the additional ablations A1−A0 and M11−A1.
+  Use the specimen-level definition in Section 8.2 for ARI differences.
+- Within each figure, use a common vertical range for LLA 3, 5, and 9 that includes all points, replicate curves, and padding, without truncating values.
+  Use vertical-axis ticks at intervals of 0.1 in all panels of the primary-metric summary and specimen-level distribution figures.
+  Use separate vertical ranges for different metrics. For paired LLA plots, use a common tick spacing that preserves the first panel's existing spacing.
+- Save Cluster Occupancy and 2×2 interactions only as CSV tables, without standalone PNGs or distribution panels.
+  The current occupancy table covers clean test data and retains specimen-level occupied-cluster counts, maximum occupancy, and single-cluster status,
+  as well as distributions by fold and replicate. Do not average unaligned cluster numbers across folds or replicates.
+- Save the remaining planned comparisons to CSV as well. Apply the metrics, notation, and aggregation conventions in this section to the mask-rate comparison.
+- When metrics support different conclusions, report the trade-offs rather than reducing them to an overall ranking.
+- Use Hungarian matching to align display labels, not to calculate CV metrics.
+  [OOF sanity](oof_sanity_visualization.md) maximizes matching pixel counts against B0 within each fold.
+  [After global fitting](visualization_and_interpretation.md#matching-reference), use M00 Cosine-KMeans as the display reference and maximize the sum of cosine similarities between observed-SNV representative spectra with equal specimen weights.
+  Also save global-fit IoU, contingency tables, and matching pixel counts for inspection.
 
-主条件の成果物はPNG 3枚・CSV 11個である。ファイル名・保存先・再生成方法は
-[runbook](../experiment_runbook.md#oof-reporting)を参照する。PNGは01〜03の連番とする。
+The main-condition artifacts comprise 3 PNGs and 11 CSVs. See the [runbook](../experiment_runbook.md#oof-reporting)
+for filenames, output locations, and regeneration steps. Number the PNGs consecutively from 01 to 03.
 
-mask率比較は3条件のLLA 3・5・9とLFR(TGN+FS)を同じ2×2構成で示すPNG 1枚と、
-全7K・K8のCSV 2個にまとめる。図の実線はmacro平均、破線・点線・一点鎖線は学習反復1・2・3とする。
-表はLLA 3窓、LFR 3種類、ARI、Cosine-Silhouette、使用クラスタ数・最大占有率・単一クラスタ化率の11指標を含む。
-50%の表示名は`M11(-50)`、保存条件IDは`M11`を維持する。出典・完了記録と再生成方法は
-[mask率OOF runbook](../experiment_runbook.md#mask-rate-reporting)を参照する。
-全体fitで表現を固定した3 seedの数値比較は、学習3反復のOOF集計と分けて
-[付録用比較の定義](visualization_and_interpretation.md#global-mask-rate)に従う。
+Summarize the mask-rate comparison in 1 PNG showing LLA 3, 5, and 9 and LFR(TGN+FS) for the 3 conditions in the same 2×2 layout,
+and 2 CSVs for all 7 K values and K8. Solid lines show macro averages; dashed, dotted, and dash-dot lines show training replicates 1, 2, and 3.
+The tables contain 11 metrics: 3 LLA windows, 3 LFR variants, ARI, Cosine-Silhouette, occupied-cluster count, maximum occupancy, and single-cluster rate.
+Use `M11(-50)` as the display name for 50%, while retaining `M11` as the stored condition ID.
+See the [mask-rate OOF runbook](../experiment_runbook.md#mask-rate-reporting) for provenance, completion records, and regeneration steps.
+Keep the numerical comparison across 3 seeds with fixed representations from global fitting separate from OOF aggregation across 3 training replicates,
+following the [definition of the appendix comparison](visualization_and_interpretation.md#global-mask-rate).
 
-## 9. 方法論上の参考文献
+## 9. Methodological References
 
 - [Yerbury et al., On the Use of Relative Validity Indices for Comparing Clustering Approaches](https://doi.org/10.1145/3748726):
-  表現・正規化・距離が異なる条件の選択に内部クラスタ指標を使う限界。本計画ではsilhouetteを
-  各表現空間の幾何学的診断に限定する。
+  Limitations of using internal cluster indices to select between conditions with different representations, normalization, or distances.
+  This plan limits silhouette to a geometric diagnostic within each representation space.
 - [Bengio and Grandvalet, No Unbiased Estimator of the Variance of K-Fold Cross-Validation](https://www.jmlr.org/papers/v5/grandvalet04a.html):
-  CVにおける誤差の依存性と分散推定の問題。foldを独立反復として扱わない根拠とする。
+  Dependence and variance-estimation issues in CV. This is the basis for not treating folds as independent replicates.

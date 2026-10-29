@@ -1,137 +1,142 @@
-# 空間マップの再現性評価
+# Spatial Map Reproducibility Evaluation
 
-本書は、NIRスペクトルの特徴と試料上の位置を結び付ける空間マップについて、
-学習・クラスタリングをやり直した場合の安定性を調べる補助実験を定める。
-既存の[全体fitと可視化](visualization_and_interpretation.md)、
-[実験プロトコル](experiment_protocol.md)、[評価指標](evaluation_metrics.md)を参照し、
-CV・全体fitの条件や成果物と区別して記録する。
-実行・再開・確認のコマンドは[実行手順](../spatial_map_reproducibility_runbook.md)にまとめる。
+This document defines a supplementary experiment assessing the stability of spatial maps that connect
+NIR spectral features to positions on a specimen when training and clustering are repeated.
+It refers to the existing [global fitting and visualization](visualization_and_interpretation.md),
+[experiment protocol](experiment_protocol.md), and [evaluation metrics](evaluation_metrics.md),
+while recording this experiment separately from the CV and global fitting conditions and artifacts.
+Commands for execution, resumption, and verification are collected in the [runbook](../spatial_map_reproducibility_runbook.md).
 
-## 1. 目的と位置づけ
+## 1. Purpose and Role
 
-本研究では、NIR-HSIから生成したマップ上の領域と観測スペクトルの特徴を対応付ける。
-解釈の基盤とする領域の位置・広がりが、学習・クラスタリングの乱数によってどの程度変わるかを確認する。
+This study relates regions in NIR-HSI maps to features of the observed spectra.
+It examines how much the positions and extents of regions used for interpretation vary with the randomness of training and clustering.
 
-本補助実験では、同じ測定面のマップの再現性を次の二つの側面から評価する。
+This supplementary experiment evaluates reproducibility of maps of the same measured surface from two perspectives.
 
-| 評価軸 | 問い | 評価方法 |
+| Evaluation perspective | Question | Method |
 | --- | --- | --- |
-| クラスタ分割としての再現性 | 同じ画素群が同じクラスタにまとまるか | 反復対のARI |
-| 測定面上の空間構造の再現性 | 領域を区切る内部境界が同じ位置付近に現れるか | 3×3・5×5・9×9近傍での双方向の境界一致率、位置を保った可視化 |
+| Reproducibility of the cluster partition | Do the same groups of pixels belong to the same clusters? | ARI for pairs of replicates |
+| Reproducibility of spatial structure on the measured surface | Do internal boundaries separating regions appear near the same positions? | Bidirectional boundary agreement within 3×3, 5×5, and 9×9 neighborhoods, and visualizations preserving spatial positions |
 
-調べるのは、分割の変動が主に境界付近に分布するのか、領域の配置を変えるほど広がるのかである。
-境界の揺れを初めから誤りや失敗とはみなさず、その程度と場所を記述する。
+The question is whether partition variability is concentrated mainly near boundaries or extends far enough to change the arrangement of regions.
+Boundary variation is not assumed to be an error or failure; its magnitude and location are described.
 
-- 合否の閾値、安定と認定する試料数の閾値、指標を合成した総合scoreは設けない。
-- 許容・非許容の模式例の組による判定基準作成を、実験の前提にしない。
-- 保存済みの同一NIR-HSI観測を使用する。再撮像・再測定に対する再現性は対象に含まれない。
+- No pass/fail threshold, threshold for the number of specimens judged stable, or composite metric score is defined.
+- Constructing decision criteria from paired schematic examples of acceptable and unacceptable maps is not a prerequisite.
+- The same saved NIR-HSI observations are used. Reproducibility under repeat imaging or measurement is outside the scope.
 
-## 2. 実験構成
+## 2. Experimental Configuration
 
-主対象を、実際の全体解釈に用いるM11・K=8とする。手法間の優劣やKの選択を目的とした追加比較は行わない。
+The main target is M11 at K=8, as used in the global-fit interpretation. No additional comparison is performed to rank methods or select K.
 
-| 項目 | 仕様 |
+| Item | Specification |
 | --- | --- |
-| 試料 | 既存の全体fitと同じ49試料 |
-| encoder反復 | $`e\in\{1,2,3\}`$。全体fitの$`e=1`$と学習済みの$`e=2,3`$を使用 |
-| Cosine-KMeans反復 | 各encoderについて$`k\in\{1,2,3\}`$の3初期化 |
-| マップ数 | 各試料9マップ、全体で49×9マップ |
-| fit画素 | 既存の各試料8,192画素、合計401,408座標を全反復で共有 |
-| 評価画素 | fit未使用画素も含む各試料の全有効画素。全反復で同じ集合 |
-| 実行する計算 | 各encoderの第2seedをfitする計3回のCosine-KMeans、147マップの生成、9マップ／試料の反復間評価 |
+| Specimens | The same 49 specimens as in the existing global fit |
+| Encoder replicates | $`e\in\{1,2,3\}`$; use $`e=1`$ from the global fit and the trained encoders $`e=2,3`$ |
+| Cosine-KMeans replicates | Three initializations, $`k\in\{1,2,3\}`$, for each encoder |
+| Number of maps | Nine maps per specimen, 49×9 maps in total |
+| Fitting pixels | The existing 8,192 pixels per specimen, 401,408 coordinates in total, shared across all replicates |
+| Evaluation pixels | All valid pixels of each specimen, including pixels not used for fitting; the same set in every replicate |
+| Computation performed | Three Cosine-KMeans fits, one for the second seed of each encoder; generation of 147 maps; evaluation across nine maps per specimen |
 
-fitは全49試料の共通抽出画素をまとめて行い、試料ごとにCosine-KMeansを再fitしない。
-学習済みencoderは、モデル構成、mask率、augmentation、loss、学習budget、停止条件が共通のM11である。
-第1・第3seedの6組のマップを再利用し、encoderの学習は行わない。
-全体fitの記述的解析であり、未知試料に対する汎化性能の推定とは区別する。
+Fitting pools the shared sampled pixels from all 49 specimens; Cosine-KMeans is not refitted separately for each specimen.
+The trained encoders all use M11 with the same architecture, mask ratio, augmentation, loss, training budget, and stopping conditions.
+The six sets of maps from the first and third seeds are reused, and no encoder training is performed.
+This is a descriptive analysis after global fitting, distinct from estimating generalization to unseen specimens.
 
-既存OOFの3反復は、学習とCosine-KMeansを反復した未知試料上の参考情報として利用できるが、
-本実験の9マップへ混ぜない。OOFと全体fitのARI差からencoderの寄与量を差し引いて推定しない。
+The three existing OOF replicates can provide reference information on unseen specimens after repeated training and Cosine-KMeans fitting,
+but are not mixed into the nine maps in this experiment. Differences between OOF and global-fit ARI are not subtracted to estimate an encoder contribution.
 
-## 3. 固定条件と乱数
+## 3. Fixed Conditions and Randomness
 
-### 3.1 入力・学習・推論
+### 3.1 Inputs, Training, and Inference
 
-- `data/processed/production_v1/`の既存前処理と、`outputs/experiments/global_v1/manifests/fit_pixels.parquet`の
-  抽出座標を使用する。再抽出・再前処理・評価入力への追加摂動は行わない。
-- M11の800 epoch学習と最終raw重みを使用する。マップの見栄えや評価値でcheckpointを選ばない。
-- 学習は既存recipeの単一GPU・FP16 AMP、モデルパラメータはFP32とする。
-  推論は全パッチ可視・評価mode・FP32・TF32無効とし、各画素の16次元表現を既存仕様で正規化する。
-- Cosine-KMeansの設定は[既存仕様](experiment_protocol.md#augmentation-clustering)に従う。
-  K=8、`max_iter=500`、`tol=1e-4`を維持し、試料別の中心や新しい初期化選別を導入しない。
-- 同じ画素座標・有効mask・元画像形状を維持する。評価前の平滑化、形態学的処理、
-  小領域除去、クラスタ統合、画像registrationは行わない。
+- Use the existing preprocessing in `data/processed/production_v1/` and the sampled coordinates in
+  `outputs/experiments/global_v1/manifests/fit_pixels.parquet`. Do not resample, repeat preprocessing, or add perturbations to evaluation inputs.
+- Use M11 trained for 800 epochs and its final raw weights. Checkpoints are not selected by map appearance or evaluation scores.
+- Training follows the existing single-GPU, FP16 AMP recipe with FP32 model parameters.
+  Inference uses all patches visible, evaluation mode, FP32, and TF32 disabled, normalizing each pixel's 16-dimensional representation according to the existing specification.
+- Cosine-KMeans follows the [existing specification](experiment_protocol.md#augmentation-clustering).
+  Retain K=8, `max_iter=500`, and `tol=1e-4`; do not introduce specimen-specific centers or a new initialization selection procedure.
+- Preserve the same pixel coordinates, valid mask, and original image shape. No smoothing, morphological processing,
+  small-region removal, cluster merging, or image registration is performed before evaluation.
 
-### 3.2 encoderとCosine-KMeansの反復ID
+### 3.2 Encoder and Cosine-KMeans Replicate IDs
 
-`encoder_repeat`と`kmeans_repeat`を別のIDとして扱い、既存の単独`repeat`と混同しない。
+Treat `encoder_repeat` and `kmeans_repeat` as separate IDs, distinct from the existing single `repeat` field.
 
-- encoder $`e=1`$の重みと乱数記録を使用する。$`e=2,3`$の学習では、既存のROOT_SEEDとSHA-256方式を使い、
-  初期化・画素順序・mask・学習augmentationの用途別seedを`(purpose, global, e)`から導出している。
-  学習初期化だけでなく、これらを含む学習乱数の反復として記述する。
-- Cosine-KMeansは3encoderで共通のseedを使用する。$`k=1`$は1960870825、$`k=3`$は2051198256、
-  $`k=2`$は`_seed("kmeans", "global_spatial_reproducibility", "seed2_v2", 2, 8)`で導出する。
-  $`k`$をCosine-KMeansの反復IDとし、encoder IDによってseedを変えない。
-- `prepare`で全用途のseed一覧と衝突検査を保存する。
-  画素抽出seedと抽出済み座標もencoder間で共通とする。
-- 同じCosine-KMeans seedでも、異なるencoder空間で同じ中心や同じクラスタが得られるとは仮定しない。
-  encoder間の比較は「再学習とクラスタリングを含む変動」であり、encoderだけの純粋な効果とは呼ばない。
+- Use the weights and randomness records for encoder $`e=1`$. Training of $`e=2,3`$ uses the existing ROOT_SEED and SHA-256 scheme,
+  deriving purpose-specific seeds for initialization, pixel order, masks, and training augmentation from `(purpose, global, e)`.
+  These are described as replicates of training randomness encompassing all these sources, not initialization alone.
+- Cosine-KMeans uses seeds shared across all three encoders. $`k=1`$ is 1960870825, $`k=3`$ is 2051198256,
+  and $`k=2`$ is derived by `_seed("kmeans", "global_spatial_reproducibility", "seed2_v2", 2, 8)`.
+  $`k`$ denotes the Cosine-KMeans replicate ID; seeds do not change with encoder ID.
+- `prepare` saves the seed list for all purposes and collision checks.
+  The pixel-sampling seed and saved coordinates are also shared across encoders.
+- The same Cosine-KMeans seed is not assumed to yield the same centers or clusters in different encoder spaces.
+  Between-encoder comparisons represent “variation including retraining and clustering,” not a pure encoder effect.
 
-実行時のGPU、Python・PyTorch・ChemoMAE等のversion、code、config、manifest、重みの由来、
-実際の精度・決定性設定、実行時間を[実行記録の規約](experiment_protocol.md#execution-records)に従って残す。
-GPU演算の非決定性が完全に除去されたとは仮定しない。
+Record the GPU, versions of Python, PyTorch, ChemoMAE, and other software, code, config, manifests, weight provenance,
+actual precision and determinism settings, and execution time according to the
+[execution record conventions](experiment_protocol.md#execution-records).
+GPU nondeterminism is not assumed to have been fully eliminated.
 
-## 4. 既存マップの再利用と比較単位
+## 4. Reusing Existing Maps and Defining Comparisons
 
-### 4.1 初回マップの出典
+### 4.1 Source of the Initial Map
 
-NIRスペクトルの解釈に用いる初回マップを追跡できるよう、$`(e,k)=(1,1)`$は
-元の全体fitのラベルを正本とする。以下は`outputs/experiments/global_v1/`からの相対pathである。
+To trace the initial map used for NIR spectral interpretation, $`(e,k)=(1,1)`$ uses the labels from the original global fit
+as the authoritative source. The following paths are relative to `outputs/experiments/global_v1/`.
 
-| 反復 | 再利用元 |
+| Replicate | Reused source |
 | --- | --- |
 | $`(1,1)`$ | `results/clustering/M11/repeat_1/maps/{sample_id}.npz` |
 | $`(1,3)`$ | `results/global_k8_3seed_v1/clustering/M11/repeat_3/maps/{sample_id}.npz` |
-| encoder $`e=1`$ | `checkpoints/neural/M11/repeat_1/last_model.pt` |
+| Encoder $`e=1`$ | `checkpoints/neural/M11/repeat_1/last_model.pt` |
 
-encoder 2・3の重みと第1・第3seedの4組のマップは、
-`outputs/experiments/global_spatial_reproducibility_v1/`から参照する。
-各encoderの第2seedのマップは、出力先の`results/clustering/M11/encoder_{e}/kmeans_2/maps/`に生成する。
+Weights for encoders 2 and 3 and their four sets of maps from the first and third seeds are read from
+`outputs/experiments/global_spatial_reproducibility_v1/`.
+Maps for the second seed of each encoder are generated under `results/clustering/M11/encoder_{e}/kmeans_2/maps/` in the output directory.
 
-ラベルは`labels_k8`、背景0・クラスタ1〜8とする。各再利用元のrun・completion・centroids・
-checkpoint・fit画素の対応を実行時に確認する。同seedでも別の保存物が同一とは仮定しない。
-`global_k8_3seed_v1`のrepeat 1は元の表示マップとの一致を照合する対象とし、10個目のマップには数えない。
-相違があっても初回マップの参照元は変えず、両者の対応を確認する。
-本書の反復対に対する指標を集計し、対象が異なる3-seed summaryの値と混合しない。
+Labels use `labels_k8`, with background 0 and clusters 1–8. The correspondence among run records, completion records,
+centroids, checkpoints, and fitting pixels is checked for each reused source at runtime.
+Separate saved artifacts are not assumed identical merely because their seeds match.
+Replicate 1 of `global_k8_3seed_v1` is checked against the original displayed map; it is not counted as a tenth map.
+Even if they differ, the initial-map source is retained and their correspondence is checked.
+Metrics for the replicate pairs defined here are aggregated without mixing in three-seed summary values based on different targets.
 
-### 4.2 反復対
+### 4.2 Replicate Pairs
 
-試料$`m`$のマップを$`y_m^{e,k}`$とし、同じ試料の同じ有効画素集合$`\Omega_m`$で比較する。
-$`\Omega_m`$は既存の`valid_spectrum_mask`に従い、`pixel_row_col`で位置を対応付ける。
-反復ごとの画素欠落・mask変更は入力不整合として扱い、共通部分だけを取り直して比較しない。
+Let the map for specimen $`m`$ be $`y_m^{e,k}`$. Comparisons use the same valid pixel set $`\Omega_m`$ for the same specimen.
+$`\Omega_m`$ follows the existing `valid_spectrum_mask`, and positions are matched using `pixel_row_col`.
+Missing pixels or changed masks between replicates are treated as input inconsistencies;
+comparisons are not restricted to a newly computed intersection.
 
-| 比較群 | 反復対 | 1試料あたりの対数 | 読み方 |
+| Comparison group | Replicate pairs | Pairs per specimen | Interpretation |
 | --- | --- | ---: | --- |
-| 同一encoder内 | $`e`$固定、$`k<k'`$ | 3 encoder×3対＝9対 | 固定表現でCosine-KMeans初期化を変えた変動 |
-| encoder間 | $`e<e'`$、全$`k,k'`$ | 3 encoder対×9対＝27対 | encoder再学習とCosine-KMeansを含む変動 |
+| Within encoder | Fixed $`e`$, $`k<k'`$ | Three encoders × three pairs = nine pairs | Variation from Cosine-KMeans initialization with the representation fixed |
+| Between encoders | $`e<e'`$, all $`k,k'`$ | Three encoder pairs × nine pairs = 27 pairs | Variation including encoder retraining and Cosine-KMeans |
 
-計36対を保存し、二つの比較群を別々に報告する。さらに初回マップ$`(1,1)`$から他の8マップへの比較を
-明示する。この8対は36対の内数であり、追加の独立反復ではない。
+All 36 pairs are saved, and the two comparison groups are reported separately.
+Comparisons from the initial map $`(1,1)`$ to the other eight maps are also identified.
+These eight pairs are a subset of the 36, not additional independent replicates.
 
-## 5. 評価指標と計算仕様
+## 5. Evaluation Metrics and Computation
 
-本節の境界定義・近接対応・集約を全試料・全反復対に適用する。
+The boundary definitions, proximity matching, and aggregation in this section apply to all specimens and replicate pairs.
 
 ### 5.1 ARI
 
-[既存ARI](evaluation_metrics.md#ari)と同じ定義で、各反復対の全有効画素の分割を比較する。
-ラベル番号の置換に不変なので、計算前のHungarian matchingは不要である。
-退化・未定義値は既存規約に従い、使用クラスタ数と占有率を併記する。
+Use the same definition as the [existing ARI](evaluation_metrics.md#ari) to compare partitions over all valid pixels for each replicate pair.
+ARI is invariant to label permutations, so Hungarian matching is unnecessary before calculation.
+Degenerate and undefined cases follow the existing conventions, with used cluster counts and occupancy reported alongside.
 
-### 5.2 内部境界
+### 5.2 Internal Boundaries
 
-境界の二重の厚みやライブラリ既定の描画処理を避けるため、上下左右に隣接する有効画素間の共有辺を
-一度ずつ数え、その中点を境界位置とする。画素座標$`p=(\mathrm{row},\mathrm{col})`$に対し、
+To avoid double-thick boundaries and library-default rendering behavior, count each shared edge between horizontally
+or vertically adjacent valid pixels once and use its midpoint as the boundary position.
+For pixel coordinates $`p=(\mathrm{row},\mathrm{col})`$, define
 
 ```math
 E_m=\{\{p,q\}:p,q\in\Omega_m,\ \|p-q\|_1=1\},
@@ -139,195 +144,224 @@ E_m=\{\{p,q\}:p,q\in\Omega_m,\ \|p-q\|_1=1\},
 B(y)=\left\{\frac{p+q}{2}:\{p,q\}\in E_m,\ y_p\ne y_q\right\}
 ```
 
-と定義する。両端が有効な辺だけを使い、試料外形、背景や品質除外画素・穴との接触辺は境界に含めない。
-maskの侵食によって外形近くの本来の内部境界まで除去しない。境界集合は半整数座標を含む。
-境界の向きや、境界の両側にあるクラスタ番号は近接対応の条件に含めない。
+Only edges with two valid endpoints are used; the specimen outline and edges adjoining background,
+quality-excluded pixels, or holes are not boundaries.
+The mask is not eroded in a way that removes genuine internal boundaries near the outline.
+Boundary sets contain half-integer coordinates.
+Boundary orientation and the cluster IDs on either side are not criteria for proximity matching.
 
-### 5.3 LLAと揃える三つの尺度
+### 5.3 Three Scales Corresponding to LLA
 
-LLAの$`r=3,5,9`$は近傍の幅であり、許容距離そのものではない。
-本実験も画像座標上の正方近傍を使用し、半径$`\rho_r=(r-1)/2`$に揃える。
+The LLA values $`r=3,5,9`$ denote neighborhood widths, not tolerance distances.
+This experiment also uses square neighborhoods in image coordinates, with radius $`\rho_r=(r-1)/2`$.
 
-| 表示する近傍幅$`r`$ | 境界中点から縦横各方向の許容距離$`\rho_r`$ |
+| Displayed neighborhood width $`r`$ | Tolerance from a boundary midpoint in each vertical/horizontal direction, $`\rho_r`$ |
 | --- | ---: |
-| 3×3画素 | 1画素 |
-| 5×5画素 | 2画素 |
-| 9×9画素 | 4画素 |
+| 3×3 pixels | 1 pixel |
+| 5×5 pixels | 2 pixels |
+| 9×9 pixels | 4 pixels |
 
-三つをすべて報告する。
-LLAとの共通点は観察尺度であり、同じ性質を測る指標とは扱わない。
-これは画素座標上の距離である。画素実寸・走査方向の異方性が確認できた場合は付記し、
-自動的に等方的なmm尺度と解釈しない。
+All three are reported.
+The shared feature with LLA is the observation scale; the metrics do not measure the same property.
+Distances are in pixel coordinates. If physical pixel dimensions and scan-direction anisotropy are established, they are noted;
+distances are not automatically interpreted as an isotropic millimeter scale.
 
-### 5.4 双方向の境界一致率
+### 5.4 Bidirectional Boundary Agreement
 
-反復A・Bの境界集合を$`B_A,B_B`$とし、Chebyshev距離で方向別の近接被覆率を計算する。
+For boundary sets $`B_A,B_B`$ from replicates A and B, compute directional proximity coverage using Chebyshev distance.
 
 ```math
 C_{A\to B}(r)=
 \frac{\sum_{b\in B_A}\mathbf{1}\left[\min_{c\in B_B}\|b-c\|_\infty\le\rho_r\right]}{|B_A|}
 ```
 
-$`C_{B\to A}(r)`$も同様に求め、両方向を保存・表示する。
-例えば、Aの既存境界を残してBに内部境界が追加される場合、AからBへの一致率は高いままでも、
-BからAへの一致率は低下し得る。一方向だけで再現性を評価しない。
+Compute $`C_{B\to A}(r)`$ analogously, and save and display both directions.
+For example, if B retains A's existing boundaries but adds internal boundaries, agreement from A to B can remain high
+while agreement from B to A decreases. Reproducibility is not assessed in only one direction.
 
-この定義は多対一の近接を許す被覆率であり、一対一の境界matchingや領域の意味的対応を保証しない。
-既存benchmarkのboundary F-scoreと同一の実装・指標とは呼ばない。
-F-scoreへの合成は主評価に含めず、方向別の値を残す。
+This definition is a coverage rate that permits many-to-one proximity; it does not guarantee one-to-one boundary matching
+or semantic correspondence between regions.
+It is not described as the same implementation or metric as the boundary F-score of an existing benchmark.
+Combining directions into an F-score is excluded from the main evaluation; directional values are retained.
 
-- 対応先に境界がなく、対応元に境界がある場合、その方向の値は0とする。
-- 対応元に境界がない場合、その方向は未定義とする。両方に境界がない場合も一致率1で埋めない。
-- 有効隣接辺自体がない場合は、境界評価の対象外として理由を記録する。
-- 単一クラスタ試料を自動的に失敗として除外しない。ARI・占有率と合わせて別途記述する。
+- If the target has no boundaries but the source does, the value in that direction is 0.
+- If the source has no boundaries, the direction is undefined. If both have no boundaries, agreement is not filled with 1.
+- If there are no valid adjacent edges, the specimen is outside the scope of boundary evaluation, and the reason is recorded.
+- Single-cluster specimens are not automatically excluded as failures; they are described separately alongside ARI and occupancy.
 
-境界が密なマップでは近接が偶然生じやすいため、各反復の境界数$`|B(y)|`$と
-境界密度$`|B(y)|/|E_m|`$、使用クラスタ数、最大占有率を必ず併記する。
-密度の異なるマップを境界一致率だけで順位付けしない。
+Because proximity can occur by chance more readily in maps with dense boundaries, always report the boundary count $`|B(y)|`$,
+boundary density $`|B(y)|/|E_m|`$, number of used clusters, and maximum occupancy for each replicate.
+Maps with different densities are not ranked by boundary agreement alone.
 
-### 5.5 分裂・合流の補助診断
+### 5.5 Supplementary Diagnostics of Splitting and Merging
 
-分割変動の説明が必要な場合に、同じ有効画素上の重なり表$`n_{ij}=|A_i\cap B_j|`$と、
-行方向$`n_{ij}/|A_i|`$・列方向$`n_{ij}/|B_j|`$の比率を使う。存在しないクラスタの比率は未定義とする。
+When partition variability requires explanation, use the overlap table $`n_{ij}=|A_i\cap B_j|`$ over the same valid pixels,
+with row fractions $`n_{ij}/|A_i|`$ and column fractions $`n_{ij}/|B_j|`$. Fractions for absent clusters are undefined.
 
-重なり診断を有効にした評価では、VIの二成分$`H(B\mid A)`$・$`H(A\mid B)`$と、
-合計$`\mathrm{VI}(A,B)=H(B\mid A)+H(A\mid B)`$をbits単位で対別・試料別・全体の集計表に示す。
-$`H(B\mid A)`$はAを基準にした分裂側、$`H(A\mid B)`$は合流側の不一致を表す。いずれのマップも正解とはみなさない。
-片方が0なら一方の分割が他方の細分化または合流に対応するが、両方が正でも構造崩壊と断定しない。
-合計VIは0で同じ分割となり、小さいほど分割の不一致が少ない。VIは空間距離を扱わず、合否判定には使わない。
-A・Bは反復ID$`(e,k)`$の辞書順で固定する。初回基準8対ではAを$`(1,1)`$とする。
-A・Bを交換すると二成分は入れ替わるため、群全体の二成分平均を時間的な分裂・合流の傾向と解釈しない。
-重なり診断が保存されていない対のVIは未定義とし、0で埋めない。
+When overlap diagnostics are enabled, report the two VI components $`H(B\mid A)`$ and $`H(A\mid B)`$ and
+their sum $`\mathrm{VI}(A,B)=H(B\mid A)+H(A\mid B)`$ in bits in pair-level, specimen-level, and overall summary tables.
+$`H(B\mid A)`$ describes splitting-side disagreement relative to A; $`H(A\mid B)`$ describes merging-side disagreement.
+Neither map is treated as ground truth.
+If one component is zero, one partition is a refinement or merging of the other; positive values for both do not establish structural collapse.
+Total VI is zero for identical partitions, and smaller values indicate less partition disagreement.
+VI does not account for spatial distance and is not used for pass/fail decisions.
+A and B are fixed in lexicographic order of replicate IDs $`(e,k)`$; A is $`(1,1)`$ for the eight initial-map comparisons.
+Swapping A and B exchanges the components, so group-level component means are not interpreted as temporal tendencies to split or merge.
+VI is undefined for pairs without saved overlap diagnostics and is not filled with zero.
 
-一対一IoUだけで分裂を評価したり、一致を高める目的でクラスタを自由に統合したりしない。
-同じクラスタの離れた部分を一つの画素群として扱うことと、空間的な連結領域として扱うことを区別する。
-連結成分への分解・統合を評価の前処理にはしない。
+Splitting is not evaluated solely by one-to-one IoU, and clusters are not freely merged to increase agreement.
+Treating disconnected parts of a cluster as one pixel group is distinct from treating them as spatially connected regions.
+Decomposition into connected components or their merging is not used as evaluation preprocessing.
 
-## 6. 位置を保った可視化
+## 6. Visualization Preserving Spatial Positions
 
-全49試料を数値評価し、標準の可視化は全体図1枚と各試料の2種類、計99枚に絞る。
-各試料について次を保存する。
+All 49 specimens are evaluated numerically. Standard visualization is limited to one overall figure and two types of figures per specimen,
+for a total of 99 figures. Save the following for each specimen.
 
-1. encoderを行、Cosine-KMeans初期化を列とした3×3マップ一覧。同じ向き・縮尺・有効maskで表示する。
-2. 各近傍幅で、境界が近傍内に現れた反復の割合を示す地図。
+1. A 3×3 map grid, with encoders as rows and Cosine-KMeans initializations as columns, using the same orientation, scale, and valid mask.
+2. Maps showing, for each neighborhood width, the fraction of replicates with a boundary within that neighborhood.
 
-全反復の元マップ、36対の評価値、初回から8対の評価値、試料別分布と境界密度・占有率は保持する。
-必要な個別診断は保存済みの元マップと対別評価値から追跡する。
+Retain all original replicate maps, evaluation values for all 36 pairs and the eight initial-map comparisons,
+specimen-level distributions, boundary densities, and occupancies.
+Individual diagnostics can be traced through the saved original maps and pair-level evaluation values.
 
-2の表示では、有効画素位置$`p`$について、9反復中で境界が半径$`\rho_r`$以内に存在する割合
+For visualization 2, at valid pixel position $`p`$, use the fraction of the nine replicates having a boundary within radius $`\rho_r`$:
 
 ```math
 F_r(p)=\frac{1}{9}\sum_{e=1}^{3}\sum_{k=1}^{3}
 \mathbf{1}\left[\min_{b\in B(y_m^{e,k})}\|p-b\|_\infty\le\rho_r\right]
 ```
 
-を使う。境界が空の反復の指示値は0とする。
-学習失敗などでマップが欠ける場合は、境界が空のマップと区別する。9マップがそろわない試料の
-$`F_r`$は未算定とし、欠けた反復を0として埋めない。
-これは共有モデルを含む9マップの記述的頻度であり、独立9試行から推定した確率や信頼度ではない。
-0の場所は全反復で近傍内に内部境界がないことを表すが、その位置の化学的意味の一致までは保証しない。
-1の場所は毎回近傍内に境界があることを表し、境界位置の完全一致とは限らない。
-中間値は反復によって近傍内の境界の有無が変わる場所を示す。
-近傍幅の拡大で頻度は下がらないため、9×9で高値になることだけを安定性の根拠にしない。
-どの反復で位置が変わるかは3×3マップと対別評価値を併読する。
+The indicator is 0 for a replicate with an empty boundary set.
+A map missing because of a training failure or similar issue is distinguished from a map with no boundaries.
+$`F_r`$ is not calculated for a specimen without all nine maps; missing replicates are not filled with 0.
+This is a descriptive frequency over nine maps sharing models, not a probability or confidence estimate from nine independent trials.
+A value of 0 indicates that no replicate has an internal boundary in the neighborhood, but does not guarantee agreement in chemical meaning at that position.
+A value of 1 indicates that every replicate has a boundary within the neighborhood, not necessarily at exactly the same position.
+Intermediate values indicate locations where the presence of a nearby boundary varies across replicates.
+Frequency cannot decrease as the neighborhood widens, so a high value at 9×9 alone is not evidence of stability.
+Use the 3×3 map grid and pair-level evaluation values to identify which replicates change position.
 
-3×3一覧は初回$`(1,1)`$を色の基準とする。各反復について、全49試料の全有効画素を合算した
-初回との重なり表から、総重なり画素数を最大化する一対一のHungarian assignmentを求める。
-各反復の対応は全試料で共通とし、試料ごとの最適化や別反復を経由した連鎖対応は行わない。
-その対応に、既存の全体fit図の`M11/matching.csv`に保存された元番号→表示番号の変換を合成し、
-同じ図の`report.json`に保存されたpaletteで描画する。初回も全体fitの表示ID・配色に従う。
-背景0を維持し、分裂・合流したクラスタを同じ表示IDへ統合しない。
-初回の入力は元のマップを維持し、全体fit図が使う同seed再生成版へ置き換えない。
-両者のラベルの照合結果は`protocol/initial_map_audit.json`で確認できる。
-不在クラスタには未使用の表示番号を昇順で割り当てる。重なり0の割当は、対応を支持する画素がないことを
-対応表に明記する。対応は昇順の元IDで求め、SciPyのversionと実際の対応を保存する。
-元ラベル・指標計算は変更しない。対応方法、全重なり表、元番号→表示番号、割当の重なり画素数は
-`results/report/color_matching.json`へ保存する。初回元番号への対応、全体fit表示IDへの変換、
-合成後の対応とpaletteの出典を区別し、表示専用であることをcaptionに明記する。
-色の一致を再現性の数値根拠にしない。境界頻度図は色合わせに依存しない。
-図・subplotのタイトルは付けない。マップ・境界頻度図のpixel軸・目盛・枠線を表示せず、
-試料IDは画像群の下に太字で一度表示する。クラスタリングの表記はCosine-KMeansとする。
-panel記号、必要な数値軸・legend・colorbarを残し、反復区分、近傍幅、長い説明はcaptionへ移す。
-図の説明と対象数は`results/report/captions.json`へ保存する。
+The 3×3 grid uses the initial map $`(1,1)`$ as the color reference.
+For each replicate, an overlap table with the initial map is pooled over all valid pixels of all 49 specimens,
+and a one-to-one Hungarian assignment maximizing total overlapping pixels is obtained.
+Each replicate's correspondence is shared across all specimens; there is no specimen-specific optimization
+or chained matching through other replicates.
+This correspondence is composed with the raw-to-display ID mapping saved in `M11/matching.csv` of the existing global-fit figures,
+and rendered using the palette saved in their `report.json`.
+The initial map also follows the global-fit display IDs and colors.
+Background 0 is retained; split or merged clusters are not combined into the same display ID.
+The initial input remains the original map and is not replaced by the same-seed regenerated version used in the global-fit figures.
+Their label comparison is available in `protocol/initial_map_audit.json`.
+Absent clusters are assigned unused display IDs in ascending order.
+Zero-overlap assignments are explicitly marked in the correspondence table as having no pixels supporting the correspondence.
+Matching uses ascending raw IDs, and the SciPy version and actual correspondence are saved.
+Original labels and metric calculations are unchanged.
+The matching method, full overlap tables, raw-to-display mappings, and overlap pixel counts of assignments are saved to
+`results/report/color_matching.json`.
+Correspondence to initial raw IDs, conversion to global-fit display IDs, the composed mapping, and palette provenance are distinguished;
+captions state that matching is for display only.
+Color agreement is not used as numerical evidence of reproducibility. Boundary-frequency maps do not depend on color matching.
+No figure or subplot titles are added. Pixel axes, ticks, and frames are hidden in map and boundary-frequency figures;
+the specimen ID appears once in bold below the image group. Clustering is labeled Cosine-KMeans.
+Panel letters and necessary numerical axes, legends, and colorbars are retained;
+replicate descriptions, neighborhood widths, and longer explanations are placed in captions.
+Figure descriptions and sample counts are saved to `results/report/captions.json`.
 
-サマリ図は全49試料のARIと境界一致率の対応図1枚とする。上段を同一encoder内、下段をencoder間、
-列を3×3・5×5・9×9近傍とした2×3配置にする。各試料の双方向の小さい側・大きい側を別々に示し、
-それらを結ぶ線を信頼区間と解釈しない。右ほど分割の一致が高く、上ほど境界の近接対応が多い。
-対平均の図では特定の反復のずれが見えにくいため、3×3マップと対別評価値を併読する。
-3×3マップ・境界頻度図は全49試料について保存し、既選定の代表7試料を共通の表示例とする。
-安定例だけを選んで全体を代表させず、個別の例は選定理由を明記する。
+The summary is one figure relating ARI to boundary agreement for all 49 specimens.
+It uses a 2×3 layout: within-encoder comparisons on the top row, between-encoder comparisons on the bottom row,
+and 3×3, 5×5, and 9×9 neighborhoods as columns.
+The smaller and larger directional values for each specimen are shown separately;
+the line connecting them is not interpreted as a confidence interval.
+Moving right indicates greater partition agreement; moving up indicates greater boundary proximity coverage.
+Pair-averaged figures can obscure shifts in individual replicates, so the 3×3 maps and pair-level values are read alongside them.
+The 3×3 maps and boundary-frequency figures are saved for all 49 specimens;
+the previously selected seven representative specimens provide shared display examples.
+Stable examples alone are not used to represent the full dataset; individual examples state their selection rationale.
 
-## 7. 集計と結果の読み方
+## 7. Aggregation and Interpretation
 
-- 反復対・方向・近傍幅別の値と、分子・分母の件数を保存する。
-- 試料ごとに同一encoder内9対、encoder間27対を分ける。各対で両方向が定義される場合に限り、
-  小さい方と大きい方の一致率も保存し、片方向の高値で他方向の低値を隠さない。
-- 主な数値要約は、試料内の反復対平均と対間の最小・最大、および試料等重みのmacro平均と試料間分布とする。
-  小さい側・大きい側を別々に集計し、三つの近傍幅も平均しない。方向別の元データは保持する。
-- VIの2成分と合計は同じ対象試料で集計する。初回基準8対についても、ARI・境界一致率・VIを同じ形式で
-  試料別・全体の表に示す。36対の集計へ8対を重複加算しない。
-- 主集計は比較群×指標ごとに全予定対が定義された試料を対象とする。境界一致率の小さい側・大きい側は、
-  同一encoder内9対・encoder間27対・初回基準8対それぞれの両方向がそろうことを要求する。
-  該当試料が0なら主集計も未定義とする。
-  部分欠測試料の定義済み対・片方向の0・空境界の反復数は別表に残し、残存対だけの平均で主集計を補わない。
-- 各指標の定義済み対数・対象試料数、片方向／両方向の未定義理由を併記する。
-  近傍幅間は同じ比較対象で要約し、欠測を0や1へ補完しない。比較群間の差を要約する場合も共通試料に限定する。
-- ARIと境界一致率の試料別の対応を図示する。初回マップからの8対は別に追えるようにする。
-- 試料、encoder、Cosine-KMeans、反復対のばらつきを混同しない。36対や49×36を独立標本数として検定・CIへ使わない。
-  encoderは3反復であり、将来の再学習全般に対する高確率保証は行わない。
+- Save values by replicate pair, direction, and neighborhood width, together with numerator and denominator counts.
+- Within each specimen, distinguish the nine within-encoder pairs from the 27 between-encoder pairs.
+  Save the smaller and larger directional agreement values only when both directions are defined for a pair;
+  a high value in one direction must not conceal a low value in the other.
+- Main summaries are within-specimen means over replicate pairs, minima and maxima across pairs,
+  equal-specimen-weight macro means, and between-specimen distributions.
+  Aggregate smaller and larger directional values separately, and do not average the three neighborhood widths.
+  Retain the original directional data.
+- Aggregate both VI components and their sum over the same specimens.
+  For the eight initial-map comparisons, report ARI, boundary agreement, and VI in the same specimen-level and overall table formats.
+  Do not add those eight pairs again to the 36-pair aggregate.
+- The main aggregate for each comparison group × metric includes specimens with defined values for every planned pair.
+  Smaller and larger directional boundary agreement require both directions for all nine within-encoder pairs,
+  all 27 between-encoder pairs, or all eight initial-map pairs, respectively.
+  If no specimen qualifies, the main aggregate is undefined.
+  Defined pairs for partially missing specimens, directional zeros, and counts of replicates with empty boundaries are retained in separate tables;
+  means over only the remaining pairs do not substitute for the main aggregate.
+- Report the numbers of defined pairs and included specimens for each metric, with reasons for undefined values in one or both directions.
+  Summaries across neighborhood widths use the same comparison set, without filling missing values with 0 or 1.
+  Summaries of differences between comparison groups are also restricted to shared specimens.
+- Plot specimen-level relationships between ARI and boundary agreement. Keep the eight initial-map comparisons separately traceable.
+- Do not conflate variability across specimens, encoders, Cosine-KMeans initializations, and replicate pairs.
+  Do not use 36 pairs or 49×36 as independent sample counts for tests or CIs.
+  There are three encoder replicates; no high-probability guarantee for future retraining in general is made.
 
-結果は、どの尺度でどれだけ境界が対応し、非対応がどこに分布したかを数値と地図で記述する。
-ARIが低く境界一致が高い場合も、境界密度とマップを確認したうえで、
-「クラスタ分割は変動するが、測定面上の境界配置には共通性が認められる」といった範囲で解釈する。
-境界が安定していても、離れた領域同士が同じクラスタに属する関係や、化学的特徴の対応が同じとは限らない。
+Describe numerically and spatially how much boundary agreement occurs at each scale and where disagreement is located.
+If ARI is low and boundary agreement is high, inspect boundary density and maps before interpreting the result as, for example,
+“cluster partitions vary, while boundary arrangements on the measured surface share common features.”
+Stable boundaries do not imply that membership relationships between distant regions or correspondence with chemical features are unchanged.
 
-初回マップに見られる領域の内部と周囲の境界が反復を通じて保たれるかは、空間分布を解釈する基盤の安定性を示す。
-化学的な意味は、観測NIRスペクトル、文献帰属、材組織・環境履歴・試料情報と対応付けて検討する。
-固定した位置の観測スペクトルが変わらないこと自体を、モデルの再現性の証拠には数えない。
+Whether region interiors and surrounding boundaries in the initial map persist across replicates indicates the stability
+of the basis for interpreting spatial distributions.
+Chemical meaning is examined by relating observed NIR spectra to literature assignments, wood anatomy,
+environmental history, and specimen information.
+The fact that observed spectra at fixed positions remain unchanged is not itself counted as evidence of model reproducibility.
 
-## 8. 成果物と保存方針
+## 8. Artifacts and Storage
 
-出力先は`outputs/experiments/global_spatial_reproducibility_v2/`とする。
-`global_spatial_reproducibility_v1/`は学習済みencoderと再利用マップの入力として使用する。
-既存`global_v1`・`production_v1`の重み、manifest、map、図表は上書きしない。
-再利用物はsource pathと既存の由来記録を参照し、encoder/Cosine-KMeansの二つの反復IDに対応付ける。
+The output directory is `outputs/experiments/global_spatial_reproducibility_v2/`.
+`global_spatial_reproducibility_v1/` supplies trained encoders and reusable maps.
+Existing weights, manifests, maps, and figures/tables in `global_v1` and `production_v1` are not overwritten.
+Reused artifacts retain their source paths and existing provenance records, associated with the two replicate IDs for encoder and Cosine-KMeans.
 
-| 成果物 | 保存する内容 |
+| Artifact | Saved contents |
 | --- | --- |
-| 設定・出典記録 | 仕様のversion、境界定義、近傍幅、seed、試料・画素・checkpoint・既存mapの対応 |
-| clustering記録 | config、run identity、中心、環境、参照する学習済み重み、完了／失敗状態 |
-| 全反復マップ | `labels_k8`、試料ID、encoder ID、Cosine-KMeans ID、元画像形状・maskとの対応 |
-| マップ別診断表 | 有効画素数、内部境界数・密度、使用クラスタ数・占有率 |
-| 反復対別評価表 | 比較群、二つのrun ID、ARI、VIの2成分と合計、各近傍幅の方向別一致率と分子・分母、未定義理由 |
-| 試料別・全体要約 | ARI・境界一致率・VIの反復対の要約、試料macro平均・分布、対象数、初回マップからの比較 |
-| 図表 | ARIと境界一致率の対応図1枚、全49試料の3×3マップと境界頻度図、計99枚 |
-| 重なりの補助診断 | 重なり表・対応比率・VIを計算した場合、その対象と値。VI未計算時は表の値も未定義 |
+| Settings and provenance | Specification version, boundary definition, neighborhood widths, seeds, and correspondence among specimens, pixels, checkpoints, and existing maps |
+| Clustering records | Config, run identity, centers, environment, referenced trained weights, and completion/failure status |
+| All replicate maps | `labels_k8`, specimen ID, encoder ID, Cosine-KMeans ID, and correspondence with original image shape and mask |
+| Per-map diagnostics | Valid pixel count, internal-boundary count and density, used cluster count, and occupancy |
+| Pair-level evaluation | Comparison group, two run IDs, ARI, two VI components and their sum, directional agreement with numerators/denominators for each neighborhood width, and reasons for undefined values |
+| Specimen-level and overall summaries | Replicate-pair summaries of ARI, boundary agreement, and VI; specimen macro means and distributions; counts; and initial-map comparisons |
+| Figures | One ARI–boundary agreement figure, plus 3×3 maps and boundary-frequency figures for all 49 specimens: 99 figures in total |
+| Supplementary overlap diagnostics | Targets and values when overlap tables, correspondence fractions, and VI are calculated; table values are undefined when VI is not calculated |
 
-具体的なCLI・schema・ファイル名は[専用runbook](../spatial_map_reproducibility_runbook.md)に記す。重み・中心等の学習済みpayloadは
-`checkpoints/`または`weights/`へ置き、[既存ignore規則](../../.gitignore)に従う。
-大量の中間表現を保存せず、encoderごとにfit画素の表現を抽出する。
-境界比較は小さな固定近傍と試料単位の処理を基本に、全境界間の距離行列を作らない。
+Specific CLI options, schemas, and filenames are documented in the [dedicated runbook](../spatial_map_reproducibility_runbook.md).
+Trained payloads such as weights and centers are placed under `checkpoints/` or `weights/`, following the
+[existing ignore rules](../../.gitignore).
+Large intermediate representations are not saved; fitting-pixel representations are extracted for each encoder.
+Boundary comparisons primarily use small fixed neighborhoods and specimen-level processing, without constructing an all-boundary distance matrix.
 
-## 9. 実施手順と完了条件
+## 9. Procedure and Completion Criteria
 
-1. 小規模配列で境界抽出・距離・背景除外・空境界・集計・保存処理を検証する。
-2. `prepare`で重み・抽出座標・再利用マップの整合性を確認し、seed・反復対・評価条件を保存する。
-3. `cluster`で3encoderの第2seedをfitし、全49試料のマップを生成する。
-4. `evaluate`で9マップ／試料の全36対を評価し、encoder内／encoder間、初回マップからの比較を集計する。
-5. `report`で図表を出力し、`check`で対象数、出典、欠測、指標と図表の対応を確認する。
+1. Validate boundary extraction, distances, background exclusion, empty boundaries, aggregation, and storage with small arrays.
+2. Use `prepare` to check consistency of weights, sampled coordinates, and reused maps, and save seeds, replicate pairs, and evaluation settings.
+3. Use `cluster` to fit the second seed for each of the three encoders and generate maps for all 49 specimens.
+4. Use `evaluate` to assess all 36 pairs among the nine maps per specimen and aggregate within-encoder, between-encoder, and initial-map comparisons.
+5. Use `report` to export figures and tables, then `check` to verify counts, provenance, missingness, and correspondence between metrics and figures.
 
-保存済みの対別評価から表を更新する場合は、`summarize`を使う。モデル・クラスタリング・対別指標を
-再計算せず、評価JSONから集計JSON・CSVを生成する。続けて`report --replace`で同じ図を再描画し、
-更新後の評価と図表の対応を`check`で確認する。
+To update tables from saved pair-level evaluations, use `summarize`.
+It generates aggregate JSON/CSV files from evaluation JSON without recomputing models, clustering, or pair-level metrics.
+Then redraw the same figures with `report --replace`, and use `check` to verify correspondence between the updated evaluation and figures.
 
-完了は、予定した反復の成果物と出典、数値・図表、未定義値や失敗の説明がそろった状態を指す。
-高い再現性が得られることを完了条件にはしない。
+Completion means that artifacts and provenance for the planned replicates, numerical results, figures/tables,
+and explanations of undefined values or failures are present.
+High reproducibility is not a completion criterion.
 
-## 10. 参考資料
+## 10. References
 
-- [既存LLA・ARIと評価対象の定義](evaluation_metrics.md)
-- [全体fit・可視化・NIRスペクトルの解析](visualization_and_interpretation.md)
-- [実行・保存規約](../experiment_runbook.md)
-- [Berkeley Segmentationの境界・領域評価](https://www2.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/resources.html)：境界と領域を別々に評価する参考。本書の近接被覆率とは実装を区別する。
-- [Meilă, 2007: Comparing clusterings—an information based distance](https://doi.org/10.1016/j.jmva.2006.11.013)：VIの参考。
-- [scikit-imageのVI定義](https://scikit-image.org/docs/stable/api/skimage.metrics.html#skimage.metrics.variation_of_information)：条件付きエントロピーによる分裂側・合流側の解釈。
+- [Existing LLA, ARI, and evaluation-set definitions](evaluation_metrics.md)
+- [Global fitting, visualization, and NIR spectral analysis](visualization_and_interpretation.md)
+- [Execution and storage conventions](../experiment_runbook.md)
+- [Berkeley Segmentation boundary and region evaluation](https://www2.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/resources.html): A reference for evaluating boundaries and regions separately; its implementation is distinct from the proximity coverage defined here.
+- [Meilă, 2007: Comparing clusterings—an information based distance](https://doi.org/10.1016/j.jmva.2006.11.013): A reference for VI.
+- [scikit-image VI definition](https://scikit-image.org/docs/stable/api/skimage.metrics.html#skimage.metrics.variation_of_information): Interpretation of splitting-side and merging-side disagreement through conditional entropy.

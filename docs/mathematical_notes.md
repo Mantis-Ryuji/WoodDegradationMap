@@ -1,23 +1,16 @@
-# 数理的補足
+# Mathematics of SNV and spectral perturbations
 
-[前処理](design/preprocessing.md)と[モデル・摂動](chemomae_positioning.md)の定義から導かれる性質を、入力の制約、学習課題、復元モデルの順に示す。有限な入力と非ゼロの正規化分母を仮定する理想演算を扱い、数値保護は第6節で補足する。性能や化学的妥当性は実験で検討する。
-
-| 論点 | 導出する内容 | 対応節 |
-| --- | --- | --- |
-| 入力と摂動 | SNVが定める集合と、TGN・Fractional Shiftがその制約を保つ条件 | [1](#snv-geometry)〜[3](#fractional-shift) |
-| 学習課題 | 不可視帯域の誤差が全帯域にわたる復元課題を作る仕組み | [4](#masked-objective) |
-| 表現と復元 | 入力差の拡大・縮小、クラスタ内外の変動、SVD・残差とmasked lossの対応 | [5](#latent-decoder) |
-| 数値実装 | 理想式の照合と退化条件 | [6](#numerical-geometry) |
-
-記号は各節で定義する。
+Using the definitions of [preprocessing](design/preprocessing.md) and the [model and perturbations](chemomae_positioning.md),
+this document derives the mean and norm constraints for SNV, TGN, and Fractional Shift.
+Finite inputs and nonzero normalization denominators are assumed. See the [numerical implementation notes](numerical_implementation_notes.md) for numerical handling in the implementation.
 
 <a id="snv-geometry"></a>
 
-## 1 SNVの制約と幾何
+## 1 SNV constraints and geometry
 
-### 1.1 平均とnorm
+### 1.1 Mean and norm
 
-以下では一つの有効画素に注目し、画素添字 $`p`$ を省略する。補間後のチャネル数を $`C=256`$、チャネル添字を $`j=0,\ldots,C-1`$、補間反射率を $`\widetilde{\boldsymbol{R}}\in\mathbb{R}^{C}`$、その第 $`j`$ 成分を $`\widetilde{R}_j`$ とする。その画素内平均 $`\mu`$ と標本標準偏差 $`s>0`$ は、画素ごとの $`\mu_p,s_p`$ と同じ量である。$`\boldsymbol{1}`$ は全成分1の $`C`$ 次元ベクトル、上付き $`\mathsf T`$ は転置、$`\|\cdot\|_2`$ はL2 normを表す。SNVスペクトルを $`\boldsymbol{x}=(\widetilde{\boldsymbol{R}}-\mu\boldsymbol{1})/s`$ とすると、
+Consider one valid pixel and omit its index $`p`$. Let $`C=256`$ be the number of channels after interpolation, $`j=0,\ldots,C-1`$ the channel index, $`\widetilde{\boldsymbol{R}}\in\mathbb{R}^{C}`$ the interpolated reflectance, and $`\widetilde{R}_j`$ its $`j`$th component. The within-pixel mean $`\mu`$ and sample standard deviation $`s>0`$ are the same quantities as the per-pixel $`\mu_p,s_p`$. Here, $`\boldsymbol{1}`$ is the $`C`$-dimensional all-ones vector, superscript $`\mathsf T`$ denotes transpose, and $`\|\cdot\|_2`$ is the L2 norm. For the SNV spectrum $`\boldsymbol{x}=(\widetilde{\boldsymbol{R}}-\mu\boldsymbol{1})/s`$,
 
 ```math
 \boldsymbol{1}^{\mathsf T}\boldsymbol{x}
@@ -28,7 +21,7 @@
 \qquad\text{(1)}
 ```
 
-である。また、$`s^2=(C-1)^{-1}\sum_j(\widetilde{R}_j-\mu)^2`$ なので、
+Also, since $`s^2=(C-1)^{-1}\sum_j(\widetilde{R}_j-\mu)^2`$,
 
 ```math
 \|\boldsymbol{x}\|_2^2
@@ -38,7 +31,7 @@
 \qquad\text{(2)}
 ```
 
-したがって、SNVスペクトルのnormを $`\rho=\sqrt{C-1}`$ とすれば、SNVの平均・norm制約を満たす集合 $`\mathcal{S}_{\mathrm{SNV}}`$ を
+Thus, writing the norm of an SNV spectrum as $`\rho=\sqrt{C-1}`$, the set $`\mathcal{S}_{\mathrm{SNV}}`$ satisfying SNV's mean and norm constraints is
 
 ```math
 \mathcal{S}_{\mathrm{SNV}}
@@ -51,11 +44,11 @@
 \qquad\text{(3)}
 ```
 
-と書ける。SNV入力はこの集合に属する。平均ゼロの超平面は $`C-1`$ 次元であり、その中の半径 $`\rho`$ の球面は $`C-2`$ 次元である。$`C=256`$ では $`\rho=\sqrt{255}`$、球面の次元は254となる。この集合はSNVの制約を満たす点の集合であり、実在する材料スペクトルの集合そのものではない。
+SNV inputs belong to this set. The zero-mean hyperplane has dimension $`C-1`$, and the sphere of radius $`\rho`$ within it has dimension $`C-2`$. For $`C=256`$, $`\rho=\sqrt{255}`$ and the sphere has dimension 254. This is the set of points satisfying the SNV constraints, not the set of physically realizable material spectra itself.
 
-### 1.2 中心化の射影
+### 1.2 Centering as a projection
 
-平均を除く中心化行列 $`P=I_C-\boldsymbol{1}\boldsymbol{1}^{\mathsf T}/C`$ を用いる。ここで $`I_C`$ は $`C`$ 次元単位行列である。この行列は
+Use the centering matrix $`P=I_C-\boldsymbol{1}\boldsymbol{1}^{\mathsf T}/C`$ to remove the mean, where $`I_C`$ is the $`C`$-dimensional identity matrix. It satisfies
 
 ```math
 P^{\mathsf T}=P,\qquad
@@ -64,7 +57,7 @@ P\boldsymbol{1}=\boldsymbol{0}
 \qquad\text{(4)}
 ```
 
-を満たす。$`\boldsymbol{0}`$ は $`C`$ 次元ゼロベクトルである。中心化された補間反射率 $`P\widetilde{\boldsymbol{R}}`$ は平均ゼロなので、SNVは
+Here, $`\boldsymbol{0}`$ is the $`C`$-dimensional zero vector. Since the centered interpolated reflectance $`P\widetilde{\boldsymbol{R}}`$ has zero mean, SNV can be written as
 
 ```math
 \boldsymbol{x}
@@ -73,10 +66,10 @@ P\boldsymbol{1}=\boldsymbol{0}
 \qquad\text{(5)}
 ```
 
-と書き換えられる。ただし $`P\widetilde{\boldsymbol{R}}\neq\boldsymbol{0}`$ とする。
+provided that $`P\widetilde{\boldsymbol{R}}\neq\boldsymbol{0}`$.
 
-SNV前のスペクトルに、全帯域で共通する正のscale $`\kappa>0`$ とoffset $`\beta`$ を与えると、
-$`P(\kappa\widetilde{\boldsymbol{R}}+\beta\boldsymbol{1})=\kappa P\widetilde{\boldsymbol{R}}`$ である。したがって、
+Applying a common positive scale $`\kappa>0`$ and offset $`\beta`$ across all bands before SNV gives
+$`P(\kappa\widetilde{\boldsymbol{R}}+\beta\boldsymbol{1})=\kappa P\widetilde{\boldsymbol{R}}`$. Therefore,
 
 ```math
 \mathop{\mathrm{SNV}}\nolimits(\kappa\widetilde{\boldsymbol{R}}+\beta\boldsymbol{1})
@@ -85,15 +78,15 @@ $`P(\kappa\widetilde{\boldsymbol{R}}+\beta\boldsymbol{1})=\kappa P\widetilde{\bo
 \qquad\text{(6)}
 ```
 
-となる。この性質は画素内の共通offset・scaleを除くことを表し、波長依存の歪みやすべての測定変動を除くという意味ではない。
+This property removes a common offset and scale within each pixel; it does not remove wavelength-dependent distortions or all measurement variation.
 
 <a id="tgn-geometry"></a>
 
-## 2 TGNの接方向と制約保存
+## 2 TGN tangent directions and constraint preservation
 
-### 2.1 接空間への射影
+### 2.1 Projection onto the tangent space
 
-チャネル数を $`C=256`$、SNVの制約集合を $`\mathcal{S}_{\mathrm{SNV}}`$ とする。SNV入力を $`\boldsymbol{x}\in\mathcal{S}_{\mathrm{SNV}}`$、そのnormを $`\rho=\sqrt{C-1}`$、入力の単位方向を $`\boldsymbol{n}=\boldsymbol{x}/\rho`$ とする。$`\boldsymbol{x}`$ における接方向は、平均ゼロの超平面内にあり、かつ半径方向 $`\boldsymbol{n}`$ と直交する方向である。その方向の集合（接空間）を $`\mathcal{T}_{\boldsymbol{n}}`$ とすると、
+Let $`C=256`$ be the number of channels and $`\mathcal{S}_{\mathrm{SNV}}`$ the SNV constraint set. For an SNV input $`\boldsymbol{x}\in\mathcal{S}_{\mathrm{SNV}}`$, let $`\rho=\sqrt{C-1}`$ be its norm and $`\boldsymbol{n}=\boldsymbol{x}/\rho`$ its unit direction. Tangent directions at $`\boldsymbol{x}`$ lie in the zero-mean hyperplane and are orthogonal to the radial direction $`\boldsymbol{n}`$. Denoting this set of directions, the tangent space, by $`\mathcal{T}_{\boldsymbol{n}}`$,
 
 ```math
 \mathcal{T}_{\boldsymbol{n}}
@@ -106,7 +99,7 @@ $`P(\kappa\widetilde{\boldsymbol{R}}+\beta\boldsymbol{1})=\kappa P\widetilde{\bo
 \qquad\text{(7)}
 ```
 
-である。集合を記述する $`\boldsymbol{q}_{\mathrm{raw}}`$ は未正規化の接方向ベクトルを表す。Gaussian方向候補 $`\boldsymbol{\epsilon}\sim\mathcal{N}(\boldsymbol{0},I_C)`$ を用いる。$`\mathcal{N}(\boldsymbol{0},I_C)`$ は平均ゼロ・共分散が単位行列の $`C`$ 次元正規分布、$`P`$ は式(4)の中心化行列である。この候補から
+The vector $`\boldsymbol{q}_{\mathrm{raw}}`$ in this set definition is an unnormalized tangent vector. Use a Gaussian candidate direction $`\boldsymbol{\epsilon}\sim\mathcal{N}(\boldsymbol{0},I_C)`$. Here, $`\mathcal{N}(\boldsymbol{0},I_C)`$ is the $`C`$-dimensional normal distribution with zero mean and identity covariance, and $`P`$ is the centering matrix in Eq. (4). Construct
 
 ```math
 \boldsymbol{q}_{\mathrm{raw}}
@@ -118,9 +111,9 @@ P\boldsymbol{\epsilon}
 \qquad\text{(8)}
 ```
 
-を作ると、$`\boldsymbol{1}^{\mathsf T}P=\boldsymbol{0}^{\mathsf T}`$ と
-$`\boldsymbol{1}^{\mathsf T}\boldsymbol{n}=0`$ により
-$`\boldsymbol{1}^{\mathsf T}\boldsymbol{q}_{\mathrm{raw}}=0`$ となる。また、
+Then $`\boldsymbol{1}^{\mathsf T}P=\boldsymbol{0}^{\mathsf T}`$ and
+$`\boldsymbol{1}^{\mathsf T}\boldsymbol{n}=0`$ imply
+$`\boldsymbol{1}^{\mathsf T}\boldsymbol{q}_{\mathrm{raw}}=0`$. Also,
 
 ```math
 \boldsymbol{n}^{\mathsf T}\boldsymbol{q}_{\mathrm{raw}}
@@ -133,19 +126,19 @@ $`\boldsymbol{1}^{\mathsf T}\boldsymbol{q}_{\mathrm{raw}}=0`$ となる。また
 \qquad\text{(9)}
 ```
 
-である。したがって、$`\|\boldsymbol{q}_{\mathrm{raw}}\|_2>0`$ のとき
-$`\boldsymbol{q}=\boldsymbol{q}_{\mathrm{raw}}/\|\boldsymbol{q}_{\mathrm{raw}}\|_2`$ は平均ゼロの単位接方向となる。
+Thus, when $`\|\boldsymbol{q}_{\mathrm{raw}}\|_2>0`$,
+$`\boldsymbol{q}=\boldsymbol{q}_{\mathrm{raw}}/\|\boldsymbol{q}_{\mathrm{raw}}\|_2`$ is a zero-mean unit tangent direction.
 
-$`P\boldsymbol{n}=\boldsymbol{n}`$ なので、式(8)は
-$`\boldsymbol{q}_{\mathrm{raw}}=(P-\boldsymbol{n}\boldsymbol{n}^{\mathsf T})\boldsymbol{\epsilon}`$ とも書ける。
-行列 $`P-\boldsymbol{n}\boldsymbol{n}^{\mathsf T}`$ は対称かつべき等であり、
-$`\mathcal{T}_{\boldsymbol{n}}`$ への直交射影である。接空間の次元は $`C-2`$ である。
+Since $`P\boldsymbol{n}=\boldsymbol{n}`$, Eq. (8) can also be written as
+$`\boldsymbol{q}_{\mathrm{raw}}=(P-\boldsymbol{n}\boldsymbol{n}^{\mathsf T})\boldsymbol{\epsilon}`$.
+The matrix $`P-\boldsymbol{n}\boldsymbol{n}^{\mathsf T}`$ is symmetric and idempotent,
+and is the orthogonal projection onto $`\mathcal{T}_{\boldsymbol{n}}`$. The tangent space has dimension $`C-2`$.
 
-### 2.2 回転後の平均とnorm
+### 2.2 Mean and norm after rotation
 
-回転角を $`\alpha`$（radian）、単位接方向を $`\boldsymbol{q}`$ として、TGN出力を $`\boldsymbol{x}_{\mathrm{TGN}}=\rho(\cos\alpha\,\boldsymbol{n}+\sin\alpha\,\boldsymbol{q})`$ とする。
-両方向の平均がゼロなので $`\boldsymbol{1}^{\mathsf T}\boldsymbol{x}_{\mathrm{TGN}}=0`$ である。
-また、$`\boldsymbol{n}^{\mathsf T}\boldsymbol{q}=0`$ から、
+For rotation angle $`\alpha`$ in radians and unit tangent direction $`\boldsymbol{q}`$, define the TGN output as $`\boldsymbol{x}_{\mathrm{TGN}}=\rho(\cos\alpha\,\boldsymbol{n}+\sin\alpha\,\boldsymbol{q})`$.
+Both directions have zero mean, so $`\boldsymbol{1}^{\mathsf T}\boldsymbol{x}_{\mathrm{TGN}}=0`$.
+Since $`\boldsymbol{n}^{\mathsf T}\boldsymbol{q}=0`$,
 
 ```math
 \begin{aligned}
@@ -163,11 +156,11 @@ $`\mathcal{T}_{\boldsymbol{n}}`$ への直交射影である。接空間の次�
 \qquad\text{(10)}
 ```
 
-となる。したがってTGNは $`\mathcal{S}_{\mathrm{SNV}}`$ 内の変換となる。
+TGN is therefore a transformation within $`\mathcal{S}_{\mathrm{SNV}}`$.
 
-### 2.3 角度、弧長、残差
+### 2.3 Distribution of the rotation angle
 
-入力と出力のcosine類似度は
+The cosine similarity between input and output is
 
 ```math
 \frac{\boldsymbol{x}^{\mathsf T}\boldsymbol{x}_{\mathrm{TGN}}}
@@ -176,269 +169,64 @@ $`\mathcal{T}_{\boldsymbol{n}}`$ への直交射影である。接空間の次�
 \qquad\text{(11)}
 ```
 
-である。採用範囲 $`0\leq\alpha\leq\pi/36`$ では両者の角度は $`\alpha`$、半径 $`\rho`$ の球面上の短い弧長は $`\rho\alpha`$ となる。一方、差ベクトルのnormは
+Within the adopted range $`0\leq\alpha\leq\pi/36`$, their angle is $`\alpha`$.
 
-```math
-\|\boldsymbol{x}_{\mathrm{TGN}}-\boldsymbol{x}\|_2^2
-=
-2\rho^2(1-\cos\alpha)
-=
-4\rho^2\sin^2(\alpha/2)
-\qquad\text{(12)}
-```
-
-である。角度、弧長、Euclideanな残差normは異なる量であり、強度を記述する際には区別する。
-
-本研究では $`\alpha\sim\mathcal{U}(0,\pi/36)`$ とする。$`\mathcal{U}`$ は指定区間の連続一様分布、$`\pi`$ は円周率であり、上限は5度に対応する。Cosine類似度 $`\cos\alpha`$ を一様に抽選する分布とは異なる。方向候補がGaussianであっても、射影・単位化・回転を経た最終残差を独立な加算Gaussian雑音とみなすことはできない。
+This study uses $`\alpha\sim\mathcal{U}(0,\pi/36)`$. Here, $`\mathcal{U}`$ denotes a continuous uniform distribution over the specified interval, and $`\pi`$ is pi; the upper limit corresponds to 5 degrees. This differs from sampling cosine similarity $`\cos\alpha`$ uniformly. Although candidate directions are Gaussian, the final residual after projection, unit normalization, and rotation cannot be treated as independent additive Gaussian noise.
 
 <a id="fractional-shift"></a>
 
-## 3 Fractional Shiftの補間と再投影
+## 3 Fractional Shift interpolation and reprojection
 
-### 3.1 参照位置と端点値延長
+### 3.1 Reference positions and endpoint-value extension
 
-SNV入力を $`\boldsymbol{x}`$、そのチャネル数を $`C=256`$、出力チャネル添字を $`j=0,\ldots,C-1`$、チャネル単位のshift量を $`\delta`$ とする。出力位置 $`j`$ が参照する連続位置を $`\zeta_j`$、その左右の整数indexを $`\iota_j^-,\iota_j^+`$、右側の値に掛ける補間重みを $`\omega_j^{\mathrm{FS}}`$ として、
+Let $`\boldsymbol{x}`$ be an SNV input with $`C=256`$ channels, $`j=0,\ldots,C-1`$ the output channel index, and $`\delta`$ the shift in channel units. For output position $`j`$, let $`\zeta_j`$ be the continuous reference position, $`\iota_j^-,\iota_j^+`$ its left and right integer indices, and $`\omega_j^{\mathrm{FS}}`$ the interpolation weight on the right value. Define
 
 ```math
 \zeta_j=j-\delta,\qquad
 \iota_j^-=\lfloor\zeta_j\rfloor,\qquad
 \iota_j^+=\iota_j^-+1,\qquad
 \omega_j^{\mathrm{FS}}=\zeta_j-\lfloor\zeta_j\rfloor
-\qquad\text{(13)}
+\qquad\text{(12)}
 ```
 
-と定義する。$`\lfloor\cdot\rfloor`$ は床関数であり、その値以下の最大の整数を返す。$`\iota_j^+`$ は常に左側indexに1を加えた値であり、参照位置が整数のときもこの定義を用いる。参照範囲を画像ではなくスペクトルの両端に収めたindexを
-$`\bar{\iota}_j^-=\min(C-1,\max(0,\iota_j^-))`$、
-$`\bar{\iota}_j^+=\min(C-1,\max(0,\iota_j^+))`$
-とする。上付きの $`-,+`$ は左右の参照点の区別であり、数値の符号ではない。線形補間操作 $`S_\delta`$ の第 $`j`$ 成分は、
+The floor function $`\lfloor\cdot\rfloor`$ returns the largest integer no greater than its argument. The index $`\iota_j^+`$ is always the left index plus one, including when the reference position is an integer. Clip the indices to the spectrum's endpoints, rather than image boundaries:
+
+$`\bar{\iota}_j^-=\min(C-1,\max(0,\iota_j^-))`$,
+$`\bar{\iota}_j^+=\min(C-1,\max(0,\iota_j^+))`$.
+
+The superscripts $`-,+`$ distinguish left and right reference points; they are not numerical signs. The $`j`$th component of the linear interpolation operator $`S_\delta`$ is
 
 ```math
 [S_\delta(\boldsymbol{x})]_j
 =
 (1-\omega_j^{\mathrm{FS}})x_{\bar{\iota}_j^-}
 +\omega_j^{\mathrm{FS}}x_{\bar{\iota}_j^+}
-\qquad\text{(14)}
+\qquad\text{(13)}
 ```
 
-である。$`x_{\bar{\iota}_j^-},x_{\bar{\iota}_j^+}`$ はそれぞれ、入力スペクトルの参照indexの値を表す。範囲外では二つの参照indexが同じ端点になるため、その端点値が延長される。正の $`\delta`$ は大きいindex側へ、負の $`\delta`$ は小さいindex側へ特徴を移す向きに対応する。
+Here, $`x_{\bar{\iota}_j^-},x_{\bar{\iota}_j^+}`$ are the input spectrum values at the reference indices. Outside the valid range, both indices map to the same endpoint, extending that endpoint's value. Positive $`\delta`$ shifts features toward larger indices, and negative $`\delta`$ toward smaller indices.
 
-等間隔gridの隣接チャネル間の波長差を $`\Delta\lambda`$ とすれば、補間操作の軸方向移動量は $`\delta\Delta\lambda`$ である。ただし、再中心化・再正規化後の変化全体を、物理的な吸収帯の単純移動や実測の校正誤差と同一視しない。
+If $`\Delta\lambda`$ is the wavelength spacing between adjacent channels on the uniform grid, the interpolation's axial displacement is $`\delta\Delta\lambda`$. The complete change after recentering and renormalization is not identified with a simple physical absorption-band displacement or a measured calibration error.
 
-### 3.2 制約への復帰
+### 3.2 Returning to the constraint set
 
-補間行列は一般に直交行列ではなく、端点処理も含むため、補間だけで入力の平均・normが保たれるとは限らない。$`P`$ を式(4)の中心化行列、$`\rho=\sqrt{C-1}`$ をSNV入力のnormとする。補間後に平均を除いたスペクトルを $`\boldsymbol{y}=P S_\delta(\boldsymbol{x})`$ とし、$`\|\boldsymbol{y}\|_2>0`$ の場合に、Fractional Shiftの最終出力 $`\boldsymbol{x}_{\mathrm{FS}}`$ を
+The interpolation matrix is generally not orthogonal and includes endpoint handling, so interpolation alone need not preserve the input mean or norm. Let $`P`$ be the centering matrix in Eq. (4), and $`\rho=\sqrt{C-1}`$ the SNV input norm. Define the mean-centered interpolated spectrum as $`\boldsymbol{y}=P S_\delta(\boldsymbol{x})`$. For $`\|\boldsymbol{y}\|_2>0`$, define the final Fractional Shift output $`\boldsymbol{x}_{\mathrm{FS}}`$ as
 
 ```math
 \boldsymbol{x}_{\mathrm{FS}}
 =
 \rho\frac{\boldsymbol{y}}{\|\boldsymbol{y}\|_2}
-\qquad\text{(15)}
+\qquad\text{(14)}
 ```
 
-と定めれば、$`P`$ の性質から $`\boldsymbol{1}^{\mathsf T}\boldsymbol{x}_{\mathrm{FS}}=0`$、
-正規化から $`\|\boldsymbol{x}_{\mathrm{FS}}\|_2=\rho`$ となる。この再投影により出力は $`\mathcal{S}_{\mathrm{SNV}}`$ に属する。
+The properties of $`P`$ give $`\boldsymbol{1}^{\mathsf T}\boldsymbol{x}_{\mathrm{FS}}=0`$,
+and normalization gives $`\|\boldsymbol{x}_{\mathrm{FS}}\|_2=\rho`$. This reprojection places the output in $`\mathcal{S}_{\mathrm{SNV}}`$.
 
-TGNと異なり、固定した $`\delta`$ から入力・出力の角度は一意に決まらない。補間結果が元のスペクトル形状と端点値に依存するためである。また、再投影がSNV制約を保つことは、化学的な情報が保存される証明ではない。
-
-<a id="masked-objective"></a>
-
-## 4 Masked lossと全帯域の学習対象
-
-一つの画素の追加摂動前のSNV観測を $`\boldsymbol{x}`$ とし、画素添字 $`p`$ を省略する。不可視チャネル集合を $`\mathcal{H}`$、その要素数を固定値 $`N_{\mathrm{hide}}>0`$ とする。主比較では $`N_{\mathrm{hide}}=128`$ である。適用抽選・順序・強度を含む追加摂動の変換を $`\mathcal{A}`$ とし、モデルparameterを固定した下で、摂動とmaskに依存する再構成値を $`\widehat{\boldsymbol{x}}(\mathcal{A},\mathcal{H})`$ と書く。一画素の不可視チャネル上の平均二乗誤差 $`\mathcal{L}_{\mathrm{one}}`$ は、
-
-```math
-\mathcal{L}_{\mathrm{one}}(\mathcal{A},\mathcal{H})
-=
-\frac{1}{N_{\mathrm{hide}}}\sum_{j=0}^{C-1}
-\mathop{\mathrm{Ind}}\nolimits[j\in\mathcal{H}]\,
-\left(\widehat{x}_j(\mathcal{A},\mathcal{H})-x_j\right)^2
-\qquad\text{(16)}
-```
-
-である。ここで $`C=256`$ は全チャネル数、$`j`$ はチャネル添字、$`\mathop{\mathrm{Ind}}\nolimits[j\in\mathcal{H}]`$ は $`j`$ が不可視なら1、それ以外なら0を返す指示関数である。$`x_j`$ と $`\widehat{x}_j`$ はそれぞれ観測と再構成値の第 $`j`$ 成分を表す。
-
-等長patchを一様に選ぶため、各チャネルが不可視となる確率は $`N_{\mathrm{hide}}/C`$ である。$`\Pr`$ はmask抽選による確率、$`\mathbb{E}_{\mathcal{A},\mathcal{H}}`$ は追加摂動とmaskの抽選に関する期待値、縦線の後の $`j\in\mathcal{H}`$ はそのチャネルを不可視とした条件を表す。二乗誤差の期待値が有限である場合、
-
-```math
-\begin{aligned}
-\mathbb{E}_{\mathcal{A},\mathcal{H}}[\mathcal{L}_{\mathrm{one}}(\mathcal{A},\mathcal{H})]
-&=
-\frac{1}{N_{\mathrm{hide}}}\sum_j
-\Pr(j\in\mathcal{H})\,
-\mathbb{E}_{\mathcal{A},\mathcal{H}}
-\left[
-(\widehat{x}_j(\mathcal{A},\mathcal{H})-x_j)^2
-\mid j\in\mathcal{H}
-\right]\\
-&=
-\frac{1}{C}\sum_j
-\mathbb{E}_{\mathcal{A},\mathcal{H}}
-\left[
-(\widehat{x}_j(\mathcal{A},\mathcal{H})-x_j)^2
-\mid j\in\mathcal{H}
-\right]
-\end{aligned}
-\qquad\text{(17)}
-```
-
-となる。この式は、すべてのチャネルについて「そのチャネルを不可視にしたときの復元誤差」が目的関数に含まれることを示す。Patch内のmask指示は相関するが、この期待値の展開にはチャネル間の独立性を必要としない。
-
-一方、$`\widehat{x}_j(\mathcal{A},\mathcal{H})`$ 自体がmaskに依存するため、式(17)は全可視入力の再構成誤差を平均する式には置き換えられない。各stepのloss対象が不可視帯域であることと、学習課題が全帯域にわたることは両立するが、全可視denoisingと同じ目的関数を用いているわけではない。
-
-<a id="latent-decoder"></a>
-
-## 5 表現幾何と再構成損失の関係
-
-本節では、単位潜在と線形decoderのもとで、入力差・潜在差・再構成残差の関係を、画素対、クラスタ平均、同一画素への摂動について示す。これらは条件付きの数理的関係であり、TGN・shiftによって実際に何が強調・抑制されたか、またそれが指標改善を引き起こしたかを示す結果ではない。関係式ごとの補助実験を現行の実施計画には含めず、条件間の効果は[既定比較](design/experiment_protocol.md)・[評価](design/evaluation_metrics.md)で検討する。
-
-<a id="pairwise-gain"></a>
-
-### 5.1 入力差と潜在差の比較
-
-画素 $`p`$ のSNVを $`\boldsymbol{x}_p`$、そのnormを $`\rho=\sqrt{C-1}`$、単位方向を $`\boldsymbol{n}_p=\boldsymbol{x}_p/\rho`$ とする。固定した全帯域可視のencoderと単位化を合わせて $`F`$ と書き、本節では $`\boldsymbol{z}_p=F(\boldsymbol{x}_p)=\boldsymbol{z}^{\mathrm{full}}_p`$ と略記する。入力・潜在とも単位方向で比較すれば、SNVのnorm $`\rho`$ と潜在norm 1の尺度差を除ける。二画素 $`p,q`$ に対して、
-
-```math
-\begin{aligned}
-d_{\mathrm{in}}(p,q)&=1-\boldsymbol{n}_p^{\mathsf T}\boldsymbol{n}_q,
-&d_{\mathrm{lat}}(p,q)&=1-\boldsymbol{z}_p^{\mathsf T}\boldsymbol{z}_q,\\
-g_{pq}
-&=\sqrt{\frac{d_{\mathrm{lat}}(p,q)}{d_{\mathrm{in}}(p,q)}}
-=\frac{\|\boldsymbol{z}_p-\boldsymbol{z}_q\|_2}
-{\|\boldsymbol{n}_p-\boldsymbol{n}_q\|_2},
-&&d_{\mathrm{in}}(p,q)>0.
-\end{aligned}
-\qquad\text{(18)}
-```
-
-$`g_{pq}>1`$ は拡大、$`g_{pq}<1`$ は縮小を表す。これは有限な画素対の弦長比であり、微分による局所倍率ではない。入力距離が極小なら比が不安定になるため、元の二距離と併読する。
-
-条件間の診断に用いる場合は、同じ画素対の距離を比較する。異なるモデルの潜在ベクトルを直接差し引かず、入力距離に対する応答の違いを見る。この比較が記述するのは固定した学習済み表現と入力の幾何の違いであり、学習途中の時間的な増減ではない。
-
-<a id="svd-interpretation"></a>
-
-### 5.2 SVDによる入力差・潜在差・残差の対応
-
-同じdecoderによる復元を $`\widehat{\boldsymbol{x}}_p=W_{\mathrm{dec}}\boldsymbol{z}_p+\boldsymbol{b}_{\mathrm{dec}}`$、残差を $`\boldsymbol{e}_p=\boldsymbol{x}_p-\widehat{\boldsymbol{x}}_p`$ とする。$`W_{\mathrm{dec}}\in\mathbb{R}^{256\times16}`$ のSVDを $`U_{\mathrm{dec}}\Sigma_{\mathrm{dec}}V_{\mathrm{dec}}^{\mathsf T}`$ とし、正の特異値 $`\sigma_{\mathrm{dec},i}`$ に対応する左右の単位特異ベクトルを $`\boldsymbol{u}_{\mathrm{dec},i},\boldsymbol{v}_{\mathrm{dec},i}`$ と書く。$`\Delta`$ を同じ順序で取った二画素の差とすると、
-
-```math
-\Delta\boldsymbol{x}
-=W_{\mathrm{dec}}\Delta\boldsymbol{z}+\Delta\boldsymbol{e},
-\qquad
-\boldsymbol{v}_{\mathrm{dec},i}^{\mathsf T}\Delta\boldsymbol{z}
-=\frac{
-\boldsymbol{u}_{\mathrm{dec},i}^{\mathsf T}\Delta\boldsymbol{x}
--\boldsymbol{u}_{\mathrm{dec},i}^{\mathsf T}\Delta\boldsymbol{e}
-}{\sigma_{\mathrm{dec},i}}
-\quad(\sigma_{\mathrm{dec},i}>0).
-\qquad\text{(19)}
-```
-
-共通biasは差で消え、左特異ベクトルへの射影から右側の式が得られる。入力の単位方向の尺度では、分子を $`\rho`$ で割った差に対する倍率は $`\rho/\sigma_{\mathrm{dec},i}`$ となる。ただし、小特異値だけで実際の拡大は決まらない。入力差と残差差の射影が打ち消し合えば、潜在差も小さくなる。
-
-この対応は、潜在で大きい差がどの波長方向の観測差を伴うか、観測差がどれだけ残差へ残るかを記述するために使える。残差はdecoderの列空間に直交するとは限らず、二乗量を「保存された情報＋失われた情報」と加算する分解ではない。個々のMSEが小さくても、弱い画素間差に対する残差の比率まで小さいとはいえない。
-
-Rankが不足する場合、decoderのkernel内の潜在差は復元から読めない。特異方向には符号・重複特異値での非一意性があり、異なるモデルの軸番号を同じ化学的意味へ対応づけない。
-
-<a id="cluster-mean-geometry"></a>
-
-### 5.3 クラスタ平均と内部の広がり
-
-非空の画素集合 $`\mathcal{P}_k`$ に、非負で和が1の重み $`w_{kp}`$ を与える。各画素をencodeした後、入力・潜在・残差を同じ重みで平均し、$`\overline{\boldsymbol{x}}_k,\overline{\boldsymbol{z}}_k,\overline{\boldsymbol{e}}_k`$ と書く。線形decoderでは、
-
-```math
-\overline{\boldsymbol{x}}_k
-=W_{\mathrm{dec}}\overline{\boldsymbol{z}}_k
-+\boldsymbol{b}_{\mathrm{dec}}+\overline{\boldsymbol{e}}_k,
-\qquad
-\Delta\overline{\boldsymbol{x}}
-=W_{\mathrm{dec}}\Delta\overline{\boldsymbol{z}}
-+\Delta\overline{\boldsymbol{e}}.
-\qquad\text{(20)}
-```
-
-したがって、群間の平均スペクトル差にも式(19)を適用できる。一般に $`F(\overline{\boldsymbol{x}}_k)\neq\overline{\boldsymbol{z}}_k`$ なので、平均スペクトルをencoderへ入力して代用しない。この線形対応に使う平均潜在は単位化しない。[可視化用の代表線](design/visualization_and_interpretation.md#representative-spectra)は試料内平均→試料間の等重み平均であり、この関係式に用いる場合も入力・潜在・残差で対象画素と重みを揃える。
-
-二集合から上記の重みで独立に画素を選ぶと、内積の双線形性より、
-
-```math
-\mathbb{E}_{p\in k,q\in l}[d_{\mathrm{in}}(p,q)]
-=1-\frac{\overline{\boldsymbol{x}}_k^{\mathsf T}\overline{\boldsymbol{x}}_l}{\rho^2},
-\qquad
-\mathbb{E}_{p\in k,q\in l}[d_{\mathrm{lat}}(p,q)]
-=1-\overline{\boldsymbol{z}}_k^{\mathsf T}\overline{\boldsymbol{z}}_l.
-\qquad\text{(21)}
-```
-
-さらに、$`a_k=\|\overline{\boldsymbol{z}}_k\|_2`$ とし、$`a_k,a_l>0`$ の場合の平均方向を $`\boldsymbol{c}^{\mathrm{emp}}_k=\overline{\boldsymbol{z}}_k/a_k`$ とすると、
-
-```math
-\begin{aligned}
-1-\overline{\boldsymbol{z}}_k^{\mathsf T}\overline{\boldsymbol{z}}_l
-&=(1-a_ka_l)+a_ka_l\left(1-(\boldsymbol{c}^{\mathrm{emp}}_k)^{\mathsf T}\boldsymbol{c}^{\mathrm{emp}}_l\right),\\
-\sum_{p\in\mathcal{P}_k}w_{kp}
-\|\boldsymbol{z}_p-\overline{\boldsymbol{z}}_k\|_2^2
-&=1-a_k^2.
-\end{aligned}
-\qquad\text{(22)}
-```
-
-入力側も $`\overline{\boldsymbol{x}}_k/\rho`$ で同様に計算できる。これにより、平均画素対距離の増加を、平均方向の分離と群内の拡散に分けて読む。平均差だけでは相殺される変動を、内部の広がりと画素対の診断で補う。
-
-$`\boldsymbol{c}^{\mathrm{emp}}_k`$ は解析集合の平均方向であり、trainのKMeans中心とは限らない。平均がゼロなら方向は未定義となる。式(21)で $`k=l`$ とすると同一画素を選ぶ場合も含む。等重みの異なる二画素だけを対象にするときは、$`n_k=|\mathcal{P}_k|>1`$ として右辺を $`n_k/(n_k-1)`$ 倍する。
-
-条件比較に用いる場合は、所属画素と重みを固定した共通集合を用いる。各モデル自身のクラスタによる集計は分割の記述に使えるが、群の選ばれ方も変わるため、中心間距離だけで表現の優越性を判定しない。共通分割の選択による基準モデルへの依存も明示する。
-
-<a id="perturbation-response"></a>
-
-### 5.4 同一画素への摂動応答
-
-固定画素への追加摂動を $`\mathcal{A}`$、全可視潜在を $`\boldsymbol{z}_{p,\mathcal{A}}=F(\mathcal{A}(\boldsymbol{x}_p))`$ とする。摂動についての平均を $`\boldsymbol{\mu}_p=\mathbb{E}_{\mathcal{A}}[\boldsymbol{z}_{p,\mathcal{A}}]`$、共分散を $`\Gamma_p`$ と書けば、
-
-```math
-2\mathbb{E}_{\mathcal{A}}\!\left[1-\boldsymbol{z}_{p,\mathcal{A}}^{\mathsf T}\boldsymbol{z}_p\right]
-=\mathbb{E}_{\mathcal{A}}\|\boldsymbol{z}_{p,\mathcal{A}}-\boldsymbol{z}_p\|_2^2
-=\mathop{\mathrm{tr}}\nolimits(\Gamma_p)+\|\boldsymbol{\mu}_p-\boldsymbol{z}_p\|_2^2.
-\qquad\text{(23)}
-```
-
-潜在を平均と偏差に分けると、偏差の期待値がゼロなので交差項が消える。$`\mathop{\mathrm{tr}}\nolimits`$ は対角和である。摂動間のばらつきが小さくても、すべての摂動でcleanから同じ方向へずれる場合があるため、二項を分ける。有限の $`D`$ drawsで恒等式を照合する場合は、分母 $`D`$ の共分散を使う。
-
-同じ摂動入力を各条件へ与えると、入力方向の変化、潜在のばらつきと平均のずれを対応づけられる。画素間の差と併読することは、一律の圧縮か、変動の種類に応じた応答かを検討する診断候補となる。復元を併読する場合のtargetは常に追加摂動前の $`\boldsymbol{x}_p`$ とする。潜在の移動量だけでは割当境界を横切るかは決まらず、label flipとは区別する。
-
-<a id="masked-loss-variation"></a>
-
-### 5.5 Masked lossが測る潜在変動
-
-学習課題との関係を見るため、ここだけはモデル・画素・不可視チャネル集合 $`\mathcal{H}`$ を固定し、追加摂動 $`\mathcal{A}`$ に期待値を取る。不可視チャネル数を $`N_{\mathrm{hide}}>0`$、decoderの対応する行を $`W_{\mathcal{H}},\boldsymbol{b}_{\mathcal{H}}`$、targetの対応成分を $`\boldsymbol{x}_{p,\mathcal{H}}`$ とする。このmaskで得た潜在 $`\boldsymbol{z}_{p,\mathcal{H},\mathcal{A}}`$ の平均・共分散を $`\boldsymbol{\mu}_{p,\mathcal{H}},\Gamma_{p,\mathcal{H}}`$ とすると、一画素のmasked MSEは、
-
-```math
-\mathbb{E}_{\mathcal{A}}[\mathcal{L}_{p,\mathcal{H},\mathcal{A}}]
-=\frac{\|W_{\mathcal{H}}\boldsymbol{\mu}_{p,\mathcal{H}}
-+\boldsymbol{b}_{\mathcal{H}}-\boldsymbol{x}_{p,\mathcal{H}}\|_2^2}
-{N_{\mathrm{hide}}}
-+\frac{\mathop{\mathrm{tr}}\nolimits(W_{\mathcal{H}}\Gamma_{p,\mathcal{H}}W_{\mathcal{H}}^{\mathsf T})}
-{N_{\mathrm{hide}}}.
-\qquad\text{(24)}
-```
-
-式(23)と同じ平均・偏差の展開で得られる。第2項は、$`W_{\mathcal{H}}`$ の各右特異方向の潜在分散に、対応する特異値の二乗を掛けた和を $`N_{\mathrm{hide}}`$ で割った量である。Lossはdecoderを通した変動を測る一方、潜在のcosine幾何はその特異値で方向を重みづけない。小特異値やkernelの方向では、潜在が動いてもlossへ現れにくい。
-
-これが、低い再構成lossだけでクラスタリングに適した変動を判断できない理由である。学習中はdecoderも変わるため、式(24)は特定方向の潜在分散が必ず減るという学習則ではない。実際に何が拡大・縮小されたかは、式(24)や既定のクラスタ評価指標だけからは結論づけられない。
-
-固定maskでの条件付きの式を、mask間の不変性や全可視推論の保証へ拡張しない。Random mask自体もcorruptionであり、M00で追加摂動に関する分散がゼロでも、denoising作用の不在を意味しない。また、更新中のモデルで集計したepoch train lossを、固定モデルの式(24)へ代入しない。
-
-<a id="numerical-geometry"></a>
-
-## 6 数値照合の条件
-
-以上は単位normなどの制約を満たす理想式である。実装で照合する際は入力・潜在の実測norm、残差、平均と内積の計算誤差を確認する。零平均の方向、零入力距離の比、ゼロ特異値での除算は定義せず、極小距離・数値rankの扱いは診断前に固定する。
-
-正規化の保護とFP16学習・FP32抽出の設定は[数値実装の補足](numerical_implementation_notes.md)に従う。FP16の値の間隔をMSEの下限とは扱わない。
+Unlike TGN, a fixed $`\delta`$ does not uniquely determine the angle between input and output, because interpolation depends on the original spectral shape and endpoint values. Preservation of SNV constraints by reprojection is not proof of chemical information preservation.
 
 ---
 
-## 定義と実装の参照先
+## Definition and implementation references
 
-前提となる定義は[モデル・摂動の説明](chemomae_positioning.md)と[実験プロトコル](design/experiment_protocol.md)に示す。
-実装はChemoMAE v0.2.2のaugmentation・モデル・masked MSEと[呼出し側](../src/wood_degradation_map/experiments/neural.py)を参照する。
-本書は数理的な関係を補足するものであり、各式に対応する実験や数値照合の実施結果ではない。
+The underlying definitions appear in the [model and perturbation description](chemomae_positioning.md) and [experiment protocol](design/experiment_protocol.md).
+See ChemoMAE v0.2.2's `SpectraAugmenter` and the [calling code](../src/wood_degradation_map/experiments/neural.py) for the implementation.

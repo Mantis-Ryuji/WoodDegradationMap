@@ -1,94 +1,94 @@
-# 実験の実行手順
+# Experiment Runbook
 
-## 1. 役割
+## 1. Purpose
 
-固定設計をCV用の`production_v1`と全体fit用の`global_v1`で実行する手順を示す。条件・seed・split・評価方法の定義は
-[研究設計](design/README.md)を参照する。
+This document describes execution of the fixed design with `production_v1` for CV and `global_v1` for global fitting. For the definitions of conditions, seeds, splits, and evaluation methods,
+see the [research design](design/README.md).
 
-本書のclustering・評価・OOFコマンドはCosine-KMeansの主実験・mask率補助実験用である。
-mask率補助実験は[CV・OOF](#mask-rate-sweep)と[全体fitの付録用比較](#global-mask-rate)を分けて扱う。
-Bacteria-IDの現行Table 5は[HPO runbook](bacteria_id_hpo_runbook.md)、既存事前学習・Table 4は[専用runbook](bacteria_id_runbook.md)を参照する。
+The clustering, evaluation, and OOF commands in this document are for the main Cosine-KMeans experiment and the supplementary mask-rate experiment.
+The supplementary mask-rate experiment separates [CV and OOF](#mask-rate-sweep) from the [global-fit comparison for the appendix](#global-mask-rate).
+For the current Bacteria-ID Table 5, see the [HPO runbook](bacteria_id_hpo_runbook.md); for existing pretraining and Table 4, see the [dedicated runbook](bacteria_id_runbook.md).
 
-ChemoMAE v0.2.2の環境で、リポジトリrootからPowerShellで実行する。
-本番実行例は`uv run --no-sync`とし、環境構築・更新をrun開始時の処理から分ける。
+Run from the repository root in PowerShell with the ChemoMAE v0.2.2 environment.
+Production examples use `uv run --no-sync` to separate environment setup and updates from run startup.
 
-本書のコマンドは新規実行と保存済み成果物の確認を区別して使う。
-図表・数値・出典の保存先は[成果物一覧](results.md)を参照する。
+Use the commands in this document to distinguish new execution from checking saved artifacts.
+For locations of figures, numerical results, and provenance, see the [artifact inventory](results.md).
 
-- [入力確認](#input-preparation)・[manifest](#3-本番manifest)
-- [NNの1 runと再開](#neural-run)・[PCA](#5-b1-pca-fitとbaseline変換の検証)
-- [clean test map](#6-clean-test-map)・[評価](#7-評価)
-- [OOF集計](#oof-aggregation)・[OOF sanity図](#oof-sanity)・[主条件OOF図表](#oof-reporting)
-- [全体fitの準備・一括学習](#global-fit-pipeline)・[PCA一枚](#global-pca)・[保存規約](#artifact-records)
-- [Mask率CV・OOF図表](#mask-rate-sweep)・[Mask率全体fit・2×7図](#global-mask-rate)
-- [NIRスペクトルの解釈図](#nir-interpretation)
+- [Input checks](#input-preparation) and [manifests](#3-production-manifests)
+- [One neural-network run and resumption](#neural-run) and [PCA](#5-b1-pca-fitting-and-baseline-transform-validation)
+- [Clean test maps](#6-clean-test-map) and [evaluation](#7-evaluation)
+- [OOF aggregation](#oof-aggregation), [OOF sanity figures](#oof-sanity), and [main-condition OOF figures and tables](#oof-reporting)
+- [Global-fit preparation and batch training](#global-fit-pipeline), [single PCA figure](#global-pca), and [storage conventions](#artifact-records)
+- [Mask-rate CV and OOF figures and tables](#mask-rate-sweep) and [mask-rate global fit and 2×7 figure](#global-mask-rate)
+- [NIR spectral interpretation figures](#nir-interpretation)
 
-各CLIの終了後に `$LASTEXITCODE -eq 0` を確認し、非0なら後続工程へ進まない。JSONのstatus確認は
-終了codeの確認に加えて行う。
+After each CLI finishes, check `$LASTEXITCODE -eq 0`; do not proceed if it is nonzero. Check the JSON status
+in addition to the exit code.
 
-## 2. 固定パス
+## 2. Fixed paths
 
-| 用途 | パス |
+| Purpose | Path |
 | --- | --- |
-| 本番入力 | `data/processed/production_v1/` |
-| 前処理確認図 | `outputs/preprocessing/production_v1/` |
+| Production inputs | `data/processed/production_v1/` |
+| Preprocessing check figures | `outputs/preprocessing/production_v1/` |
 | preflight | `outputs/experiments/preflight_v1/` |
-| 本番実験 | `outputs/experiments/production_v1/` |
+| Production experiment | `outputs/experiments/production_v1/` |
 | metadata | `data/metadata/古材メタデータ.csv` |
-| B0・B1・A0・M00 OOF sanity | `outputs/sanity_checks/a0_m00_oof_visualization/` |
-| 主条件OOF snapshot | `outputs/experiments/production_v1/results/oof/main_oof_v1/` |
-| 主条件OOF図表 | `outputs/experiments/production_v1/results/figures/main_oof_v1/` |
-| Mask率OOF snapshot・図表 | `outputs/experiments/production_v1/results/{oof,figures}/mask_rate_oof_v1/` |
-| 全体fit | `outputs/experiments/global_v1/` |
-| Mask率全体fitの付録用図表 | `outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/` |
+| B0, B1, A0, and M00 OOF sanity | `outputs/sanity_checks/a0_m00_oof_visualization/` |
+| Main-condition OOF snapshot | `outputs/experiments/production_v1/results/oof/main_oof_v1/` |
+| Main-condition OOF figures and tables | `outputs/experiments/production_v1/results/figures/main_oof_v1/` |
+| Mask-rate OOF snapshots, figures, and tables | `outputs/experiments/production_v1/results/{oof,figures}/mask_rate_oof_v1/` |
+| Global fit | `outputs/experiments/global_v1/` |
+| Appendix figures and tables for the mask-rate global fit | `outputs/experiments/global_v1/results/figures/global_mask_rate_k8_v1/` |
 
-smokeやpreflightの成果物を本番rootへコピーしない。本番開始後はmanifestを作り直さず、
-`outputs/experiments/production_v1/manifests/` を同じ実験系列の固定入力として扱う。
+Do not copy smoke or preflight artifacts into the production root. Once production starts, do not recreate manifests;
+treat `outputs/experiments/production_v1/manifests/` as the fixed input for the same experimental series.
 
 <a id="input-preparation"></a>
 
-### 2.1 前処理と入力確認
+### 2.1 Preprocessing and input checks
 
-前処理は、両出力先が新規または空の場合に限り、
-[前処理の固定仕様](design/preprocessing.md)に従って実行する。
+Run preprocessing according to the [fixed preprocessing specification](design/preprocessing.md)
+only when both output locations are new or empty.
 
 ```powershell
 uv run --no-sync python scripts/preprocess/run_production_preprocessing.py
 ```
 
-既存結果の確認図だけを更新する場合は、次を実行する。前者は保存済みの品質表から前処理のPNG 4枚を
-上書きし、`reflectance_l2_norm/`は読み書きしない。後者は既存のaugmentation出力にある例図2枚と
-`summary.json`の可視化記録を更新し、noise・shiftの箱ひげ図PNGを取り除く。
-後者は保存済み`selection.csv`が指定するtrain画素（8試料×128画素）だけをHDF5から読み、
-各試料の波長ごとの中央値にRMS距離が最も近い実測画素を1つずつ選ぶ。その8候補から、
-画素間の最小RMS距離が最大となる3試料の組を選ぶ。同点は距離の和、試料順で決める。
-noise・shiftは同じ3画素・例順を共有し、描画するclean値には平滑化・平均化・再標準化を行わない。
-選定方法と試料ID・HDF5行・画素座標を`summary.json`の可視化記録に残す。
-前処理データ、train画素の`selection.csv`・`metrics.csv`と数値要約は再生成しない。
+To update only the check figures for existing results, run the following. The first command overwrites 4 preprocessing PNGs
+from the saved quality tables without reading or writing `reflectance_l2_norm/`. The second updates 2 example figures and
+the visualization record in `summary.json` in the existing augmentation output, and removes the noise and shift boxplot PNGs.
+The second reads only the train pixels specified by the saved `selection.csv` (8 specimens × 128 pixels) from HDF5,
+selecting one observed pixel per specimen whose RMS distance to the specimen's wavelength-wise median is smallest. From these 8 candidates,
+it selects the combination of 3 specimens that maximizes the minimum RMS distance between pixels. Ties are resolved by the sum of distances, then specimen order.
+Noise and shift share the same 3 pixels and example order; the plotted clean values are not smoothed, averaged, or restandardized.
+The selection method, specimen IDs, HDF5 rows, and pixel coordinates are retained in the visualization record in `summary.json`.
+Preprocessed data, the train-pixel `selection.csv` and `metrics.csv`, and numerical summaries are not regenerated.
 
 ```powershell
 .venv\Scripts\python.exe scripts/preprocess/redraw_production_reports.py
 .venv\Scripts\python.exe scripts/experiments/sanity_check_augmentation_strengths.py --plots-only
 ```
 
-終了code 0と、[共通の縦軸規約](design/visualization_and_interpretation.md#figure-style)を確認する。
-CutoffはSNR proxyだけ、候補画素図は個別のSNV panelであることを確認する。
-Shift例はExample 1（＋）、Example 2（−）、Example 3（＋）の3行×2列とし、noise図と同じサイズであることを確認する。
+Check exit code 0 and the [shared vertical-axis conventions](design/visualization_and_interpretation.md#figure-style).
+Check that the cutoff is shown only for the SNR proxy and that candidate-pixel figures use separate SNV panels.
+Check that shift examples use 3 rows × 2 columns for Example 1 (+), Example 2 (−), and Example 3 (+), with the same dimensions as the noise figure.
 
-既存の品質表から、各試料で8192画素の非復元抽出が可能か確認する場合は次を使う。
-スペクトルやHDF5は読み込まず、データ・manifestを変更しない。
+Use the following to check from existing quality tables whether 8192 pixels can be sampled without replacement from each specimen.
+It reads neither spectra nor HDF5 and changes neither data nor manifests.
 
 ```powershell
 uv run --no-sync python scripts/preprocess/check_sampling_pixels.py --q 8192
 ```
 
-試料別の保存有効画素数、抽出率、不足数と全体の最小・中央値・最大を表示する。
-全試料で抽出可能なら終了code 0、不足があれば1。実際の抽出とsplitの作成は次節で行う。
+It displays saved valid-pixel counts, sampling fractions, and shortfalls per specimen, and overall minimum, median, and maximum values.
+The exit code is 0 if all specimens support sampling and 1 if any are short. Actual sampling and split creation are performed in the next section.
 
-## 3. 本番manifest
+## 3. Production manifests
 
-本番開始時、出力先が存在しない場合に限りmanifestを新規作成して検証する。
-既存の`production_v1`では次の`create`を実行せず、保存済みmanifestの`check`を使う。
+At production startup, create and validate new manifests only if the output location does not exist.
+For an existing `production_v1`, do not run `create` below; use `check` on the saved manifests.
 
 ```powershell
 uv run --no-sync python scripts/experiments/prepare_manifests.py create --experiment-id production_v1
@@ -97,7 +97,7 @@ uv run --no-sync python scripts/experiments/prepare_manifests.py check --experim
 if ($LASTEXITCODE -ne 0) { throw 'manifest check failed' }
 ```
 
-既存manifestの確認:
+Checking existing manifests:
 
 ```powershell
 uv run --no-sync python scripts/experiments/prepare_manifests.py check --experiment-id production_v1
@@ -105,10 +105,10 @@ uv run --no-sync python scripts/experiments/prepare_manifests.py check --experim
 
 <a id="neural-run"></a>
 
-## 4. ニューラルネットの1 run
+## 4. One neural-network run
 
-以下はmask率補助条件M11-25・fold 1・repeat 1の例である。
-完了済みrunは再学習せず、保存済み成果物の確認には各工程の`check`を使う。
+The following example uses supplementary mask-rate condition M11-25, fold 1, and replicate 1.
+Do not retrain completed runs; use each stage's `check` to inspect saved artifacts.
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
@@ -123,9 +123,9 @@ uv run --no-sync python scripts/experiments/train_neural.py train `
     --experiment-dir $experimentDir
 ```
 
-同一foldの未着手repeatを連続実行する場合も、CLIは1 runずつ呼び出す。
-以下はM11-25・fold 1・repeat 1–3を並列化せずに順次実行する例である。
-実行時は`$repeats`に未着手runだけを列挙し、完了済みrunや中断したrunを含めない。
+Even when running unstarted replicates of the same fold consecutively, invoke the CLI once per run.
+The following executes M11-25, fold 1, replicates 1–3 sequentially without parallelization.
+At execution time, list only unstarted runs in `$repeats`; exclude completed and interrupted runs.
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
@@ -145,13 +145,13 @@ foreach ($repeat in $repeats) {
 }
 ```
 
-非0終了でloopは停止する。中断時は完了済みrepeatを再実行せず、
-対象repeatだけを次節の手順で明示的に再開する。
+A nonzero exit stops the loop. After interruption, do not rerun completed replicates;
+explicitly resume only the affected replicate using the procedure below.
 
-ニューラル条件は `A0`、`A1`、`M00`、`M10`、`M01`、`M11`、`M11-25`、`M11-75` である。
-各runは800 epochで、fold 1–4は249,600回、fold 5は256,000回のbatch試行を予定する。
+The neural conditions are `A0`, `A1`, `M00`, `M10`, `M01`, `M11`, `M11-25`, and `M11-75`.
+Each run has 800 epochs, with 249,600 planned batch attempts for folds 1–4 and 256,000 for fold 5.
 
-正常終了後は次の `completion.json` を確認する。
+After successful termination, inspect `completion.json` as follows.
 
 ```powershell
 $completionPath = Join-Path $experimentDir "results/neural/$condition/fold_$fold/repeat_$repeat/completion.json"
@@ -160,30 +160,30 @@ $completion |
     Select-Object status, completed_epochs, attempted_updates, optimizer_updates, nonzero_lr_updates, amp_skips, training_seconds
 
 if (-not (Test-Path -LiteralPath $completion.weights_file)) {
-    throw 'weights fileが存在しません'
+    throw 'weights file does not exist'
 }
 $actualWeightsHash = (Get-FileHash -LiteralPath $completion.weights_file -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($actualWeightsHash -ne $completion.weights_sha256) {
-    throw 'weights hashがcompletion記録と一致しません'
+    throw 'weights hash does not match the completion record'
 }
 ```
 
-完了条件は次のとおり。
+Completion requires the following.
 
-- `status` が `training_completed`
-- `completed_epochs` が800
-- `attempted_updates` が対象foldの予定数と一致
+- `status` is `training_completed`
+- `completed_epochs` is 800
+- `attempted_updates` matches the planned count for the fold
 - `optimizer_updates + amp_skips == attempted_updates`
-- `weights_file` が存在し、実ファイルのSHA-256が `weights_sha256` と一致
+- `weights_file` exists and its actual SHA-256 matches `weights_sha256`
 
-`amp_skips` は実測値として保存し、0と仮定しない。正常完了したrunへ同じ `train` を再実行しない。
-`training_seconds` は各epochの処理時間の合計で、CLI全体のwall timeではない。中断再開したrunでも、
-完了した800 epochを1回ずつ合計した値になる。
+Save `amp_skips` as an observed value; do not assume 0. Do not rerun the same `train` command for a successfully completed run.
+`training_seconds` is the sum of epoch processing times, not the wall time of the entire CLI. Even for a resumed run,
+it sums each of the 800 completed epochs once.
 
-### 中断からの再開
+### Resuming after interruption
 
-中断または失敗した同じrunだけを、明示した `last.pt` から再開する。manifest、condition、fold、repeat、
-configを変えない。
+Resume only the same interrupted or failed run from an explicitly specified `last.pt`. Do not change the manifest, condition, fold, replicate,
+or configuration.
 
 ```powershell
 $resumePath = Join-Path $experimentDir "checkpoints/neural/$condition/fold_$fold/repeat_$repeat/checkpoints/last.pt"
@@ -196,16 +196,16 @@ uv run --no-sync python scripts/experiments/train_neural.py train `
     --resume $resumePath
 ```
 
-checkpointがない、またはsource hash・config・run identityが一致しない場合は、別runとして扱う前に
-原因を確認する。一致検証を回避して継続しない。
-固定configを変更したrunは旧checkpointから再開しない。明示的に無効と判断した未完了runの
-resultsとcheckpointsだけを対象パスの照合後に除き、新規runとして開始する。
+If a checkpoint is missing or the source hash, configuration, or run identity differs, investigate the cause before treating it
+as a separate run. Do not bypass agreement checks to continue.
+Do not resume a run from an old checkpoint after changing its fixed configuration. For an incomplete run explicitly judged invalid,
+remove only its results and checkpoints after verifying their target paths, then start a new run.
 
-### Windowsでcheckpoint記録の置換に失敗した場合
+### When checkpoint record replacement fails on Windows
 
-epoch末に `checkpoint.json.tmp` から `checkpoint.json` への置換だけが `PermissionError` になった場合、
-既存ファイルを削除、移動、上書きしない。まず最新の `last.pt` と一時記録、training historyが同じ
-完了epochを表していることをread-onlyで確認する。
+If only replacement of `checkpoint.json.tmp` with `checkpoint.json` at the end of an epoch raises `PermissionError`,
+do not delete, move, or overwrite existing files. First check read-only that the latest `last.pt`, temporary record, and training history
+represent the same completed epoch.
 
 ```powershell
 $resultDir = Join-Path $experimentDir "results/neural/$condition/fold_$fold/repeat_$repeat"
@@ -219,19 +219,19 @@ $actualCheckpointHash = (Get-FileHash -LiteralPath $resumePath -Algorithm SHA256
 if ($actualCheckpointHash -ne $pending.checkpoint_sha256 -or
     $history.Count -ne $pending.completed_epochs -or
     $history[-1].epoch -ne $pending.completed_epochs) {
-    throw 'checkpoint、一時記録、training historyが一致しません'
+    throw 'checkpoint, temporary record, and training history do not agree'
 }
 ```
 
-一致した場合だけ、前節の `--resume $resumePath` で同じrunを再開する。再開loaderによる内部state、
-run identity、config、manifest、source hashの検証を省略しない。同じ置換エラーが再発する場合は、
-対象JSONを開いているeditorやpreviewを閉じ、原因を確認してから再開する。
+Only if they agree, resume the same run with `--resume $resumePath` as above. Do not omit the resume loader's validation of internal state,
+run identity, configuration, manifest, and source hash. If the same replacement error recurs,
+close editors or previews displaying the JSON and investigate the cause before resuming.
 
-## 5. B1 PCA fitとbaseline変換の検証
+## 5. B1 PCA fitting and baseline transform validation
 
-B1 PCAは各foldのtrain画素だけで1回ずつ、計5回fitする。同じfold内のrepeat 1～3でPCAを共有し、
-KMeansはrepeatごとにfitする。`fit_baselines.py fit`では、パラメータを持たないB0の変換仕様保存と
-probe検証も行う。完了済みfoldで`fit`を再実行しない。
+Fit B1 PCA once on the train pixels of each fold, for 5 fits in total. Share PCA across replicates 1–3 of the same fold;
+fit KMeans separately for each replicate. `fit_baselines.py fit` also saves the parameter-free B0 transformation specification and
+performs probe validation. Do not rerun `fit` for a completed fold.
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
@@ -247,19 +247,19 @@ foreach ($fold in 1..5) {
 }
 ```
 
-各foldで`fit`は`status=fitted_and_roundtrip_checked`、`pca_reusable_across_repeats=true`、
-`check`は`status=validated_existing_baselines`を確認する。PCAを共有するB1のrepeat 2・3では、
-`cluster_representations.py run`へ`--pca-repeat 1`を明示する。
+For each fold, check `status=fitted_and_roundtrip_checked` and `pca_reusable_across_repeats=true` for `fit`,
+and `status=validated_existing_baselines` for `check`. For B1 replicates 2 and 3 sharing PCA,
+explicitly pass `--pca-repeat 1` to `cluster_representations.py run`.
 
-`results/baselines/fold_<fold>/repeat_1/b0.json`はB0変換仕様、同じ場所の`fit.json`は主にB1 PCAの
-fit由来とB0・B1のprobe診断である。実際のPCAパラメータは
-`checkpoints/baselines/fold_<fold>/repeat_1/pca.npz`に保存する。
+`results/baselines/fold_<fold>/repeat_1/b0.json` holds the B0 transformation specification; `fit.json` in the same location primarily holds
+B1 PCA fit provenance and B0/B1 probe diagnostics. Actual PCA parameters are saved in
+`checkpoints/baselines/fold_<fold>/repeat_1/pca.npz`.
 
 ## 6. clean test map
 
-ニューラル学習、またはB1で必要なfold別PCA fitが完了したcondition・fold・repeatについて、
-全事前固定KのKMeansとclean test mapを作成し、CPUの`check`で保存物を検証する。
-B0には前段のfitはない。以下は第4節と同じM11-25・fold 1・repeat 1の例である。
+For each condition, fold, and replicate whose neural training or required fold-specific B1 PCA fit is complete,
+create KMeans fits and clean test maps for every prespecified K, then validate saved artifacts with CPU `check`.
+B0 has no preceding fit. The following uses the same M11-25, fold 1, replicate 1 example as Section 4.
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
@@ -274,7 +274,7 @@ uv run --no-sync python scripts/experiments/cluster_representations.py check `
     --condition $condition --fold $fold --repeat $repeat --experiment-dir $experimentDir
 ```
 
-B1でrepeat 1のPCAを再利用する例は次のとおり。
+Example of reusing replicate 1's PCA for B1:
 
 ```powershell
 uv run --no-sync python scripts/experiments/cluster_representations.py run `
@@ -282,13 +282,13 @@ uv run --no-sync python scripts/experiments/cluster_representations.py run `
     --experiment-dir outputs/experiments/production_v1
 ```
 
-runでは `status=clean_test_maps_completed` かつ `checks_passed=true`、checkでは
-`status=validated_existing_clustering` を確認する。test試料数・画素数・全7Kが揃うことも確認する。
+Check `status=clean_test_maps_completed` and `checks_passed=true` for run, and
+`status=validated_existing_clustering` for check. Also verify test specimen and pixel counts and coverage of all 7 K values.
 
-## 7. 評価
+## 7. Evaluation
 
-clean test mapが揃った組合せを評価する。 `run` はGPUを使用し、`check` は保存済み結果をCPUで
-検証する。条件とrepeatはまとめて渡せるが、既に評価済みの組合せを再指定して上書きしない。
+Evaluate combinations with complete clean test maps. `run` uses a GPU; `check` validates saved results on CPU.
+Conditions and replicates can be supplied together, but do not respecify and overwrite combinations that have already been evaluated.
 
 ```powershell
 $experimentDir = 'outputs/experiments/production_v1'
@@ -305,44 +305,44 @@ uv run --no-sync python scripts/experiments/evaluate_representations.py check `
     --experiment-dir $experimentDir
 ```
 
-複数条件・反復をまとめる場合は`--conditions`と`--repeats`へ空白区切りで列挙する。
-指定した直積の全組合せでclean test mapが揃い、すべて未評価であることを事前に確認する。
+To combine multiple conditions and replicates, list them separated by spaces in `--conditions` and `--repeats`.
+First verify that every combination in the specified Cartesian product has complete clean test maps and remains unevaluated.
 
-runでは各組合せの `status=full_test_evaluation_completed` と `checks_passed=true`、checkでは
-`status=validated_existing_evaluation` を確認する。未定義指標は理由付きの `null` として扱い、
-0へ置換しない。
+For each combination, check `status=full_test_evaluation_completed` and `checks_passed=true` for run, and
+`status=validated_existing_evaluation` for check. Treat undefined metrics as `null` with a reason;
+do not replace them with 0.
 
-## 8. 実行matrix
+## 8. Execution matrix
 
-| 区分 | 条件 | 必要な組合せ |
+| Category | Conditions | Required combinations |
 | --- | --- | ---: |
-| baseline | B0、B1 | 各5 folds × 3 repeats |
-| 主実験の学習 | A0、A1、M00、M10、M01、M11 | 90 runs |
-| mask率補助学習 | M11-25、M11-75 | 30 runs |
+| baseline | B0, B1 | 5 folds × 3 replicates each |
+| Main-experiment training | A0, A1, M00, M10, M01, M11 | 90 runs |
+| Supplementary mask-rate training | M11-25, M11-75 | 30 runs |
 
-各組合せについてclean mapと評価を完了する。ニューラル学習は合計120 runsで、B0・B1のfitや
-KMeans、評価処理はこの数に含めない。3反復はseed選別に使わず、すべてOOF集計へ含める。
+Complete clean maps and evaluation for each combination. Neural training totals 120 runs; B0/B1 fitting,
+KMeans, and evaluation are not included in this count. Do not use the 3 replicates to select seeds; include all of them in OOF aggregation.
 
 <a id="mask-rate-sweep"></a>
 
-### 8.1 mask率補助実験：CV・OOF
+### 8.1 Supplementary mask-rate experiment: CV and OOF
 
-M11のmask率25%・50%・75%を比較する。
-50%は主条件M11と共有し、M11-25・M11-75を各5 folds×3反復、計30 runs学習する。
-800 epoch、split、抽出画素、seed、augmentation強度、全7Kと評価指標は主実験の固定条件を継承する。
-最良mask率の選択ではなく感度解析として報告し、主条件M11を事後的に置き換えない。
-OOF集計の対象は49試料・45 source runsである。
+Compare M11 mask rates of 25%, 50%, and 75%.
+The 50% condition is shared with main-condition M11; train M11-25 and M11-75 over 5 folds × 3 replicates each, for 30 runs total.
+The 800 epochs, splits, sampled pixels, seeds, augmentation strengths, all 7 K values, and evaluation metrics inherit the main experiment's fixed conditions.
+Report this as sensitivity analysis rather than selection of the best mask rate, and do not replace main-condition M11 after the fact.
+OOF aggregation covers 49 specimens and 45 source runs.
 
-1. 第4節の学習・再開手順でM11-25・M11-75を実行し、各runをcheckする。
-2. 第6〜7節に従い、各runでCosine-KMeans・全test画素の予測・評価・checkを完了する。
-3. M11-25・M11・M11-75の3条件を[OOF集計](#oof-aggregation)の`mask_rate_oof_v1`へまとめる。主条件のsnapshotは保持する。
-4. 以下の専用CLIでLLA・LFR・ARI・Cosine-Silhouette・occupancyとK依存性を出力する。
+1. Run M11-25 and M11-75 using the training and resume procedures in Section 4, and check each run.
+2. Following Sections 6–7, complete Cosine-KMeans, prediction for all test pixels, evaluation, and checks for each run.
+3. Aggregate the 3 conditions M11-25, M11, and M11-75 into `mask_rate_oof_v1` through [OOF aggregation](#oof-aggregation). Retain the main-condition snapshot.
+4. Use the dedicated CLI below to export LLA, LFR, ARI, Cosine-Silhouette, occupancy, and dependence on K.
 
 <a id="mask-rate-reporting"></a>
 
-#### mask率OOF図表の再生成
+#### Regenerating mask-rate OOF figures and tables
 
-主条件用CLIとは別に`export_mask_rate_oof.py`を使う。次は既存の図表を再生成するコマンドである。
+Use `export_mask_rate_oof.py`, separately from the main-condition CLI. The following regenerates existing figures and tables.
 
 ```powershell
 uv run --no-sync python scripts/experiments/export_mask_rate_oof.py `
@@ -351,44 +351,44 @@ uv run --no-sync python scripts/experiments/export_mask_rate_oof.py `
 if ($LASTEXITCODE -ne 0) { throw 'Mask-rate OOF reporting failed' }
 ```
 
-CPUで保存済みOOF値を読み、学習・推論・評価をやり直さない。既定出力先は
-`outputs/experiments/production_v1/results/figures/mask_rate_oof_v1/`、既定240 dpi。
-`--output-dir`で保存先を変更でき、`--overwrite`はこのreportが管理するファイルだけを置換する。
-`--with-figure`を省略するとCSVと出典・完了記録のみを生成する。
+This reads saved OOF values on CPU without rerunning training, inference, or evaluation. The default output location is
+`outputs/experiments/production_v1/results/figures/mask_rate_oof_v1/`, with default 240 dpi.
+`--output-dir` changes the output location; `--overwrite` replaces only files managed by this report.
+Omitting `--with-figure` generates only CSV files and provenance and completion records.
 
-出力はPNG 1枚、`metrics_all_k.csv`、`metrics_k8.csv`、`report.json`、`completion.json`の5ファイル。
-PNGは2×2（上段LLA 3・5、下段LLA 9・LFR(TGN+FS)）で、50%の表示名は`M11(-50)`とする。
-実線はmacro平均、破線・点線・一点鎖線は学習反復1・2・3。表は全7K・K8の11指標を保持する。
-終了code 0、`status=mask_rate_report_completed`・`checks_passed=true`、文字・凡例・曲線を確認する。
-このexportは消費するsnapshotのhash・試料/fold/repeat対応を確認するが、OOF全体のcheckを再実行しない。
-保存済みOOFの再検証は[第9節](#oof-aggregation)の`aggregate_oof.py check`を使う。
+The output comprises 5 files: 1 PNG, `metrics_all_k.csv`, `metrics_k8.csv`, `report.json`, and `completion.json`.
+The PNG uses a 2×2 layout (top: LLA 3 and 5; bottom: LLA 9 and LFR(TGN+FS)), with the 50% condition labeled `M11(-50)`.
+Solid lines show macro means; dashed, dotted, and dash-dotted lines show training replicates 1, 2, and 3. Tables retain 11 metrics for all 7 K values and K8.
+Check exit code 0, `status=mask_rate_report_completed`, `checks_passed=true`, text, legends, and curves.
+This export checks the consumed snapshot's hash and specimen/fold/replicate correspondence but does not rerun the complete OOF check.
+To revalidate saved OOF results, use `aggregate_oof.py check` in [Section 9](#oof-aggregation).
 
-条件は[実験プロトコル](design/experiment_protocol.md#mask-rate-sweep)、
-ファイルと出典は[成果物一覧](results.md#mask-rate-handoff)を参照する。
+For conditions, see the [experimental protocol](design/experiment_protocol.md#mask-rate-sweep);
+for files and provenance, see the [artifact inventory](results.md#mask-rate-handoff).
 
 <a id="global-fit-pipeline"></a>
 
-### 8.2 全体fitと解釈
+### 8.2 Global fitting and interpretation
 
-[全体可視化設計](design/visualization_and_interpretation.md)に従い、全49試料の共通抽出画素で
-B1 PCAとA0・A1・M00・M11をfitする。B0を加えた6条件の表現で、$`K_0=8`$のCosine-KMeansを6 fits行う。
-全体学習の4 runsと全体クラスタリングは、補助条件を含むCVの計画120学習とは別枠であり、OOF集計に含めない。
+Following the [global visualization design](design/visualization_and_interpretation.md), fit
+B1 PCA and A0, A1, M00, and M11 on common sampled pixels from all 49 specimens. Including B0, perform 6 Cosine-KMeans fits at $`K_0=8`$ using representations from 6 conditions.
+The 4 global-training runs and global clustering are separate from the 120 planned CV training runs including supplementary conditions, and are excluded from OOF aggregation.
 
-`global_fit.py`がmanifest・B0/PCA・A0/A1/M00/M11の一括学習・再開・checkを担当する。
-既存の`train_neural.py`は`--fold`必須のCV用であり、全体fitには使わない。
+`global_fit.py` handles manifests, B0/PCA, batch training, resumption, and checks for A0/A1/M00/M11.
+The existing `train_neural.py` is for CV, requires `--fold`, and is not used for global fitting.
 
-全49試料から各8,192画素、計401,408画素を抽出して6条件で共有する。
-ROOT_SEED=20260905、fold位置`global`、反復ID 1の専用manifestを使い、CVのmanifestと分離する。
-準備・PCA・ニューラル学習の後、[クラスタリングと可視化](#global-post-fit)へ進む。
-全体fitのマップは記述的な解析であり、未知試料のOOF評価とは区別する。
+Sample 8,192 pixels from each of all 49 specimens, totaling 401,408 pixels shared across the 6 conditions.
+Use a dedicated manifest with ROOT_SEED=20260905, fold position `global`, and replicate ID 1, separate from CV manifests.
+After preparation, PCA, and neural training, proceed to [clustering and visualization](#global-post-fit).
+Global-fit maps are descriptive analyses and are distinguished from OOF evaluation on unseen specimens.
 
-#### 準備・PCA・GPU smoke
+#### Preparation, PCA, and GPU smoke checks
 
-リポジトリrootのPowerShellで実行する。以下は新規出力先を準備する場合の初回作成用であり、完了済みの`global_v1`には再実行しない。
-`create`は座標・maskを読み、PCAは共通401,408行のSNV（FP32行列だけで392 MiB）をCPUでfitする。
-`smoke`は実寸model・batch size 1024で、A0 → A1 → M00 → M11の順に各2 epoch×2 batchと第2 epochの再開を確認する。
-4条件合計24 batchをGPUで実行し、raw重みの保存復元、全可視16次元表現、再開時の入力・LR・AMP判断・重みを照合する。
-smoke重みは本番へ引き継がない。
+Run in PowerShell from the repository root. The following creates a new output location for the first time; do not rerun it on a completed `global_v1`.
+`create` reads coordinates and masks; PCA fits on the common 401,408 SNV rows on CPU (392 MiB for the FP32 matrix alone).
+`smoke` uses full-size models and batch size 1024, checking 2 epochs × 2 batches and resumption of the second epoch for A0 → A1 → M00 → M11.
+It executes 24 batches total across the 4 conditions on GPU and compares raw-weight save/load, all-visible 16-dimensional representations, and resumed inputs, LR, AMP decisions, and weights.
+Smoke weights are not carried into production.
 
 ```powershell
 foreach ($step in @("create", "check", "baseline-fit", "baseline-check", "smoke")) {
@@ -397,20 +397,20 @@ foreach ($step in @("create", "check", "baseline-fit", "baseline-check", "smoke"
 }
 ```
 
-初回作成後に既存manifestを検証する場合は`check`、PCAを検証する場合は`baseline-check`を使う。
-`create`・`baseline-fit`は既存出力を上書きしない。smokeは日時別の独立directoryを使用する。
-途中失敗後は成功済みのcreate/fitを繰り返さず、失敗した段階を確認する。completionのない部分出力は自動再利用しない。
-PCAの復元では保存時のC/F配列配置を保持する。配置を変えるとFP32積和の丸めが変わるため、
-保存復元の許容差は`1e-6`のまま、同じ配置で照合する。復元checkは一時directoryで行い、合格後に本番出力先へ置く。
+After initial creation, use `check` to validate existing manifests and `baseline-check` to validate PCA.
+`create` and `baseline-fit` do not overwrite existing outputs. Smoke checks use separate timestamped directories.
+After a failure, inspect the failed stage without repeating successful create/fit stages. Partial outputs without completion records are not automatically reused.
+PCA restoration preserves the C/F array layout used at saving. Changing the layout changes FP32 multiply-add rounding,
+so compare using the same layout while keeping the save/load tolerance at `1e-6`. Restoration checks run in a temporary directory before passing outputs are placed in the production location.
 
-#### 4条件の一括学習と完了check
+#### Batch training of 4 conditions and completion checks
 
-一括resume・`training-check`は、同じ現行configで学習したrunが対象となる。
-保存済み実験には現在の記録とoptimizer checkpoint内部の契約が一致しない完了runがあるため、
-それらを再開しない。保存済み最終重み・ラベルの確認は`global_cluster.py check`を使う。
-新規出力先で行う場合は上の全段階が正常終了してから実行し、1 GPUでA0 → A1 → M00 → M11を直列に各800 epoch学習する。
-392 batch/epoch、313,600 attempted updates/run、計1,254,400 attempted updatesが予定値である。
-AMP overflowによるskipと実optimizer更新数は別途記録し、実更新数を予定値と同一とは仮定しない。
+Batch resumption and `training-check` apply to runs trained with the same current configuration.
+Some completed runs in the saved experiments have a mismatch between current records and contracts inside optimizer checkpoints;
+do not resume those runs. Use `global_cluster.py check` to check saved final weights and labels.
+For a new output location, execute this only after all preparation stages above succeed, training A0 → A1 → M00 → M11 sequentially for 800 epochs each on 1 GPU.
+Planned counts are 392 batches/epoch, 313,600 attempted updates/run, and 1,254,400 attempted updates in total.
+Record AMP-overflow skips and actual optimizer updates separately; do not assume actual updates equal the planned count.
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_fit.py train --conditions A0 A1 M00 M11
@@ -419,10 +419,10 @@ uv run --no-sync python scripts/experiments/global_fit.py training-check
 if ($LASTEXITCODE -ne 0) { throw "Global training completion check failed" }
 ```
 
-一括実行は最初の失敗で停止する。中断後は次の1コマンドで、完了済み条件を検証してskip、
-未完了条件を同じrunの`last.pt`から再開、未着手条件を新規学習する。途中epochは最後の保存境界から再実行する。
-run/config/manifest/code/runtimeが一致しない場合や、既存runにcheckpointがない場合は停止する。
-GPUを変更する場合は初回から一貫して`--device`を指定する（既定0）。
+Batch execution stops at the first failure. After interruption, the single command below validates and skips completed conditions,
+resumes incomplete conditions from the same run's `last.pt`, and starts unstarted conditions. An interrupted epoch is rerun from the last saved boundary.
+Processing stops if run/config/manifest/code/runtime differ, or an existing run has no checkpoint.
+To change the GPU, specify `--device` consistently from the first invocation (default 0).
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_fit.py train --conditions A0 A1 M00 M11 --resume
@@ -431,58 +431,58 @@ uv run --no-sync python scripts/experiments/global_fit.py training-check
 if ($LASTEXITCODE -ne 0) { throw "Global training completion check failed" }
 ```
 
-#### 全体fitの成果物
+#### Global-fit artifacts
 
-すべて`outputs/experiments/global_v1/`配下。全体fit成果物をCVのOOF snapshotへ加えない。
+All are under `outputs/experiments/global_v1/`. Do not add global-fit artifacts to CV OOF snapshots.
 
-| 保存先 | 内容 |
+| Location | Content |
 | --- | --- |
-| `config/experiment.json`・`config/seeds.json` | 全体fit契約・55 seeds（後続クラスタリング用を含む） |
-| `manifests/samples.parquet`・`manifests/fit_pixels.parquet` | 全49試料と共通401,408座標。fold列なし |
-| `manifests/inputs.json`・`manifests/complete.json` | 元入力のfingerprint・manifestのhashと予定更新数 |
-| `results/baselines/b0.json`・`completion.json` | B0変換契約、PCA由来・solver・復元probe・hash |
-| `checkpoints/baselines/pca.npz` | PCA係数（pickleなし） |
-| `results/neural/{condition}/repeat_1/` | `run.json`・history・checkpoint記録・attempt・`completion.json` |
-| `checkpoints/neural/{condition}/repeat_1/last_model.pt` | epoch 800の最終raw重み |
-| `checkpoints/neural/{condition}/repeat_1/checkpoints/last.pt` | optimizer・AMP scaler・各RNG・epoch境界を含む再開用state |
-| `results/neural_smoke/{timestamp}/{condition}/repeat_1/smoke.json` | 短いGPU検証の合否と再開誤差。対応するcheckpointは`checkpoints/neural_smoke/` |
+| `config/experiment.json`, `config/seeds.json` | Global-fit contract and 55 seeds, including those for subsequent clustering |
+| `manifests/samples.parquet`, `manifests/fit_pixels.parquet` | All 49 specimens and common 401,408 coordinates, without a fold column |
+| `manifests/inputs.json`, `manifests/complete.json` | Original-input fingerprints, manifest hashes, and planned update counts |
+| `results/baselines/b0.json`, `completion.json` | B0 transformation contract, PCA provenance, solver, restoration probes, and hashes |
+| `checkpoints/baselines/pca.npz` | PCA coefficients without pickle |
+| `results/neural/{condition}/repeat_1/` | `run.json`, history, checkpoint records, attempts, and `completion.json` |
+| `checkpoints/neural/{condition}/repeat_1/last_model.pt` | Final raw weights at epoch 800 |
+| `checkpoints/neural/{condition}/repeat_1/checkpoints/last.pt` | Resume state including optimizer, AMP scaler, each RNG, and epoch boundary |
+| `results/neural_smoke/{timestamp}/{condition}/repeat_1/smoke.json` | Pass/fail results and resume errors for short GPU checks; corresponding checkpoints are in `checkpoints/neural_smoke/` |
 
-`training-check`は保存checkpointを実際に読み、epoch・更新数・manifest/config/code/runtime・重みhashと、
-checkpoint中の重みと最終raw重みの一致を確認する。全4条件の完了確認後に全体Cosine-KMeansへ進む。
+`training-check` reads saved checkpoints and checks epochs, update counts, manifest/config/code/runtime, weight hashes,
+and agreement between checkpoint weights and final raw weights. Proceed to global Cosine-KMeans after confirming completion of all 4 conditions.
 
-#### 全体fitの完了記録
+#### Global-fit completion records
 
-B0/PCAとA0・A1・M00・M11の更新数、AMP skip数、保存復元結果は
-`outputs/experiments/global_v1/results/`以下の条件別`completion.json`とrun記録を正本とする。
-学習後のK8マップ・図表とPCAの操作は以下の節で扱う。
+The authoritative records for B0/PCA and A0, A1, M00, and M11 update counts, AMP skips, and save/load results are
+the condition-specific `completion.json` files and run records under `outputs/experiments/global_v1/results/`.
+The following sections cover post-training K8 maps, figures and tables, and PCA operations.
 
 <a id="global-post-fit"></a>
 
-#### 学習完了後の作業
+#### Work after training completes
 
-保存済みモデルを利用する**表現抽出・Cosine-KMeans・全画素予測・check**を`global_cluster.py`へ、
-**matching・観測スペクトル集計・PNG/CSV生成・check**を`visualize_global.py`が担当する。
-`global_fit.py`は引き続き準備・baseline・smoke・NN学習とcheckを担当する。
-既存の`cluster_representations.py`は`--fold`必須のCV用なので、`global_v1`へそのまま実行しない。
+`global_cluster.py` handles **representation extraction, Cosine-KMeans, all-pixel prediction, and checks** using saved models;
+`visualize_global.py` handles **matching, observed-spectrum aggregation, PNG/CSV generation, and checks**.
+`global_fit.py` continues to handle preparation, baselines, smoke checks, NN training, and checks.
+The existing `cluster_representations.py` is for CV and requires `--fold`; do not run it directly on `global_v1`.
 
-1. 保存済みPCA・最終NN重み・共通global manifestを読み、B0・B1・A0・A1・M00・M11の表現を抽出する。
-   B0は256次元SNV、B1・NNは16次元で、既定のL2正規化・全可視抽出を用いる。
-   既存の学習・PCAを再fitせず、共通401,408画素の表現で固定seedのCosine-KMeansを各1回、$`K_0=8`$でfitする。
-2. 各条件の固定モデル・中心を全49試料の全3,902,250有効画素へ適用し、画素座標と対応したラベルを保存する。
-   保存復元・対象数・ラベル範囲・出典のcheckを行う。試料ごとのクラスタリング再fitは行わない。
-3. 試料内クラスタ平均を試料間で等重み平均した観測SNV代表線のcosine類似度＋HungarianでM00＋Cosine-KMeansへラベルを整列する。
-   クラスタmap・occupancy・対応表と、反射率・SNV・疑似吸光度のSG二次微分の代表線・ばらつきをPNG・CSVにする。
-4. 表現の補助表示には[PCA図](#global-pca)、試料内スペクトルの比較には[NIR解釈図](#nir-interpretation)を用いる。
+1. Read saved PCA, final NN weights, and the common global manifest to extract B0, B1, A0, A1, M00, and M11 representations.
+   B0 uses 256-dimensional SNV; B1 and NNs use 16 dimensions with the specified L2 normalization and all-visible extraction.
+   Without retraining or refitting PCA, fit Cosine-KMeans once per condition on representations of the common 401,408 pixels, with fixed seeds and $`K_0=8`$.
+2. Apply each condition's fixed model and centers to all 3,902,250 valid pixels in all 49 specimens, and save labels associated with pixel coordinates.
+   Check save/load consistency, target counts, label ranges, and provenance. Do not refit clustering per specimen.
+3. Align labels to M00 + Cosine-KMeans using Hungarian matching of cosine similarities between observed SNV representative curves, formed by equally averaging within-specimen cluster means across specimens.
+   Export cluster maps, occupancy, matching tables, and representative curves and variation for reflectance, SNV, and SG second derivatives of pseudo-absorbance as PNG and CSV.
+4. Use the [PCA figure](#global-pca) for supplementary display of representations and the [NIR interpretation figures](#nir-interpretation) for within-specimen spectral comparisons.
 
-mask率比較の操作は[CV・OOF](#mask-rate-sweep)と[全体fit](#global-mask-rate)を参照する。
+For mask-rate comparisons, see [CV and OOF](#mask-rate-sweep) and [global fit](#global-mask-rate).
 
-##### 実行コマンド：クラスタリングと可視化
+##### Commands: clustering and visualization
 
-以下は新規の全体クラスタリング出力先に対する手順。既存の`global_v1`はクラスタリング済みなので、
-可視化を再生成する際は2番目の`visualize_global.py run`だけを実行する。
-新規出力先ではリポジトリrootのPowerShellで次を順番に実行する。
-クラスタリングはB0 → B1 → A0 → A1 → M00 → M11の順に1 GPUで処理し、最初の失敗で停止する。
-条件ごとの完了後に保存中心・全map・出典をcheckする。可視化も保存後にcheckするため、下記2コマンドで手順1〜3を実行できる。
+The following procedure is for a new global-clustering output location. The existing `global_v1` has already been clustered,
+so when regenerating visualizations, run only the second command, `visualize_global.py run`.
+For a new output location, run the following in order in PowerShell from the repository root.
+Clustering processes B0 → B1 → A0 → A1 → M00 → M11 on 1 GPU and stops at the first failure.
+After each condition completes, it checks saved centers, all maps, and provenance. Visualization is also checked after saving, so the 2 commands below perform steps 1–3.
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_cluster.py run
@@ -492,17 +492,17 @@ uv run --no-sync python scripts/experiments/visualize_global.py run
 if ($LASTEXITCODE -ne 0) { throw "Global visualization failed" }
 ```
 
-`global_cluster.py run`はCUDA必須（既定`--device 0`）で、表現抽出と全画素予測のchunkは既定1,024画素。
-fitには共通401,408画素の表現全体を一度に使用し、chunkごとの再fitは行わない。
-B0のfit用FP32配列だけで392 MiB、B1・NNの16次元配列は24.5 MiBで、KMeansの作業領域とGPU転送先は別途必要となる。
-NNはepoch 800の最終raw重みを全可視・FP32で使う。既存PCA・NNのfitを繰り返さず、追加のrestartも行わない。
-表現配列は処理中のみ保持し、今回の保存対象は中心・ラベル・由来と診断記録である。
+`global_cluster.py run` requires CUDA (default `--device 0`); the default chunk for representation extraction and all-pixel prediction is 1,024 pixels.
+Fitting uses all representations of the common 401,408 pixels at once, with no refitting per chunk.
+The FP32 fit array alone occupies 392 MiB for B0 and 24.5 MiB for the 16-dimensional B1/NN arrays; KMeans workspace and GPU transfer buffers require additional memory.
+NNs use the final raw weights at epoch 800 with all inputs visible in FP32. Existing PCA/NN fits are not repeated, and no additional restarts are performed.
+Representation arrays are held only during processing; saved outputs are centers, labels, provenance, and diagnostic records.
 
-`visualize_global.py run`はCPUで保存済み全6条件のラベルと観測スペクトルを読み、KMeans fitやNN推論を行わない。
-観測スペクトルは既定2,048画素のchunkで読み、全49試料を集計する。PNGは既定240 dpi（`--dpi`で変更可能）。
-先に全6条件のクラスタリングを完了する。可視化だけを一部条件で生成する設定は設けない。
+`visualize_global.py run` reads saved labels and observed spectra for all 6 conditions on CPU, without KMeans fitting or NN inference.
+Observed spectra are read in chunks of 2,048 pixels by default and aggregated across all 49 specimens. PNGs default to 240 dpi (changeable with `--dpi`).
+Complete clustering for all 6 conditions first. There is no setting to generate visualization for only a subset of conditions.
 
-完了後に保存物だけを再検証する場合は次を使う。GPU不要で、出典・hash・有効maskとラベル範囲・成果物数などを検証する。
+To revalidate only saved artifacts after completion, use the following. No GPU is required; it validates provenance, hashes, valid masks, label ranges, artifact counts, and related details.
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_cluster.py check
@@ -511,118 +511,118 @@ uv run --no-sync python scripts/experiments/visualize_global.py check
 if ($LASTEXITCODE -ne 0) { throw "Global visualization check failed" }
 ```
 
-途中中断後は`global_cluster.py run --resume`を使う。出力のある条件をcheckしてからskipし、未着手条件を実行する。
-通常の処理例外では作業用directoryを片付け、当該条件を最初から再実行できる。KMeansの途中反復からの再開はしない。
-強制終了で正式保存先の片側だけが残った場合や、既存出力の出典・hashが不一致の場合は停止し、自動削除・再利用しない。
-`visualize_global.py run --resume`は既存の完成した図表をcheckしてskipする用途で、再描画や途中からの集計再開は行わない。
-可視化の通常の`run`は図表を再生成し、完成後に指定の`global_k8_v1`を丸ごと置き換える。
-旧PNG・CSV・ラベル表示用NPZは残さず、新旧の構成を混在させない。途中失敗時は元の可視化を保持する。
-独立管理の`pca-latent-2d/`は引き継ぎ、PCA座標・NN・クラスタリング成果物は置換対象に含めない。
-クラスタリングの`run`は既存成果物を上書きしない。
+After interruption, use `global_cluster.py run --resume`. It checks conditions with outputs before skipping them, then executes unstarted conditions.
+For ordinary processing exceptions, working directories are cleaned up so the affected condition can restart from the beginning. It does not resume from an intermediate KMeans iteration.
+If forced termination leaves only one side of the final output locations, or existing-output provenance or hashes disagree, processing stops without automatic deletion or reuse.
+`visualize_global.py run --resume` checks and skips completed figures and tables; it does not redraw or resume aggregation partway through.
+Normal visualization `run` regenerates figures and tables and replaces the specified `global_k8_v1` in full after completion.
+Old PNGs, CSVs, and display-label NPZs are not retained, avoiding mixed old and new layouts. Failure partway through preserves the original visualization.
+The independently managed `pca-latent-2d/` is carried forward; PCA coordinates, NN artifacts, and clustering artifacts are excluded from replacement.
+Clustering `run` does not overwrite existing artifacts.
 
 <a id="representative-sample-update"></a>
 
-##### 代表7試料の図を再生成する
+##### Regenerating figures for the 7 representative specimens
 
-対象ID・順序・選定の位置づけは[表示例の選択](design/visualization_and_interpretation.md#representative-samples)を参照。
-代表図を再生成する場合は、リポジトリrootのPowerShellで以下を実行する。
+For target IDs, order, and the role of this selection, see [selection of display examples](design/visualization_and_interpretation.md#representative-samples).
+To regenerate representative figures, run the following in PowerShell from the repository root.
 
-raw BMPと反射率L2 normの代表1×7は、保存済み画像をCPUで読み、次の1コマンドで両方を同名上書きする。
-既存の全49試料の7×7図は変更しない。前処理・スペクトル計算は行わない。
+For the representative 1×7 raw BMP and reflectance L2 norm figures, the following single command reads saved images on CPU and overwrites both under the same filenames.
+It leaves the existing 7×7 figures of all 49 specimens unchanged and performs no preprocessing or spectral calculations.
 
 ```powershell
 uv run --no-sync python scripts/preprocess/create_sample_overviews.py --representatives-only --overwrite
 if ($LASTEXITCODE -ne 0) { throw "Representative sample overviews failed" }
 ```
 
-対象は`outputs/sample_overviews/raw_bmp_representatives_1x7.png`と
-`outputs/sample_overviews/reflectance_l2_norm_representatives_1x7.png`。
+The targets are `outputs/sample_overviews/raw_bmp_representatives_1x7.png` and
+`outputs/sample_overviews/reflectance_l2_norm_representatives_1x7.png`.
 
-全体fitの条件別代表1×7と6条件×7試料図は、次の1コマンドで同時に更新する。
-既存の全49試料のラベル・観測スペクトルをCPUで読み、図表一式（PNG 67枚・CSV 44個と関連記録）を
-再生成して同じ`results/figures/global_k8_v1/`へ置き換えるため、代表図2枚の合成より処理量が多い。
-学習・クラスタリングは再実行せず、独立した`pca-latent-2d/`は保持する。
+The following single command updates both the condition-specific representative 1×7 global-fit figures and the 6-condition × 7-specimen figure.
+It reads existing labels and observed spectra for all 49 specimens on CPU, regenerates the full figure/table set (67 PNGs, 44 CSVs, and associated records),
+and replaces the same `results/figures/global_k8_v1/`, so it performs more processing than compositing the 2 representative figures alone.
+It does not rerun training or clustering and retains the independent `pca-latent-2d/`.
 
 ```powershell
 uv run --no-sync python scripts/experiments/visualize_global.py run
 if ($LASTEXITCODE -ne 0) { throw "Global representative visualization failed" }
 ```
 
-対象の代表図は`{B0,B1,A0,A1,M00,M11}/labels/07_representative_samples_1x7.png`と
-rootの`01_representative_samples_6x7.png`。`report.json`の`representative_sample_ids`と
-`captions.csv`にも指定した7試料・並び順が反映される。既存図の検証だけを行う`--resume`は付けない。
-終了code 0、図中のIDと列順、`report.json`の代表ID、実行末尾の`checks_passed=true`を確認する。
-既存のOOF sanity図はこの2コマンドの更新対象に含まれない。
+The representative targets are `{B0,B1,A0,A1,M00,M11}/labels/07_representative_samples_1x7.png` and
+`01_representative_samples_6x7.png` at the root. `representative_sample_ids` in `report.json` and
+`captions.csv` also reflect the specified 7 specimens and order. Do not add `--resume`, which only validates existing figures.
+Check exit code 0, figure IDs and column order, representative IDs in `report.json`, and `checks_passed=true` at the end of execution.
+Existing OOF sanity figures are not updated by these 2 commands.
 
-##### 保存物と確認点
+##### Saved artifacts and checks
 
-以下はすべて`outputs/experiments/global_v1/`からの相対path。
+All paths below are relative to `outputs/experiments/global_v1/`.
 
-| 保存先 | 内容 |
+| Location | Content |
 | --- | --- |
-| `checkpoints/clustering/{condition}/repeat_1/centers_k8.npz` | 固定K=8中心、global seed・fit画素数・設定・fit診断 |
-| `results/clustering/{condition}/repeat_1/maps/{sample_id}.npz` | 全有効画素の元ラベル。`labels_k8`、背景0・クラスタ1〜8 |
-| `results/clustering/{condition}/repeat_1/run.json`・`completion.json` | 表現の由来、code/runtime/hash、保存復元、試料別画素数・occupancy・完了記録 |
-| `results/figures/global_k8_v1/` | 下記のPNG・CSVと`report.json`・`completion.json` |
+| `checkpoints/clustering/{condition}/repeat_1/centers_k8.npz` | Fixed K=8 centers, global seed, fit-pixel count, settings, and fit diagnostics |
+| `results/clustering/{condition}/repeat_1/maps/{sample_id}.npz` | Original labels for all valid pixels: `labels_k8`, background 0, clusters 1–8 |
+| `results/clustering/{condition}/repeat_1/run.json`, `completion.json` | Representation provenance, code/runtime/hashes, save/load checks, per-specimen pixel counts and occupancy, and completion records |
+| `results/figures/global_k8_v1/` | PNGs and CSVs below, plus `report.json` and `completion.json` |
 
-図表directoryを`B0/`・`B1/`・`A0/`・`A1/`・`M00/`・`M11/`へ分ける。各条件のPNGは11枚。
-rootの`01_representative_samples_6x7.png`を加え、全体で67枚となる。
-この比較図は固定7代表試料を列、上からB0・B1・A0・A1・M00・M11を行にする。試料IDは最下段だけに表示する。
-次のpathは各条件directoryからの相対path。
+The figure/table directory is divided into `B0/`, `B1/`, `A0/`, `A1/`, `M00/`, and `M11/`. Each condition has 11 PNGs.
+Including `01_representative_samples_6x7.png` at the root gives 67 in total.
+This comparison figure uses the fixed 7 representative specimens as columns and B0, B1, A0, A1, M00, and M11 as rows from top to bottom. Specimen IDs appear only below the bottom row.
+The following paths are relative to each condition directory.
 
-| PNG | 内容 |
+| PNG | Content |
 | --- | --- |
-| `labels/00_samples_01-07_1x7.png`〜`06_samples_43-49_1x7.png` | 試料ID昇順で7試料ずつ。49試料を7枚へ分割 |
-| `labels/07_representative_samples_1x7.png` | 固定代表7試料。rootの6条件×7試料図と同じ試料・並び順 |
-| `labels/08_all_samples_7x7.png` | 同じ順序の全49試料、7×7 |
-| `01_representative_spectra.png` | 上段SNV・反射率、下段全面SG二次微分。各panelを8クラスタの色で比較 |
-| `02_snv_cosine_matrix.png` | 縦M00・横当該条件の8×8 SNV cosine類似度。表示番号順、値域−1〜1 |
+| `labels/00_samples_01-07_1x7.png`–`06_samples_43-49_1x7.png` | 7 specimens per image in ascending specimen-ID order; 49 specimens across 7 images |
+| `labels/07_representative_samples_1x7.png` | The fixed 7 representative specimens, in the same order as the root 6-condition × 7-specimen figure |
+| `labels/08_all_samples_7x7.png` | All 49 specimens in the same order, 7×7 |
+| `01_representative_spectra.png` | Top: SNV and reflectance; bottom: full-width SG second derivatives. Each panel compares the 8 cluster colors |
+| `02_snv_cosine_matrix.png` | 8×8 SNV cosine similarities, with M00 vertically and the current condition horizontally, in display-ID order and range −1 to 1 |
 
-マップは`outputs/sample_overviews`の余白・大きな太字の試料IDに合わせる。色は最近傍補間で保持し、colorbarは`Cluster ID`。
-スペクトルはマップと共通のクラスタ色。平均線の帯は試料間IQRであり信頼区間ではない。
-波長の主目盛100 nm・副目盛50 nmにグリッド線を引く。端点の数値は小数2桁を優先し、隣接30 nm未満の数字は省く。
-SNVは縦軸−2〜2、反射率は0〜1、二次微分は6条件共通の自動範囲とする。
-各条件の`label_maps.npz`は試料IDをkeyとする整列済みラベル。元ラベル・中心は変更しない。
-rootの`spectral_summary.npz`には全条件の波長・代表線・IQR・元番号から表示番号への対応を保存する。
+Maps match the margins and large bold specimen IDs in `outputs/sample_overviews`. Nearest-neighbor interpolation preserves colors; the colorbar is `Cluster ID`.
+Spectra share cluster colors with maps. Bands around mean curves are between-specimen IQRs, not confidence intervals.
+Grid lines follow major wavelength ticks at 100 nm and minor ticks at 50 nm. Endpoint labels preferentially use 2 decimal places; adjacent labels less than 30 nm apart are omitted.
+SNV uses a vertical range of −2 to 2, reflectance 0 to 1, and second derivatives an automatic range shared by all 6 conditions.
+Each condition's `label_maps.npz` contains aligned labels keyed by specimen ID. Original labels and centers remain unchanged.
+The root `spectral_summary.npz` stores wavelengths, representative curves, IQRs, and original-to-display ID mappings for all conditions.
 
-CSVは44個：各条件に`sample_spectra.csv`、`spectrum_counts.csv`、`representative_spectra.csv`、
-`difference_spectra.csv`、`matching.csv`、`matching_matrices.csv`、`occupancy.csv`の7個、rootに`wavelengths.csv`と`captions.csv`。
-差は各条件 − M00の代表線差で、構成試料が異なり得るためpaired差ではない。M00の差表はheaderのみ。
-matching表は`snv_cosine_similarity`、同じ基準クラスタに対する他候補との類似度差、一致画素数、元番号と表示番号を保持する。
-補助値として`iou`も保存する。IoUは全共通画素poolであり試料等重みではなく、SNVの割当には使用しない。
-試料別スペクトルの`band_000`〜`band_255`は`wavelengths.csv`でnmへ対応する。
-代表線は試料内平均→試料間等重み平均。疑似吸光度の全帯域正値判定・除外数と、曲線ごとの寄与試料数・ID・画素数を保持する。
-未定義曲線はNPZでNaN、CSVで空欄。全試料を通して空のクラスタ、非有限またはノルム0のSNV代表線がある場合はmatchingを停止する。
-既存図表には空間平滑化・帯域積分を適用していない。
-個別試料の解釈には`sample_spectra.csv`と寄与・除外数のCSVを参照し、全試料macro平均と区別する。
+There are 44 CSVs: 7 per condition—`sample_spectra.csv`, `spectrum_counts.csv`, `representative_spectra.csv`,
+`difference_spectra.csv`, `matching.csv`, `matching_matrices.csv`, and `occupancy.csv`—plus root `wavelengths.csv` and `captions.csv`.
+Differences are representative curves for each condition minus M00; they are not paired differences because contributing specimens may differ. M00's difference table contains only a header.
+Matching tables retain `snv_cosine_similarity`, the similarity margin over other candidates for the same reference cluster, matching-pixel counts, and original and display IDs.
+`iou` is also saved as a supplementary value. IoU pools all common pixels rather than weighting specimens equally, and is not used for SNV assignment.
+The specimen-level spectral columns `band_000`–`band_255` map to nm through `wavelengths.csv`.
+Representative curves use within-specimen means followed by equally weighted means across specimens. Records retain the all-band positivity check and exclusion counts for pseudo-absorbance, and contributing specimen counts, IDs, and pixel counts for each curve.
+Undefined curves are NaN in NPZ and blank in CSV. Matching stops if any cluster is empty across all specimens, or an SNV representative curve is nonfinite or has zero norm.
+Existing figures and tables use neither spatial smoothing nor band integration.
+For individual-specimen interpretation, consult `sample_spectra.csv` and the contribution/exclusion-count CSVs, distinguishing them from macro means across all specimens.
 
-49試料・PNG 67枚・CSV 44個を出力する。生成物の整合性は
-`report.json`・`completion.json`と`visualize_global.py check`で確認する。
-図表生成の完了と、領域差の物理化学的な解釈の完了は区別する。
+Outputs cover 49 specimens, 67 PNGs, and 44 CSVs. Check artifact consistency using
+`report.json`, `completion.json`, and `visualize_global.py check`.
+Completion of figure/table generation is distinct from completion of physicochemical interpretation of regional differences.
 
 <a id="global-pca"></a>
 
-### 8.3 潜在空間のPCA：2行6列一枚
+### 8.3 Latent-space PCA: one 2-row, 6-column figure
 
-既存のホスト環境で可視化用PCAとPNG描画を行う。
-左からB0・B1・A0・A1・M00・M11、上段は画素数hexbin（turbo・共通の対数色範囲）、
-下段はSNV整列後のCluster IDと、所属画素のPC1・PC2座標の算術平均を示すcentroid。
-上段の各panel上に条件名（22 pt）を付け、PC名・寄与率・少数の数値目盛りを表示する。
-軸名・colorbar名は18 pt、目盛りは15 pt、centroid番号は14 pt。配置と定義は`captions.csv`にも保存する。
+Perform visualization PCA and PNG plotting in the existing host environment.
+Columns are B0, B1, A0, A1, M00, and M11 from left to right. The top row shows pixel-count hexbins (turbo with a shared logarithmic color range);
+the bottom row shows Cluster IDs after SNV alignment and centroids defined as arithmetic means of the assigned pixels' PC1 and PC2 coordinates.
+Condition names (22 pt) appear above the top panels, with PC names, explained variance ratios, and a small number of numerical ticks.
+Axis and colorbar labels are 18 pt, tick labels 15 pt, and centroid numbers 14 pt. Layout and definitions are also saved in `captions.csv`.
 
-既存global fitの49試料×8,192＝401,408画素を全条件で共有し、B1以外の5条件の
-クラスタリング用L2正規化済み表現へ独立に2次元PCAをfitする。
-中心化し、追加の列標準化・whitening・投影後のL2正規化は行わない。
-FP64の`PCA(n_components=2, svd_solver="covariance_eigh", whiten=False)`を使い、
-座標・平均・主成分係数・固有値・寄与率・runtime・入力hashを保存する。
-B1は保存済みbaseline PCAの特異値の降順に上位2成分を選び、L2正規化前の得点を直接表示する。
-寄与率も元のSNV全分散に対する保存値を使う。B1の再PCA・baselineの再学習・クラスタリングのやり直しは行わない。
-条件間で座標尺度が異なるため表示範囲は条件別とし、同じ条件の上下段では一致させる。hexbinの色範囲は全条件で共通。
-詳細は[設計書](design/visualization_and_interpretation.md#latent-spectral-maps)を参照。
+Share the existing global-fit 49 specimens × 8,192 = 401,408 pixels across all conditions, and independently fit 2-dimensional PCA
+to the L2-normalized clustering representations of the 5 conditions other than B1.
+Center the inputs; do not additionally standardize columns, whiten, or L2-normalize after projection.
+Use FP64 `PCA(n_components=2, svd_solver="covariance_eigh", whiten=False)` and
+save coordinates, means, principal-component coefficients, eigenvalues, explained variance ratios, runtime, and input hashes.
+For B1, select the top 2 components in descending order of the saved baseline PCA singular values and directly display scores before L2 normalization.
+Use the saved explained variance ratios relative to total original SNV variance. Do not rerun PCA for B1, retrain the baseline, or redo clustering.
+Because coordinate scales differ across conditions, use condition-specific display ranges that match between the top and bottom rows of each condition. Hexbin color ranges are shared across all conditions.
+For details, see the [design specification](design/visualization_and_interpretation.md#latent-spectral-maps).
 
-座標の生成と図の描画は別工程である。`results/pca/global_k8_v1/`に座標があっても、
-PNG・CSVの存在や描画完了を保証しない。図を使用する場合は本節の描画・checkを行う。
-コード変更時の小規模CPUテストは次のとおり。
+Coordinate generation and figure plotting are separate stages. Coordinates in `results/pca/global_k8_v1/` do not guarantee
+that PNGs and CSVs exist or that plotting is complete. Before using a figure, perform the plotting and checks in this section.
+Small CPU tests for code changes are as follows.
 
 ```powershell
 uv run --no-sync pytest tests/experiments/test_global_pca.py -q
@@ -631,43 +631,43 @@ uv run --no-sync pytest tests/experiments/test_global_analysis.py -q -k "pca_exp
 if ($LASTEXITCODE -ne 0) { throw 'PCA export/report tests failed' }
 ```
 
-出力先の`global_k8_v1/pca-latent-2d/`は親のクラスタ図表と独立してcheckする。
-親の図表の再生成時には既存`pca-latent-2d/`を引き継ぎ、親のPNG 67枚・CSV 44個の件数へ加算しない。
-入力準備には、現行コードと整合した親図表・matchingが必要である。
-保存済み座標を使う場合は末尾の座標checkと描画を使う。図のcheckは描画後に行う。
-入力・座標を新規に用意する場合は、親図表の生成後、リポジトリrootのPowerShellで次を実行する。
+The output `global_k8_v1/pca-latent-2d/` is checked independently of its parent cluster figures and tables.
+Regeneration of parent figures carries forward the existing `pca-latent-2d/`, excluding it from the parent's counts of 67 PNGs and 44 CSVs.
+Input preparation requires parent figures and matching results consistent with the current code.
+For saved coordinates, use the coordinate check and plotting commands at the end of this section. Check figures after plotting.
+When preparing new inputs and coordinates, first generate the parent figures, then run the following in PowerShell from the repository root.
 
 ```powershell
 & {
-    # 保存済みモデルから共通画素の表現を抽出（ホストCUDA）、PCAをCPUでfit。
+    # Extract representations of common pixels from saved models (host CUDA), then fit PCA on CPU.
     foreach ($step in @("prepare", "fit")) {
         uv run --no-sync python scripts/experiments/global_pca.py $step --resume
         if ($LASTEXITCODE -ne 0) { throw "PCA failed: $step" }
     }
 
-    # 固定した座標からPNG一枚を描画・check。
+    # Plot and check one PNG from the fixed coordinates.
     uv run --no-sync python scripts/experiments/visualize_global_pca.py run
     if ($LASTEXITCODE -ne 0) { throw 'PCA plotting failed' }
 }
 ```
 
-`prepare`でのNN表現抽出のみCUDAを使用する（既定device 0、chunk 1,024）。
-`fit`とPNG描画はCPU処理である。保存する入力配列は約517 MBと画素CSV、
-B0のFP64化だけで約822 MBを要するため、PCA時は入力・作業領域を含むRAMを確保する。
-PCAはB1以外の5条件で一度だけ全共通画素を使い、B1は既存PCを取り出す。描画時には再fitしない。
-`--resume`は既存の完成した入力・条件を検証してskipする。
-入力・投影を同じv1保存先へ再生成する場合は、`prepare`・`fit`の両方で`--resume`の代わりに`--overwrite`を使う。
-PCA fitに乱数seedは使わず、scatterの重なり順だけROOT_SEEDで固定する。
+Only NN representation extraction in `prepare` uses CUDA (default device 0, chunk 1,024).
+`fit` and PNG plotting run on CPU. Saved input arrays occupy approximately 517 MB plus a pixel CSV;
+converting B0 to FP64 alone requires approximately 822 MB, so allow RAM for inputs and workspace during PCA.
+PCA uses all common pixels once for each of the 5 conditions other than B1; B1 retrieves existing PCs. Plotting does not refit.
+`--resume` validates and skips completed inputs and conditions.
+To regenerate inputs and projections at the same v1 location, use `--overwrite` instead of `--resume` for both `prepare` and `fit`.
+PCA fitting uses no random seed; only scatter overlap order is fixed with ROOT_SEED.
 
-| 保存先（`outputs/experiments/global_v1/`からの相対path） | 内容 |
+| Location (relative to `outputs/experiments/global_v1/`) | Content |
 | --- | --- |
-| `checkpoints/pca_projection/global_k8_v1/inputs/` | 条件別FP32配列（B1は上位2成分の未正規化得点）、`B1_projection.npz`に既存係数・寄与率・元成分index、画素CSV、出典 |
-| `results/pca/global_k8_v1/{condition}/` | `projection.npz`、`coordinates.npy`・`coordinates.csv`、`components.csv`、`explained_variance.csv`、実行・完了記録 |
-| `results/figures/global_k8_v1/pca-latent-2d/01_pca_density_clusters.png` | 指定の2行6列PNG一枚 |
-| `results/figures/global_k8_v1/pca-latent-2d/`内のCSV | `pixels.csv`・`hexbin_counts.csv`・`centroids.csv`・`explained_variance.csv`・`captions.csv` |
+| `checkpoints/pca_projection/global_k8_v1/inputs/` | Per-condition FP32 arrays (B1 uses unnormalized scores of the top 2 components); `B1_projection.npz` contains existing coefficients, explained variance ratios, and original component indices; pixel CSV and provenance |
+| `results/pca/global_k8_v1/{condition}/` | `projection.npz`, `coordinates.npy`, `coordinates.csv`, `components.csv`, `explained_variance.csv`, and execution/completion records |
+| `results/figures/global_k8_v1/pca-latent-2d/01_pca_density_clusters.png` | One PNG with the specified 2-row, 6-column layout |
+| CSVs in `results/figures/global_k8_v1/pca-latent-2d/` | `pixels.csv`, `hexbin_counts.csv`, `centroids.csv`, `explained_variance.csv`, and `captions.csv` |
 
-保存済み座標から図を再生成・確認する場合は次を使う。新しい図が完成してから`pca-latent-2d/`を置換する。
-描画のみの変更には`visualize_global_pca.py run`を使い、既存図のcheckだけを行う場合は`run`の行を省く。
+Use the following to regenerate and check the figure from saved coordinates. `pca-latent-2d/` is replaced only after the new figure is complete.
+For plotting-only changes, use `visualize_global_pca.py run`; omit the `run` line when only checking an existing figure.
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_pca.py check
@@ -680,24 +680,24 @@ if ($LASTEXITCODE -ne 0) { throw 'PCA figure check failed' }
 
 <a id="global-mask-rate"></a>
 
-### 8.4 全体fitのmask率補助比較
+### 8.4 Supplementary mask-rate comparison with global fitting
 
-M11の抽出画素・設定・seedを共有してM11-75を1回学習し、固定表現でK8のCosine-KMeansを
-同じ3 seedでfit・評価する。初回fitの2×7図は上段`M11(-50)`・下段`M11-75`で、
-既選定7試料の列順を維持する。範囲・指標・反復・matchingは
-[可視化設計第1.4節](design/visualization_and_interpretation.md#global-mask-rate)に従う。
+Train M11-75 once using M11's sampled pixels, settings, and seed, then fit and evaluate K8 Cosine-KMeans
+with the same 3 seeds on the fixed representation. The 2×7 figure for the first fit places `M11(-50)` on top and `M11-75` below,
+retaining the column order of the 7 previously selected specimens. Scope, metrics, replicates, and matching follow
+[Section 1.4 of the visualization design](design/visualization_and_interpretation.md#global-mask-rate).
 
-既定rootは`outputs/experiments/global_v1/`。50%の既存学習・3 seed診断・主図表を出典として参照するため、
-それらの成果物とmanifestを保持する。既存成果物の確認には次を使う。
+The default root is `outputs/experiments/global_v1/`. Existing 50% training, 3-seed diagnostics, and main figures and tables are referenced as sources,
+so retain those artifacts and manifests. Use the following to check existing artifacts.
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_mask_rate.py check
 if ($LASTEXITCODE -ne 0) { throw 'Global mask-rate report check failed' }
 ```
 
-CPUで入力・出典・保存ラベル・契約・成果物hashを検証し、学習や全画素推論は行わない。
-終了code 0と`status=mask_rate_report_completed`・`checks_passed=true`を確認する。
-未着手・中断工程の実行順序は次のとおり。
+This validates inputs, provenance, saved labels, contracts, and artifact hashes on CPU without training or all-pixel inference.
+Check exit code 0, `status=mask_rate_report_completed`, and `checks_passed=true`.
+Execute unstarted or interrupted stages in the following order.
 
 ```powershell
 & {
@@ -708,56 +708,56 @@ CPUで入力・出典・保存ラベル・契約・成果物hashを検証し、�
 }
 ```
 
-`train`はM11-75のみを学習し、`--resume`で同じrunのcheckpointから再開する。
-`cluster`は固定重みで3 fits、`evaluate`は全49試料の6指標、`report`は保存結果から比較表・図を作る。
-`train`・`training-check`・`cluster`・`evaluate`はCUDA必須（既定`--device 0`）、
-`report`・`check`はCPU。学習は長時間GPU処理で、所要時間・更新数は条件別の学習完了記録を参照する。
-全画素処理の`--chunk-pixels`は既定1,024、図の`--dpi`は既定240。
-各工程は出力後に検証し、`--resume`で完了済み出力を検証してskipする。`report --resume`は既存図を描き直さない。
-契約・code・runtimeが一致しない出力や不完全な出力は自動置換しない。このCLIに`--overwrite`はない。
+`train` trains only M11-75; `--resume` resumes from the same run's checkpoint.
+`cluster` performs 3 fits with fixed weights, `evaluate` calculates 6 metrics for all 49 specimens, and `report` creates comparison tables and figures from saved results.
+`train`, `training-check`, `cluster`, and `evaluate` require CUDA (default `--device 0`);
+`report` and `check` run on CPU. Training is a long GPU operation; refer to condition-specific training completion records for elapsed times and update counts.
+The default `--chunk-pixels` for all-pixel processing is 1,024, and the default figure `--dpi` is 240.
+Each stage validates its output after writing; `--resume` validates and skips completed outputs. `report --resume` does not redraw existing figures.
+Outputs with inconsistent contracts, code, or runtime, and incomplete outputs, are not automatically replaced. This CLI has no `--overwrite`.
 
-| 保存先（global_v1配下） | 内容 |
+| Location (under global_v1) | Content |
 | --- | --- |
-| `results/neural/M11-75/repeat_1/` | 1回の学習のrun・history・attempt・完了記録 |
-| `checkpoints/neural/M11-75/repeat_1/` | `last_model.pt`と再開用`checkpoints/last.pt` |
-| `results/global_mask_rate_k8_v1/clustering/M11-75/repeat_{1,2,3}/` | K8・3 seedのmapと出典・完了記録。中心は対応する`checkpoints/global_mask_rate_k8_v1/`配下 |
-| `results/global_mask_rate_k8_v1/conditions/M11-75/` | 試料別指標、SNV平均、評価の出典・完了記録 |
-| `results/figures/global_mask_rate_k8_v1/` | 2×7 PNG・集計表・matching・caption・出典・完了記録の計8ファイル |
+| `results/neural/M11-75/repeat_1/` | Run, history, attempt, and completion records for 1 training run |
+| `checkpoints/neural/M11-75/repeat_1/` | `last_model.pt` and resume checkpoint `checkpoints/last.pt` |
+| `results/global_mask_rate_k8_v1/clustering/M11-75/repeat_{1,2,3}/` | K8 maps for 3 seeds, provenance, and completion records; centers are under the corresponding `checkpoints/global_mask_rate_k8_v1/` |
+| `results/global_mask_rate_k8_v1/conditions/M11-75/` | Specimen-level metrics, SNV means, and evaluation provenance/completion records |
+| `results/figures/global_mask_rate_k8_v1/` | 8 files comprising a 2×7 PNG, aggregate table, matching, captions, provenance, and completion record |
 
-ファイル別の用途と統計量の読み方は[成果物一覧](results.md#mask-rate-handoff)にまとめる。
+For the role of each file and interpretation of statistics, see the [artifact inventory](results.md#mask-rate-handoff).
 
 <a id="nir-interpretation"></a>
 
-### 8.5 NIRスペクトルの解釈図
+### 8.5 NIR spectral interpretation figures
 
-全体fitのM11・K8の保存済み試料内クラスタ平均から、試料等重みの代表スペクトルと
-試料別の二次微分図をCPUで描画する。rawデータの全件読込やモデルの再fitは行わない。
-前節までの`global_k8_v1`にある`report.json`、波長・画素数・スペクトルのCSVが必要である。
+From saved within-specimen cluster means for global-fit M11 at K8, plot equally specimen-weighted representative spectra and
+specimen-level second-derivative figures on CPU. This does not read all raw data or refit models.
+It requires `report.json` and the wavelength, pixel-count, and spectral CSVs in `global_k8_v1` from the preceding sections.
 
 ```powershell
 uv run --no-sync python scripts/experiments/visualize_nir_interpretation.py --scope both
 ```
 
-試料別の表示クラスタ・参照曲線は
-[`nir_plot_selection.yaml`](../scripts/experiments/nir_plot_selection.yaml)を既定で読み込む。
-入力・出力先は`--report-dir`・`--output-dir`、対象試料は`--sample-ids`で指定できる。
-既存PNGの置換が必要な場合だけ`--overwrite`を付ける。
+Display clusters and reference curves for each specimen are read by default from
+[`nir_plot_selection.yaml`](../scripts/experiments/nir_plot_selection.yaml).
+Use `--report-dir` and `--output-dir` for input/output locations and `--sample-ids` for target specimens.
+Add `--overwrite` only when existing PNGs need to be replaced.
 
-既定出力先は`outputs/nir_interpretation/`で、代表図は`M11_equal_sample.png`、
-試料別図は`each_nir_spectra/{sample_id}.png`である。
-横軸は波数へ換算するが、縦軸は波長に関する二次微分のままである。
-保存済みSNV・疑似吸光度・二次微分の定義、表示クラスタ、試料ID・凡例を照合する。
-図中の18帯域番号は文献に基づく参照位置であり、このCLIは帯域強度の棒グラフや集計表を生成しない。
+The default output location is `outputs/nir_interpretation/`; the representative figure is `M11_equal_sample.png`,
+and specimen-level figures are `each_nir_spectra/{sample_id}.png`.
+The horizontal axis is converted to wavenumber, but the vertical axis remains the second derivative with respect to wavelength.
+Check saved SNV, pseudo-absorbance, and second-derivative definitions, displayed clusters, specimen IDs, and legends.
+The 18 numbered bands in the figures are literature-based reference positions; this CLI does not generate band-intensity bar charts or aggregate tables.
 
 <a id="oof-aggregation"></a>
 
-## 9. OOF集計
+## 9. OOF aggregation
 
-指定する全conditionについて5 folds × 3 repeatsの評価が揃ってから実行する。
-既存snapshotの確認は`check`、同じ保存先への再集計は明示的な`--overwrite`を使う。
+Run only after evaluations for 5 folds × 3 replicates are available for every specified condition.
+Use `check` to inspect an existing snapshot and explicit `--overwrite` to reaggregate at the same location.
 
-`main_oof_v1`は主8条件の49試料・120 source runs・82,320 score recordsをまとめる。
-以下は同じv1への再生成例であり、保存済みsnapshotの確認には`check`だけを実行する。
+`main_oof_v1` aggregates 49 specimens, 120 source runs, and 82,320 score records for the 8 main conditions.
+The following regenerates the same v1; run only `check` to inspect a saved snapshot.
 
 ```powershell
 uv run --no-sync python scripts/experiments/aggregate_oof.py run `
@@ -770,9 +770,9 @@ uv run --no-sync python scripts/experiments/aggregate_oof.py check `
     --experiment-dir outputs/experiments/production_v1
 ```
 
-mask率補助実験は主条件のsnapshotを保持し、M11-25・M11・M11-75の49試料・45 source runsを
-別の`mask_rate_oof_v1`へまとめる。
-以下は再集計例であり、既存snapshotの再確認には`check`だけを実行する。
+For the supplementary mask-rate experiment, retain the main-condition snapshot and aggregate 49 specimens and 45 source runs from M11-25, M11, and M11-75
+into the separate `mask_rate_oof_v1`.
+The following is a reaggregation example; run only `check` to recheck an existing snapshot.
 
 ```powershell
 uv run --no-sync python scripts/experiments/aggregate_oof.py run `
@@ -785,43 +785,43 @@ uv run --no-sync python scripts/experiments/aggregate_oof.py check `
     --experiment-dir outputs/experiments/production_v1
 ```
 
-runでは `status=oof_aggregation_completed` と `checks_passed=true`、checkでは
-`status=validated_existing_oof` を確認する。欠損run、失敗run、不完全な試料・画素対応を無視して
-集計しない。
+Check `status=oof_aggregation_completed` and `checks_passed=true` for run, and
+`status=validated_existing_oof` for check. Do not ignore missing runs, failed runs, or incomplete specimen/pixel correspondence
+when aggregating.
 
 <a id="oof-sanity"></a>
 
-### 9.1 B0・B1・A0・M00 OOF sanity可視化
+### 9.1 B0, B1, A0, and M00 OOF sanity visualization
 
-B0・B1・A0・M00の全5 folds×3反復のclustering・評価が完了した成果物をCPUで読み、
-[専用の表示仕様](design/oof_sanity_visualization.md)に従ってPNG 5枚とCSV 3つを生成する。
-全主条件のOOF snapshot作成や、モデルの再fitは不要である。
+Read completed clustering and evaluation artifacts for all 5 folds × 3 replicates of B0, B1, A0, and M00 on CPU,
+and generate 5 PNGs and 3 CSVs according to the [dedicated display specification](design/oof_sanity_visualization.md).
+This requires neither an OOF snapshot covering all main conditions nor model refitting.
 
-保存済み図は`outputs/sanity_checks/a0_m00_oof_visualization/`を参照する。
-再生成時は4条件と新規出力先を明示する。以下のプレースホルダーを、まだ存在しない出力先に置き換える。
+For saved figures, see `outputs/sanity_checks/a0_m00_oof_visualization/`.
+When regenerating, specify the 4 conditions and a new output location explicitly. Replace the placeholder below with an output location that does not yet exist.
 
 ```powershell
 uv run --no-sync python scripts/experiments/visualize_b0_b1_oof.py `
     --conditions B0 B1 A0 M00 `
     --experiment-dir outputs/experiments/production_v1 `
-    --output-dir '<新規出力先>'
+    --output-dir '<new-output-location>'
 ```
 
-終了code 0と保存物を確認する。条件別の代表7試料図でKYOw名が各試料の下にあり、
-silhouetteに下段subplotがないことを確認する。補正前LLA・LFR・occupancyと未定義理由はCSVで読む。
-sanity出力にはログやcompletion JSONを追加しない。
+Check exit code 0 and the saved artifacts. Check that KYOw names appear below each specimen in the condition-specific representative 7-specimen figures,
+and that silhouette has no lower subplot. Read uncorrected LLA, LFR, occupancy, and reasons for undefined values from CSVs.
+Do not add logs or completion JSON to sanity outputs.
 
 <a id="oof-reporting"></a>
 
-### 9.2 主条件OOF図表
+### 9.2 Main-condition OOF figures and tables
 
-`main_oof_v1`を出典に、主8条件・全49試料・全7KのPNG 3枚とCSV 11個を生成する。
-代表指標はLLA（保存キー`adjusted_lla_*`）、LFR(TGN+FS)、ARI、Cosine-Silhouette、Cluster Occupancyの順。
-LLAの窓3・5・9を個別に示し、Occupancyと交互作用はCSVだけにする。
-LFRはCSVにTGN+FS・TGN単独・FS単独を保存し、PNGはLFR(TGN+FS)のみ表示する。
-`source_metric`は元の保存キー`lfr_both`・`lfr_noise`・`lfr_shift`を保持する。
-各PNGのLLA 3パネルは共通の縦軸範囲とし、01・02の縦軸目盛りは全パネル0.1刻みとする。
-03のLLAの目盛り間隔は描画側で設定し、異なる指標の縦軸範囲は個別に設定する。
+Using `main_oof_v1` as the source, generate 3 PNGs and 11 CSVs for the 8 main conditions, all 49 specimens, and all 7 K values.
+Representative metrics appear in the order LLA (saved keys `adjusted_lla_*`), LFR(TGN+FS), ARI, Cosine-Silhouette, and Cluster Occupancy.
+Show LLA windows 3, 5, and 9 separately; keep Occupancy and interactions in CSV only.
+For LFR, CSVs retain TGN+FS, TGN alone, and FS alone, while PNGs show only LFR(TGN+FS).
+`source_metric` retains the original saved keys `lfr_both`, `lfr_noise`, and `lfr_shift`.
+The 3 LLA panels in each PNG share a vertical-axis range; all panels in 01 and 02 use vertical-axis tick spacing of 0.1.
+LLA tick spacing in 03 is set by the renderer, and vertical-axis ranges are set separately for different metrics.
 
 ```powershell
 uv run --no-sync python scripts/experiments/visualize_main_oof.py `
@@ -830,57 +830,57 @@ uv run --no-sync python scripts/experiments/visualize_main_oof.py `
 if ($LASTEXITCODE -ne 0) { throw 'OOF reporting failed' }
 ```
 
-既定の保存先は`outputs/experiments/production_v1/results/figures/main_oof_v1/`。
-`--output-dir`で変更でき、`--dpi`の既定値は240である。
-再生成時はこのrendererが管理する出力を上書きし、管理対象の旧形式PNG・Occupancy図・paired分布図・交互作用図を削除する。
-元のOOF snapshot、clustering・評価成果物と、出力先の無関係なファイルは保持する。
-失敗時は非0終了とする。入力検証後、出力の上書きを始める時点で旧`completion.json`を除去し、
-上書き途中の失敗・中断を更新前の成功記録で完了扱いにしない。
+The default output location is `outputs/experiments/production_v1/results/figures/main_oof_v1/`.
+Use `--output-dir` to change it; the default `--dpi` is 240.
+Regeneration overwrites outputs managed by this renderer and deletes managed old-format PNGs, Occupancy figures, paired-distribution figures, and interaction figures.
+Original OOF snapshots, clustering/evaluation artifacts, and unrelated files at the output location are retained.
+Failures return a nonzero exit code. After input validation, the old `completion.json` is removed when output overwriting begins,
+so a failure or interruption during overwriting cannot be treated as completed based on the previous success record.
 
-| ファイル | 内容 |
+| File | Content |
 | --- | --- |
-| `01_main_metrics_k_sweep.png` | 単段幅2×2。上段LLA 3・5、下段LLA 9・LFR(TGN+FS)。主8条件の全K曲線 |
-| `02_k8_distributions.png` | 2×3。上段LLA 3・5・9、下段LFR(TGN+FS)・ARI・Cosine-Silhouette。$`K_0=8`$、黒線はmacro平均、`n`は共通対象数 |
-| `03_paired_k_sweep.png` | 分布図と同じ2×3にM11−B0・M11−B1・M11−M00・A1−A0・M11−A1の差を表示 |
-| `metrics_all_k.csv`、`metrics_k8.csv` | 代表指標・LFR 3種類・clean testのOccupancy、平均・試料間SD・反復間SD・対象数 |
-| `paired_all_k.csv`、`paired_k8.csv` | 12比較。LLA・LFR 3種類・ARI・Cosine-Silhouetteのpaired差 |
-| `interaction_all_k.csv`、`interaction_k8.csv` | LLA 3・5・9とLFR 3種類の2×2交互作用 |
-| `sample_values.csv` | 条件別・paired・交互作用の試料別値、反復値、共通対象への採否 |
-| `availability.csv` | 反復ごとの定義済み対象数と未定義の試料・理由 |
-| `ari_pairs.csv` | ARIの3反復対の値・未定義理由・使用クラスタ数・退化flag |
-| `occupancy_samples.csv`、`occupancy_folds.csv` | clean testの試料別分布、fold・反復別の画素pool分布と試料macro分布 |
-| `report.json` | 出典hash・生成コードhash・対象・指標定義・図の配置・captionに必要な情報 |
-| `completion.json` | `status=oof_figures_completed`と管理対象出力のhash |
+| `01_main_metrics_k_sweep.png` | Single-column-width 2×2 layout. Top: LLA 3 and 5; bottom: LLA 9 and LFR(TGN+FS). Curves over all K values for the 8 main conditions |
+| `02_k8_distributions.png` | 2×3 layout. Top: LLA 3, 5, and 9; bottom: LFR(TGN+FS), ARI, and Cosine-Silhouette. $`K_0=8`$; black lines show macro means, and `n` is the common eligible count |
+| `03_paired_k_sweep.png` | The same 2×3 layout as the distribution figure, showing differences M11−B0, M11−B1, M11−M00, A1−A0, and M11−A1 |
+| `metrics_all_k.csv`, `metrics_k8.csv` | Representative metrics, 3 LFR variants, clean-test Occupancy, means, between-specimen SDs, between-replicate SDs, and eligible counts |
+| `paired_all_k.csv`, `paired_k8.csv` | 12 comparisons: paired differences in LLA, 3 LFR variants, ARI, and Cosine-Silhouette |
+| `interaction_all_k.csv`, `interaction_k8.csv` | 2×2 interactions for LLA 3, 5, and 9 and 3 LFR variants |
+| `sample_values.csv` | Specimen-level and replicate values for conditions, paired comparisons, and interactions; inclusion in the common eligible set |
+| `availability.csv` | Defined counts per replicate and undefined specimens with reasons |
+| `ari_pairs.csv` | Values for the 3 ARI replicate pairs, reasons for undefined values, numbers of used clusters, and degeneracy flags |
+| `occupancy_samples.csv`, `occupancy_folds.csv` | Clean-test specimen-level distributions, pixel-pooled distributions by fold and replicate, and specimen-macro distributions |
+| `report.json` | Source hashes, generation-code hashes, targets, metric definitions, figure layouts, and information needed for captions |
+| `completion.json` | `status=oof_figures_completed` and hashes of managed outputs |
 
-LLA・LFR(TGN+FS)・Cosine-Silhouetteの曲線は実線がmacro平均、破線・点線・一点鎖線が反復1・2・3。
-ARIは試料内の3反復対平均を試料macro平均し、paired ARIはこの試料平均の条件間差を共通対象で集計する。
-ARIとその差には反復別曲線・反復間SDを付けない。詳細は[報告規約](design/evaluation_metrics.md#reporting)を参照する。
+For LLA, LFR(TGN+FS), and Cosine-Silhouette curves, solid lines show macro means; dashed, dotted, and dash-dotted lines show replicates 1, 2, and 3.
+ARI averages the 3 replicate pairs within each specimen, then takes a specimen macro mean; paired ARI aggregates condition differences in these specimen means over common eligible specimens.
+ARI and its differences have neither replicate-specific curves nor between-replicate SDs. For details, see the [reporting conventions](design/evaluation_metrics.md#reporting).
 
-補正後LLAの交互作用とpaired ARIは保存済みscoreから報告pipelineで求める。
-rawスペクトル・重み・mapは読み込まず、学習・推論・CV評価を再実行しない。
-消費するsnapshot・元成果物のmetadata hashと対象対応を確認するが、OOFの完全な`check`の代用にはしない。
-終了code 0、PNGの01〜03、CSV 11個、completion status、文字・凡例・対象数の表示を確認する。
+Corrected LLA interactions and paired ARI are computed from saved scores in the reporting pipeline.
+It does not read raw spectra, weights, or maps, and does not rerun training, inference, or CV evaluation.
+It checks metadata hashes and target correspondence for consumed snapshots and source artifacts, but does not replace a complete OOF `check`.
+Check exit code 0, PNGs 01–03, 11 CSVs, completion status, and the display of text, legends, and eligible counts.
 
 <a id="artifact-records"></a>
 
-## 10. 保存とGit
+## 10. Storage and Git
 
-config、manifest、数値結果、図、completion記録を実験出力と一緒に保存する。
-`outputs/`全体、`data/`、`*.pt`、`*.pth`、`*.safetensors`は
-`.gitignore`によりGit管理対象外であり、公開リポジトリには含まれない。
-再解析には対応する入力・重み・実行記録を別途用意する。
+Save configurations, manifests, numerical results, figures, and completion records with experiment outputs.
+All of `outputs/`, `data/`, `*.pt`, `*.pth`, and `*.safetensors` are
+excluded from Git tracking by `.gitignore` and are absent from the public repository.
+For reanalysis, provide the corresponding inputs, weights, and execution records separately.
 
-各runで保存する記録は次のとおり。schemaと由来の扱いは[実験プロトコル第11.2節](design/experiment_protocol.md#execution-records)に従う。
+Save the following records per run. Schema and provenance handling follow [Section 11.2 of the experimental protocol](design/experiment_protocol.md#execution-records).
 
-- condition、fold、repeat、seed、manifest・code・config hash
-- status、epoch、attempted/optimizer updates、AMP skips
-- 学習のepoch時間合計、clustering・評価のwall timeとGPU peak allocated/reserved、保存量
-- 再開した場合のsource pathと整合確認
-- clustering・評価のcompletionとcheck結果
+- Condition, fold, replicate, seed, and manifest/code/configuration hashes
+- Status, epoch, attempted/optimizer updates, and AMP skips
+- Total training epoch time, clustering/evaluation wall time and GPU peak allocated/reserved memory, and storage volume
+- Source path and consistency checks when resuming
+- Clustering/evaluation completion records and check results
 
-本番学習completionはGPU peakを保存しない。学習時の値を事後推定せず、preflightの実測値は
-工学的参考値として区別する。
-上記は本番実験の記録規約であり、PNG・CSVだけを保存するOOF sanityとは分ける。
+Production training completion records do not store GPU peaks. Do not estimate training values after the fact; distinguish preflight measurements
+as engineering reference values.
+These are recording conventions for production experiments and are separate from OOF sanity outputs, which save only PNGs and CSVs.
 
-本番CVではコード、設計条件、入力データ、manifestを固定する。
-変更が必要な場合は影響範囲と実験系列の扱いを事前に確認し、変更内容と検証結果を記録する。
+Production CV fixes the code, design conditions, input data, and manifests.
+If changes are needed, first confirm their scope and treatment of the experimental series, then record the changes and validation results.

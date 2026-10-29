@@ -1,53 +1,53 @@
-# 空間マップ再現性補助実験の実行手順
+# Runbook for the Spatial Map Reproducibility Supplementary Experiment
 
-M11・K=8の学習済みencoder 3組と、各encoderで共通のCosine-KMeans 3 seedを使い、
-全49試料の9マップを比較する。研究条件・指標・解釈は[再現性評価仕様](design/spatial_map_reproducibility_plan.md)を参照する。
+Compare 9 maps for all 49 specimens using 3 trained M11 encoders at K=8 and 3 Cosine-KMeans seeds shared across encoders.
+For the research conditions, metrics, and interpretation, see the [reproducibility evaluation specification](design/spatial_map_reproducibility_plan.md).
 
-本書は保存済み成果物からの再評価手順である。現行CLIにはencoder 2・3を学習するactionがないため、
-下記の学習済み重み・再利用マップを別途用意する必要がある。これらの成果物はGitに同梱しない。
+This document describes reevaluation from saved artifacts. The current CLI has no action for training encoders 2 and 3,
+so the trained weights and reused maps listed below must be provided separately. These artifacts are not included in Git.
 
-## 入力と出力
+## Inputs and outputs
 
-| 用途 | 既定path |
+| Purpose | Default path |
 | --- | --- |
-| 全体fit・encoder 1・初回マップ | `outputs/experiments/global_v1/` |
-| 学習済みencoder 2・3と再利用マップ | `outputs/experiments/global_spatial_reproducibility_v1/` |
-| 前処理済み入力 | `data/processed/production_v1/` |
-| 試料メタデータ | `data/metadata/古材メタデータ.csv` |
-| 出力 | `outputs/experiments/global_spatial_reproducibility_v2/` |
+| Global fit, encoder 1, and initial map | `outputs/experiments/global_v1/` |
+| Trained encoders 2 and 3 and reused maps | `outputs/experiments/global_spatial_reproducibility_v1/` |
+| Preprocessed inputs | `data/processed/production_v1/` |
+| Specimen metadata | `data/metadata/古材メタデータ.csv` |
+| Output | `outputs/experiments/global_spatial_reproducibility_v2/` |
 | CLI | `scripts/experiments/global_spatial_reproducibility.py` |
 
-全体fitの入力先は`--source-experiment-dir`、学習済み成果物の入力先は`--artifacts-dir`、
-出力先は`--experiment-dir`で指定できる。入力先の成果物は読み取り専用とし、出力先とは分離する。
-学習済みencoderと再利用マップを参照するため、入力フォルダは残しておく。
+Use `--source-experiment-dir` for the global-fit input location, `--artifacts-dir` for the trained-artifact input location,
+and `--experiment-dir` for the output location. Treat input artifacts as read-only and keep their locations separate from the output location.
+Keep the input folders because the trained encoders and reused maps are referenced there.
 
-| 反復 | 使用するマップ |
+| Replicate | Map used |
 | --- | --- |
-| `(1,1)` | 全体fitの`results/clustering/M11/repeat_1/maps/` |
-| `(1,3)` | 全体fitの`results/global_k8_3seed_v1/clustering/M11/repeat_3/maps/` |
-| `(2,1)`・`(2,3)`・`(3,1)`・`(3,3)` | 学習済み成果物の`results/clustering/M11/encoder_{e}/kmeans_{k}/maps/` |
-| `(1,2)`・`(2,2)`・`(3,2)` | 出力先の`results/clustering/M11/encoder_{e}/kmeans_2/maps/`に生成 |
+| `(1,1)` | Global fit: `results/clustering/M11/repeat_1/maps/` |
+| `(1,3)` | Global fit: `results/global_k8_3seed_v1/clustering/M11/repeat_3/maps/` |
+| `(2,1)`, `(2,3)`, `(3,1)`, `(3,3)` | Trained artifacts: `results/clustering/M11/encoder_{e}/kmeans_{k}/maps/` |
+| `(1,2)`, `(2,2)`, `(3,2)` | Generated at `results/clustering/M11/encoder_{e}/kmeans_2/maps/` in the output location |
 
-第1seedは1960870825、第3seedは2051198256。
-第2seedは`_seed("kmeans", "global_spatial_reproducibility", "seed2_v2", 2, 8)`から導出し、
-3encoderで共有する。整数値と衝突検査は`prepare`の出力と`protocol/run.json`で確認できる。
-上記の入力が揃っていればencoderの再学習は不要。全体fitと`global_k8_3seed_v1`の集計を使用できる。
+The first seed is 1960870825, and the third is 2051198256.
+The second seed is derived from `_seed("kmeans", "global_spatial_reproducibility", "seed2_v2", 2, 8)` and
+shared across the 3 encoders. Its integer value and collision checks are available in the `prepare` output and `protocol/run.json`.
+If the inputs above are available, encoder retraining is unnecessary. The global-fit and `global_k8_3seed_v1` aggregations can be used.
 
-## テスト
+## Tests
 
-リポジトリrootから実行する。既存のPython環境とlockを使い、`--no-sync`により依存関係を更新しない。
+Run from the repository root. Use the existing Python environment and lock; `--no-sync` prevents dependency updates.
 
 ```powershell
 uv run --no-sync pytest tests/experiments/test_spatial_reproducibility_metrics.py tests/experiments/test_spatial_reproducibility_training.py tests/experiments/test_spatial_reproducibility_reporting.py tests/experiments/test_spatial_reproducibility_pipeline.py -q
 ```
 
-小規模配列・合成マップ・一時ファイルを使い、境界中点、距離換算、空境界、ARI、seed、入力検証、
-3組のfit、再開、集計、保存・描画を確認する。実データの学習・GPU処理・全件評価は行わない。
-pytest cacheと一時ファイル・図が作成される。
+Small arrays, synthetic maps, and temporary files check boundary midpoints, distance conversion, empty boundaries, ARI, seeds, input validation,
+3 fits, resumption, aggregation, saving, and plotting. The tests do not train on real data, use GPUs, or evaluate the full dataset.
+They create pytest cache entries and temporary files and figures.
 
-## 準備から図表出力まで
+## From preparation to figure export
 
-既定pathを使用する場合は、次の順に実行する。
+When using the default paths, run the following in order.
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py prepare
@@ -57,23 +57,23 @@ uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py re
 uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py check
 ```
 
-| 段階 | 処理と負荷 |
+| Stage | Processing and workload |
 | --- | --- |
-| `prepare` | CPUで入力の完了記録、重み・中心・mapの出典、hash、shape、maskを確認し、seed・反復対・評価条件を`protocol/`へ保存する。モデル・多数のmapの読み取りを伴う |
-| `cluster` | GPU 0で各encoderのfit画素表現を抽出し、第2seedを計3回fitする。全49試料を推論し、計147マップと3組の中心を保存する |
-| `evaluate` | CPUで各試料の9マップ・36対を評価し、49試料を等重みで集計する。`--include-overlap`は全36対の重なり表とVI成分を保存し、2成分と合計VIを表にも出力する |
-| `summarize` | 保存済みの対別JSONから集計表を更新する。指標・学習・クラスタリングの再計算は行わず、入力検証とCPUでの集計・ファイル入出力を行う |
-| `report` | CPUで3種類・99枚のPNG、49試料の境界頻度配列、captionと配色対応表を保存する |
-| `check` | 出典・hash・対象数・評価と図表の対応を検証する。再現性の合否判定ではない |
+| `prepare` | On CPU, checks input completion records, provenance of weights, centers, and maps, hashes, shapes, and masks; saves seeds, replicate pairs, and evaluation conditions in `protocol/`. Reads models and many maps |
+| `cluster` | On GPU 0, extracts representations of fit pixels from each encoder and performs 3 fits with the second seed. Runs inference on all 49 specimens and saves 147 maps and 3 sets of centers |
+| `evaluate` | On CPU, evaluates 9 maps and 36 pairs per specimen and aggregates 49 specimens with equal weights. `--include-overlap` saves overlap tables and VI components for all 36 pairs and also exports both components and total VI to tables |
+| `summarize` | Updates aggregate tables from saved per-pair JSON. Does not recalculate metrics, training, or clustering; performs input validation, CPU aggregation, and file I/O |
+| `report` | On CPU, saves 99 PNGs of 3 types, boundary-frequency arrays for 49 specimens, captions, and a color-matching table |
+| `check` | Validates provenance, hashes, target counts, and correspondence between evaluations and figures. Does not judge whether reproducibility passes or fails |
 
-fit画素は既存の401,408座標を共有する。Cosine-KMeansはK=8、`max_iter=500`、`tol=1e-4`、FP32を使用する。
-全画素の表現は`--chunk-pixels`単位で処理し、中間表現をディスクへ保存しない。
-各fitの中心は保存・再ロードして中心とprobe予測の一致を確認する。
+Fit pixels share the existing 401,408 coordinates. Cosine-KMeans uses K=8, `max_iter=500`, `tol=1e-4`, and FP32.
+Representations of all pixels are processed in units of `--chunk-pixels`; intermediate representations are not saved to disk.
+The centers from each fit are saved and reloaded to check agreement of the centers and probe predictions.
 
-## 保存済み評価から集計表を更新
+## Updating aggregate tables from saved evaluations
 
-`evaluate --include-overlap`まで完了した出力では、保存済みのVI成分を使って更新できる。
-リポジトリrootから次を実行する。既定の対象は`global_spatial_reproducibility_v2`。
+Outputs completed through `evaluate --include-overlap` can be updated using the saved VI components.
+Run the following from the repository root. The default target is `global_spatial_reproducibility_v2`.
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py summarize
@@ -81,26 +81,26 @@ uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py re
 uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py check
 ```
 
-1行目で`results/evaluation/`の集計JSON・CSVを更新する。保存済みの対別JSONから読み取るため、
-ARI・境界一致率・VI成分の再計算も、encoder推論・Cosine-KMeansのfitも不要である。
-重み・中心・元マップ・対別JSONは変更しない。出典・hash・shape・maskの検証に伴う入力の読み取りは行う。
-集計表のみ必要な場合は1行目まででよい。更新後の評価との対応を図表の完了記録に反映する場合は、
-2・3行目まで実行する。
+The first command updates the aggregate JSON and CSV files in `results/evaluation/`. It reads saved per-pair JSON,
+so it requires neither recalculation of ARI, boundary coverage, or VI components nor encoder inference or Cosine-KMeans fitting.
+Weights, centers, original maps, and per-pair JSON remain unchanged. Inputs are read to validate provenance, hashes, shapes, and masks.
+Run only the first command if aggregate tables are all that is needed. Run the second and third commands as well
+to reflect correspondence with the updated evaluation in the figure completion record.
 
-`report --replace`は同じ3種類・99枚を再描画し、既存の`results/report/`を置き換える。
-図の構成・描画仕様は変わらず、VIの図は追加しない。CPUでの描画・境界頻度配列の生成と一時領域への保存を伴う。
-再集計・再描画とも一時領域で処理を完了してから出力を置き換える。
-`summarize`には`--resume`・`--include-overlap`を付けず、`--replace`は`report`だけに使用する。
+`report --replace` redraws the same 99 figures of 3 types and replaces the existing `results/report/`.
+Figure composition and plotting specifications remain unchanged; no VI figure is added. This involves CPU plotting, boundary-frequency array generation, and saving to temporary storage.
+Both reaggregation and replotting complete processing in temporary storage before replacing the output.
+Do not pass `--resume` or `--include-overlap` to `summarize`; use `--replace` only with `report`.
 
-集計処理の確認に絞る場合のテストは次の2ファイルとする。
+The following 2 test files focus on checking aggregation.
 
 ```powershell
 uv run --no-sync pytest tests/experiments/test_spatial_reproducibility_reporting.py tests/experiments/test_spatial_reproducibility_pipeline.py -q
 ```
 
-## 中断後の再開
+## Resuming after interruption
 
-生成段階は同じ引数に`--resume`を付ける。完了済みの段階・反復は検証してskipする。
+For generation stages, add `--resume` to the same arguments. Completed stages and replicates are validated and skipped.
 
 ```powershell
 uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py prepare --resume
@@ -110,96 +110,96 @@ uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py re
 uv run --no-sync python scripts/experiments/global_spatial_reproducibility.py check
 ```
 
-clusteringは未完了fit単位、評価・描画は未完了stage単位で再試行する。
-`--encoders 2`のように対象encoderを限定できる。`--include-overlap`・DPI・入力先などは保存済み設定と揃える。
-`check`に`--resume`は付けない。
+Clustering retries incomplete fits; evaluation and plotting retry incomplete stages.
+The target encoder can be restricted, for example with `--encoders 2`. Match `--include-overlap`, DPI, input locations, and other options to the saved settings.
+Do not add `--resume` to `check`.
 
-入力・設定・数値計算の依存コード・runtimeの不整合や、成果物の破損を検出した場合は停止する。
-完了済みの準備・クラスタリング・対別評価については、生成時のpipeline・集計コードのhashを保持し、
-集計コードの更新だけで再学習や再fitを要求しない。再集計に使ったコードは評価の`run.json`の`aggregation`に記録する。
-完了記録を手編集して通さず、エラーに示された入力や出力を確認する。
-部分生成物やOS停止時の残存stageは自動削除・上書きしない。
+Processing stops if inputs, settings, numerical dependency code, or runtime are inconsistent, or artifacts are corrupted.
+Completed preparation, clustering, and per-pair evaluation retain the hashes of the pipeline and aggregation code used at generation time;
+a change only to aggregation code does not require retraining or refitting. The code used for reaggregation is recorded in `aggregation` in the evaluation `run.json`.
+Do not hand-edit completion records to pass validation; inspect the inputs or outputs identified by the error.
+Partial outputs and stages left behind by OS shutdown are not automatically deleted or overwritten.
 
-## 評価と集計の確認点
+## Evaluation and aggregation checks
 
-- 同一encoder内9対とencoder間27対を分ける。初回`(1,1)`からの8対は36対の内数。
-- ARIは元ラベルで計算する。境界一致率は内部境界の中点に対して双方向に計算し、
-  3×3・5×5・9×9近傍をChebyshev半径1・2・4画素として扱う。
-- 9マップは同じ有効画素集合を使う。欠けたmapやmask変更は入力エラーとする。
-- 境界がある側から空の側への一致率は0、対応元が空の場合は未定義とする。
-  両方が空でも一致率1にはしない。
-- 主集計は比較群×指標ごとのcomplete-caseとする。境界一致率は予定した全対・全方向が定義された試料を使い、
-  近傍幅間の対象試料を揃える。部分欠測は診断表に残し、残存対の平均で補わない。
-- 試料等重みのmacro平均・試料間分布を報告する。36対を独立標本として検定・信頼区間を計算しない。
+- Separate the 9 within-encoder pairs from the 27 between-encoder pairs. The 8 pairs against the initial `(1,1)` map are a subset of the 36 pairs.
+- Calculate ARI from original labels. Calculate boundary coverage in both directions using internal boundary midpoints,
+  treating 3×3, 5×5, and 9×9 neighborhoods as Chebyshev radii of 1, 2, and 4 pixels.
+- All 9 maps use the same set of valid pixels. Missing maps or changed masks are input errors.
+- Coverage from a side with boundaries toward an empty side is 0; it is undefined when the source side is empty.
+  Coverage is not set to 1 even when both sides are empty.
+- Main aggregation uses complete cases for each comparison-group × metric combination. Boundary coverage uses specimens for which all planned pairs and directions are defined,
+  with the same eligible specimens across neighborhood widths. Partial missingness remains in diagnostic tables and is not replaced with the mean of the remaining pairs.
+- Report macro means with equal specimen weights and distributions across specimens. Do not treat the 36 pairs as independent samples for tests or confidence intervals.
 
-VIは次の3指標をbits単位で保存し、各指標についてencoder内9対・encoder間27対・初回基準8対を集計する。
-各試料の予定対の平均を求め、試料間は等重みでmacro平均する。初回基準8対は他の2群の内数である。
+VI is saved as the following 3 metrics in bits. Each metric is aggregated over 9 within-encoder pairs, 27 between-encoder pairs, and 8 initial-reference pairs.
+Average the planned pairs within each specimen, then calculate the macro mean with equal specimen weights. The 8 initial-reference pairs are subsets of the other 2 groups.
 
-| `metric`名 | 内容 |
+| `metric` name | Meaning |
 | --- | --- |
-| `h_b_given_a_bits` | $`H(B\mid A)`$：Aを基準にした分裂側の不一致 |
-| `h_a_given_b_bits` | $`H(A\mid B)`$：Aを基準にした合流側の不一致 |
-| `vi_bits` | $`H(B\mid A)+H(A\mid B)`$：合計VI。0で分割が一致し、小さいほど不一致が少ない |
+| `h_b_given_a_bits` | $`H(B\mid A)`$: split-side disagreement with A as the reference |
+| `h_a_given_b_bits` | $`H(A\mid B)`$: merge-side disagreement with A as the reference |
+| `vi_bits` | $`H(B\mid A)+H(A\mid B)`$: total VI. 0 indicates identical partitions; smaller values indicate less disagreement |
 
-A・Bは保存された反復対の順序を維持する。`(encoder, Cosine-KMeans反復ID)`の辞書順でAを先に置き、
-初回基準では常にAが`(1,1)`となる。A・Bを交換すると2成分が入れ替わり、合計は変わらない。
-全対の成分平均だけから、学習によって分裂・合流のどちらが増えるかという時間的傾向は判断しない。
-VIは空間距離を含まないので、境界一致率と合わせて読む。
+A and B retain the stored order of replicate pairs. A comes first in lexicographic order of `(encoder, Cosine-KMeans replicate ID)`;
+for initial-reference comparisons, A is always `(1,1)`. Swapping A and B swaps the 2 components without changing their sum.
+Means of components across all pairs alone do not establish a temporal trend in whether training increases splitting or merging.
+VI contains no spatial distance, so read it alongside boundary coverage.
 
-`--include-overlap`なしの保存結果ではVIを未定義として残し、再集計時に0で補完しない。
-`pair_metrics.csv`ではARI・VIが3尺度×2方向の各行に繰り返されるため、
-試料別・全体の要約には`sample_summary.csv`・`summary.csv`を使う。
-前者の`sample_sd`は試料内の対間SD、後者の`sample_sd`は試料平均の試料間SDであり、信頼区間ではない。
+For results saved without `--include-overlap`, leave VI undefined; do not fill it with 0 during reaggregation.
+Because `pair_metrics.csv` repeats ARI and VI in each row of 3 scales × 2 directions,
+use `sample_summary.csv` and `summary.csv` for specimen-level and overall summaries.
+The former's `sample_sd` is the SD across pairs within a specimen; the latter's `sample_sd` is the SD of specimen means across specimens. Neither is a confidence interval.
 
-## 図の読み方
+## Reading the figures
 
-| 図 | 読み取る内容 | 用途 |
+| Figure | What it shows | Purpose |
 | --- | --- | --- |
-| `summary/01_ari_vs_boundary_coverage.png` | 横軸は試料ごとの対平均ARI、縦軸は対平均の境界一致率。上段はencoder内、下段はencoder間、左から3・5・9近傍 | 全試料の数値比較 |
-| `samples/{sample_id}/01_nine_maps.png` | 行がencoder、列がCosine-KMeans初期化。同じ行で初期化間、行をまたいで再学習を含む違いを見る | 全49試料のマップ比較 |
-| `samples/{sample_id}/03_boundary_frequency.png` | 左から3×3・5×5・9×9近傍に内部境界が存在したマップの割合 | 全49試料の境界配置 |
+| `summary/01_ari_vs_boundary_coverage.png` | The horizontal axis is each specimen's pair-mean ARI; the vertical axis is pair-mean boundary coverage. Top: within encoders; bottom: between encoders; left to right: neighborhoods 3, 5, and 9 | Numerical comparison of all specimens |
+| `samples/{sample_id}/01_nine_maps.png` | Rows are encoders; columns are Cosine-KMeans initializations. Compare initializations within a row and differences including retraining across rows | Map comparison for all 49 specimens |
+| `samples/{sample_id}/03_boundary_frequency.png` | Fraction of maps with an internal boundary within 3×3, 5×5, and 9×9 neighborhoods, from left to right | Boundary locations for all 49 specimens |
 
-サマリ図の青は対ごとの双方向の小さい側の平均、橙は大きい側の平均で、縦線は2値を結ぶ。
-信頼区間ではない。ARIが低く境界一致率が高い点は、分割の変動に対して境界配置に共通性がある試料の候補となる。
-境界密度が高いと近接対応も増えるため、密度・占有率と3×3マップを併読する。
-対平均では特定の反復のずれが見えにくいため、個々の差は3×3マップと`pair_metrics.csv`で確認する。
+In the summary figure, blue is the mean of the smaller directional value for each pair, orange is the mean of the larger value, and vertical lines connect the two.
+These are not confidence intervals. Points with low ARI and high boundary coverage are candidates for specimens whose boundary locations remain similar despite partition variation.
+Higher boundary density increases nearby matches, so read density and occupancy alongside the 3×3 map grid.
+Pair means can obscure deviations in particular replicates; inspect individual differences in the 3×3 map grid and `pair_metrics.csv`.
 
-境界頻度図の黄色（1）は9マップすべてで近傍内に境界があり、紫（0）はすべてで近傍内に境界がない場所を示す。
-紫は不安定を意味しない。中間色は反復によって境界の有無が変わる場所である。
-近傍幅を広げると頻度は下がらないため、9×9で黄色が増えることだけで安定とは判断しない。
-頻度は9マップの記述量であり、独立試行の確率や化学的な意味の一致を示す値ではない。
+In boundary-frequency figures, yellow (1) indicates locations with a boundary in the neighborhood in all 9 maps; purple (0) indicates none in any map.
+Purple does not mean instability. Intermediate colors indicate locations where boundary presence varies across replicates.
+Frequency cannot decrease as neighborhood width increases, so more yellow in 9×9 neighborhoods alone does not establish stability.
+Frequency describes the 9 maps; it is neither a probability over independent trials nor a measure of agreement in chemical meaning.
 
-3×3マップは全49試料の有効画素を合算した重なりから、初回`(1,1)`との一対一の対応を求める。
-この対応に`global_v1/results/figures/global_k8_v1/M11/matching.csv`の変換を合成し、
-同じ全体fit図の`report.json`のpaletteを使用する。全試料で同じ対応を使い、背景0を維持する。
-色合わせは表示だけに適用し、元ラベル・指標・境界頻度は変更しない。
+For the 3×3 map grid, a one-to-one correspondence with the initial `(1,1)` map is obtained from overlaps pooled over valid pixels in all 49 specimens.
+This correspondence is composed with the transformation in `global_v1/results/figures/global_k8_v1/M11/matching.csv`,
+using the palette in `report.json` for the same global-fit figures. The same correspondence is used for all specimens, preserving background 0.
+Color matching affects display only; original labels, metrics, and boundary frequencies remain unchanged.
 
-図・subplotにタイトルを付けず、マップ類のpixel軸・目盛・枠線は表示しない。
-試料IDは画像群の下に配置し、表記はCosine-KMeansに統一する。説明は`captions.json`へ保存する。
-`--dpi`は描画解像度だけを変え、画素座標・許容距離には影響しない。
+Figures and subplots have no titles; maps have no pixel axes, ticks, or borders.
+Specimen IDs are placed below the image groups, and terminology is standardized to Cosine-KMeans. Descriptions are saved in `captions.json`.
+`--dpi` changes plotting resolution only and does not affect pixel coordinates or tolerance distances.
 
-## 成果物
+## Artifacts
 
-出力先からの相対pathを示す。学習済み重みと再利用6マップは入力先を参照し、コピーしない。
+Paths are relative to the output location. Trained weights and the 6 reused maps are referenced at their input locations, not copied.
 
-| path | 内容 |
+| path | Content |
 | --- | --- |
-| `protocol/run.json` | seed、境界定義、反復対、入力manifest・モデル・mapの参照 |
-| `protocol/initial_map_audit.json` | 初回mapと全体fit図が使用する同seed再生成版の照合 |
-| `results/clustering/M11/encoder_{e}/kmeans_2/` | 生成したmap・run・完了hash |
-| `checkpoints/clustering/M11/encoder_{e}/kmeans_2/centers_k8.npz` | Cosine-KMeans中心 |
-| `results/evaluation/map_sources.json` | 49×9 mapのpath・hash・shape・反復ID |
-| `results/evaluation/map_diagnostics.csv` | 有効画素数、隣接辺数、境界数・密度、占有率 |
-| `results/evaluation/pair_metrics.csv` | 49×36対×3尺度×2方向の境界一致率、分子・分母、未定義理由、ARI、VIの2成分と合計 |
-| `results/evaluation/initial_reference_metrics.csv` | 初回からの8対 |
-| `results/evaluation/samples/{sample_id}.json` | 対別の値、退化flag、重なり表・VI |
-| `results/evaluation/summary.json` | 試料別要約、完全対数、除外理由、macro分布、共通試料による群差 |
-| `results/evaluation/sample_summary.csv` | 試料×3比較群×10指標の平均・最小・最大・SD、予定／観測／定義済み対数と欠測理由 |
-| `results/evaluation/summary.csv` | 3比較群×10指標の等重みmacro平均・試料間最小／最大／SD、対象試料数。3群はencoder内・encoder間・初回基準 |
-| `results/report/` | 3種類・99枚のPNG、49試料の境界頻度配列、描画条件・hash |
-| `results/report/color_matching.json` | 初回との対応・重なり表、全体fit表示IDへの変換、合成対応・palette |
-| `results/report/captions.json` | 図の役割、panelの意味、試料数、表示上の説明 |
-| `attempts/` | 実行段階、完了・失敗・中断、例外型、所要時間、再開設定 |
+| `protocol/run.json` | Seeds, boundary definitions, replicate pairs, and references to input manifests, models, and maps |
+| `protocol/initial_map_audit.json` | Comparison of the initial map with the same-seed regenerated version used by the global-fit figures |
+| `results/clustering/M11/encoder_{e}/kmeans_2/` | Generated maps, run records, and completion hashes |
+| `checkpoints/clustering/M11/encoder_{e}/kmeans_2/centers_k8.npz` | Cosine-KMeans centers |
+| `results/evaluation/map_sources.json` | Paths, hashes, shapes, and replicate IDs for 49×9 maps |
+| `results/evaluation/map_diagnostics.csv` | Valid-pixel counts, adjacency-edge counts, boundary counts and densities, and occupancy |
+| `results/evaluation/pair_metrics.csv` | Boundary coverage for 49×36 pairs×3 scales×2 directions, numerators, denominators, reasons for undefined values, ARI, both VI components, and total VI |
+| `results/evaluation/initial_reference_metrics.csv` | 8 pairs against the initial map |
+| `results/evaluation/samples/{sample_id}.json` | Per-pair values, degeneracy flags, overlap tables, and VI |
+| `results/evaluation/summary.json` | Specimen-level summaries, complete-pair counts, exclusion reasons, macro distributions, and group differences using common specimens |
+| `results/evaluation/sample_summary.csv` | Means, minima, maxima, and SDs for specimens × 3 comparison groups × 10 metrics; planned, observed, and defined pair counts and reasons for missingness |
+| `results/evaluation/summary.csv` | Equally weighted macro means, minima/maxima/SDs across specimens, and eligible specimen counts for 3 comparison groups × 10 metrics. The 3 groups are within-encoder, between-encoder, and initial-reference |
+| `results/report/` | 99 PNGs of 3 types, boundary-frequency arrays for 49 specimens, plotting conditions, and hashes |
+| `results/report/color_matching.json` | Correspondence and overlap tables against the initial map, conversion to global-fit display IDs, composed correspondence, and palette |
+| `results/report/captions.json` | Figure roles, panel meanings, specimen counts, and display notes |
+| `attempts/` | Execution stages, completion/failure/interruption status, exception types, elapsed time, and resume settings |
 
-JSONの未定義値は`null`、CSVでは空欄と理由を使う。境界頻度配列の無効画素はNaNとし、有効画素の0と区別する。
-中心等の学習済みpayloadは既存の`checkpoints/`のignore規則に従う。
+Undefined JSON values are `null`; CSV uses empty cells and reasons. Invalid pixels in boundary-frequency arrays are NaN, distinct from 0 at valid pixels.
+Trained payloads such as centers follow the existing ignore rules for `checkpoints/`.

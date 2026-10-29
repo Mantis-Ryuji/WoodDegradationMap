@@ -1,447 +1,522 @@
-# 全体学習後の可視化と解釈
+# Visualization and Interpretation after Global Fitting
 
-## 1. 適用範囲
+## 1. Scope
 
-本書は全49試料を使った全体fit後の記述的解析を定義する。
-[OOF sanity可視化](oof_sanity_visualization.md)は、foldモデルの既存予測を読む別の工程である。
-実行記録は[プロトコル](experiment_protocol.md#execution-records)に従う。
-観察粒度は$`K_0=8`$とし、6条件のCosine-KMeans・マップ・代表スペクトル・PCAを比較する。
-M11の化学的解釈には、NIRスペクトルの特徴と空間分布、文献帰属・材組織・環境履歴・試料情報を用いる。
-成果物は[結果と図表](../results.md)、実行・確認手順は[runbook](../experiment_runbook.md#global-fit-pipeline)を参照する。
-mask率sweepの[CV補助実験](experiment_protocol.md#mask-rate-sweep)と、全体fitによる記述的比較のfit範囲・反復を区別する。
+This document defines descriptive analysis after fitting on all 49 specimens.
+[OOF sanity visualization](oof_sanity_visualization.md) is a separate stage that reads existing predictions from fold models.
+Execution records follow the [protocol](experiment_protocol.md#execution-records).
+The observation granularity is $`K_0=8`$; Cosine-KMeans, maps, representative spectra, and PCA are compared across six conditions.
+Chemical interpretation of M11 uses NIR spectral features and spatial distributions together with literature assignments,
+wood anatomy, environmental history, and specimen information.
+See [results and figures](../results.md) for artifacts and the [runbook](../experiment_runbook.md#global-fit-pipeline) for execution and verification.
+Distinguish the fitting scope and replicates of the mask-ratio sweep's [supplementary CV experiment](experiment_protocol.md#mask-rate-sweep)
+from those of the descriptive comparison after global fitting.
 
-- [全体fit条件](#global-fit)
-- [全体fitのmask率補助比較](#global-mask-rate)
-- [M00基準のmatching](#matching-reference)
-- [共通描画規約](#figure-style)・[代表試料](#representative-samples)
-- [PCA](#latent-spectral-maps)・[NIRスペクトルの解析](#nir-interpretation)
-- [解釈に用いる証拠](#evidence-triangulation)
+- [Global fitting conditions](#global-fit)
+- [Supplementary mask-ratio comparison after global fitting](#global-mask-rate)
+- [Matching to M00](#matching-reference)
+- [Shared plotting conventions](#figure-style) and [representative specimens](#representative-samples)
+- [PCA](#latent-spectral-maps) and [NIR spectral analysis](#nir-interpretation)
+- [Evidence used for interpretation](#evidence-triangulation)
 
-### 1.1 対象と位置づけ
+### 1.1 Conditions and Role
 
-全体学習の対象は次の6条件とする。条件の定義と比較の位置づけは
-[プロトコル](experiment_protocol.md#conditions)に従う。
+Global training includes the following six conditions. Their definitions and the role of each comparison follow the
+[protocol](experiment_protocol.md#conditions).
 
-| ID | 条件 | 役割 |
+| ID | Condition | Role |
 | --- | --- | --- |
-| B0 | raw SNV | 入力空間baseline |
-| B1 | PCA | 線形baseline |
-| A0 | AE 0% | maskなし・全領域再構成baseline |
-| A1 | Denoising AE 0% | 全領域再構成、M11と同じTGN＋shift |
-| M00 | MAE 50% | 標準MAE |
-| M11 | Aug-MAE 50% | 提案条件 |
+| B0 | raw SNV | Input-space baseline |
+| B1 | PCA | Linear baseline |
+| A0 | AE 0% | Baseline with no mask and full-spectrum reconstruction |
+| A1 | Denoising AE 0% | Full-spectrum reconstruction with the same TGN + shift as M11 |
+| M00 | MAE 50% | Standard MAE |
+| M11 | Aug-MAE 50% | Proposed condition |
 
-代表表示値$`K_0=8`$で、6条件それぞれにCosine-KMeansを適用して比較する。
-全試料の状態分布を記述する解析とし、未知試料への一貫性・安定性はCV、劣化との対応は第5節の証拠から論じる。
+Apply Cosine-KMeans to each of the six conditions at the representative display value $`K_0=8`$.
+This analysis describes state distributions across all specimens. Coherence and stability on unseen specimens are assessed by CV;
+correspondence with degradation is discussed using the evidence in Section 5.
 
 <a id="global-fit"></a>
 
-### 1.2 全体fitの入力と表現
+### 1.2 Inputs and Representations for Global Fitting
 
-全49試料のそれぞれから、実験プロトコルと同じ$`q=8192`$画素を一様ランダム・非復元抽出する。
-全条件で同じ抽出座標を共有し、抽出画素を全試料でまとめた集合を使ってPCA・ChemoMAEの
-fitまたは学習を行う。得られた各条件の表現にCosine-KMeansをfitする。
-fit後はモデルを固定して全試料の全有効画素へ推論し、マップとスペクトルの要約を作成する。
-試料ごとのクラスタリング再fitは行わない。
-全体学習用の抽出seedと座標manifestも保存する。fitに用いる試料は全試料だが、fit画素と表示画素は区別する。
-表現・全可視抽出・精度は[CVと同じ仕様](experiment_protocol.md#representations)を使用する。
-表示用の2次元投影はクラスタリング後の補助表示とし、元の表現に代えてクラスタリングへ入力しない。
+Uniformly sample $`q=8192`$ pixels without replacement from each of the 49 specimens, as in the experiment protocol.
+All conditions share the same sampled coordinates. PCA and ChemoMAE are fitted or trained on the pooled sampled pixels from all specimens.
+Cosine-KMeans is then fitted to each condition's representation.
+After fitting, fix the models and infer over all valid pixels of every specimen to produce maps and spectral summaries.
+Clustering is not refitted separately for each specimen.
+Save the sampling seed and coordinate manifest for global training.
+Although all specimens contribute to fitting, distinguish fitting pixels from displayed pixels.
+Representations, all-visible extraction, and precision follow the [same specification as CV](experiment_protocol.md#representations).
+Two-dimensional projections are supplementary displays after clustering; they do not replace the original representations as clustering inputs.
 
-### 1.3 反復・seed・クラスタリング
+### 1.3 Replicates, Seeds, and Clustering
 
-初回の表示用fitは反復ID 1の事前固定seedで、各変換器・クラスタリングを1回fitする。
-ROOT_SEED=20260905と既存のSHA-256方式を使用し、
-seed導出のfold位置を文字列`global`へ置換する。用途は既存と同じで、抽出は`(sampling, global, sample_id)`、
-初期化・画素順・mask・augmentation・PCAは`(purpose, global, 1)`、クラスタリングは`(kmeans, global, 1, 8)`とする。
-条件名・手法名をseedへ含めず共通化し、55個のseed一覧を`config/seeds.json`へ保存する。
-保存rootは`outputs/experiments/global_v1/`、config・manifestのschemaは1、NN run記録は既存のcontract/execution方式のschema 2とする。
-共通抽出座標は`manifests/fit_pixels.parquet`へ保存し、fold列を持たせない。CVのsplit・seed・成果物は変更しない。
-A0・A1・M00・M11はCVと同じmask・loss・augmentation・800 epoch recipeで各1回、計4回学習する。
-6条件の表現でCosine-KMeansを各1回、計6 fits行う。
-補助条件を含むCVの計画120学習とは別枠で記録する。
-CVで良好なseedへの変更は行わず、学習反復間の再現性はCVのARIで報告する。
+For the initial fit used for display, fit each transformer and clustering model once using the prespecified seed for replicate ID 1.
+Use ROOT_SEED=20260905 and the existing SHA-256 scheme, replacing the fold position in seed derivation with the string `global`.
+Purposes remain the same: `(sampling, global, sample_id)` for sampling,
+`(purpose, global, 1)` for initialization, pixel order, masks, augmentation, and PCA,
+and `(kmeans, global, 1, 8)` for clustering.
+Condition and method names are excluded from seeds so they are shared; save the list of 55 seeds to `config/seeds.json`.
+The storage root is `outputs/experiments/global_v1/`. Config and manifest schemas are version 1;
+NN run records use schema 2 of the existing contract/execution scheme.
+Shared sampled coordinates are saved to `manifests/fit_pixels.parquet` without a fold column.
+CV splits, seeds, and artifacts remain unchanged.
+Train A0, A1, M00, and M11 once each, four runs in total, using the same mask, loss, augmentation, and 800-epoch recipe as CV.
+Fit Cosine-KMeans once for each of the six representations, six fits in total.
+Record these separately from the 120 planned CV training runs including supplementary conditions.
+Seeds are not replaced with ones that performed well in CV; reproducibility across training replicates is reported using CV ARI.
 
-`global_k8_3seed_v1`では各条件の表現を固定し、KMeans初期化のみを3 seedで反復する。
-反復1は元のfitを保持し、反復2・3は`(kmeans, global, repeat, 8)`から導出する。
-NNの再学習は行わず、表示図にも反復1を使う。この診断の反復間SDはKMeans初期化の変動のみを示す。
+In `global_k8_3seed_v1`, fix each condition's representation and repeat only KMeans initialization with three seeds.
+Replicate 1 retains the original fit; replicates 2 and 3 are derived from `(kmeans, global, repeat, 8)`.
+NNs are not retrained, and displayed figures also use replicate 1.
+The between-replicate SD in this diagnostic reflects only KMeans initialization variability.
 
-全体解釈の成果物はCVの評価・OOF集計から分け、条件別のfit記録に元の表現・抽出座標・設定・
-source hashとの対応、完了・失敗の状態を残す。
+Keep global-fit interpretation artifacts separate from CV evaluation and OOF aggregation.
+Condition-specific fit records retain correspondence with the source representations, sampled coordinates, settings,
+and source hashes, together with completion/failure status.
 
 <a id="global-mask-rate"></a>
 
-### 1.4 全体fitのmask率補助比較（付録）
+### 1.4 Supplementary Mask-Ratio Comparison after Global Fitting (Appendix)
 
-M11-75を全49試料で1回だけ追加学習し、既存50%のM11と比較する。
-共通抽出画素は既存の49×8,192＝401,408座標をそのまま使い、モデル構成、800 epochのrecipe、
-初期化・画素順・mask・augmentationの事前固定seedを共有する。変更するのはmask率のみで、
-16 patch中のmask数を8から12にする。50%の学習済み重み・評価を再利用する。
+Train M11-75 once on all 49 specimens and compare it with the existing 50% M11 condition.
+Reuse the existing shared 49×8,192 = 401,408 sampled coordinates, model architecture, 800-epoch recipe,
+and prespecified seeds for initialization, pixel order, masks, and augmentation.
+Only the mask ratio changes, from eight to 12 masked patches out of 16.
+Reuse the trained weights and evaluation for 50%.
 
-各条件のepoch 800の最終raw重みを固定し、全パッチ可視の16次元表現でK=8のCosine-KMeansを3反復する。
-seedは既存の全体fit診断と同じ反復1・2・3（1960870825・322674335・2051198256）とし、良いseedを選別しない。
-fit後は全49試料の全3,902,250有効画素を評価する。比較する指標は補正後LLA 3・5・9、
-Cosine-Silhouette、試料別使用クラスタ数、最大占有率であり、この補助比較にLFR・ARIは追加しない。
-silhouetteは全試料の有効画素をpoolした集合を対象に、既存と同じcosine距離・FP64集計で求める。
-各指標は両条件・全3反復で定義された共通試料を等重み集計し、M11-75 − M11(-50)のpaired差も保存する。
-`sample_sd`は試料ごとの3反復平均の標本SD、`repeat_sd`は3つの試料macro平均の標本SDである（いずれもddof=1）。
-後者はKMeans初期化だけの変動であり、NN再学習のばらつきを表さない。
+Fix the final raw weights at epoch 800 for each condition, and perform three K=8 Cosine-KMeans replicates on the
+16-dimensional representations extracted with all patches visible.
+Use the same replicate 1, 2, and 3 seeds as the existing global-fit diagnostic (1960870825, 322674335, and 2051198256);
+do not select favorable seeds.
+After fitting, evaluate all 3,902,250 valid pixels across all 49 specimens.
+The compared metrics are corrected LLA at widths 3, 5, and 9, Cosine-Silhouette,
+per-specimen used cluster count, and maximum occupancy; LFR and ARI are not added to this supplementary comparison.
+Silhouette is calculated over the pooled valid pixels of all specimens using the same cosine distance and FP64 aggregation as before.
+Each metric is aggregated with equal weights over specimens for which it is defined in both conditions and all three replicates;
+paired differences M11-75 − M11(-50) are also saved.
+`sample_sd` is the sample SD of the three-replicate mean for each specimen;
+`repeat_sd` is the sample SD of the three specimen macro means (both use ddof=1).
+The latter reflects only KMeans initialization variability, not variability from NN retraining.
 
-図は初回fit（反復1）の2行7列とし、上段`M11(-50)`・下段`M11-75`、
-列は[既選定7試料](#representative-samples)の順序を維持する。保存条件IDは`M11`と`M11-75`を維持する。
-50%側は既存6×7図と同じ表示ラベルを再利用し、75%側はM00の観測SNV代表線へ直接Hungarian matchingする。
-色の対応は表示だけに使用し、指標は元のラベルで計算する。全試料を通して不在の75%側クラスタはmatching対象から除き、
-残った表示番号を元番号順に割り当て、類似度を未定義として記録する。不在クラスタの画素を補うことはしない。
+The figure uses two rows and seven columns from the initial fit (replicate 1), with `M11(-50)` above and `M11-75` below;
+columns retain the order of the [seven selected specimens](#representative-samples).
+Saved condition IDs remain `M11` and `M11-75`.
+The 50% condition reuses the display labels from the existing 6×7 figure;
+the 75% condition is matched directly to M00's observed SNV representative spectra by Hungarian matching.
+Color correspondence is used only for display; metrics are calculated on the original labels.
+A 75% cluster absent across all specimens is excluded from matching; remaining display IDs are assigned in raw-ID order,
+with similarity recorded as undefined. No pixels are imputed for absent clusters.
 
-掲載先は付録の補助比較とする。年輪に沿う区分、周縁部と内部の区分、細かな混在、領域の連続性を記述的に確認する。
-全試料をfitに含めた図であり、OOFの未知試料評価や正式な目視評価の実施結果とは扱わない。
-最適mask率の選択や主条件M11の置き換えには使わない。
-保存先・確認コマンドは[runbook](../experiment_runbook.md#global-mask-rate)、
-図表の一覧は[結果と図表](../results.md#mask-rate-handoff)を参照する。
+This is an appendix supplementary comparison.
+Partitions along growth rings, peripheral/interior divisions, fine intermixing, and region continuity are examined descriptively.
+All specimens contribute to fitting, so the figure is not treated as OOF evaluation on unseen specimens or a formal visual evaluation.
+It is not used to select an optimal mask ratio or replace the main M11 condition.
+See the [runbook](../experiment_runbook.md#global-mask-rate) for storage locations and verification commands,
+and [results and figures](../results.md#mask-rate-handoff) for the artifact list.
 
-## 2. ラベル規約
+## 2. Label Conventions
 
-- 背景は0とする。
-- クラスタは1から$`K_0`$までとする。
-- クラスタ番号に順序または劣化度の意味を持たせない。
-- ラベル整列前後でクラスタ所属そのものは変更しない。
+- Background is 0.
+- Clusters are numbered from 1 to $`K_0`$.
+- Cluster numbers do not encode order or degradation severity.
+- Label alignment does not change cluster membership.
 
-## 3. 観測SNV代表スペクトルによるHungarian matching
+## 3. Hungarian Matching Using Observed SNV Representative Spectra
 
 <a id="matching-reference"></a>
 
-### 3.1 基準条件
+### 3.1 Reference Condition
 
-M00（追加augmentationなしの標準MAE）の表現をCosine-KMeansで分割したpartitionを、全6条件の表示番号の共通基準とする。
-B0・B1・A0・A1・M11の5条件を、それぞれ独立にこの基準へ直接matchingする。
+The partition obtained by applying Cosine-KMeans to M00 representations (standard MAE without additional augmentation)
+is the shared reference for display IDs across all six conditions.
+Match B0, B1, A0, A1, and M11 independently and directly to this reference.
 
-標準MAEを比較の起点とし、M00からM11への領域分割の変化を読むための表示基準とする。
-M00の安定性が最良と確認されたことを採用理由にはせず、劣化検出性能・解釈可能性やクラスタの順序も保証しない。
-[OOF sanityのfold内B0基準](oof_sanity_visualization.md#3-fold内hungarian-matching)は別の表示規約である。
+Standard MAE is the starting point of the comparison, providing a display reference for reading changes in region partitioning from M00 to M11.
+This choice does not rely on M00 having the best verified stability, nor does it guarantee degradation-detection performance,
+interpretability, or an ordering of clusters.
+The [within-fold B0 reference for OOF sanity plots](oof_sanity_visualization.md#3-within-fold-hungarian-matching) is a separate display convention.
 
-試料ごとのmatching、および別の条件を経由する連鎖matchingは行わない。
-B0・B1間だけ一致画素数に基づく別方式を使わず、全6条件に同じ規約を適用する。
+Do not match separately for each specimen or chain matching through another condition.
+Apply the same convention to all six conditions; do not use a separate matching-pixel-count method only for B0 versus B1.
 
-### 3.2 観測SNV代表線のcosine類似度
+### 3.2 Cosine Similarity of Observed SNV Representative Spectra
 
-全試料について比較対象に共通して有効な木材画素だけを使用し、全6条件で同じ画素座標を共有する。
-matchingは観測SNV代表線のcosine類似度で行う。
-画素は試料ID・座標の組で識別し、hard labelの所属を固定する。
-保存済み画素別SNVを試料・クラスタ内で算術平均し、クラスタが存在する試料の平均線を等重みで平均する。
-この代表線は第4.1節のSNV図と同じもので、平均反射率へ改めてSNVを適用しない。
-基準クラスタの代表線を$`\boldsymbol{s}_i`$、比較対象の代表線を$`\boldsymbol{t}_j`$として、
-全256バンドを使用した8×8の行列を作る。
+Use only wood pixels valid for all compared conditions across all specimens, sharing the same coordinates across the six conditions.
+Matching uses cosine similarity between observed SNV representative spectra.
+Pixels are identified by specimen ID and coordinates, with hard-label membership fixed.
+Arithmetically average saved pixelwise SNV spectra within each specimen and cluster,
+then average those specimen means with equal weights over specimens in which the cluster is present.
+These representative spectra are the same as those in the SNV plots in Section 4.1;
+SNV is not reapplied to mean reflectance.
+Let the representative spectrum of reference cluster i be $`\boldsymbol{s}_i`$ and that of comparison cluster j be $`\boldsymbol{t}_j`$.
+Construct an 8×8 matrix using all 256 bands.
 
 ```math
 S_{ij}=\frac{\boldsymbol{s}_i^{\mathsf T}\boldsymbol{t}_j}
 {\lVert\boldsymbol{s}_i\rVert_2\lVert\boldsymbol{t}_j\rVert_2}
 ```
 
-代表線をL2正規化して内積を取り、符号を保った類似度（−1〜1）を使用する。
-画素数による試料の重み付け、代表線の波長方向の再標準化、帯域選択は行わない。
-背景0は行列・割当から除外する。主6条件では全試料を通して空のクラスタ、非有限またはノルム0の代表線があれば、
-条件・元クラスタ番号を示して停止する。75%補助比較の不在クラスタは[第1.4節](#global-mask-rate)に従う。
-試料内に存在しないクラスタの曲線は平均から除き、0で補完しない。
-潜在ベクトル、反射率、疑似吸光度、二次微分、metadataおよびIoUは割当の目的関数に含めない。
+L2-normalize representative spectra and take their dot products, retaining signed similarity (−1 to 1).
+Do not weight specimens by pixel count, restandardize representative spectra along wavelength, or select bands.
+Background 0 is excluded from the matrix and assignment.
+For the main six conditions, if a cluster is empty across all specimens or a representative spectrum is nonfinite or has zero norm,
+stop and report the condition and raw cluster ID.
+Absent clusters in the 75% supplementary comparison follow [Section 1.4](#global-mask-rate).
+Curves for clusters absent within a specimen are excluded from averaging, not filled with zero.
+Latent vectors, reflectance, pseudo-absorbance, second derivatives, metadata, and IoU are not included in the assignment objective.
 
-Hungarian assignmentにより、SNVのcosine類似度の合計を最大にする。
+Hungarian assignment maximizes the sum of SNV cosine similarities.
 
 ```math
 \max_{\pi}\sum_{i=1}^{K_0}S_{i,\pi(i)}
 ```
 
-この1対1対応$`\pi`$を比較対象ごとに求め、比較対象のクラスタ$`\pi(i)`$を表示番号$`i`$へ置換する。
-クラスタ所属、学習済みモデル、クラスタリング中心は変更しない。
+Obtain this one-to-one correspondence $`\pi`$ for each comparison condition, replacing its cluster $`\pi(i)`$ with display ID $`i`$.
+Cluster membership, trained models, and clustering centers are unchanged.
 
-### 3.3 対応の確認用contingency・overlap
+### 3.3 Contingency and Overlap for Inspecting Correspondence
 
-同じ共通有効画素について、基準と比較対象のhard labelからcontingency matrixも求める。
+Also compute a contingency matrix from reference and comparison hard labels over the same shared valid pixels.
 
 ```math
 C_{ij}
 =\sum_p\mathbf{1}[y_p^{(\mathrm{ref})}=i\land y_p^{(c)}=j]
 ```
 
-SNVのcosine類似度行列全体、選ばれた対応とその類似度、同じ基準クラスタに対する他候補との類似度差を保存する。
-IoU行列、contingency matrix、および対応後の一致画素数・overlapはCSVの補助値として保存する。
-IoUは$`C_{ij}/(\sum_\ell C_{i\ell}+\sum_\ell C_{\ell j}-C_{ij})`$で計算する。
-IoUと一致画素数は割当には使わず、スペクトルで対応づけたクラスタの空間的な重なりを確認する。
-全体のoverlapは$`\sum_i C_{i,\pi(i)}/\sum_{i,j}C_{ij}`$とし、全共通画素数に基づくため大きい試料の寄与が大きいことを明記する。
+Save the full SNV cosine similarity matrix, the selected correspondence and its similarity,
+and similarity differences from other candidates for the same reference cluster.
+Save the IoU matrix, contingency matrix, and matching pixel counts/overlap after correspondence as supplementary CSV values.
+IoU is calculated as $`C_{ij}/(\sum_\ell C_{i\ell}+\sum_\ell C_{\ell j}-C_{ij})`$.
+IoU and matching pixel counts are not used for assignment; they inspect the spatial overlap of spectrally matched clusters.
+Overall overlap is $`\sum_i C_{i,\pi(i)}/\sum_{i,j}C_{ij}`$.
+State that it is based on all shared pixels and therefore gives larger specimens greater weight.
 
-類似度が低い対応や候補間の類似度が拮抗する対応を明示し、同じ色だけで強い対応と解釈しない。
-同率の最適割当を一意の対応根拠とはみなさない。SNV類似度が低くても1対1の割当は成立し得る。
-クラスタの分割・統合の違いは行列全体で確認し、同一表示番号を化学的な同一性の保証としない。
-SNVの近さは割当の基準そのものであり、独立した化学的検証とは呼ばない。
-反射率・疑似吸光度・二次微分も併読する。元クラスタ番号と表示番号は対応表で照合する。
+Identify low-similarity correspondences and those with closely competing candidate similarities;
+the same color alone does not imply a strong correspondence.
+Equally optimal assignments are not treated as evidence of a unique correspondence.
+One-to-one assignment can still be obtained when SNV similarity is low.
+Inspect the full matrix for differences in cluster splitting and merging; identical display IDs do not guarantee chemical identity.
+SNV proximity is the matching criterion itself, not independent chemical validation.
+Read reflectance, pseudo-absorbance, and second derivatives alongside it.
+Use the correspondence table to relate raw cluster IDs to display IDs.
 
-### 3.4 適用範囲
+### 3.4 Scope of Application
 
-得られた対応は全試料で共通とし、次へ一貫して適用する。
+The resulting correspondence is shared across all specimens and applied consistently to:
 
-- label mapの色と番号
-- cluster sizeおよびoccupancy
-- 代表スペクトルと差スペクトル
-- cluster別の補助統計
+- Label-map colors and IDs.
+- Cluster sizes and occupancy.
+- Representative and difference spectra.
+- Per-cluster supplementary statistics.
 
-元のクラスタ番号と表示番号の対応を保存する。
-matchingは表示と対応関係の確認を目的とし、異なる条件のクラスタが同一の意味を持つことを保証しない。
-類似度行列とcontingency・overlapを併記し、対応の弱いクラスタを可視化上の同一色だけで解釈しない。
-表示ラベルの整列として用い、CV指標の計算や共通基準を正解とした精度評価には転用しない。
+Save the mapping between raw cluster IDs and display IDs.
+Matching supports display and inspection of correspondence; it does not guarantee identical meanings for clusters from different conditions.
+Report the similarity matrix together with contingency and overlap, and do not interpret weakly matched clusters by shared color alone.
+Use matching as display-label alignment, not for calculating CV metrics or measuring accuracy against the shared reference as ground truth.
 
-条件間の比較には、本番前処理HDF5の`pixel_row_col`で同一と確認できる画素だけを使用する。
-条件ごとに画素集合を変更したり、label mapを位置補正したりしない。
+Comparisons across conditions use only pixels verified as identical through `pixel_row_col` in the production preprocessing HDF5.
+Do not change pixel sets by condition or spatially correct label maps.
 
-## 4. 可視化・解釈項目
+## 4. Visualization and Interpretation Outputs
 
 <a id="figure-style"></a>
 
-以下の描画規約は、前処理診断を含むリポジトリ内のすべての可視化へ適用する。
+The following plotting conventions apply to all visualizations in the repository, including preprocessing diagnostics.
 
-- figure titleおよびaxes titleを付けない。ただし第4.3節のPCA比較図では上段に条件名を付ける。
-- 図の意味、条件名およびpanelの説明はcaptionまたはファイル名で管理する。
-- クラスタマップでは各試料の下に試料ID（KYOwから始まる名前）を表示する。
-- 軸ラベル、目盛、legendおよびcolorbar labelは、値の解釈に必要な場合は表示する。
-- 個別スペクトルの対応を追跡する順位・試料ID・画素座標・例IDは、panel内の注記で示してよい。
-- スペクトル本体の縦軸は、反射率では`[0, 1]`・目盛間隔`0.2`、SNVでは`[-2, 2]`・目盛間隔`0.5`に固定する。
-  前処理の分布図とaugmentationの例にも同じ規約を適用する。表示範囲によって保存値をclipしたり、画素を除外したりしない。
-- Augmentation確認図の残差（摂動後 − clean）は、noise・shiftともに縦軸`[-0.5, 0.5]`・目盛間隔`0.1`に固定する。
-- 波長を横軸とする前処理図・augmentation確認図（残差を含む）は、描画データの最初と最後の波長を
-  横軸の両端とし、左右にデータ範囲の余白を加えない。両端にも目盛を置き、小数点以下2桁で表示する。
-  内側の目盛は`1000, 1200, 1400, ...` nmのうち表示範囲内にある値とし、整数で表示する。
-  補間後の図は`913.10`–`2305.59` nm、cutoff図は除外帯域を含む元測定gridの両端を使う。
-  個別候補の小panelでは、目盛文字の重なりを避けるため横軸の目盛文字を45度傾ける。
-- 上記の波長図では、横軸・縦軸の主目盛と補助目盛を外向きに統一する。
-  目盛り線は下辺・左辺に表示し、上辺・右辺には表示しない。目盛文字と軸線の間隔を確保して
-  両端の数字を読みやすくする。データ範囲の左右には余白を加えない。
+- Do not add figure or axes titles, except for condition names in the top row of the PCA comparison figure in Section 4.3.
+- Manage figure meaning, condition names, and panel descriptions through captions or filenames.
+- Display the specimen ID (the name beginning with KYOw) below each specimen in cluster maps.
+- Show axis labels, ticks, legends, and colorbar labels when needed to interpret values.
+- Ranks, specimen IDs, pixel coordinates, and example IDs used to trace individual spectra may appear as panel annotations.
+- Fix the main spectrum y-axis to `[0, 1]` with tick spacing `0.2` for reflectance, and `[-2, 2]` with spacing `0.5` for SNV.
+  Apply the same convention to preprocessing distribution plots and augmentation examples.
+  Display limits must not clip saved values or exclude pixels.
+- For augmentation diagnostic residuals (perturbed − clean), fix the y-axis to `[-0.5, 0.5]` with tick spacing `0.1` for both noise and shift.
+- For preprocessing and augmentation diagnostic plots with wavelength on the x-axis, including residuals,
+  use the first and last plotted wavelengths as the axis endpoints, with no horizontal data-range padding.
+  Add ticks at both endpoints, displayed to two decimal places.
+  Interior ticks are the values among `1000, 1200, 1400, ...` nm that lie within the displayed range, shown as integers.
+  Post-interpolation plots use `913.10`–`2305.59` nm; cutoff plots use both ends of the original measured grid, including excluded bands.
+  Rotate x-axis tick labels by 45 degrees in small individual-candidate panels to avoid overlap.
+- In these wavelength plots, make both major and minor ticks on both axes point outward.
+  Show tick marks on the bottom and left edges, not the top and right.
+  Leave space between tick labels and axis lines so endpoint numbers remain legible.
+  Do not add horizontal padding outside the data range.
 
-以下は全体fit後に保存する項目である。OOF sanityの保存物は[専用仕様](oof_sanity_visualization.md)に従う。
+The following outputs are saved after global fitting.
+OOF sanity artifacts follow the [dedicated specification](oof_sanity_visualization.md).
 
-| 項目 | 目的 |
+| Output | Purpose |
 | --- | --- |
-| label map | 条件間でクラスタの試料表面の空間分布を比較する |
-| SNV cosine similarity matrix | M00基準への割当と、代表SNVの対応の強さ・曖昧さを確認する |
-| IoU・contingency/overlap（CSV） | SNVで対応づけたクラスタの空間的な重なり、分割・統合と一致画素数を確認する |
-| representative spectra | 各クラスタのNIRスペクトル形状を確認する |
-| difference spectra | クラスタ差が大きい波長帯を確認する |
-| cluster size distribution / occupancy | collapse、過小クラスタ、不均衡を確認する |
-| PCA（PC1・PC2） | 表現空間上の画素分布とクラスタ所属を観察する |
-| 試料別NIRスペクトル・帯域値 | マップ上の領域と観測スペクトルの特徴を対応付ける |
+| Label map | Compare cluster distributions on specimen surfaces across conditions |
+| SNV cosine similarity matrix | Inspect assignment to the M00 reference and the strength or ambiguity of representative-SNV correspondence |
+| IoU and contingency/overlap (CSV) | Inspect spatial overlap, splitting/merging, and matching pixel counts for SNV-matched clusters |
+| Representative spectra | Inspect each cluster's NIR spectral shape |
+| Difference spectra | Identify wavelength regions with large cluster differences |
+| Cluster size distribution / occupancy | Inspect collapse, undersized clusters, and imbalance |
+| PCA (PC1 and PC2) | Observe pixel distributions and cluster membership in representation space |
+| Specimen-specific NIR spectra and band values | Relate map regions to observed spectral features |
 
-B0、B1、A0、A1、M00、M11で、同じ試料順、同じlabel palette、同じ表示範囲を使用する。
+Use the same specimen order, label palette, and display ranges for B0, B1, A0, A1, M00, and M11.
 
-Cosine-KMeansの図表は`results/figures/global_k8_v1/`へ保存する。
-条件別に`B0/`・`B1/`・`A0/`・`A1/`・`M00/`・`M11/`へ分け、各`labels/`に試料ID昇順で7試料ずつの
-1×7マップ7枚（00〜06）、固定代表7試料の1×7マップ（07）、全49試料の7×7マップ（08）を保存する。
-代表1×7の試料・並び順はroot直下の6条件×7試料図と共通にする。`outputs/sample_overviews`に合わせた画像幅・余白・
-大きな太字の試料IDを使い、色を混ぜない最近傍補間で元の向き・縦横比・画角を保つ。colorbarは`Cluster ID`。
-root直下の`01_representative_samples_6x7.png`には、第4.2節の固定7代表試料を同節の順に7列、
-条件を上からB0・B1・A0・A1・M00・M11の6行で表示する。試料IDは最下段だけ、条件名は各行の左に置き、
-共通の`Cluster ID`色バーを下に付ける。
-各条件直下の代表スペクトルは1枚にまとめ、上段左SNV・右反射率、下段全面をSG二次微分とする。
-各panelに8クラスタの平均線と試料間IQRを、マップと同じクラスタ色で表示する。二次微分の縦軸範囲は6条件で共通。
-波長の主目盛は100 nm、副目盛は50 nmとし、両方のグリッド線を図の内部へ引く。
-端点は小数2桁で表示し、端点から30 nm未満の主目盛は線を残して数字だけ省き、文字の重なりを防ぐ。
-各条件の8×8 SNV cosine類似度図も1枚保存し、M00との対応後の番号を両軸に使う。
-M00自身の図は対角が1、非対角はM00内の異なるクラスタのSNV類似度を示す。
-occupancyと差スペクトルはCSVのみ。差は各条件の代表線からM00の同じ表示クラスタの代表線を引き、paired差とは扱わない。
-試料別／代表／差スペクトル、寄与・除外数、対応・SNV類似度・補助IoU・contingency、occupancyのCSVを各条件直下へ保存する。
-波長・caption・出典記録と全条件のスペクトル要約NPZは共通root、整列済みラベルは各条件の`label_maps.npz`へ保存する。
-`run`で図表を再生成し、成功時に可視化directoryを置き換える。元のクラスタラベル・中心は保持する。
-保存先の一覧と実行方法は[runbook](../experiment_runbook.md#global-post-fit)を参照する。
+Cosine-KMeans figures and tables are saved under `results/figures/global_k8_v1/`.
+Separate conditions into `B0/`, `B1/`, `A0/`, `A1/`, `M00/`, and `M11/`.
+Each `labels/` directory contains seven 1×7 maps (00–06) with seven specimens each in ascending ID order,
+one 1×7 map of the fixed seven representative specimens (07), and one 7×7 map of all 49 specimens (08).
+The representative 1×7 maps share their specimens and order with the root-level six-condition × seven-specimen figure.
+Use image widths, margins, and large bold specimen IDs matching `outputs/sample_overviews`;
+preserve original orientation, aspect ratio, and field of view with nearest-neighbor interpolation that does not mix colors.
+The colorbar label is `Cluster ID`.
+The root-level `01_representative_samples_6x7.png` displays the seven fixed representative specimens from Section 4.2
+in that section's order as seven columns, with B0, B1, A0, A1, M00, and M11 as six rows from top to bottom.
+Specimen IDs appear only below the bottom row, condition names to the left of each row,
+and a shared `Cluster ID` colorbar below.
+Representative spectra for each condition are combined into one figure:
+SNV at top left, reflectance at top right, and SG second derivatives across the bottom.
+Each panel shows mean curves and between-specimen IQRs for eight clusters, using the same colors as the maps.
+The second-derivative y-axis range is shared across all six conditions.
+Major wavelength ticks are spaced 100 nm apart and minor ticks 50 nm apart, with gridlines for both inside the plot.
+Display endpoints to two decimal places; for major ticks less than 30 nm from an endpoint,
+retain the line but omit the number to prevent label overlap.
+Save one 8×8 SNV cosine similarity figure for each condition, using IDs aligned to M00 on both axes.
+M00's own figure has 1 on the diagonal; off-diagonal entries show SNV similarity between different M00 clusters.
+Occupancy and difference spectra are saved only as CSVs.
+Differences subtract the M00 representative spectrum of the same display cluster from each condition's representative spectrum;
+they are not treated as paired differences.
+Save CSVs for specimen-specific, representative, and difference spectra; contributing and excluded counts;
+matching, SNV similarities, supplementary IoU, contingency, and occupancy under each condition.
+Save wavelength, caption, and provenance records and the all-condition spectral-summary NPZ at the shared root;
+aligned labels are saved to each condition's `label_maps.npz`.
+`run` regenerates the figures and tables and replaces the visualization directory on success.
+Original cluster labels and centers are retained.
+See the [runbook](../experiment_runbook.md#global-post-fit) for output locations and execution.
 
 <a id="representative-spectra"></a>
 
-### 4.1 スペクトルの表示と要約
+### 4.1 Spectral Display and Summaries
 
-代表スペクトルは試料内平均→試料間の等重み平均で集計する。
-スペクトルは第3節のSNV cosine matching後の表示番号で比較する。SNV代表線だけをmatchingに使用する。
-比較する代表線は反射率、SNVおよび疑似吸光度の二次微分の3種類とする。
+Representative spectra are aggregated as within-specimen means followed by equal-weight means across specimens.
+Compare spectra using display IDs after the SNV cosine matching in Section 3.
+Only SNV representative spectra are used for matching.
+The three types of representative curves compared are reflectance, SNV, and the second derivative of pseudo-absorbance.
 
-全試料の代表線は条件間の概観とmatchingに使う。個別試料の領域差を解釈する際は、
-既存の試料別クラスタ平均と画素数・除外数を参照する。全試料macro平均で局所的な差が薄まる可能性と、
-構成試料がクラスタごとに異なる点を区別して読む。試料間IQRを単一試料内のばらつきとして転用しない。
-M11・K8の試料別解析と帯域値は[第4.4節](#nir-interpretation)に従う。
+All-specimen representative spectra support an overview across conditions and matching.
+For interpretation of regional differences within an individual specimen, refer to saved specimen-specific cluster means,
+pixel counts, and exclusion counts.
+Distinguish the possibility that all-specimen macro means dilute local differences from differences in the specimens contributing to each cluster.
+Between-specimen IQRs must not be reused as variability within a single specimen.
+Specimen-specific analysis and band values for M11 at K8 follow [Section 4.4](#nir-interpretation).
 
-#### 入力と変換順序
+#### Inputs and Transformation Order
 
-- 各条件のhard labelによるクラスタ所属を固定し、同じ本番前処理データの全有効画素を起点とする。
-  代表線は所属画素の観測スペクトルから作り、潜在クラスタ中心、PCA逆変換、decoder再構成から合成しない。
-- 反射率には補間後の256帯域、SNVには既存の画素別SNVを用いる。
-- 疑似吸光度は各画素の反射率 $`R_p(\lambda)`$ から $`A_p(\lambda)=-\log_{10}R_p(\lambda)`$ として求める。
-  SNVを対数変換せず、平均反射率にSNVや対数変換を適用して代用しない。
-- 疑似吸光度とその二次微分の集計対象は、全256帯域の反射率が正かつ有限の画素に限る。
-  1帯域でも条件を満たさない画素は、そのスペクトル全体を当該集計から除外する。微小値への置換やclipは行わない。
-  この除外は疑似吸光度解析に限り、反射率・SNVの集計、SNVによるmatching、学習・CV・クラスタ所属は変更しない。
-  条件・手法間で同じ反射率の有効性判定を適用する。
+- Fix cluster membership given by each condition's hard labels, starting from all valid pixels in the same production preprocessing data.
+  Representative spectra come from observed spectra of member pixels, not latent cluster centers, inverse PCA transforms, or decoder reconstructions.
+- Use the 256 interpolated bands for reflectance and existing pixelwise SNV for SNV spectra.
+- Calculate pseudo-absorbance from each pixel's reflectance $`R_p(\lambda)`$ as $`A_p(\lambda)=-\log_{10}R_p(\lambda)`$.
+  Do not log-transform SNV or substitute SNV/log transformation of mean reflectance.
+- Aggregation of pseudo-absorbance and its second derivative includes only pixels with positive, finite reflectance in all 256 bands.
+  If even one band fails this condition, exclude the entire spectrum from that aggregation.
+  Do not replace values with small positive numbers or clip them.
+  This exclusion applies only to pseudo-absorbance analysis; it does not change reflectance/SNV aggregation,
+  SNV matching, training, CV, or cluster membership.
+  Apply the same reflectance-validity rule across conditions and methods.
 
-#### 2段階の平均とばらつき
+#### Two-Stage Means and Variability
 
-- 反射率、画素別SNVおよび画素別疑似吸光度について、試料・クラスタごとに所属する集計対象画素をband別に算術平均する。
-- 次に、集計対象画素が残る試料の平均線をband別に等重みで算術平均し、全体の代表線とする。
-  全画素を直接poolせず、試料ごとの画素数の違いによる偏りを抑える。
-- クラスタが存在しない試料、および疑似吸光度の除外後に対象画素がなくなった試料・クラスタは、
-  対応する代表線の集約対象に含めない。0や他のスペクトルで補完せず、寄与試料がない代表線は未定義とする。
-- 試料間のばらつきは、試料別平均線のband別四分位範囲で示す。二次微分については、各試料の平均疑似吸光度に
-  下記のSG処理を施してから試料間の四分位範囲を求める。四分位点の曲線を微分して代用しない。
-- 代表線ごとに寄与試料数・試料ID・画素数を示す。疑似吸光度・二次微分では除外後の数を用い、
-  除外画素数も記録する。代表線の種類やクラスタによって構成試料・画素が異なり得ることを明示する。
-- 1試料だけが寄与する場合は試料間のばらつきを評価できないと記す。平均代表線は実在する1画素の
-  スペクトルや成分濃度の推定値を意味しない。
+- For reflectance, pixelwise SNV, and pixelwise pseudo-absorbance, calculate bandwise arithmetic means over eligible member pixels within each specimen and cluster.
+- Then calculate the bandwise equal-weight arithmetic mean of specimen means with remaining eligible pixels to obtain the overall representative spectrum.
+  Do not pool all pixels directly; this limits bias from differences in pixel counts among specimens.
+- Exclude specimens where a cluster is absent, and specimen–cluster combinations with no eligible pixels after pseudo-absorbance filtering,
+  from aggregation of the corresponding representative curve.
+  Do not fill with zero or another spectrum; a representative spectrum without contributing specimens is undefined.
+- Show between-specimen variability as the bandwise interquartile range of specimen-specific mean spectra.
+  For second derivatives, apply the SG procedure below to each specimen's mean pseudo-absorbance before calculating the between-specimen IQR.
+  Do not substitute derivatives of the quantile curves.
+- Report contributing specimen counts, specimen IDs, and pixel counts for each representative curve.
+  Use post-exclusion counts for pseudo-absorbance and second derivatives, and record excluded pixel counts.
+  State that contributing specimens/pixels can differ by curve type and cluster.
+- If only one specimen contributes, state that between-specimen variability cannot be assessed.
+  A mean representative curve is not the spectrum of an actual individual pixel or an estimate of component concentration.
 
-#### 疑似吸光度のSG二次微分
+#### SG Second Derivative of Pseudo-Absorbance
 
-疑似吸光度の全体平均線にSciPyの `scipy.signal.savgol_filter` を適用し、波長（nm）に対する二次微分を求める。
-設定は次のとおりとし、試料別平均線から四分位範囲を求める際にも共用する。
+Apply SciPy's `scipy.signal.savgol_filter` to the overall mean pseudo-absorbance curve to calculate its second derivative with respect to wavelength (nm).
+Use the following settings, also shared when obtaining IQRs from specimen-specific mean curves.
 
-| 引数 | 設定 |
+| Argument | Setting |
 | --- | --- |
 | `window_length` | `7` |
 | `polyorder` | `2` |
 | `deriv` | `2` |
-| `delta` | 保存された等間隔の波長gridの隣接差（nm）。既定値1には置き換えない |
-| `axis` | 波長を最終軸とし、既定値 `-1` |
-| `mode` | 既定値 `"interp"` |
-| その他 | SciPyの既定値 |
+| `delta` | Adjacent spacing (nm) in the saved equally spaced wavelength grid; do not replace it with the default 1 |
+| `axis` | Wavelength is the last axis; default `-1` |
+| `mode` | Default `"interp"` |
+| Other arguments | SciPy defaults |
 
-端点では先頭・末尾の7点への2次多項式近似から微分値を求める。二次微分の単位は $`\mathrm{nm}^{-2}`$ とする。
-平均と固定設定のSG処理は線形なので、同じ対象・重み・波長grid・端点処理なら、試料別平均線を微分してから
-試料間平均しても代表線は一致する（丸め誤差を除く）。SNV・対数変換と平均の順序は入れ替えない。
-SGを適用する対象は疑似吸光度の二次微分とし、反射率・SNVは上記の平均代表線を比較する。
+At endpoints, derivatives are obtained from a quadratic polynomial fitted to the first/last seven points.
+Second-derivative units are $`\mathrm{nm}^{-2}`$.
+Because averaging and SG processing with fixed settings are linear, differentiating specimen-specific means before averaging across specimens
+gives the same representative curve, apart from rounding error, when targets, weights, wavelength grid, and endpoint handling are identical.
+Do not interchange SNV or log transformation with averaging.
+SG processing is used for the second derivative of pseudo-absorbance; reflectance and SNV are compared using the mean representative curves defined above.
 
-#### 比較と解釈
+#### Comparison and Interpretation
 
-- 3種類の代表線を条件・クラスタ間で比較し、差が現れる波長帯を調べる。
-  M00のCosine-KMeansへのHungarian matchingには第3節のSNV代表線のcosine類似度を使う。
-  二次微分や特定帯域を見て対応を手動変更しない。
-- difference spectraは同じ種類の代表線どうしの差とし、差を取る条件・クラスタと引き算の向きを記す。
-  別々の構成試料から作った代表線の差を、同一試料のpairedな化学変化とは解釈しない。
-- SNVでは画素ごとのoffsetとscaleを除いているため、SNV振幅差を吸収量や成分量の直接比較に使わない。
+- Compare all three types of representative curves across conditions and clusters to identify wavelength regions with differences.
+  Hungarian matching to M00's Cosine-KMeans uses the SNV representative-spectrum cosine similarity in Section 3.
+  Do not manually change correspondence based on second derivatives or selected bands.
+- Difference spectra subtract representative curves of the same type; state the conditions/clusters and subtraction direction.
+  Differences between representative curves formed from different contributing specimens are not interpreted as paired chemical changes within the same specimens.
+- SNV removes each pixel's offset and scale, so differences in SNV amplitude are not used as direct comparisons of absorption or component amounts.
 
 <a id="representative-samples"></a>
 
-### 4.2 表示例の選択
+### 4.2 Selection of Display Examples
 
-全49試料について、Cosine-KMeansの6条件のマップを保存する。
-良好に見える例だけを研究全体の根拠にしない。
-代表例の選択基準・試料ID・変更時点を記録し、結果を見て選んだ特徴例や失敗例は、そのように明記する。
-探索的な例の変更で主条件、K、seedまたは評価対象を入れ替えない。
+Save maps for all six Cosine-KMeans conditions for all 49 specimens.
+Do not base the study's overall evidence solely on examples that look favorable.
+Record selection criteria, specimen IDs, and the timing of changes.
+Characteristic or failure examples selected after inspecting results must be identified as such.
+Changing exploratory examples does not change the main conditions, K, seeds, or evaluation targets.
 
-代表7試料は、各樹種から選択した表示例であり、化学状態の多様性を検証済みという意味ではない。
-選択対象は`production_v1`の採用49試料に限定し、次の7試料を**試料番号の昇順**で使用する。
-樹種は`data/metadata/古材メタデータ.csv`の`樹種名`に対応する。保存有効画素数は参考値として示す。
+The seven representative specimens are display examples selected from each wood species;
+their selection does not establish validated diversity of chemical states.
+Selection is restricted to the 49 adopted specimens in `production_v1`;
+use the following seven in **ascending specimen-number order**.
+Species names correspond to `樹種名` in `data/metadata/古材メタデータ.csv`.
+Saved valid-pixel counts are shown for reference.
 
-| 樹種名 | 採用試料内の件数 | 本文代表試料 | 保存有効画素数 |
+| Wood species | Count among adopted specimens | Representative specimen in the main text | Saved valid-pixel count |
 | --- | ---: | --- | ---: |
-| ヒノキ | 14 | KYOw02752 | 117,193 |
-| マツ | 23 | KYOw02772 | 73,211 |
-| ケヤキ | 4 | KYOw02777 | 121,687 |
-| ツガ | 1 | KYOw02787 | 106,684 |
-| クリ | 3 | KYOw02790 | 26,249 |
-| スギ | 3 | KYOw16744 | 108,863 |
-| モミ | 1 | KYOw16750 | 58,739 |
+| Hinoki cypress | 14 | KYOw02752 | 117,193 |
+| Pine | 23 | KYOw02772 | 73,211 |
+| Zelkova | 4 | KYOw02777 | 121,687 |
+| Hemlock | 1 | KYOw02787 | 106,684 |
+| Chestnut | 3 | KYOw02790 | 26,249 |
+| Japanese cedar | 3 | KYOw16744 | 108,863 |
+| Fir | 1 | KYOw16750 | 58,739 |
 
-raw BMP・反射率L2 normの代表1×7、全体fitの条件別代表1×7と6条件×7試料図は同じ指定を共有する。
-OOF sanityもこの試料・順序を使用する。
+The representative 1×7 raw BMP and reflectance L2-norm figures, per-condition representative 1×7 full-fit maps,
+and six-condition × seven-specimen figure share this selection.
+OOF sanity plots also use these specimens and this order.
 
-画素数の出典は`outputs/experiments/preflight_v1/manifests/inputs.json`。
+Pixel-count source: `outputs/experiments/preflight_v1/manifests/inputs.json`.
 
-この選択は本文表示用であり、各樹種の典型性や劣化状態の代表性を保証しない。
-CVの49試料、split、学習画素集合、評価対象は変更しない。入力が変わった場合も自動再選択せず、
-変更理由と指定の更新を記録する。
+This selection is for display in the main text; it does not guarantee typicality within a species or representativeness of degradation states.
+The 49 CV specimens, splits, training-pixel sets, and evaluation targets remain unchanged.
+Do not automatically reselect if inputs change; record the reason and the updated specification.
 
 <a id="latent-spectral-maps"></a>
 
-### 4.3 表現空間のPCA表示
+### 4.3 PCA Display of Representation Space
 
-B0・B1・A0・A1・M00・M11について、同じfit画素の表現を2次元に表示する。
-B0・A0・A1・M00・M11はクラスタリング用のL2正規化済み表現を中心化したPCAで投影し、
-B1は保存済みbaseline PCAの上位2成分のL2正規化前の得点を使う。
-条件間でPCAの軸・向き・座標値が対応するとはみなさず、図の分離だけで条件の優劣を決めない。
-2次元座標はクラスタリングやCV指標の計算に使用しない。
+Display representations of the same fitting pixels in two dimensions for B0, B1, A0, A1, M00, and M11.
+For B0, A0, A1, M00, and M11, project the L2-normalized clustering representations with centered PCA.
+For B1, use the scores before L2 normalization for the first two components of the saved baseline PCA.
+PCA axes, orientations, and coordinate values are not assumed to correspond across conditions;
+separation in the plots alone is not used to rank conditions.
+Two-dimensional coordinates are not used for clustering or CV metrics.
 
-| 項目 | 設定 |
+| Item | Setting |
 | --- | --- |
-| fit・表示画素 | global manifestの49試料×8,192＝401,408画素。同一画素を全6条件で共有 |
-| 入力 | B0は256次元、A0・A1・M00・M11は16次元のFP32・L2正規化済み表現。B1は上位2成分のFP32未正規化得点 |
-| 投影 | B1は特異値の降順に保存済みPCを選択。他5条件は中心化したPCAのPC1・PC2。列標準化・whitening・投影後の正規化なし |
-| 計算 | 他5条件はscikit-learn、CPU・FP64、`n_components=2, svd_solver="covariance_eigh", whiten=False`。B1の得点はFP64で保存 |
-| 乱数 | PCA fitは乱数を使わない。散布点の描画順はROOT_SEEDで固定 |
-| 保存 | 座標・平均・主成分係数・固有値・寄与率・runtime・入力画素とhash。数値表はCSV |
+| Fitting/display pixels | 49 specimens × 8,192 = 401,408 pixels from the global manifest, shared across all six conditions |
+| Input | FP32, L2-normalized representations: 256 dimensions for B0 and 16 for A0, A1, M00, and M11; FP32 unnormalized scores of the first two components for B1 |
+| Projection | B1 selects saved PCs in descending singular-value order; the other five use PC1/PC2 of centered PCA, without column standardization, whitening, or post-projection normalization |
+| Computation | The other five use scikit-learn on CPU in FP64 with `n_components=2, svd_solver="covariance_eigh", whiten=False`; B1 scores are saved in FP64 |
+| Randomness | PCA fitting uses no random draws; scatter-point drawing order is fixed by ROOT_SEED |
+| Saved outputs | Coordinates, means, principal-component coefficients, eigenvalues, explained-variance ratios, runtime, input pixels, and hashes; numerical tables in CSV |
 
-B1は`checkpoints/baselines/pca.npz`の特異値の降順で上位2成分を選び、同値の場合は保存順を維持する。
-再fit・再中心化・軸の再回転は行わず、元成分indexと出典を保存する。
-B1の寄与率はSNV全分散に対する保存値であり、16成分や2成分内で再正規化しない。
-クラスタ所属は16次元L2正規化表現から得た結果を使う。
-寄与率は各条件自身の入力表現の全分散を分母とし、条件間の化学情報量の共通尺度とはしない。
+For B1, select the two components with the largest singular values from `checkpoints/baselines/pca.npz`;
+preserve saved order for ties.
+Do not refit, recenter, or rotate axes; save original component indices and provenance.
+B1's explained-variance ratios are saved values relative to total SNV variance, not renormalized within 16 or two components.
+Cluster membership comes from the 16-dimensional L2-normalized representation.
+Each condition's explained-variance ratios use the total variance of its own input representation as the denominator;
+they are not a shared measure of chemical information across conditions.
 
-出力図は`results/figures/global_k8_v1/pca-latent-2d/01_pca_density_clusters.png`。
-列をB0・B1・A0・A1・M00・M11、上段を画素数hexbin、下段を表示Cluster IDとcentroidとする2行6列である。
-hexbinは分割数70、`turbo`の共通対数color scaleを使い、下限1・上限は全条件の最大bin画素数（最低2）。
-各条件で全点を含む正方形表示域を使い、上下段の範囲を一致させる。
-条件間では軸範囲・hexagon面積をそろえず、色はbin内画素数を表す。共通座標面積あたりの密度ではない。
-centroidは表示画素の2次元座標の算術平均であり、元空間のKMeans中心とは区別する。
-fit画素に所属点のないクラスタは位置を作らず、CSVに画素数0を記録する。
-上段の条件名は22 pt、軸名・colorbar名は18 pt、目盛りは15 pt、centroid番号は14 ptとする。
+The output figure is `results/figures/global_k8_v1/pca-latent-2d/01_pca_density_clusters.png`.
+It has two rows and six columns: B0, B1, A0, A1, M00, and M11 as columns,
+pixel-count hexbins on the top row, and display Cluster IDs with centroids on the bottom.
+Hexbins use a grid size of 70 and a shared logarithmic `turbo` color scale,
+with a lower bound of 1 and an upper bound equal to the maximum bin count across all conditions (at least 2).
+Each condition uses a square viewing region containing all points, with identical ranges in the top and bottom panels.
+Axis ranges and hexagon areas are not equalized across conditions.
+Colors encode pixel counts per bin, not density per shared coordinate area.
+Centroids are arithmetic means of the displayed pixels' two-dimensional coordinates, distinct from KMeans centers in the original space.
+Do not invent positions for clusters without member fitting pixels; record a pixel count of 0 in the CSV.
+Top-row condition names use 22 pt, axis/colorbar labels 18 pt, ticks 15 pt, and centroid numbers 14 pt.
 
-fitは`global_pca.py`、描画は`visualize_global_pca.py`が担当する。
-PCAの出力は親のクラスタ図表から独立して検証・保持する。
-実行手順は[runbook](../experiment_runbook.md#global-pca)を参照する。
+Fitting is handled by `global_pca.py`, and rendering by `visualize_global_pca.py`.
+PCA outputs are validated and retained independently of the parent clustering figures and tables.
+See the [runbook](../experiment_runbook.md#global-pca) for execution.
 
 <a id="nir-interpretation"></a>
 <a id="spectral-band-selection"></a>
 
-### 4.4 NIRスペクトルの解析
+### 4.4 NIR Spectral Analysis
 
-全49試料について、全体fitのM11・K=8・初回のクラスタ割当を用いる。
-表示IDと配色は第3節に従い、スペクトルは第4.1節の試料内クラスタ平均を起点とする。
-疑似吸光度は正かつ有限の反射率を全256帯域で持つ画素だけから集約するため、
-SNVと疑似吸光度で寄与画素が異なり得る。対象数・除外数を保存し、欠測を補完しない。
+For all 49 specimens, use the initial cluster assignment from global-fit M11 at K=8.
+Display IDs and colors follow Section 3; spectra start from the within-specimen cluster means in Section 4.1.
+Pseudo-absorbance aggregates only pixels with positive, finite reflectance in all 256 bands,
+so contributing pixels can differ between SNV and pseudo-absorbance.
+Save included and excluded counts; do not impute missing values.
 
-各試料の平均疑似吸光度から、窓幅7点・多項式次数2・微分次数2・`mode="interp"`でSG二次微分を求める。
-横軸を波数（cm$`^{-1}`$）に変換しても、二次微分は波長に関する $`d^2A/d\lambda^2`$（nm$`^{-2}`$）のままとする。
-集約図では寄与試料の平均線を等重みで平均し、試料ごとの画素数で重み付けしない。
+Calculate the SG second derivative from each specimen's mean pseudo-absorbance with a seven-point window,
+polynomial order 2, derivative order 2, and `mode="interp"`.
+Even when the horizontal axis is converted to wavenumber (cm$`^{-1}`$),
+the derivative remains with respect to wavelength, $`d^2A/d\lambda^2`$ (nm$`^{-2}`$).
+In the aggregate figure, average contributing specimen means with equal weights, not weights based on pixel counts.
 
-試料別の比較では、外部露出面付近と内部の差、特徴的な局所分布を確認し、比較するクラスタを選択する。
-選択は[設定](../../scripts/experiments/nir_plot_selection.yaml)に保存する。
-この設定の`note`は解釈・仮説の注記であり、教師ラベルや確定した化学状態を意味しない。
-別試料の参照曲線は試料IDとクラスタIDを表示し、当該試料の帯域集計に混ぜない。
+For specimen-specific comparisons, inspect differences between regions near externally exposed surfaces and the interior,
+and characteristic local distributions, then select clusters for comparison.
+Save the selection in the [configuration](../../scripts/experiments/nir_plot_selection.yaml).
+The `note` field annotates interpretation and hypotheses; it is not a target label or a confirmed chemical state.
+Reference curves from other specimens display their specimen and cluster IDs and are not included in the target specimen's band aggregation.
 
-[可視化CLI](../../scripts/experiments/visualize_nir_interpretation.py)は、保存済みの試料内平均から
-M11の集約図と試料別スペクトルのPNGを生成する。入力CSVは全体fitの可視化pipelineで保存したものを使う。
-帯域注記は同スクリプトの`BANDS`に定義した18帯域である。
-帰属位置は文献上の対応を示し、このデータで検出したピークや同定済みの成分とは区別する。
+The [visualization CLI](../../scripts/experiments/visualize_nir_interpretation.py) generates an M11 aggregate figure
+and specimen-specific spectral PNGs from saved within-specimen means.
+Input CSVs are those saved by the global-fit visualization pipeline.
+Band annotations use the 18 bands defined in the script's `BANDS`.
+Assignment positions indicate correspondences from the literature, distinct from peaks detected or components identified in this dataset.
 
-論文での帯域値・baseline比較は次の定義による。
+Band values and baseline comparisons in the paper use the following definitions.
 
-- 波数軸上で区分線形補間し、単一位置は補間値、区間は両端を含む最小値を帯域値とする。
-- 18帯域のうち、セルロース、多糖、リグニン、水・水素結合環境を対照する9帯域（3・5・7・9・10・12・13・14・17）を棒グラフに示す。
-- 負の谷が深いほど高くなるよう $`-d^2A/d\lambda^2`$ を表示する。これは曲率の指標であり、成分量の直接推定ではない。
-- 比較基準baselineは、各試料で選択されたクラスタ1・6・7の帯域値を等重みで平均する。1クラスタ以上が存在する場合に定義し、欠測は補完しない。
-- 各状態の棒は寄与試料間の等重み平均、誤差棒は試料間の標本標準偏差とする。同一試料内の差には比較する全状態が揃う共通試料を使う。
+- Use piecewise linear interpolation on the wavenumber axis. For a single position, take the interpolated value; for an interval, take the minimum including both endpoints.
+- Of the 18 bands, display nine (3, 5, 7, 9, 10, 12, 13, 14, and 17) in bar plots to contrast cellulose, polysaccharides, lignin, and water/hydrogen-bonding environments.
+- Plot $`-d^2A/d\lambda^2`$ so that deeper negative troughs appear higher. This is a curvature measure, not a direct estimate of component amount.
+- Construct the reference baseline by equally averaging band values of selected clusters 1, 6, and 7 within each specimen. Define it when at least one such cluster is present; do not impute missing values.
+- Bars for each state are equal-weight means across contributing specimens, and error bars are between-specimen sample standard deviations.
+  Within-specimen differences use the shared specimens containing every state being compared.
 
-本リポジトリのNIR CLIが生成するのは保存済み数値CSVに基づくスペクトル図であり、論文の帯域値集計・baseline棒グラフの生成コードは収録していない。
-図表の対応と再現範囲は[結果と図表](../results.md)を参照する。
+The NIR CLI in this repository generates spectral figures from saved numerical CSVs;
+code generating the paper's band-value aggregates and baseline bar plots is not included.
+See [results and figures](../results.md) for figure correspondence and the scope of reproduction.
 
-## 5. 解釈上の制約
+## 5. Interpretation Limitations
 
-マップ、NIRスペクトル、文献帰属、材組織・環境履歴・試料情報を対応付けて探索的に解釈する。
-本研究ではFT-IRを実施しない。化学的解釈と各指標の読み方は[結果の解釈](../interpretation_notes.md)にまとめる。
+Interpretation is exploratory, relating maps, NIR spectra, literature assignments, wood anatomy,
+environmental history, and specimen information.
+Chemical interpretation and guidance on reading the metrics are summarized in [interpretation of results](../interpretation_notes.md).
 
-- クラスタ番号は劣化class、劣化度、時間的な遷移順序を表さず、代表スペクトルは純粋成分を意味しない。
-- A0とM00、A1とM11の比較はmaskの有無とloss対象の両方の違いを含む。M00とM11はTGN・FSの併用条件の違いとして読む。
-- 吸収帯との整合性は化学的仮説の観察根拠であり、樹種・材組織・含水・測定面などの寄与を含み得る。
-  劣化機構・成分量の一意な同定や、因果関係の実証とはしない。
-- baselineは観測内で比較的健全と判断した領域による比較基準であり、未劣化状態や使用前の初期状態ではない。
-- PCAの2次元投影やマップの見栄えで主条件・K・seedを選び直さない。
+- Cluster numbers do not represent degradation classes, severity, or a temporal transition order; representative spectra do not represent pure components.
+- A0 versus M00 and A1 versus M11 differ in both masking and the loss target. M00 versus M11 is interpreted as the difference in combined TGN/FS use.
+- Consistency with absorption bands provides observational support for chemical hypotheses, but may include contributions from species, wood anatomy, moisture, and the measured surface.
+  It does not uniquely identify degradation mechanisms or component amounts, or establish causality.
+- The baseline is a comparison reference formed from regions judged relatively sound within the observations, not an undegraded state or the initial state before use.
+- Do not reselect main conditions, K, or seeds based on two-dimensional PCA projections or map appearance.
 
 <a id="evidence-triangulation"></a>
 
-### 5.1 解釈に用いる証拠
+### 5.1 Evidence Used for Interpretation
 
-| 証拠 | 確認する内容 | 解釈の範囲 |
+| Evidence | What is examined | Scope of interpretation |
 | --- | --- | --- |
-| 外観・材組織・部材情報 | 観測領域と、年輪・外部露出面・局所的な損傷などの位置関係 | 画素単位の正解ラベルや劣化検出精度ではない |
-| LLA・LFR・ARI・occupancy・silhouette | 空間的一貫性、指定摂動への安定性、反復間再現性、幾何学的分離と退化 | 境界の正しさや化学的同一性を直接保証しない |
-| NIRスペクトルと文献帰属 | クラスタ間のスペクトル差と化学的解釈の整合 | 全領域の化学状態や劣化機構の一意な同定ではない |
+| Appearance, wood anatomy, and member information | Positions of observed regions relative to growth rings, externally exposed surfaces, local damage, and other features | Not pixel-level ground-truth labels or degradation-detection accuracy |
+| LLA, LFR, ARI, occupancy, and silhouette | Spatial coherence, stability to specified perturbations, reproducibility across replicates, geometric separation, and degeneration | Do not directly guarantee correct boundaries or chemical identity |
+| NIR spectra and literature assignments | Consistency between spectral differences across clusters and chemical interpretation | Not unique identification of chemical states or degradation mechanisms across all regions |
 
-各証拠が異なる傾向を示す場合も総合scoreへ合成せず、所見ごとに区別する。
-目視による探索的な解釈は、blind評価や事前定義した評定尺度による正式な評価とは扱わない。
+When different evidence shows different trends, keep the observations distinct rather than combining them into a composite score.
+Exploratory visual interpretation is not treated as a blind evaluation or a formal assessment using a predefined rating scale.

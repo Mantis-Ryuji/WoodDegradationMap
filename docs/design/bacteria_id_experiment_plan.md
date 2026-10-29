@@ -1,258 +1,275 @@
-# Bacteria-IDによるRaman補助実験
+# Raman Supplementary Experiments with Bacteria-ID
 
-> Table 5の分類学習条件は[5-fold CVプロトコル](bacteria_id_hpo_protocol.md)を正とする。
-> 本書は事前学習・Table 4・引用値を定義する。
+> Classification training for Table 5 follows the [5-fold CV protocol](bacteria_id_hpo_protocol.md).
+> This document defines pretraining, Table 4, and the cited values.
 
-参照版は**SMAE出版版PDF**とする。公開資料から確認した設定と、本研究で定めた補完条件を区別する。
-結果の位置づけと比較の制約は[Raman補助実験の解釈](../bacteria_id_interpretation_plan.md)に記す。
+The reference version is the **published SMAE PDF**. Settings established from public materials are distinguished
+from supplementary choices made in this study. See [interpretation of the Raman supplementary experiments](../bacteria_id_interpretation_plan.md)
+for the role of the results and limitations of the comparisons.
 
-## 1. 目的と評価範囲
+## 1. Purpose and Scope of Evaluation
 
-古材NIR以外の公開スペクトルでもChemoMAEによる自己教師あり表現学習を評価するため、
-Bacteria-IDのRamanスペクトルを補助実験に用いる。新たに実験する手法は
-**ChemoMAE(M00)とChemoMAE(M11)の2条件のみ**とする。
+Raman spectra from Bacteria-ID are used as a supplementary experiment to evaluate self-supervised representation
+learning with ChemoMAE on publicly available spectra beyond historic wood NIR.
+**ChemoMAE(M00) and ChemoMAE(M11) are the only two methods newly evaluated.**
 
-主な比較表は、SMAEの次の2表へ両条件を追加したものとする。
+The main comparison tables add both conditions to the following two SMAE tables.
 
-- **Table 4相当**：Bacteria-4・Bacteria-6のクラスタリングACC・NMI・AMI。
-- **Table 5相当**：Bacteria-IDの30クラス分類Accuracy。両条件は`w/ pretraining`列へ追加する。
+- **Table 4 equivalent**: Clustering ACC, NMI, and AMI for Bacteria-4 and Bacteria-6.
+- **Table 5 equivalent**: Accuracy for 30-class Bacteria-ID classification. Both conditions are added to the `w/ pretraining` column.
 
-**Table 4はvalidationなし・train 80%／test 20%とする。** Table 5では、M11の5-fold CVで選んだ
-分類設定をM00/M11に共通に適用する。設定選択と全件学習は第7節に記す。
+**Table 4 uses 80% training / 20% test data with no validation set.** For Table 5, classification settings selected
+by 5-fold CV on M11 are applied to both M00 and M11. Configuration selection and full-subset training are described in Section 7.
 
-他手法はSMAE掲載の報告値を引用し、SMAE・ResNet・RamanCluster等を再実験しない。
-ChemoMAEのscratch学習、追加baseline、潜在次元・Aug強度のsweep、追加データセット、
-Table 3や追加可視化は実施範囲に含めない。
-M00もmasked reconstructionによる事前学習を行う条件であり、
-`w/o pretraining`ではない。
+Values reported by SMAE are quoted for other methods; SMAE, ResNet, RamanCluster, and others are not rerun.
+The scope excludes ChemoMAE training from scratch, additional baselines, sweeps of latent dimensionality or augmentation strength,
+additional datasets, Table 3, and additional visualizations.
+M00 also uses masked-reconstruction pretraining;
+it is not a `w/o pretraining` condition.
 
-### 参照版と比較条件
+### Reference Version and Comparison Conditions
 
-参照論文はRen, Zhou, and Li, *A self-supervised learning method for Raman spectroscopy based on masked autoencoders*,
-**Expert Systems With Applications 292 (2025), 128576**、
-[DOI: 10.1016/j.eswa.2025.128576](https://doi.org/10.1016/j.eswa.2025.128576)。
-出版版のp.8でTable 4・5、§3.3で反復条件を参照する。
+The reference paper is Ren, Zhou, and Li, *A self-supervised learning method for Raman spectroscopy based on masked autoencoders*,
+**Expert Systems With Applications 292 (2025), 128576**,
+[DOI: 10.1016/j.eswa.2025.128576](https://doi.org/10.1016/j.eswa.2025.128576).
+Tables 4 and 5 are on p.8 of the published version; replicate settings are described in §3.3.
 
-補助的な参照資料は、SMAE補足のS-5・Fig. S3と、Sun, Wang, and Jiang,
-*RamanCluster: A deep clustering-based framework for unsupervised Raman spectral identification of pathogenic bacteria*,
-**Talanta 275 (2024), 126076**、[DOI: 10.1016/j.talanta.2024.126076](https://doi.org/10.1016/j.talanta.2024.126076)
-の§3.1・§3.3・補足Fig. S2とする。
+Additional references are S-5 and Fig. S3 of the SMAE supplement, and §3.1, §3.3, and supplementary Fig. S2 of
+Sun, Wang, and Jiang, *RamanCluster: A deep clustering-based framework for unsupervised Raman spectral identification of pathogenic bacteria*,
+**Talanta 275 (2024), 126076**, [DOI: 10.1016/j.talanta.2024.126076](https://doi.org/10.1016/j.talanta.2024.126076).
 
-公開資料から確認できるデータ定義・分割比率・指標・反復と報告形式・分類head・下流学習手順は
-SMAEを参照する。未記載の設定や資料間の不一致については、**第8節の補完条件**を用いる。
-補完した設定はSMAEの実設定とは区別する。
-SMAEの出版版本文・補足資料、公式コードを参照し、Bacteria-6の資料間不一致はSMAE補足図の構成を優先する。
+SMAE is the reference for data definitions, split proportions, metrics, replicates and reporting format,
+classification head, and downstream training procedures that can be established from public materials.
+For unspecified settings and discrepancies between sources, the **supplementary choices in Section 8** apply.
+These choices are distinguished from SMAE's actual settings.
+The published SMAE text, supplementary materials, and official code are referenced; for the discrepancy concerning Bacteria-6,
+the composition in the SMAE supplementary figure takes precedence.
 
-公式コードの確認版は
+The inspected version of the official code is
 [`pengjuRen99/SpectraMAENet@7939f2e6d3e6e975b687e4f07e56b9ce51cae5e3`](https://github.com/pengjuRen99/SpectraMAENet/tree/7939f2e6d3e6e975b687e4f07e56b9ce51cae5e3)
-（2025-06-23のcommit）とする。このcommitが論文掲載値を生成した実行版であることまでは確認できていない。
+(commit dated 2025-06-23). This commit has not been confirmed as the version that generated the published results.
 
-方法として意図的に異なるのは、既に指定済みのChemoMAE構成・SNV・WoodDegradationMapのpretraining recipe・
-TGN/FSと、Table 4のCosine-KMeansである。既知の評価条件を揃え、これらの手法上の差と第8節の補完条件を
-脚注へ明示した文献比較とする。SMAE等を同一環境・同一計算予算で再実験した比較とは記述しない。
+Intentional methodological differences are the specified ChemoMAE architecture, SNV, the WoodDegradationMap pretraining recipe,
+TGN/FS, and Cosine-KMeans for Table 4. Known evaluation conditions are aligned, and these methodological differences
+and the supplementary choices in Section 8 are stated in table footnotes.
+The comparison is not described as a rerun of SMAE and other methods under the same environment and computational budget.
 
-## 2. モデルと前処理
+## 2. Model and Preprocessing
 
-設定の基準は**WoodDegradationMapの採用済みモデルとpretraining recipe**とする。
-ChemoMAEライブラリの引数既定値やSMAEのpretraining設定で置き換えない。
-参照版はChemoMAE v0.2.2、commit
-[`4ec7f6acecb82035c85001f5aee508910d40adac`](https://github.com/Mantis-Ryuji/ChemoMAE/commit/4ec7f6acecb82035c85001f5aee508910d40adac)。
+The settings are based on **the adopted WoodDegradationMap model and pretraining recipe**.
+They are not replaced by ChemoMAE library argument defaults or SMAE pretraining settings.
+The reference version is ChemoMAE v0.2.2, commit
+[`4ec7f6acecb82035c85001f5aee508910d40adac`](https://github.com/Mantis-Ryuji/ChemoMAE/commit/4ec7f6acecb82035c85001f5aee508910d40adac).
 
-| 項目 | Bacteria-IDでの設定 |
+| Item | Bacteria-ID setting |
 | --- | --- |
-| 入力 | 1スペクトル1000チャネル、`seq_len=1000` |
-| 前処理 | スペクトルごとのSNV。標本標準偏差（`ddof=1`）を使用 |
-| patch | `n_patches=20`、1 patchは連続50チャネル |
-| encoder幅 | `d_model=256` |
-| attention / 層数 | `nhead=8` / `num_layers=8` |
+| Input | 1000 channels per spectrum, `seq_len=1000` |
+| Preprocessing | Per-spectrum SNV using the sample standard deviation (`ddof=1`) |
+| Patches | `n_patches=20`; each patch contains 50 consecutive channels |
+| Encoder width | `d_model=256` |
+| Attention / layers | `nhead=8` / `num_layers=8` |
 | FFN / dropout | `dim_feedforward=1024` / `dropout=0.0` |
-| 潜在 | CLSから`to_latent`で128次元、`latent_dim=128`、`latent_normalize=True` |
-| decoder | `decoder_num_layers=1`、`Linear(128, 1000)` |
-| pretraining mask | 50%、20 patch中10 patchを隠す |
-| pretraining loss | maskedチャネルだけのMSE、patch内target正規化なし |
-| 初期化 | WoodDegradationMapと同じChemoMAE v0.2.2の初期化 |
-| 通常の特徴抽出・分類 | 全20 patchを可視にする。ランダムmaskなし |
+| Latent representation | 128 dimensions from CLS through `to_latent`, `latent_dim=128`, `latent_normalize=True` |
+| Decoder | `decoder_num_layers=1`, `Linear(128, 1000)` |
+| Pretraining mask | 50%; 10 of the 20 patches are hidden |
+| Pretraining loss | MSE on masked channels only, with no within-patch target normalization |
+| Initialization | The same ChemoMAE v0.2.2 initialization as WoodDegradationMap |
+| Normal feature extraction / classification | All 20 patches visible; no random mask |
 
-入力長・patch構成・潜在次元以外のモデル設定は
-[古材の構成](experiment_protocol.md#model-architecture)を引き継ぐ。
-潜在128次元は本補助実験の固定条件であり、SMAE等とのbottleneckの同一性や最適性を意味しない。
-encoder幅256と、単一潜在の次元128を区別する。
-128次元単位潜在はpretrainingの再構成とTable 4のクラスタリングに使用する。
-Table 5の分類headは投影前CLSへ接続する（第7節）。
+Model settings other than input length, patch configuration, and latent dimensionality follow the
+[historic wood architecture](experiment_protocol.md#model-architecture).
+The 128-dimensional latent representation is a fixed condition of this supplementary experiment;
+it does not imply an identical bottleneck to SMAE or other methods, or an optimal dimensionality.
+Encoder width 256 is distinguished from the single latent vector's dimensionality of 128.
+The 128-dimensional unit latent representation is used for pretraining reconstruction and Table 4 clustering.
+The Table 5 classification head is attached to the CLS output before projection (Section 7).
 
-配布済みスペクトルを入力原本として保持し、SNVを適用する。古材固有の256点補間・空間mask・
-画素抽出を流用しない。波数軸・チャネル順・shapeを確認し、追加の平滑化や0〜1 clippingは導入しない。
-SNV後の負値は有効値である。非有限値・標準偏差ゼロ等が見つかった場合、黙って除外して
-SMAEと異なる評価集合にせず、対象と件数を記録して取り扱いを決める。
+The distributed spectra are retained as the original inputs, and SNV is applied.
+The wood-specific 256-point interpolation, spatial masks, and pixel sampling are not reused.
+The wavenumber axis, channel order, and shape are checked; no additional smoothing or 0–1 clipping is introduced.
+Negative values after SNV are valid. If nonfinite values, zero standard deviations, or similar issues are found,
+the affected spectra and counts are recorded and their handling is determined, rather than silently excluding them
+and changing the evaluation set relative to SMAE.
 
-## 3. TGN・Fractional Shift
+## 3. TGN and Fractional Shift
 
-**強度もWoodDegradationMapと同じ値**を使用する。Raman用に弱めたり、学習段階ごとに変えたりしない。
-TGNはTangent Gaussian Noise、FSはFractional Shiftを指す。
+**Strengths also use the same values as WoodDegradationMap.** They are not reduced for Raman or changed between training stages.
+TGN denotes Tangent Gaussian Noise, and FS denotes Fractional Shift.
 
-| 項目 | 採用設定 |
+| Item | Adopted setting |
 | --- | --- |
-| TGN角度 | 一様分布0〜5°、`noise_angle_deg_range=(0.0, 5.0)` |
-| FS移動量 | 一様分布−2〜2チャネル、`shift_delta_range=(-2.0, 2.0)` |
-| 適用確率 | 有効な各操作についてスペクトルごとに独立に0.5 |
-| 操作順 | `shuffle_order_per_batch=True` |
-| 再中心化・norm | `recenter_after_each_op=True`、`renorm_to_input_norm=True` |
-| FS補間・端点 | 線形補間・端点値延長。循環shiftなし |
-| 数値安定化 | `eps=1e-8` |
+| TGN angle | Uniform over 0–5°, `noise_angle_deg_range=(0.0, 5.0)` |
+| FS displacement | Uniform over −2–2 channels, `shift_delta_range=(-2.0, 2.0)` |
+| Application probability | Independently 0.5 per spectrum for each enabled operation |
+| Operation order | `shuffle_order_per_batch=True` |
+| Recentering / norm | `recenter_after_each_op=True`, `renorm_to_input_norm=True` |
+| FS interpolation / endpoints | Linear interpolation with endpoint-value extension; no circular shift |
+| Numerical stabilization | `eps=1e-8` |
 
-処理順は**配布入力 → SNV → TGN/FS**とする。各操作後に平均ゼロ・一定normへ戻す。
-原入力へSMAEのAugをかけてからSNVする処理は使用しない。
-FSの単位は1000点入力のチャネルindexであり、古材と同じ物理的な波長・波数移動量を意味しない。
-定義と実装上の扱いは[augmentation仕様](experiment_protocol.md#augmentation-clustering)を参照する。
+The processing order is **distributed input → SNV → TGN/FS**. Zero mean and constant norm are restored after each operation.
+The procedure does not apply SMAE augmentation to the original input before SNV.
+FS is measured in channel indices of the 1000-point input; it does not represent the same physical wavelength or wavenumber
+displacement as in the wood experiment. See the [augmentation specification](experiment_protocol.md#augmentation-clustering)
+for definitions and implementation details.
 
-| 段階 | ChemoMAE(M00) | ChemoMAE(M11) |
+| Stage | ChemoMAE(M00) | ChemoMAE(M11) |
 | --- | --- | --- |
-| Pretraining | 追加Augなし、mask 50% | TGN・FS各0.5、mask 50% |
-| Finetuningのtrain | HPO採用設定ではTGN・FSともなし、全patch可視 | HPO採用設定ではTGN・FSともなし、全patch可視 |
-| Table 4 test・クラスタリング用特徴抽出、Table 5 validation・test | Augなし、全patch可視 | Augなし、全patch可視 |
+| Pretraining | No additional augmentation; 50% mask | TGN and FS each applied with probability 0.5; 50% mask |
+| Fine-tuning training | Neither TGN nor FS under the HPO-selected setting; all patches visible | Neither TGN nor FS under the HPO-selected setting; all patches visible |
+| Table 4 test and feature extraction for clustering; Table 5 validation and test | No augmentation; all patches visible | No augmentation; all patches visible |
 
-M00/M11は事前学習条件を表す。finetuningのAugは[HPO](bacteria_id_hpo_protocol.md)で選択して共通適用し、両条件の差を
-事前学習時の追加Augの有無として比較する。
-pretrainingのtargetは両条件とも**追加摂動前の観測SNV**とし、targetの強度・チャネル位置は動かさない。
-ここでいうcleanは測定ノイズのない真値を意味しない。
+M00/M11 denote pretraining conditions. Fine-tuning augmentation is selected through [HPO](bacteria_id_hpo_protocol.md)
+and applied to both conditions, so their difference is compared in terms of the presence or absence of additional pretraining augmentation.
+The pretraining target for both conditions is the **observed SNV spectrum before additional perturbation**;
+target intensities and channel positions are not shifted.
+Here, clean does not mean a noise-free ground truth.
 
-## 4. 事前学習設定
+## 4. Pretraining Settings
 
-[WoodDegradationMapの学習recipe](experiment_protocol.md#training-recipe)と
-[experiments/config.py](../../src/wood_degradation_map/experiments/config.py)の採用値を引き継ぐ。
+The adopted settings follow the [WoodDegradationMap training recipe](experiment_protocol.md#training-recipe)
+and [experiments/config.py](../../src/wood_degradation_map/experiments/config.py).
 
-| 項目 | 採用設定 |
+| Item | Adopted setting |
 | --- | --- |
-| epoch / batch size | 800 / 1024 |
-| GPU / gradient accumulation | 単一GPU / `accum_iter=1` |
-| optimizer | AdamW、betas=(0.9, 0.95)、eps=1e-8、AMSGradなし |
-| weight decay | 0.05。biasと正規化層のパラメータは0 |
-| base / peak learning rate | 1.5e-4 / 6e-4（effective batch 1024） |
-| schedule | 40 epochの線形warmup、その後760 epochのcosine decay、最小学習率0 |
-| learning rate更新 | 各batchの処理前、epoch内進捗を含めて更新 |
-| 精度 | FP32パラメータ、FP16 autocast、GradScaler |
-| gradient clipping / EMA | ともに使用しない |
-| train DataLoader | shuffleあり、`drop_last=True` |
-| 終了・checkpoint | early stoppingなし、800 epoch完了時のraw weights（`last_model.pt`） |
+| Epochs / batch size | 800 / 1024 |
+| GPU / gradient accumulation | Single GPU / `accum_iter=1` |
+| Optimizer | AdamW, betas=(0.9, 0.95), eps=1e-8, no AMSGrad |
+| Weight decay | 0.05; 0 for biases and normalization-layer parameters |
+| Base / peak learning rate | 1.5e-4 / 6e-4 (effective batch size 1024) |
+| Schedule | 40 epochs of linear warmup, then 760 epochs of cosine decay; minimum learning rate 0 |
+| Learning-rate update | Before each batch, accounting for progress within the epoch |
+| Precision | FP32 parameters, FP16 autocast, GradScaler |
+| Gradient clipping / EMA | Neither is used |
+| Training DataLoader | Shuffled, `drop_last=True` |
+| Termination / checkpoint | No early stopping; raw weights after completing 800 epochs (`last_model.pt`) |
 
-M00/M11で入力集合・batch順序・mask等の対応を取れるよう、用途別seedを記録する。
-**Table 5は出版版に合わせて各条件5つの異なるseedで評価する。Table 4も補完条件として5 seedとする。**
-run seedは`[0, 1, 2, 3, 4]`。各seedで事前学習から独立に反復し、Table 5では対応する同じseedの
-pretraining checkpointを1回のfinetuningへ渡す。単一checkpointに対するfinetuningだけの5反復とはしない。
-Table 4のBacteria-4/6とTable 5は学習コーパスを分ける。用途別seed・実行数は第8節に定義する。
-古材の5 folds×3反復を自動的に持ち込まない。
-実際の学習件数、1 epochのbatch数、予定・実更新数、AMPによるskip数を保存する。
-800 epochをSMAEと同じ計算予算と表現しない。
+Purpose-specific seeds are recorded so that input sets, batch order, masks, and other factors can be paired between M00 and M11.
+**Table 5 uses five distinct seeds per condition, following the published version. Table 4 also uses five seeds as a supplementary choice.**
+Run seeds are `[0, 1, 2, 3, 4]`. Each seed independently repeats the process from pretraining.
+For Table 5, the pretraining checkpoint for the same seed is passed to one fine-tuning run;
+this is not five fine-tuning replicates from a single checkpoint.
+Bacteria-4/6 in Table 4 and Table 5 use separate training corpora. Purpose-specific seeds and run counts are defined in Section 8.
+The wood experiment's five folds × three replicates are not automatically carried over.
+Actual training counts, batches per epoch, planned and actual update counts, and AMP skip counts are saved.
+The 800 epochs are not described as the same computational budget as SMAE.
 
-## 5. データと分割
+## 5. Data and Splits
 
-データの出典は[原著論文](https://pmc.ncbi.nlm.nih.gov/articles/PMC6960993/)と
-[Bacteria-ID公式リポジトリ](https://github.com/csho33/bacteria-ID)とする。
-30クラスは細菌・酵母の**isolateクラス**であり、30の異なる菌種とは記述しない。
+Data sources are the [original paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC6960993/) and the
+[official Bacteria-ID repository](https://github.com/csho33/bacteria-ID).
+The 30 classes are bacterial and yeast **isolate classes**, not 30 distinct species.
 
-### Table 5の配布subsetと分割
+### Distributed Subsets and Splits for Table 5
 
-| 配布subset | 件数 | Table 5での役割 |
+| Distributed subset | Count | Role in Table 5 |
 | --- | ---: | --- |
-| reference | 60,000（30クラス×2,000） | ラベルを損失へ使わないpretraining |
-| finetune | 3,000（30クラス×100） | 5-fold CVの学習・validation、採用後の全件学習 |
-| test | 3,000（30クラス×100） | 最終Accuracyの評価 |
+| reference | 60,000 (30 classes × 2,000) | Pretraining without labels in the loss |
+| finetune | 3,000 (30 classes × 100) | Training and validation in 5-fold CV, followed by full-subset training with the selected configuration |
+| test | 3,000 (30 classes × 100) | Final Accuracy evaluation |
 
-Table 5ではfinetune subsetへ`StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`を
-適用し、5分割すべてでM11 seed 0のHPOを行う。各foldはtrain 2,400・validation 600で、
-設定選択後はfinetune 3,000件すべてでM00/M11を学習する。出版版の「5つの異なるseed」を
-5 foldsでの評価と読み替えず、本研究の5-fold HPOとして区別する。
-入力ファイル内の行順と分割indexを保存する。SMAE出版版の実際の分割は公開資料から未確認である。
+For Table 5, `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` is applied to the finetune subset,
+and M11 seed 0 is used for HPO over all five splits. Each fold contains 2,400 training and 600 validation spectra;
+after configuration selection, M00/M11 are trained on all 3,000 finetune spectra.
+The published version's “five different seeds” is not reinterpreted as evaluation over five folds;
+the 5-fold HPO is specific to this study.
+Input-file row order and split indices are saved. The actual splits used in the published SMAE experiment have not been established from public materials.
 
-testはpretraining、HPO、設定選択、最終学習には使用しない。
-SNVは各スペクトル内の統計量だけを用いる。配布subset間の同一個体・同一測定群の関係は
-出典で確認できた範囲で記録し、古材の試料単位CVや未知患者評価と同一視しない。
+Test data are not used for pretraining, HPO, configuration selection, or final training.
+SNV uses only within-spectrum statistics. Relationships between the same biological units or measurement groups
+across distributed subsets are recorded to the extent established by the sources;
+this evaluation is not equated with specimen-level CV for wood or evaluation on unseen patients.
 
 <a id="table4-split"></a>
 
-### Table 4の件数・分割比率とクラス構成
+### Counts, Split Proportions, and Class Composition for Table 4
 
-SMAE本文§3.2と補足S-5は、Bacteria-4/6/8/10をRamanClusterの分割方法に従うと記載する。
-RamanCluster本文§3.1（pp.5–6）は、10種それぞれ2,000件、4・6・8・10クラスのデータセット、
-**train / validation / test = 60% / 20% / 20%**と定義している。
-本研究の分割は**train 80%／test 20%**である。保存済み60/20/20分割の結果を得た後、
-trainとvalidationを統合して80/20を主結果に採用した。testの元行indexと配列順は保持した。
-以下の保存indexを正本とし、新たな乱数分割で置き換えない。
-下表は本研究で使用する最終的な件数であり、文献手法の学習割合が一致するとの主張ではない。
+SMAE §3.2 and supplementary S-5 state that Bacteria-4/6/8/10 follow the RamanCluster splitting procedure.
+RamanCluster §3.1 (pp.5–6) defines 2,000 spectra for each of 10 species, datasets with 4, 6, 8, and 10 classes,
+and **training / validation / test = 60% / 20% / 20%**.
+This study uses **80% training / 20% test**. After obtaining results from the saved 60/20/20 split,
+the training and validation sets were combined, and 80/20 was adopted for the main results.
+The original test row indices and array order were preserved.
+The saved indices below are authoritative and must not be replaced with a new random split.
+The following table gives the final counts used in this study; it does not claim that literature methods used the same training proportion.
 
-| 対象 | 分割前総数 | train | test |
+| Dataset | Total before splitting | Training | Test |
 | --- | ---: | ---: | ---: |
 | Bacteria-4 | 8,000 | 6,400 | 1,600 |
 | Bacteria-6 | 12,000 | 9,600 | 2,400 |
 
-この80/20はTable 4用であり、Table 5の配布済みreference/finetune/testの役割と混同しない。
-2,000件/クラスと整合する**配布reference subset**から対象isolateを抽出する。
-使用ファイルは[公式配布案内](https://github.com/csho33/bacteria-ID/blob/3c00a712a6dbad9aefa19ac878a1e6db20590ca9/data/data.md)の
-`X_reference.npy`・`y_reference.npy`とする。元ファイルの指定は本研究の補完条件である。
+This 80/20 split is specific to Table 4 and is distinct from the roles of the distributed reference/finetune/test subsets for Table 5.
+The target isolates are extracted from the **distributed reference subset**, consistent with 2,000 spectra per class.
+The files are `X_reference.npy` and `y_reference.npy`, listed in the
+[official distribution guide](https://github.com/csho33/bacteria-ID/blob/3c00a712a6dbad9aefa19ac878a1e6db20590ca9/data/data.md).
+The choice of source files is a supplementary choice made in this study.
 
-最終的なTable 4の分割は、保存済みindexを入力として次の手順で固定する。
+The final Table 4 split is fixed from the saved indices as follows.
 
-1. `data/processed/bacteria_id_v1/splits.npz`のtrain・validation・testを読み、非重複・対象全件の網羅・クラス別件数を検査する。
-2. trainとvalidationの和集合を80%の学習集合とし、元行index順に保存する。
-3. testの元行index配列を順序も含めてコピーする。
-4. 最終train/testの非重複、対象全件の網羅、入力testとの完全一致、各クラスtrain 1,600件・test 400件を確認する。
+1. Read training, validation, and test indices from `data/processed/bacteria_id_v1/splits.npz`; verify disjointness, complete coverage of the target spectra, and per-class counts.
+2. Use the union of training and validation as the 80% training set, saved in original row-index order.
+3. Copy the original test row-index array, including its order.
+4. Verify that the final training/test sets are disjoint and cover all target spectra, that test exactly matches the input test set, and that each class has 1,600 training and 400 test spectra.
 
-Bacteria-4/6でそれぞれ分割し、各分割をM00/M11・5 seedの全runで共有する。
-事前学習とCKmeansのfitは**train全件**を用い、testでは固定したクラスタ中心への割当と採点を行う。
-Table 4にvalidation・HPO・early stoppingを設けず、初期化から800 epoch学習した最終raw weightsを使用する。
-Table 5のreference全体で学習したcheckpointをTable 4へ流用しない。
+Bacteria-4 and Bacteria-6 are split separately; each split is shared across M00/M11 and all five seeds.
+Pretraining and CKmeans fitting use **all training spectra**, while test spectra are assigned to fixed cluster centers and scored.
+Table 4 has no validation, HPO, or early stopping; it uses final raw weights trained from initialization for 800 epochs.
+Checkpoints trained on the full reference subset for Table 5 are not reused for Table 4.
 
-**クラス構成には、SMAEの「RamanClusterに従う」という本文記述と補足図の間に不一致がある。**
-両方の補足図を確認した結果を次に示す。
+**Class composition differs between SMAE's statement that it “follows RamanCluster” and its supplementary figure.**
+Inspection of both supplementary figures gives the following.
 
-| 対象・資料 | 図のクラス名・読み取れる構成 |
+| Dataset and source | Class names and composition shown in the figure |
 | --- | --- |
-| RamanCluster補足Fig. S2(a)：Bacteria-4 | C. albicans、C. glabrata、K. aerogenes、E. coli |
-| SMAE補足Fig. S3(a)：Bacteria-4 | C. albicans、C. glabrata、K. aerogenes、E. coli 1 |
-| RamanCluster補足Fig. S2(b)：Bacteria-6 | 上記4種にE. faecium・E. faecalisを追加 |
-| SMAE補足Fig. S3(b)：Bacteria-6 | 上記4 isolateクラスにE. coli 2・E. faeciumを追加。E. faecalisは含まれない表示 |
+| RamanCluster supplementary Fig. S2(a): Bacteria-4 | C. albicans, C. glabrata, K. aerogenes, E. coli |
+| SMAE supplementary Fig. S3(a): Bacteria-4 | C. albicans, C. glabrata, K. aerogenes, E. coli 1 |
+| RamanCluster supplementary Fig. S2(b): Bacteria-6 | The four species above plus E. faecium and E. faecalis |
+| SMAE supplementary Fig. S3(b): Bacteria-6 | The four isolate classes above plus E. coli 2 and E. faecium; E. faecalis is not shown |
 
-RamanCluster本文§3.1が列挙する先頭6種もFig. S2(b)と整合する。
-一方、SMAE Fig. S3は全panel共通の凡例と色の対応から上記の構成と読め、6クラス中2クラスがE. coliである。
-[Bacteria-ID公式config.py](https://github.com/csho33/bacteria-ID/blob/3c00a712a6dbad9aefa19ac878a1e6db20590ca9/config.py)
-の`STRAINS`と照合すると、SMAE図の表示はBacteria-4がID `[0, 1, 2, 3]`、
-Bacteria-6がID `[0, 1, 2, 3, 4, 5]`に対応する。
-本研究ではSMAEとの比較のため、**この図の表示に基づくIDを採用する（本研究の補完条件）**。
-SMAE Table 4の数値を算出した実行IDを確認できた、という意味ではない。
-RamanClusterのE. coliはID 3/4、E. faecalisはID 6/7のいずれかを、資料だけでは特定できない。
-SMAE Fig. S3のcaptionも自己注意機構の模式図と記載され、実際のクラスタ図と一致していない。
+The first six species listed in RamanCluster §3.1 are also consistent with Fig. S2(b).
+In contrast, the legend and colors shared across all panels of SMAE Fig. S3 indicate the composition above,
+with two of the six classes belonging to E. coli.
+Comparison with `STRAINS` in the [official Bacteria-ID config.py](https://github.com/csho33/bacteria-ID/blob/3c00a712a6dbad9aefa19ac878a1e6db20590ca9/config.py)
+maps the SMAE figure to IDs `[0, 1, 2, 3]` for Bacteria-4 and `[0, 1, 2, 3, 4, 5]` for Bacteria-6.
+For comparison with SMAE, this study **adopts the IDs inferred from that figure (a supplementary choice made in this study)**.
+This does not mean that the IDs used to produce SMAE Table 4 have been verified.
+The sources alone do not identify whether RamanCluster's E. coli is ID 3 or 4, or whether its E. faecalis is ID 6 or 7.
+The caption of SMAE Fig. S3 also describes a schematic of the self-attention mechanism, inconsistent with the clustering figure itself.
 
-図の誤記か実データ構成の差かは未解明のまま記録し、Bacteria-6を両論文で同一集合と断定しない。
-本実験のクラス構成は上記IDで固定し、RamanCluster側の構成による追加実験は行わない。
-表の脚注にSMAE補足図に基づく構成であることと、比較元の資料間不一致を簡潔に明記する。
+Whether this is a figure error or a difference in actual data composition remains unresolved;
+Bacteria-6 is not asserted to be the same set in both papers.
+The class composition in this experiment is fixed to the IDs above; no additional experiment using RamanCluster's composition is performed.
+Table footnotes briefly state that composition follows the SMAE supplementary figure and note the discrepancy between the comparison sources.
 
-## 6. Table 4：教師なしクラスタリング
+## 6. Table 4: Unsupervised Clustering
 
-### 評価手順
+### Evaluation Procedure
 
-1. 第5節の各subsetのtrainでM00・M11をseed 0–4の各runで初期化から800 epoch事前学習する。ラベルは部分集合の作成・層化・分割の検証と採点に使用し、
-   pretraining lossやクラスタ中心更新に使わない。
-2. 事前学習checkpointから、Augなし・全patch可視で128次元の単位潜在を抽出する。
-   分類finetuning後のencoderをこの評価へ流用しない。
-3. **CKmeansとしてChemoMAEのCosine-KMeans**をtrain全件の潜在でfitする。Bacteria-4はK=4、Bacteria-6はK=6。
-   潜在を直接入力し、t-SNE・UMAP等の追加次元削減は行わない。test潜在はcosine類似度最大の学習済み中心へ割り当て、
-   test上で中心を更新・再fitしない。このfit/採点集合の扱いは本研究の補完条件である。
-4. test全件のACC・NMI・AMIを百分率で算出する。ACCはクラスタ番号と正解ラベルの最適な一対一対応に基づく。
-   ラベル対応は採点に使用し、クラスタ所属を学習し直さない。**AMIをARIへ置き換えない。**
-5. 各subset・各条件の5 seedの算術平均と標本SD（`ddof=1`）をChemoMAE行へ掲載する。
-   seed別の3指標も記録し、最良seedを選ばない。SMAE掲載の引用行は原表どおり点推定値のみとし、
-   未報告のばらつきを推定して付け足さない。Table 4の「±」は標本SDであり、Table 5の95% CIとは異なる。
+1. For the training set of each subset in Section 5, initialize and pretrain M00 and M11 for 800 epochs in each run with seeds 0–4.
+   Labels are used to create subsets, stratify, verify splits, and score results, not in the pretraining loss or cluster-center updates.
+2. Extract 128-dimensional unit latent representations from the pretrained checkpoint with no augmentation and all patches visible.
+   The encoder after classification fine-tuning is not reused for this evaluation.
+3. Fit **ChemoMAE's Cosine-KMeans as CKmeans** on the latent representations of all training spectra: K=4 for Bacteria-4 and K=6 for Bacteria-6.
+   Latent representations are input directly, with no additional dimensionality reduction such as t-SNE or UMAP.
+   Test representations are assigned to the trained center with the highest cosine similarity; centers are not updated or refitted on test data.
+   This definition of fitting and scoring sets is a supplementary choice made in this study.
+4. Compute ACC, NMI, and AMI over all test spectra as percentages. ACC uses the optimal one-to-one correspondence between cluster numbers and ground-truth labels.
+   Label correspondence is used for scoring; cluster membership is not relearned. **Do not replace AMI with ARI.**
+5. Report the arithmetic mean and sample SD (`ddof=1`) over five seeds for each subset and condition in the ChemoMAE rows.
+   All three metrics for individual seeds are also recorded; the best seed is not selected.
+   Reference rows quoted from SMAE retain point estimates only, as in the original table; unreported variability is not estimated and added.
+   The “±” in Table 4 denotes sample SD, unlike the 95% CI in Table 5.
 
-Cosine-KMeansの初期化はk-means++型、1 fitあたり1初期化、`max_iter=500`、`tol=1e-4`とし、
-[既存仕様](experiment_protocol.md#augmentation-clustering)に従う。追加restartによる最良値選択は行わない。
-ACCの対応づけは[公開notebookのcluster_acc](https://github.com/pengjuRen99/SpectraMAENet/blob/7939f2e6d3e6e975b687e4f07e56b9ce51cae5e3/Unsupervised_Mapping/t_SNE.ipynb)
-と同じHungarian matchingに基づく。testの分割全体で対応づけを求め、batchごとのACCを平均しない。
-特徴抽出・採点では`drop_last=False`とし、trainのfit対象も含め端数batchを欠落させない。
+Cosine-KMeans uses k-means++-style initialization, one initialization per fit, `max_iter=500`, and `tol=1e-4`,
+following the [existing specification](experiment_protocol.md#augmentation-clustering). No additional restarts are used to select the best value.
+ACC correspondence uses Hungarian matching, as in
+[`cluster_acc` in the public notebook](https://github.com/pengjuRen99/SpectraMAENet/blob/7939f2e6d3e6e975b687e4f07e56b9ce51cae5e3/Unsupervised_Mapping/t_SNE.ipynb).
+Correspondence is determined over the entire test split; batch-specific ACC values are not averaged.
+Feature extraction and scoring use `drop_last=False`, retaining incomplete final batches, including those in the training set used for fitting.
 
-### NMI・AMIの定義
+### NMI and AMI Definitions
 
-SMAEの比較元であるRamanCluster本文§3.3、式(15)・(16)に明記された定義を採用する。
-正解ラベルを$`Y`$、クラスタ割当を$`\hat{Y}`$、相互情報量を$`I`$、エントロピーを$`H`$とすると、
+The definitions explicitly stated in RamanCluster §3.3, Eqs. (15) and (16), the comparison source for SMAE, are adopted.
+Let ground-truth labels be $`Y`$, cluster assignments $`\hat{Y}`$, mutual information $`I`$, and entropy $`H`$.
 
 ```math
 \mathrm{NMI}=\frac{I(Y;\hat{Y})}{[H(Y)+H(\hat{Y})]/2}
@@ -263,113 +280,121 @@ SMAEの比較元であるRamanCluster本文§3.3、式(15)・(16)に明記され
 {\max\{H(Y),H(\hat{Y})\}-\mathbb{E}[I(Y;\hat{Y})]}
 ```
 
-実装では[NMI](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.normalized_mutual_info_score.html)に
-`average_method="arithmetic"`、[AMI](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.adjusted_mutual_info_score.html)に
-`average_method="max"`を明示し、百分率へ変換する。AMIをライブラリの既定値へ任せない。
-AMIの負値を0にclipしない。出力前の値と使用ライブラリのversionを保存する。
-この定義の根拠はRamanClusterの数式であり、SMAEの未公開の採点コードまで同一と確認した意味ではない。
+The implementation explicitly sets `average_method="arithmetic"` for
+[NMI](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.normalized_mutual_info_score.html)
+and `average_method="max"` for
+[AMI](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.adjusted_mutual_info_score.html),
+then converts the scores to percentages. AMI is not left to the library default.
+Negative AMI values are not clipped to zero. Values before output conversion and the library version are saved.
+These definitions are based on RamanCluster's equations; equivalence to SMAE's unpublished scoring code has not been established.
 
-### 主表と比較上の留保
+### Main Table and Comparison Limitations
 
-既存6手法の数値は[SMAE出版版](https://doi.org/10.1016/j.eswa.2025.128576) **p.8、Table 4**の報告値。
-単位は%、保存主表では出版版と同じ小数2桁で表示する。
-既存5手法（SMAE自身を除く）の30数値のうち29数値は
-[RamanCluster Table 1](https://doi.org/10.1016/j.talanta.2024.126076)と一致する。
-この一致は既報値を踏襲した可能性を示すが、SMAEが既存5手法を再実行したかどうかは本文・補足資料から確認できない。
-したがって、これらを「SMAEが同一条件で再計算したbaseline」とは記載しない。
-SimCLRのBacteria-4 NMIはSMAE Table 4で54.40、RamanCluster Table 1で54.5と相違するが、
-参照版の指定に従いSMAEの54.40を保持する。元論文の値へ黙って修正しない。
+Values for the six reference methods are reported in the [published SMAE paper](https://doi.org/10.1016/j.eswa.2025.128576),
+**p.8, Table 4**. Values are percentages, displayed to two decimal places in the saved main table, as in the published version.
+Of the 30 values for the five reference methods excluding SMAE itself, 29 match
+[RamanCluster Table 1](https://doi.org/10.1016/j.talanta.2024.126076).
+This agreement suggests that previously reported values may have been retained, but the text and supplement do not establish
+whether SMAE reran those five methods. They are therefore not described as “baselines recomputed by SMAE under identical conditions.”
+SimCLR's Bacteria-4 NMI is 54.40 in SMAE Table 4 and 54.5 in RamanCluster Table 1.
+Following the designated reference version, SMAE's 54.40 is retained; it is not silently corrected to the original paper's value.
 
-実測値と引用値を合わせた表は`outputs/experiments/bacteria_id_table4_80_20_v1/table4.md`に保存する。
+The table combining measured and cited values is saved to `outputs/experiments/bacteria_id_table4_80_20_v1/table4.md`.
 
-脚注で、既存手法はSMAE Table 4からの引用値、ChemoMAEは5 seedの平均±標本SDであり、
-ChemoMAEにはSNV・128次元単位潜在・
-Cosine-KMeansを使用することを明記する。SMAE補足図に基づくisolate ID、最終的な80/20分割、
-trainでのCKmeans fitとtest採点を補完条件として脚注に記載する。
-クラス構成の資料間不一致と未公開のsplit indexがあるため、元実験と完全に同一のデータ集合とは記載しない。
-全手法を同じ前処理・クラスタリング・計算予算で再実験した比較とは記述しない。
-引用行にばらつきがなく、分割・クラス構成にも未確認事項があるため、点推定値の大小だけで
-統計的な優越性や同一条件下のSOTAを主張しない。既報値にばらつきがない理由や著者の意図も推測しない。
+Footnotes state that the reference methods are quoted from SMAE Table 4, whereas ChemoMAE reports the five-seed mean ± sample SD
+and uses SNV, a 128-dimensional unit latent representation, and Cosine-KMeans.
+Isolate IDs based on the SMAE supplementary figure, the final 80/20 split, CKmeans fitting on training data,
+and scoring on test data are listed as supplementary choices.
+Because source materials disagree on class composition and split indices are unpublished,
+the dataset is not described as exactly identical to the original experiment.
+The comparison is not presented as rerunning all methods with the same preprocessing, clustering, and computational budget.
+Reference rows lack variability estimates, and split/class-composition details remain unresolved;
+point-estimate rankings alone do not establish statistical superiority or state-of-the-art performance under identical conditions.
+The reasons for omitted variability in prior reports and the authors' intentions are not inferred.
 
-## 7. Table 5：事前学習後の分類
+## 7. Table 5: Classification after Pretraining
 
-分類学習の確定条件は[5-fold CVと全件学習のプロトコル](bacteria_id_hpo_protocol.md)を正とする。
-reference30事前学習重みを使い、M11 seed 0で5-fold CVのepoch 50 Accuracy平均により
-設定を選ぶ。探索・設定選択の対象は同プロトコルに定義する。採用設定をM00/M11の各5 seedへ
-共通に適用し、finetune subset 3,000件すべてで50 epoch学習する。
-別のtest 3,000件は、採用したepoch 50の重みだけで評価する。
+The finalized classification training settings are defined by the
+[5-fold CV and full-subset training protocol](bacteria_id_hpo_protocol.md).
+Using reference30 pretrained weights, configuration selection is based on the mean epoch-50 Accuracy across five CV folds
+for M11 seed 0. The search and selection eligibility are defined in that protocol.
+The selected configuration is applied to all five seeds of both M00 and M11, training for 50 epochs on all 3,000 finetune spectra.
+The separate 3,000 test spectra are evaluated using only the selected epoch-50 weights.
 
-既存手法の数値は[SMAE出版版](https://doi.org/10.1016/j.eswa.2025.128576)
-p.8、Table 5の報告値であり、本研究では再実行しない。
+Values for reference methods are quoted from the [published SMAE paper](https://doi.org/10.1016/j.eswa.2025.128576),
+p.8, Table 5; those methods are not rerun in this study.
 
-実測値と引用値を合わせた表は`outputs/experiments/bacteria_id_table5_hpo_cv_v1/table5.md`に保存する。
+The table combining measured and cited values is saved to `outputs/experiments/bacteria_id_table5_hpo_cv_v1/table5.md`.
 
-ChemoMAEは事前学習から独立した5 seedのtest Accuracyを百分率で集計し、
-標本標準偏差を$`s`$として、自由度4のt分布による半幅を用いる。
+ChemoMAE aggregates test Accuracy as percentages across five seeds that are independent from pretraining onward.
+With sample standard deviation $`s`$, the interval half-width uses a t-distribution with four degrees of freedom.
 
 ```math
 \bar{x}\ \pm\ t_{0.975,4}\frac{s}{\sqrt{5}}
 ```
 
-TCLPの82.30 ± 0.5%はSMAE著者がencoderを変更して報告した値であり、
-TCLP原論文の値ではない。出版版Table 5のencoder更新範囲、checkpoint選択、
-反復の開始点、CI計算法は特定できない。Fig. 10の評価subsetも明記されていない。
-比較上の留保は[結果の解釈](../bacteria_id_interpretation_plan.md)にまとめる。
+TCLP's 82.30 ± 0.5% is the value reported by the SMAE authors after modifying the encoder,
+not the value from the original TCLP paper. The encoder update scope, checkpoint selection,
+replicate starting point, and CI calculation for the published Table 5 cannot be determined.
+The evaluation subset for Fig. 10 is also unspecified.
+Comparison limitations are summarized in [interpretation of the results](../bacteria_id_interpretation_plan.md).
 
 <a id="open-items"></a>
 
-## 8. 本研究で定めた条件と乱数
+## 8. Study-Specific Choices and Randomness
 
-公開資料に未記載の事項について、以下を本研究の条件として採用する。
-公開資料に情報がないことや、SMAEとRamanClusterの図が一致しないことは文献比較の留保として残す。
+For details absent from public materials, the following are adopted as conditions of this study.
+Missing public information and discrepancies between SMAE and RamanCluster figures remain limitations of the literature comparison.
 
-| 対象 | 本研究の補完条件 |
+| Aspect | Supplementary choice made in this study |
 | --- | --- |
-| Table 4のisolate | SMAE補足Fig. S3を優先。Bacteria-4はID `[0, 1, 2, 3]`、Bacteria-6はID `[0, 1, 2, 3, 4, 5]` |
-| Table 4の入力・分割 | reference内の対象isolateについて第5節の保存indexによる80/20分割。M00/M11・全runで固定 |
-| Table 4のfit・採点 | 20 runを初期化から800 epoch学習し、train全件の潜在でCKmeans fit、test全件で採点。validation・HPO・early stoppingなし |
-| 反復・run seed | 両表とも`[0, 1, 2, 3, 4]`の5 seed。Table 4のChemoMAE行は5 seedの平均±標本SDを掲載 |
-| Pretrainingの対応 | 各seed・各コーパス・各条件で独立に800 epoch。Table 5のCVではM11 seed 0、全件学習ではM00/M11のseed 0–4を使用 |
-| Table 5の評価checkpoint | 50 epoch固定。CVはepoch 50のvalidation、全件学習はepoch 50の重みを使用 |
-| Table 5の95% CI | 5 seedのAccuracyの標本SDから求める自由度4のt信頼区間 |
+| Table 4 isolates | SMAE supplementary Fig. S3 takes precedence: IDs `[0, 1, 2, 3]` for Bacteria-4 and `[0, 1, 2, 3, 4, 5]` for Bacteria-6 |
+| Table 4 input and split | The 80/20 split from saved indices in Section 5 for target isolates in reference; fixed across M00/M11 and all runs |
+| Table 4 fitting and scoring | Train 20 runs from initialization for 800 epochs, fit CKmeans on all training representations, and score all test spectra; no validation, HPO, or early stopping |
+| Replicates and run seeds | Five seeds, `[0, 1, 2, 3, 4]`, for both tables; ChemoMAE rows in Table 4 report five-seed mean ± sample SD |
+| Pretraining correspondence | Independently train for 800 epochs for every seed, corpus, and condition; Table 5 CV uses M11 seed 0, and full-subset training uses M00/M11 seeds 0–4 |
+| Table 5 evaluation checkpoint | Exactly 50 epochs; CV uses epoch-50 validation, and full-subset training uses epoch-50 weights |
+| Table 5 95% CI | t-based confidence interval with four degrees of freedom, derived from the sample SD of Accuracy across five seeds |
 
-Table 5の5反復・95%信頼区間という報告形式は出版版由来であり、seed値・反復の開始点・CIの式が補完部分である。
-Table 5の5-fold CVは第5節のfinetune subsetに限定し、Table 4用の分割へ置き換えない。
+The five-replicate and 95%-confidence-interval reporting format for Table 5 comes from the published version;
+seed values, replicate starting point, and the CI formula are supplementary choices.
+Table 5's 5-fold CV is restricted to the finetune subset in Section 5 and is not replaced with the Table 4 split.
 
-### 乱数の管理
+### Randomness Management
 
-run seedを`s=0..4`、コーパス識別子を`bacteria4`・`bacteria6`・`reference30`とする。
-用途別seedは既存の[seed生成方針](experiment_protocol.md#seed-plan)と同様にSHA-256から生成する。
-入力は`["bacteria-id-seeds-v1", corpus, s, purpose]`のASCII JSON（空白なし）とし、digest先頭4 byteをbig-endian整数にする。
-purposeは`model_init`・`train_order`・`mask`・`pretrain_augmentation`・`kmeans`・
-`finetune_head`・`finetune_order`・`finetune_augmentation`で区別する。
-M00/M11の条件名はseed生成に含めず、同じコーパス・run seed・用途では同じseedを共有する。
-未使用のAugが他用途の乱数列を変えないよう、batch順序・mask・Augの乱数状態を分離する。
-Table 5では`reference30`のpretrainingとfinetuningを同じrun seedで対応づける。
-split用42はこの用途別生成の対象外とし、実際のseed一覧と分割indexを学習開始前に保存する。
-seedの衝突を検出した場合は開始前に扱いを修正・記録し、結果を見たseedの選び直しは行わない。
+Run seeds are `s=0..4`, and corpus identifiers are `bacteria4`, `bacteria6`, and `reference30`.
+Purpose-specific seeds are generated from SHA-256, following the existing [seed generation policy](experiment_protocol.md#seed-plan).
+The input is ASCII JSON `["bacteria-id-seeds-v1", corpus, s, purpose]` without spaces;
+the first four digest bytes are interpreted as a big-endian integer.
+Purposes are distinguished as `model_init`, `train_order`, `mask`, `pretrain_augmentation`, `kmeans`,
+`finetune_head`, `finetune_order`, and `finetune_augmentation`.
+The M00/M11 condition name is excluded from seed generation, so the same corpus, run seed, and purpose share the same seed.
+Random states for batch order, masks, and augmentation are separated so that unused augmentation does not alter other random streams.
+For Table 5, reference30 pretraining and fine-tuning are paired by run seed.
+The split seed 42 is outside this purpose-specific generation scheme; the actual seed list and split indices are saved before training begins.
+Any seed collision is resolved and recorded before training, without selecting new seeds based on results.
 
-### 学習コーパスと反復
+### Training Corpora and Replicates
 
-| 用途 | 学習コーパス | 条件と反復 |
+| Purpose | Training corpus | Conditions and replicates |
 | --- | --- | --- |
-| Table 4：Bacteria-4 | reference内の対象4クラスのtrain 6,400件 | M00/M11×5 seedで事前学習・CKmeans fit |
-| Table 4：Bacteria-6 | reference内の対象6クラスのtrain 9,600件 | M00/M11×5 seedで事前学習・CKmeans fit |
-| Table 5の事前学習 | reference全60,000件 | M00/M11×5 seed |
-| Table 5のHPO | finetuneの各fold train 2,400件 | M11 seed 0のcheckpointを使用。探索回数は[分類プロトコル](bacteria_id_hpo_protocol.md)を参照 |
-| Table 5の最終学習 | finetune全3,000件 | 対応する事前学習checkpointからM00/M11×5 seed |
+| Table 4: Bacteria-4 | 6,400 training spectra from the four target classes in reference | Pretraining and CKmeans fitting for M00/M11 × five seeds |
+| Table 4: Bacteria-6 | 9,600 training spectra from the six target classes in reference | Pretraining and CKmeans fitting for M00/M11 × five seeds |
+| Table 5 pretraining | All 60,000 reference spectra | M00/M11 × five seeds |
+| Table 5 HPO | 2,400 training spectra in each finetune fold | Uses the M11 seed-0 checkpoint; see the [classification protocol](bacteria_id_hpo_protocol.md) for search counts |
+| Table 5 final training | All 3,000 finetune spectra | M00/M11 × five seeds from the corresponding pretrained checkpoints |
 
-事前学習は合計30 runで、Table 4用の学習集合にTable 5のreference全体を混ぜない。
-Table 4事前学習1 runの更新試行数はBacteria-4が4,800（6 batch/epoch）、
-Bacteria-6が7,200（9 batch/epoch）である（800 epoch、batch 1024、`drop_last=True`）。
-実更新数・AMP skip数をrun別に記録し、各条件の5 seedをすべて集計する。
+There are 30 pretraining runs in total. The full reference corpus for Table 5 is not mixed into the Table 4 training sets.
+Per Table 4 pretraining run, Bacteria-4 has 4,800 attempted updates (six batches/epoch),
+and Bacteria-6 has 7,200 (nine batches/epoch), using 800 epochs, batch size 1024, and `drop_last=True`.
+Actual update and AMP skip counts are recorded per run, and all five seeds of each condition are aggregated.
 
-## 9. 成果物と由来
+## 9. Artifacts and Provenance
 
-前処理済み入力は`data/processed/bacteria_id_v1/`、Table 4の主結果は
-`outputs/experiments/bacteria_id_table4_80_20_v1/`、Table 5用事前学習は
-`outputs/experiments/bacteria_id_table5_reference30_pretrain_v1/`、Table 5の探索・最終結果は
-`outputs/experiments/bacteria_id_table5_hpo_cv_v1/`に保存した。
-実行コマンドと確認点は[Table 4 runbook](../bacteria_id_runbook.md)と
-[Table 5 runbook](../bacteria_id_hpo_runbook.md)を参照する。
-入力・成果物はGit管理対象外であり、原本の取得経路と配布物の照合状況はTable 4 runbookに記す。
+Processed inputs are saved under `data/processed/bacteria_id_v1/`, Table 4 main results under
+`outputs/experiments/bacteria_id_table4_80_20_v1/`, Table 5 pretraining under
+`outputs/experiments/bacteria_id_table5_reference30_pretrain_v1/`, and Table 5 search and final results under
+`outputs/experiments/bacteria_id_table5_hpo_cv_v1/`.
+See the [Table 4 runbook](../bacteria_id_runbook.md) and
+[Table 5 runbook](../bacteria_id_hpo_runbook.md) for commands and checks.
+Inputs and artifacts are excluded from Git; the Table 4 runbook records the source acquisition route and the status of comparison with distributed files.

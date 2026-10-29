@@ -5,68 +5,68 @@
 [![CI](https://github.com/Mantis-Ryuji/WoodDegradationMap/actions/workflows/ci.yml/badge.svg)](https://github.com/Mantis-Ryuji/WoodDegradationMap/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-古材の近赤外ハイパースペクトル画像（NIR-HSI）から、化学状態の違いを探索するための研究コードです。
-自己教師あり表現学習手法ChemoMAEで画素ごとのスペクトルを圧縮し、クラスタリングによって試料表面の領域マップを作成します。
+Research code for exploring differences in chemical state in historic wood using near-infrared hyperspectral imaging (NIR-HSI).
+ChemoMAE, a self-supervised representation learning method, compresses each pixel spectrum, and clustering produces maps of regions on specimen surfaces.
 
-対応論文：*Self-Supervised Spectral Learning Reveals Chemical Heterogeneity in Historic Wood through Near-Infrared Hyperspectral Imaging*
+Associated paper: *Self-Supervised Spectral Learning Reveals Chemical Heterogeneity in Historic Wood through Near-Infrared Hyperspectral Imaging*
 
-## 研究の概要
+## Research overview
 
-ChemoMAEは、SNV変換後の平均・ノルムを保つTangent Gaussian Noise（TGN）とFractional Shift（FS）を入力に加え、
-可視帯域からマスク帯域の摂動前の値を復元します。学習した16次元表現をCosine-KMeansで分割し、
-クラスタ割当を画像上へ戻します。座標や近傍画素は学習・クラスタリングの入力に用いません。
+ChemoMAE applies Tangent Gaussian Noise (TGN) and Fractional Shift (FS), which preserve the mean and norm after SNV transformation,
+and reconstructs the original, unperturbed values of masked bands from visible bands. Cosine-KMeans partitions the learned
+16-dimensional representations, and cluster assignments are mapped back to the image. Coordinates and neighboring pixels are not inputs to learning or clustering.
 
-古材49試料を対象に、次の解析を行います。
+The analyses cover 49 historic wood specimens:
 
-- **未知試料での評価**：試料単位の5-fold交差検証・3反復で、入力の直接利用、PCA、AE、denoising AE、ChemoMAEを比較します。局所ラベル一致を偶然一致で補正したLLAと、指定摂動による割当変化を測るLFRを中心に評価します。
-- **共通の基準によるマッピング**：全49試料で表現とクラスタ中心を求め、主要6条件・K=8の分布を比較します。M11では学習・クラスタリングの反復による領域と境界の再現性も調べます。
-- **NIRスペクトルによる解釈**：クラスタの空間分布と観測スペクトルを、文献帰属・材組織・環境履歴・試料情報に対応付けます。劣化過程のモデルは観測に基づく仮説として扱います。
-- **補助実験**：mask率の感度解析と、Raman Bacteria-IDにおけるクラスタリング・教師あり分類を扱います。
+- **Evaluation on unseen specimens:** Specimen-level five-fold cross-validation with three replicates compares direct input, PCA, AE, denoising AE, and ChemoMAE. The main metrics are LLA, which corrects local label agreement for chance, and LFR, which measures assignment changes under specified perturbations.
+- **Mapping with a common reference:** Representations and cluster centers are fitted on all 49 specimens to compare the distributions of the six main conditions at K=8. For M11, repeated training and clustering also assess the reproducibility of regions and boundaries.
+- **Interpretation using NIR spectra:** Spatial cluster distributions and observed spectra are related to published band assignments, wood anatomy, environmental history, and specimen information. Models of degradation processes are treated as hypotheses based on observations.
+- **Supplementary experiments:** These include mask-ratio sensitivity analysis and clustering and supervised classification on Raman Bacteria-ID.
 
-評価指標はマップの性質を測るもので、画素単位の劣化検出精度や化学成分量を示しません。
-研究の根拠と解釈の範囲は[研究概要](docs/research_overview.md)にまとめています。
+The metrics characterize maps; they do not measure pixel-level degradation detection accuracy or amounts of chemical components.
+The evidence and scope of interpretation are described in the [research overview](docs/research_overview.md).
 
-## ドキュメント
+## Documentation
 
-| 目的 | 参照先 |
+| Purpose | Reference |
 | --- | --- |
-| 研究の目的・方法・結果の範囲を知る | [研究概要](docs/research_overview.md) |
-| 前処理・条件・指標の定義を確認する | [研究設計](docs/design/README.md) |
-| 実験と図表を再現する | [実験手順](docs/experiment_runbook.md) |
-| 解析ごとの成果物を探す | [成果物案内](docs/results.md) |
-| 数理・実装・関連研究を読む | [ドキュメント一覧](docs/README.md) |
+| Understand the research objectives, methods, and scope of results | [Research overview](docs/research_overview.md) |
+| Check preprocessing, conditions, and metric definitions | [Research design](docs/design/README.md) |
+| Reproduce experiments and figures | [Experiment runbook](docs/experiment_runbook.md) |
+| Locate outputs for each analysis | [Output guide](docs/results.md) |
+| Read mathematical and implementation notes and related work | [Documentation index](docs/README.md) |
 
-## 環境
+## Environment
 
-Python 3.11.15と`uv`を使用します。依存関係は[pyproject.toml](pyproject.toml)と[uv.lock](uv.lock)で固定し、
-PyTorchはCUDA 13.0用の配布元を指定しています。
+The project uses Python 3.11.15 and `uv`. Dependencies are pinned in [pyproject.toml](pyproject.toml) and [uv.lock](uv.lock).
+PyTorch is configured to use the CUDA 13.0 distribution index.
 
 ```powershell
 uv sync --locked --dev --group bacteria-hpo
 uv run --no-sync pytest
 ```
 
-コマンドはリポジトリのルートで実行します。学習にはGPUを用います。
-入力データの配置、前処理、学習、評価、再開条件は[実験手順](docs/experiment_runbook.md)を参照してください。
-Raman補助実験は[クラスタリング](docs/bacteria_id_runbook.md)と[分類・HPO](docs/bacteria_id_hpo_runbook.md)に分けて説明しています。
+Run commands from the repository root. Training uses a GPU.
+See the [experiment runbook](docs/experiment_runbook.md) for input layout, preprocessing, training, evaluation, and resumption conditions.
+The Raman experiments have separate guides for [clustering](docs/bacteria_id_runbook.md) and [classification and HPO](docs/bacteria_id_hpo_runbook.md).
 
-## ディレクトリとデータ
+## Directories and data
 
 ```text
-src/wood_degradation_map/        前処理・学習・クラスタリング・評価
-scripts/                        実験・図表生成のCLI
-tests/                          テスト
-docs/                           研究仕様・再現手順・技術的補足
-data/                           原本・前処理済みデータ（Git管理対象外）
-outputs/                        実験記録・数値結果・図表（Git管理対象外）
+src/wood_degradation_map/        Preprocessing, training, clustering, and evaluation
+scripts/                        Experiment and figure-generation CLIs
+tests/                          Tests
+docs/                           Research specifications, reproduction guides, and technical notes
+data/                           Original and preprocessed data (not tracked by Git)
+outputs/                        Experiment records, numerical results, and figures (not tracked by Git)
 ```
 
-本リポジトリにはコード・設定・文書を収録します。古材データ、実験出力、学習済み重みは同梱しません。
-古材解析の再実行には、[前処理仕様](docs/design/preprocessing.md)の入力を別途用意する必要があります。
-Raman Bacteria-IDの出典と入力構成は[補助実験仕様](docs/design/bacteria_id_experiment_plan.md)を参照してください。
-文書中の`data/`・`outputs/`以下のパスは、ローカルで配置・生成するファイルを指します。
+This repository contains code, configuration, and documentation. Historic wood data, experiment outputs, and trained weights are not included.
+Rerunning the wood analyses requires the inputs described in the [preprocessing specification](docs/design/preprocessing.md).
+See the [supplementary experiment specification](docs/design/bacteria_id_experiment_plan.md) for the source and input layout of Raman Bacteria-ID.
+Paths under `data/` and `outputs/` in the documentation refer to files supplied or generated locally.
 
-## ライセンス
+## License
 
-本リポジトリのコードは[MIT License](LICENSE)です。
-基盤ライブラリ[ChemoMAE](https://github.com/Mantis-Ryuji/ChemoMAE)と第三者データには、それぞれのライセンス・利用条件が適用されます。
+The code in this repository is released under the [MIT License](LICENSE).
+The underlying [ChemoMAE](https://github.com/Mantis-Ryuji/ChemoMAE) library and third-party data are subject to their respective licenses and terms of use.

@@ -1,35 +1,33 @@
-# 数値実装の補足
+# Numerical implementation notes
 
-ChemoMAE 0.2.2と呼出し側のソースに基づき、混合精度・train loss・inertiaの意味を補足する。
-設定は[実験プロトコル](design/experiment_protocol.md)、実行環境と実測値は各runの成果物を参照する。
+These notes clarify mixed precision, training loss, and inertia based on the source code of ChemoMAE 0.2.2 and its callers.
+See the [experiment protocol](design/experiment_protocol.md) for settings and each run's artifacts for the execution environment and measured values.
 
 <a id="training-precision"></a>
 
-## 1. 混合精度と学習lossの記録
+## 1. Mixed precision and training-loss records
 
-**演算精度。**
+**Arithmetic precision.**
 
-学習時はCUDA AMPのFP16 autocastと動的GradScalerを用いる。モデルparameterとclean targetはFP32に保持し、追加摂動はautocastを無効にしたFP32で計算する。Encoder・decoderのforwardとloss呼出しはautocastの範囲にあるが、すべての演算が一律にFP16になるわけではない。
+Training uses CUDA AMP with FP16 autocast and a dynamic GradScaler. Model parameters and clean targets remain in FP32, and additional perturbations are computed in FP32 with autocast disabled. Encoder and decoder forward passes and the loss call are within the autocast context, but not every operation is performed in FP16.
 
-導入済みChemoMAE 0.2.2のlossは、復元値とtargetの差を二乗し、対象maskで選んで平均する。TargetをFP16へ落とす処理はなく、FP16の復元値とFP32のtargetの減算はFP32へ型昇格するため、差分・二乗・平均はFP32の演算経路となる。この記述は呼出し側とlibraryソースの読み取りに基づき、実行時の各tensorのdtypeを計測した結果ではない。LossをFP32で計算しても、forward中のFP16演算や逆伝播・学習軌道への数値精度の影響が除かれるわけではない。GradScalerは逆伝播用にlossをscaleするもので、履歴へ保存するlossはscale前の値である。
+The installed ChemoMAE 0.2.2 loss squares the difference between reconstruction and target, selects the elements indicated by the target mask, and averages them. The target is not cast to FP16. Subtraction between an FP16 reconstruction and an FP32 target promotes the result to FP32, so subtraction, squaring, and averaging follow an FP32 arithmetic path. This description is based on reading the caller and library source, not on measuring each tensor's dtype at runtime. Computing loss in FP32 does not remove the effects of numerical precision in FP16 forward operations, backpropagation, or the training trajectory. GradScaler scales the loss for backpropagation; the loss saved to the history is the value before scaling.
 
-**履歴の集計と解釈。**
+**History aggregation and interpretation.**
 
-学習履歴のtrain lossは、更新中の各batchで計算したMSEを、epoch内のbatch数で割った平均である。端数batchを除き、同一条件ではbatch sizeと対象チャネル数が固定される。これは固定した最終重みを用いて全train画素を再評価したlossでも、未学習試料のlossでもない。AMP scaleや更新が省略されたstep数は別の履歴項目として保存する。
+The recorded training loss is the sum of batch MSE values computed during parameter updates divided by the number of batches in the epoch. Except for the final partial batch, the batch size and number of target channels are fixed within a condition. This is neither a reevaluation of all training pixels using fixed final weights nor a loss on unseen specimens. AMP scale and the number of steps with skipped updates are recorded separately in the history.
 
-FP16の表現間隔をMSEの下限へ読み替えない。幾何に関する恒等式の数値照合では[数理的補足第6節](mathematical_notes.md#numerical-geometry)に従い、既定のFP32での表現抽出・評価と学習時の演算条件を区別する。
+## 2. Cluster-center and inertia records
 
-## 2. クラスタ中心とinertiaの記録
+If the sum of representations in a nonempty cluster becomes zero during center updates, the usual unit-center update is undefined.
+The library's division protection alone does not establish a valid center. The project checks final centers for nonfinite values and zero or very small norms, recording an unsuccessful fit when a center is invalid.
 
-中心更新で非空クラスタの表現和がゼロとなる場合、通常の単位中心の更新式は定義できない。
-Libraryの除算保護だけで有効な中心とみなさず、プロジェクト側で最終中心の非有限値・ゼロ・極小normを検査し、不適切ならfitの失敗として記録する。
+The reference implementation's `reference_inertia` is a recorded value computed using assignments before the final center update. It is distinguished from `final_center_inertia`, which is recomputed from the saved final centers.
+Distinguish the objective, mean cosine dissimilarity, from a value recorded at a particular point in the iterations.
+See the [clustering specification](design/experiment_protocol.md#augmentation-clustering) for initialization, stopping criteria, and epsilon.
 
-参照実装の`reference_inertia`は最終中心更新前の割当で計算した記録値であり、保存する最終中心から再計算した`final_center_inertia`と区別する。
-目的関数である平均cosine不類似度と、反復中の特定時点の記録値を混同しない。
-初期化・停止条件・epsilonは[クラスタリング仕様](design/experiment_protocol.md#augmentation-clustering)を参照する。
+## 3. Implementation and execution-environment references
 
-## 3. 実装と実行環境の参照先
-
-- [モデル・抽出・schedule](../src/wood_degradation_map/experiments/neural.py)、[学習](../src/wood_degradation_map/experiments/training.py)、[クラスタリング](../src/wood_degradation_map/experiments/clustering.py)。
-- [設定](../src/wood_degradation_map/experiments/config.py)、[実行記録の規約](experiment_runbook.md#artifact-records)。
-- 採用runのGPU機種、driver・CUDA・packageの実際の版、source hash、完了状況は各runの記録から確認する。依存関係指定だけで全runの環境が一致したとは判断しない。
+- [Model, extraction, and schedule](../src/wood_degradation_map/experiments/neural.py), [training](../src/wood_degradation_map/experiments/training.py), [clustering](../src/wood_degradation_map/experiments/clustering.py).
+- [Configuration](../src/wood_degradation_map/experiments/config.py), [run-record conventions](experiment_runbook.md#artifact-records).
+- Check each run's records for the GPU model, actual driver/CUDA/package versions, source hashes, and completion status. Dependency specifications alone do not establish that every run used the same environment.

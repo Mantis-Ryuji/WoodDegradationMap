@@ -1,113 +1,95 @@
-# ChemoMAEの特徴とケモメトリクスにおける位置づけ
+# ChemoMAE and its role in chemometrics
 
-本書はChemoMAE v0.2.2の採用理由、モデルの数学的性質、評価の範囲を説明する。
-固定条件は[実験プロトコル](design/experiment_protocol.md)、導出は[数理的補足](mathematical_notes.md)、
-先行研究との対応は[関連研究](related_work.md)、結果の読み方は[結果の解釈](interpretation_notes.md)を参照する。
+This document describes the rationale for using ChemoMAE v0.2.2, the model and perturbation definitions, and the scope of evaluation.
+See the [experiment protocol](design/experiment_protocol.md) for fixed conditions, [mathematics of SNV and spectral perturbations](mathematical_notes.md) for derivations,
+[related work](related_work.md) for connections to prior studies, and [interpreting results](interpretation_notes.md) for guidance on reading the results.
 
-- [MAEと追加corruptionの採用理由](#1-この構成をどう捉えるか)
-- [モデルと損失](#2-実装で確認できる構成)
-- [PCA・L2正規化・SAM](#pca-comparison)
-- [TGN・shift](#spectral-augmentation)・[VRM的な解釈](#augmentation-vicinity)
-- [評価と解釈の範囲](#claims)
+- [Rationale for MAE and additional corruption](#1-positioning-of-the-architecture)
+- [Model and loss](#2-implemented-architecture)
+- [PCA and L2 normalization](#pca-comparison)
+- [TGN and shift](#spectral-augmentation), [interpretation through VRM](#augmentation-vicinity)
+- [Scope of evaluation and interpretation](#claims)
 
-## 1. この構成をどう捉えるか
+## 1. Positioning of the architecture
 
-ChemoMAEは、状態の区分や正解ラベルをあらかじめ定めにくい材料について、帯域間の予測関係から
-スペクトルを圧縮し、状態差を探索する座標系を学ぶ役割を担う。古材NIR-HSIを実証対象とし、
-固定encoderによるクラスタマップをCVで比較し、NIRスペクトルの特徴と空間分布を
-文献帰属・材組織・環境履歴・試料情報に対応づけて領域差を解釈する。
-研究全体の問いと証拠の対応は[研究概要](research_overview.md#research-focus)に示す。
+For materials whose state categories and ground-truth labels are difficult to define in advance, ChemoMAE compresses spectra
+through predictive relationships between bands and learns a coordinate system for exploring state differences.
+Historic wood NIR-HSI is the empirical application: cluster maps from fixed encoders are compared by CV,
+and regional differences are interpreted by relating NIR spectral features and spatial distributions to published band assignments,
+wood anatomy, environmental history, and specimen information.
+The relationship between the research questions and evidence is described in the [research overview](research_overview.md#research-focus).
 
-**PCAと同じく、ラベルなしで得た低次元座標を可視化・クラスタリングに使う**という用途である。
-この用途には非線形PCAの前例があり、Raman解析にもMAEによるクラスタリングや、非線形encoderと
-線形decoderの組合せがある。
-([Kramer, 1991](https://doi.org/10.1002/aic.690370209);
-[Ren et al., 2025, §3.2](https://arxiv.org/html/2504.16130v1);
-[Georgiev et al., 2024, Methods](https://arxiv.org/html/2403.04526v1))
+**As with PCA, low-dimensional coordinates obtained without labels are used for visualization and clustering.**
+Using MAE representations for clustering also has a precedent in Raman analysis.
+([Ren et al., 2025, §3.2](https://arxiv.org/html/2504.16130v1))
 
-本構成は非線形encoder・アフィンdecoder・単位潜在を持ち、PCAを数学的に包含するモデルではない。
-**「PCAの役割を担う、線形再構成制約付きの非線形スペクトル表現学習」**と位置づける。
-学習後のencoderを固定して使う手順と、追加corruptionが表現を改善するという仮説は区別する。
+This architecture has a nonlinear encoder, an affine decoder, and unit latent vectors; it does not mathematically subsume PCA.
+It is positioned as **"nonlinear spectral representation learning with a linear reconstruction constraint, serving the role of PCA."**
+The procedure of fixing the encoder after training is distinguished from the hypothesis that additional corruption improves representations.
 
-### 1.1 MAEを選んだ理由: view間で何を不変にするかを定める難しさ
+### 1.1 Why MAE was chosen
 
-古材では劣化・樹種・表面性状などに関わる変動が重なり、どの情報を状態差として残し、何に不変な
-表現を求めるかが自明でない。本研究のTGN・shiftは、同じ化学状態を保つ十分に多様なviewの族として
-妥当性を確立したものではない。問題は摂動幅だけでなく、保持する情報、変換の多様性、組合せ・強度・確率の根拠にある。
+In historic wood, variation related to degradation, tree species, and surface properties overlaps. It is not obvious which information
+should be retained as state differences or which variations a representation should be invariant to.
+Reconstruction-based learning therefore uses observed spectra as the learning reference.
+With values before additional perturbations as targets, predicting hidden bands from visible bands learns dependencies between bands.
 
-本研究は対象固有のviewレシピ探索を中心に置かず、可視帯域から元の不可視帯域を予測するMAEを基礎とする。
-SimCLR・BYOL・DINOは比較対象に含めない。これは研究範囲の判断であり、それらに対するMAEの優位性ではない。
+### 1.2 Why noise and shift were added: denoising as a representation learning task
 
-| 学習方法 | viewの役割と必要な設計 |
+**Random masking is itself a denoising corruption. TGN and shift add corruption to missingness.**
+Keeping the observation before additional perturbations as the target and predicting invisible bands from deformed visible bands
+is intended to learn inter-band relationships useful for exploring chemical states. Noise-removal performance or resistance to the specified perturbations is not the primary objective.
+
+Using reconstruction from corruption to learn intermediate representations follows the principle of denoising autoencoders.
+Vincent and colleagues' classification experiments and other results support this principle, but do not demonstrate extraction of chemical states from historic wood NIR data.
+([Vincent et al., 2010, §3](https://jmlr.org/papers/volume11/vincent10a/vincent10a.pdf))
+
+This task provides an explicit reconstruction reference but assumes that the original observation should be recovered from the specified corruption.
+Here, clean means the observation before additional perturbations, not a ground truth free of measurement noise.
+
+The research question is **how corruption conditions in the MAE group change the properties of maps obtained from fully visible representations,
+and how their regional differences can support exploration and interpretation of state differences**.
+CLS is a token that aggregates one pixel's information into a single bottleneck; it does not represent a chemical component or supervised label.
+"Structural inference" likewise refers to estimating relationships between bands, not identifying molecular structure.
+The reconstruction loss does not directly require clusters to form or separate.
+
+This is examined using the six main conditions—direct input B0, PCA B1, AE A0, denoising AE A1, M00, and M11—
+and the 2×2 ablation of M00, M10, M01, and M11.
+Effects of additional corruption in MAE are evaluated using corrected LLA, LFR, and the specified diagnostics.
+
+## 2. Implemented architecture
+
+### 2.1 Compressing the full spectrum into one latent vector
+
+| Component | Configuration |
 | --- | --- |
-| [SimCLR](https://proceedings.mlr.press/v119/chen20j.html) | 同じ入力のviewを正例として対応づける。原論文もaugmentationの組合せを重要な要素とする |
-| [BYOL](https://arxiv.org/html/2006.07733v3) | 一方のviewから別viewのtarget表現を予測する。負例がなくてもview設計は必要 |
-| [DINO](https://arxiv.org/html/2104.14294v2) | 異なるviewのteacher・student出力分布を対応づける。保持する情報とview・cropの設計が必要 |
-| M00 | 可視帯域から隠した帯域の元の値を予測する。maskの単位・割合とtargetを定める |
-| M10・M01・M11 | TGN・shiftを加えた可視帯域から、追加摂動前の隠した帯域を予測する |
+| Input | A 256-channel SNV spectrum from one pixel; no coordinates or neighboring pixels |
+| Patches and masking | 16 patches of 16 consecutive channels; the main MAE conditions have 8 visible patches plus CLS, giving 9 tokens |
+| Encoder | Width 256, 8 layers, 8 heads, FFN width 1024, GELU, pre-norm, dropout 0, and learnable positional embeddings |
+| Bottleneck | Linear projection of the final CLS to 16 dimensions, followed by L2 normalization |
+| Decoder | `Linear(16, 256)` with bias |
+| Loss | MSE against SNV before additional perturbations; invisible channels for MAE, all channels for A0 and A1 |
+| Use after training | All patches visible, no augmentation, 17 tokens; the fixed encoder supplies unit latent vectors to Cosine-KMeans |
 
-上三手法に共通するのはview間で対応づける情報の設計であり、負例の有無、損失、augmentation感度は異なる。
-対応づけはprojection head等にも依存し、encoderの全情報を厳密に不変にするという意味ではない。
-MAEにもpatch分割、mask率、SNV、MSE、16次元圧縮、線形decoderの帰納的制約があり、
-予測しやすい帯域間相関が目的の化学状態だけに由来する保証はない。
+The only input-derived information passed to the decoder is a single $`z`$; patch-specific outputs, skip connections, and decoder mask tokens are not used.
+This describes the study's `decoder_num_layers=1` configuration, not every configuration supported by the library.
+Sources are the [fixed configuration](../src/wood_degradation_map/experiments/config.py),
+[mask generation and extraction](../src/wood_degradation_map/experiments/neural.py), [training code](../src/wood_degradation_map/experiments/training.py),
+and [reference model](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/models/chemo_mae.py).
 
-### 1.2 noise・shiftを加えた理由: denoisingを表現学習の課題にする
+### 2.2 Learned mapping and loss
 
-**Random maskもdenoisingのcorruptionである。TGN・shiftは欠落に追加するcorruptionとして扱う。**
-追加摂動前の観測をtargetに固定し、変形された可視帯域から不可視帯域を予測させることで、
-化学状態の探索に有用な帯域間関係を学ぶことを期待する。ノイズ除去性能や指定摂動への耐性自体を主目的とはしない。
-
-Corruptionからの復元を中間表現の学習課題にする原理はDenoising AEに対応する。
-Vincentらの分類実験等はこの原理を支えるが、古材NIRで化学状態を抽出できるという実証ではない。
-([Vincent et al., 2008, §2–4](https://www.cs.toronto.edu/~larocheh/publications/icml-2008-denoising-autoencoders.pdf);
-[Vincent et al., 2010, §3](https://jmlr.org/papers/volume11/vincent10a/vincent10a.pdf))
-
-この課題では復元の基準を明示できる一方、「指定corruptionから元の観測を復元すべきだ」という仮定がある。
-同じtargetへの復元は潜在にも間接的な制約を与えるので、view間対応より常に弱い仮定で済むわけではない。
-ここでcleanは追加摂動前の観測であり、測定ノイズのない真値ではない。
-
-研究の問いは、**MAE群のcorruption条件が、全可視の表現から得るマップの性質をどう変え、
-その領域差を状態差の探索・解釈にどう結びつけられるか**である。CLSは1画素の情報を単一bottleneckへ集約するtokenであり、
-化学成分や教師ラベルを表さない。「構造推論」も帯域間関係の推定を指し、分子構造の同定ではない。
-再構成lossはクラスタの生成・分離を直接要求しない。
-
-入力の直接利用B0、PCAのB1、AEのA0、denoising AEのA1、M00・M11の主要6条件と、
-M00・M10・M01・M11の2×2 ablationで調べる。
-MAEへの追加corruptionの効果をLLA（補正後）・LFRと既定診断で評価する。
-
-## 2. 実装で確認できる構成
-
-### 2.1 スペクトル全体を単一の潜在ベクトルへ圧縮する
-
-| 部分 | 採用構成 |
-| --- | --- |
-| 入力 | 1画素の256チャネルSNV。座標・近傍画素は入力しない |
-| patch・mask | 連続16チャネル×16 patch。主比較のMAE条件では8 patch可視、CLSを加え9 token |
-| encoder | 幅256、8層、8 head、FFN幅1024、GELU、pre-norm、dropout 0、学習可能な位置埋め込み |
-| bottleneck | 最終CLSを16次元へ線形射影し、L2正規化 |
-| decoder | bias付き `Linear(16, 256)` |
-| loss | 追加摂動前のSNVへのMSE。MAEは不可視チャネル、A0・A1は全チャネル |
-| 利用時 | 全patch可視・augmentationなしの17 token。encoderを固定して単位潜在をCosine-KMeansへ渡す |
-
-Decoderへ渡る入力由来の情報は単一の $`z`$ のみで、patch別出力、skip connection、decoder用mask tokenは使わない。
-`decoder_num_layers=1` とする本研究の設定についての説明であり、ライブラリの全設定を指すものではない。
-根拠は[固定設定](../src/wood_degradation_map/experiments/config.py)、
-[mask生成・抽出](../src/wood_degradation_map/experiments/neural.py)、[学習処理](../src/wood_degradation_map/experiments/training.py)、
-[参照モデル](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/models/chemo_mae.py)である。
-
-### 2.2 学習している写像と損失
-
-追加摂動前の観測を $`x_i\in\mathbb{R}^{256}`$、追加corruptionを $`g`$、可視patch集合を $`V_i`$、
-CLSの射影までを含むencoderを $`f_\theta`$ とする。通常の非ゼロnorm領域では、
+Let $`x_i\in\mathbb{R}^{256}`$ be the observation before additional perturbations, $`g`$ the additional corruption, $`V_i`$ the set of visible patches,
+and $`f_\theta`$ the encoder including the CLS projection. In the usual nonzero-norm case,
 
 ```math
 u_i=f_\theta(g(x_i);V_i),\qquad z_i=\frac{u_i}{\lVert u_i\rVert_2},\qquad
 \hat{x}_i=Wz_i+b,\quad W\in\mathbb{R}^{256\times16},\quad b\in\mathbb{R}^{256}.
 ```
 
-L2正規化にはepsilon保護があり、抽出時は正規化前の非有限値・ゼロnorm・極小normを検査する。
-上式は保護が作動しない場合を表す。隠したチャネル集合 $`M_i`$ は主比較のMAEでは128要素なので、
-batch sizeを $`B`$ とすると、
+L2 normalization includes epsilon protection, and extraction checks for nonfinite values and zero or very small norms before normalization.
+The equations describe the case in which that protection is inactive. The set of hidden channels $`M_i`$ contains 128 elements for the main MAE comparison.
+For batch size $`B`$,
 
 ```math
 \mathcal{L}_{\mathrm{MAE}}
@@ -115,154 +97,80 @@ batch sizeを $`B`$ とすると、
 \left([Wz_i+b]_j-x_{ij}\right)^2.
 ```
 
-M00では $`g`$ は恒等写像、M10・M01・M11ではTGN・shift・両方を用いる。Targetの値と波長位置は動かさない。
-適用確率・強度は[実験プロトコル §4.1.3](design/experiment_protocol.md)に従う。
-A0は追加摂動なし・全可視で、内側の和と分母を全256チャネルへ変える。
-A1は全可視・全256チャネルのlossを維持し、入力にM11と同じTGN＋shiftを加えるdenoising AEである。
+For M00, $`g`$ is the identity; M10, M01, and M11 use TGN, shift, and both, respectively. Target values and wavelength positions are unchanged.
+Application probabilities and strengths follow the [experiment protocol, §4.1.3](design/experiment_protocol.md).
+A0 has no additional perturbations and full visibility; the inner sum and denominator are changed to all 256 channels.
+A1 is a denoising AE with full visibility and loss over all 256 channels, applying the same TGN+shift as M11 to its input.
 
-MAE条件の各stepのlossは不可視帯域だけだが、画素・stepごとのrandom maskにより全帯域が復元対象となる。
-ただし予測自体がmaskに依存するため、mask平均した目的関数も全可視・全帯域lossとは同一でない。
-学習時のmask課題と利用時の全可視表現は分けて評価する。
+At each MAE step, loss covers only invisible bands, but random masks across pixels and steps make all bands reconstruction targets.
+Because predictions themselves depend on the mask, however, the mask-averaged objective is not identical to fully visible, full-band loss.
+The masked training task and fully visible representations used after training are evaluated separately.
 
-Lossにはクラスラベル、KMeans割当、空間項、対比学習項を含まない。AdamWのweight decayとも区別する。
-実装は `Trainer._compute_loss` の `loss_type="mse"`、`reduction="mean"`、条件別 `loss_region` に対応する。
-([参照Trainer](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/trainer.py);
-[参照loss](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/models/losses.py))
+The loss contains no class labels, KMeans assignments, spatial terms, or contrastive learning terms. It is also distinguished from AdamW weight decay.
+The implementation corresponds to `Trainer._compute_loss` with `loss_type="mse"`, `reduction="mean"`, and a condition-specific `loss_region`.
+([Reference Trainer](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/training/trainer.py);
+[reference loss](https://github.com/Mantis-Ryuji/ChemoMAE/blob/4ec7f6acecb82035c85001f5aee508910d40adac/src/chemomae/models/losses.py))
 
-## 3. PCAとの共通点と、数学的に異なる点
+## 3. Similarities to PCA and mathematical differences
 
 <a id="pca-comparison"></a>
 
-### 3.1 「スペクトルの座標と復元方向を学ぶ」という見方
+### 3.1 Comparison with the PCA baseline
 
-16成分PCAのtrain平均を $`\mu`$、直交主成分を $`P`$ とすると、
-
-```math
-t_i=P^{\mathsf T}(x_i-\mu),\qquad \hat{x}^{\mathrm{PCA}}_i=\mu+Pt_i,\qquad P^{\mathsf T}P=I_{16}.
-```
-
-ChemoMAEでは非線形encoderが座標 $`z_i`$ を求め、共通の $`W`$ で復元する。行に画素を並べれば、
-
-```math
-\hat{X}=ZW^{\mathsf T}+\mathbf{1}b^{\mathsf T}
-```
-
-であり、非線形に推定した座標による制約付き低ランク再構成と読める。
-
-| 観点 | PCA baseline B1 | 本研究のChemoMAE |
+| Aspect | PCA baseline B1 | ChemoMAE in this study |
 | --- | --- | --- |
-| 座標推定 | train平均で中心化した線形射影 | 可視patchに依存する非線形写像 |
-| 復元 | PCA部分空間への直交射影 | 単位潜在からのアフィン写像 |
-| 学習目標 | 全帯域二乗誤差に対応する分散最大化 | A0・A1は全帯域MSE、MAE条件はmasked MSE |
-| 軸 | 直交・分散順序を持つ | 直交性・分散順序を課さない |
-| L2正規化 | fit後のクラスタリング用scoreへ適用 | 再構成学習のbottleneck内部から適用 |
+| Coordinate estimation | Linear projection after centering by the training mean | Nonlinear mapping dependent on visible patches |
+| Learning objective | Variance maximization corresponding to full-band squared error | Full-band MSE for A0/A1; masked MSE for MAE conditions |
+| Axes | Orthogonal and ordered by variance | Neither orthogonality nor variance ordering is imposed |
+| L2 normalization | Applied after fitting to scores used for clustering | Applied within the bottleneck during reconstruction learning |
 
-クラスタリングにはどちらも16次元単位ベクトルを用いるが、PCAの復元は正規化前のscoreで定義する。
-線形AEとPCAの同値性は写像・目的関数の条件に依存し、非線形encoder・mask・単位潜在へそのまま拡張できない。
-([Baldi & Hornik, 1989](https://doi.org/10.1016/0893-6080(89)90014-2))
-
-### 3.2 非線形なのは座標推定であり、復元可能な範囲には強い制約がある
-
-```math
-\hat{x}\in b+\mathop{\mathrm{col}}\nolimits(W),\qquad \mathop{\mathrm{rank}}\nolimits(W)\le16.
-```
-
-復元は高々16次元のアフィン部分空間に含まれ、bottleneck前後を非線形にする
-[Kramer (1991)](https://doi.org/10.1002/aic.690370209)とは制約が異なる。
-同じtrainデータ・前処理・画素重みの全帯域二乗誤差では、正規化前のscoreによる厳密PCAが
-同次元以下のアフィン部分空間近似を最適化する。ただし、masked loss・未知試料・クラスタリング品質の優劣は別である。
-
-本研究では、corruptionから座標を推定する学習課題の有用性を、既定CVによるマップの性質と観測スペクトルの解釈から検討する。
-[数理的補足第5節](mathematical_notes.md#latent-decoder)は、入力差・潜在差・残差とlossの関係を示す。
-関係式の成立を、TGN・shiftによる改善やその機構の実証とはしない。
+Both use 16-dimensional unit vectors for clustering.
+PCA fitting and score normalization follow the [experiment protocol](design/experiment_protocol.md).
 
 <a id="snv-geometry"></a>
 
-### 3.3 L2正規化の主理由: SNVの一定normを踏まえた自由度の制限
+### 3.2 SNV and latent L2 normalization
 
-**入力がSNVで一定normになることを踏まえ、潜在にもnormの自由度を持たせず、方向へ情報を集約する**
-という設計判断である。標本標準偏差によるSNVでは、非定数スペクトルについて、
+The design choice is to **remove norm as a latent degree of freedom and concentrate information in direction,
+motivated by the constant norm of SNV inputs**. For nonconstant spectra, SNV using the sample standard deviation gives
 
 ```math
 \mathcal{M}_{\mathrm{SNV}}
 =\{x\in\mathbb{R}^{C}:\mathbf{1}^{\mathsf T}x=0,\ \lVert x\rVert_2=\sqrt{C-1}\}.
 ```
 
-$`C=256`$ では平均ゼロ超平面内の半径 $`\sqrt{255}`$、内在次元254の球面となる。
-方向から共通定数倍でSNV入力を復元できるが、非線形圧縮後のnormも必ず不要になるわけではない。
-潜在の正規化は意図的な制約であり、圧縮や正規化の無損失性を意味しない。
-潜在に平均ゼロ制約は課していない。
-([前処理仕様 §5.6](design/preprocessing.md))
+At $`C=256`$, this is a sphere of radius $`\sqrt{255}`$ and intrinsic dimension 254 within the zero-mean hyperplane.
+SNV inputs can be recovered from their directions by a common constant factor, but this does not imply that the norm after nonlinear compression is necessarily dispensable.
+Latent normalization is an intentional constraint; it does not imply lossless compression or normalization.
+No zero-mean constraint is imposed on the latent vectors.
+([Preprocessing specification, §5.6](design/preprocessing.md))
 
-SNVがscore plotに曲線状構造を誘導しうることには既報があり、SNV幾何自体を新規提案としない。
+SNV-induced curved structures in score plots have been reported previously; SNV geometry itself is not proposed as new.
 ([Fearn et al., 2009](https://doi.org/10.1016/j.chemolab.2008.11.006))
 
-学習中から単位化すれば、復元に使う情報が潜在normのみに載り、後段cosineで無視される食い違いを抑えられる。
-単位潜在では、
+Comparisons based on cosine similarity are made in both input and latent spaces.
+Normalization does not guarantee preservation of input angles or chemical information.
+See [interpreting results](interpretation_notes.md#pca-snv-geometry-note) for the effects of centering, compression, and normalization in PCA.
 
-```math
-\lVert z_i-z_j\rVert_2^2=2\left(1-z_i^{\mathsf T}z_j\right),\qquad
-\lVert\hat{x}_i-\hat{x}_j\rVert_2^2
-=(z_i-z_j)^{\mathsf T}W^{\mathsf T}W(z_i-z_j).
-```
+## 4. Using SNV geometry to design augmentation
 
-前式は方向によるクラスタリングとの整合性を示す
-（[Banerjee et al., 2005](https://jmlr.org/papers/v6/banerjee05a.html)）。
-後式の $`W^{\mathsf T}W`$ には等方性がなく、復元とcosineで各方向の重みは異なる。
-入力角度の保存もcollapse防止も保証されない。表現内の分離と退化は既定のsilhouette・occupancy等で診断し、
-どの入力差が強調・抑制されたかは、それらの指標や式だけから結論づけない。PCA側の操作の読み方は
-[結果の解釈](interpretation_notes.md#pca-snv-geometry-note)に示す。
+### 4.1 Augmentation assumptions: geometric constraints and actual spectral variation
 
-### 3.4 SAMとの関係: 方向によるスペクトル比較の先行例
+The corruption used here is **designed around SNV's zero-mean and constant-norm constraints**; it is not derived
+from instrument error distributions or physicochemical generative processes. The TGN angle and shift width are fixed in advance.
 
-Spectral Angle Mapper（SAM）は、非ゼロ観測スペクトル $`r`$ と参照 $`s`$ の角度を用いる。
-
-```math
-\alpha(r,s)=\arccos\left(\frac{r^{\mathsf T}s}{\lVert r\rVert_2\lVert s\rVert_2}\right).
-```
-
-正のスカラーgainに不変な方向比較の先行例であり、NIR専用ではない。ENVIの標準的説明は反射率を対象とする。
-波長依存の照明変化や散乱全般への不変性は意味しない。
-([ENVI公式解説](https://www.nv5geospatialsoftware.com/docs/spectralanglemapper.html);
-[公式チュートリアル pp. 8–9](https://www.nv5geospatialsoftware.com/portals/0/pdfs/envi/Mapping_Methods.pdf))
-
-SNVは平均も除くため、SNV後の角度は元反射率へのSAMと一般に異なる。
-同じ256帯域上の非定数スペクトル $`r_i,r_k`$ とそのSNV $`x_i,x_k`$ では、
-
-```math
-\frac{x_i^{\mathsf T}x_k}{\lVert x_i\rVert_2\lVert x_k\rVert_2}
-=\frac{x_i^{\mathsf T}x_k}{255}=\rho(r_i,r_k)
-```
-
-となり、$`\rho`$ はPearson相関係数である。学習潜在のcosineがこの値を保存する制約はない。
-SAMは方向比較の前例として引用し、潜在正規化の必要性・最適性の根拠とはしない。
-
-## 4. SNVの幾何をaugmentationの設計へ結びつける
-
-### 4.1 augmentationの仮定: 幾何的制約と実際のスペクトル変動を分ける
-
-本研究のcorruptionは**SNVの平均ゼロ・一定norm制約に基づく設計**であり、装置の誤差分布や
-物理化学的生成過程から導いたものではない。TGNの角度とshift幅は事前固定条件である。
-
-| 実測での変動 | 文献の例と本研究のcorruptionとの違い |
-| --- | --- |
-| 測定noise | 光子・暗電流のshot noiseや読み出しnoiseがある。低SNRはnoiseの相対寄与を表す。本TGNは帯域別SNR・信号依存性を再現しない（[Hamamatsu Photonics §1.2–1.3](https://hub.hamamatsu.com/us/en/technical-notes/image-sensors/image-sensors-product-selection.html)） |
-| 装置由来の波長位置ずれ | HISUIのspectral smileは検出器列・波長に依存する。本shiftは画素内で一様な軸方向移動であり、その依存性や応答幅を再現しない（[Yamamoto et al., 2022 §I](https://doi.org/10.1109/TGRS.2022.3190486)） |
-| 試料状態によるピーク変化 | 水・glucose水溶液の昇温に伴う見かけの移動は重なった帯域の相対強度変化とも解釈される。状態情報を含み、一様shiftや除去すべき誤差とは限らない（[Cui et al., 2016 §3.1](https://pubs.rsc.org/en/content/articlehtml/2016/ra/c6ra18912a)） |
-
-これらは現象の例であり、本古材データの変動原因・大きさを同定したものではない。
-SNV制約を満たす生成点が実在の化学状態に対応する保証もない。幾何保存を化学状態保存と同一視せず、
-指定corruptionからの復元が有用な差を残すか、重要な微小差まで弱めるかを評価・解釈で検討する。
+Preserving SNV constraints does not guarantee reproduction of measured errors or preservation of chemical states.
+The effects of reconstruction from the specified corruption are evaluated through the defined comparisons.
 
 <a id="spectral-augmentation"></a>
 
-### 4.2 提案するaugmentation: Tangent Gaussian NoiseとFractional Shift
+### 4.2 Proposed augmentations: Tangent Gaussian Noise and Fractional Shift
 
-提案内容は、SNV制約を保つTGN・Fractional Shiftの定義とmasked denoisingへの組込みである。
-設定は[実験プロトコル](design/experiment_protocol.md)とChemoMAE v0.2.2の `SpectraAugmenter` に対応する。
+The proposal consists of defining SNV-preserving TGN and Fractional Shift and incorporating them into masked denoising.
+Settings correspond to the [experiment protocol](design/experiment_protocol.md) and ChemoMAE v0.2.2's `SpectraAugmenter`.
 
-理想演算で $`C=256`$、$`r=\sqrt{C-1}`$、平均ゼロ・norm $`r`$ の入力 $`x`$、$`u=x/r`$ とする。
-TGNはGaussian方向から平均方向と半径方向を除き、接方向へ回転する。
+In ideal arithmetic, let $`C=256`$, $`r=\sqrt{C-1}`$, $`x`$ be a zero-mean input with norm $`r`$, and $`u=x/r`$.
+TGN removes the mean and radial directions from a Gaussian direction and rotates toward the resulting tangent direction.
 
 ```math
 P=I-\frac{\mathbf{1}\mathbf{1}^{\mathsf T}}{C},\qquad
@@ -275,91 +183,62 @@ T_{\mathrm{TGN}}(x)=r\bigl(\cos\theta\,u+\sin\theta\,q\bigr),\qquad
 \theta\sim U(0,\pi/36).
 ```
 
-$`\lVert v\rVert_2>0`$ なら $`q`$ は平均ゼロ・入力に直交・単位normで、出力もSNV制約を保つ。
-入力との角度は $`\theta`$、球面弧長は $`r\theta`$。Gaussianは方向候補の分布であり、角度や最終残差の分布ではない。
+If $`\lVert v\rVert_2>0`$, then $`q`$ has zero mean and unit norm and is orthogonal to the input; the output also preserves the SNV constraints.
+Its angle to the input is $`\theta`$. Gaussian refers to the distribution of candidate directions, not the angle or final residual.
 
-等間隔波長grid上の線形補間・端点値延長を $`S_\delta`$ とすると、Fractional Shiftは、
+Let $`S_\delta`$ denote linear interpolation with endpoint-value extension on the equally spaced wavelength grid. Fractional Shift is
 
 ```math
 y=P S_\delta(x),\qquad
 T_{\mathrm{FS}}(x)=r\frac{y}{\lVert y\rVert_2},\qquad \delta\sim U(-2,2).
 ```
 
-$`\lVert y\rVert_2>0`$ ならSNV制約へ戻るが、同じshift幅でも角度変化は入力形状に依存する。
-実装は `eps=1e-8` で退化候補を保護し、元入力を保持する。等式の保存は理想演算についての記述である。
+If $`\lVert y\rVert_2>0`$, the output returns to the SNV constraint set, but the angular change for a given shift width depends on the input shape.
+The implementation protects degenerate candidates with `eps=1e-8` and retains the original input. The equalities describe ideal arithmetic.
 
-M11は各操作を画素ごとに確率0.5で適用し、順序をbatchごとにランダム化する。
-固定順序で常に両操作を行う構成ではない。角度制御・制約保存の導出は
-[数理的補足](mathematical_notes.md)を参照する。
-加法noiseや再投影なしshiftとの比較は含まず、幾何保存そのものの優位性は単独に検証しない。
+M11 applies each operation with probability 0.5 per pixel and randomizes their order per batch.
+It does not always apply both operations in a fixed order. See [mathematics of SNV and spectral perturbations](mathematical_notes.md)
+for derivations of angle control and constraint preservation.
+There are no comparisons with additive noise or shifts without reprojection, so the advantage of geometry preservation itself is not independently tested.
 
 <a id="augmentation-vicinity"></a>
 
-### 4.3 VRM的な解釈: 表現の幾何に沿って学習信号を広げる
+### 4.3 Positioning through VRM
 
-観測点の周囲に、SNVに即した近傍と復元targetを定める設計としても読める。
-VRMはこの設計の解釈に用い、採用条件の導出根拠とはしない。
-
-Mask前の追加corruption分布を $`\nu(\tilde{x}\mid x_i)`$（操作しない確率を含む）、
-encoder・decoder全体を $`h_\psi`$、隠した帯域のMSEを $`\ell_M`$ とすれば、
-
-```math
-\widehat R_\nu(\psi)=\frac1n\sum_{i=1}^n
-\mathbb E_{\tilde x\sim\nu(\cdot\mid x_i)}\mathbb E_M
-\left[\ell_M\bigl(h_\psi(\tilde x;V(M)),x_i\bigr)\right].
-```
-
-$`V(M)`$ は可視patch集合である。近傍は生成入力だけでなく、元観測 $`x_i`$ への復元という仮定も含む。
-VRMは学習信号の広げ方を説明する枠組みとして用い、教師ありVRMの保証を移さない。
-
-SNV制約集合上の二点には、
-
-```math
-d_{\mathcal M}(x,\tilde x)=r\arccos\left(\frac{x^{\mathsf T}\tilde x}{r^2}\right),\qquad
-\lVert x-\tilde x\rVert_2=2r\sin\left(\frac{d_{\mathcal M}(x,\tilde x)}{2r}\right)
-```
-
-が成立する。TGN単独は $`d_{\mathcal M}=r\theta`$ で強度を指定できるが、距離だけでは生成方向・targetは決まらない。
-弦長と測地距離は単調対応するため、Euclidean距離自体を不適切とはしない。
-再投影なしの非退化Gaussian加算は制約集合を確率1で外れるが、corruptionとして無意味という結論にはならない。
-加算後の再SNVなら集合へ戻るため、TGNとの差は生成方向・角度分布まで含めて扱う。
-
-区別すべき点は、既知の平均・norm制約への整合、復元課題としての有用性、物理化学的な実現可能性である。
-保証するのはmask前の全帯域入力の制約であり、可視部分・decoder出力・実データのsupportではない。
-この制約に沿う近傍を採用する価値は、次節の比較と解釈で検討する。
+Vicinal Risk Minimization (VRM) places a vicinity distribution around each training example and minimizes expected loss
+under their mixture. This study treats placing those distributions within the set preserving SNV's zero mean and constant norm
+as the design of an inductive bias. Reconstruction targets are the observations before additional perturbations.
 
 <a id="claims"></a>
 
-## 5. 評価と解釈の範囲
+## 5. Scope of evaluation and interpretation
 
-| 主張・問い | 根拠と上限 |
+| Claim or question | Evidence and limits |
 | --- | --- |
-| 提案する設計 | SNV制約を保つTGN・shiftをmasked denoisingへ組み込み、単一16次元単位潜在へ集約する |
-| 固定表現の利用 | 古材のCVでは学習後のencoderとtrainでfitした中心をtestへ適用し、後段fine-tuningを行わない |
-| 追加corruptionの効果 | MAE群の2×2比較・交互作用をLLA（補正後）・LFRと既定診断で評価する。化学状態をより安定して反映することは仮説であり、指標や再構成lossからは保証されない |
-| 指定摂動への安定性 | LFRで割当の維持を測る。学習と同じ種類・強度の人工摂動への結果であり、実測誤差全般や化学情報保持へ外挿しない |
-| どの差が強調・抑制されたか | [数理的補足第5節](mathematical_notes.md#latent-decoder)の関係式だけでは改善機構を同定できない |
-| 化学的な対応 | NIRのSNV・疑似吸光度二次微分と空間分布を文献帰属・試料情報に対応づける。成分量や劣化機構の因果的な同定とは区別する |
-| 構成の最適性 | 層数・潜在次元・線形decoder・正規化の最適性や、未比較SSLへの優位性は扱わない |
+| Proposed design | Incorporates SNV-preserving TGN and shift into masked denoising and compresses spectra into a single 16-dimensional unit latent vector |
+| Use of fixed representations | In wood CV, the trained encoder and centers fitted on training data are applied to test data without downstream fine-tuning |
+| Effect of additional corruption | Evaluates the MAE group's 2×2 comparisons and interactions using corrected LLA, LFR, and specified diagnostics. More stable representation of chemical states remains a hypothesis, not a guarantee from metrics or reconstruction loss |
+| Stability under specified perturbations | Uses LFR to measure assignment retention under artificial perturbations of the same types and strengths as in training; does not extrapolate to all measurement errors or chemical information retention |
+| Chemical correspondence | Relates NIR SNV spectra, second derivatives of pseudo-absorbance, and spatial distributions to published band assignments and specimen information; distinct from quantifying components or causally identifying degradation mechanisms |
+| Architectural optimality | Does not establish optimal layer counts, latent dimension, linear decoder, or normalization, or superiority to SSL methods not compared |
 
-5-fold・3反復のマップ評価は[評価指標](design/evaluation_metrics.md)に従う。
-LLA・LFRだけでなくoccupancy・反復間ARI等を併読し、単一クラスタ化等の退化を区別する。補正前LLAは補足として扱う。
-Cosine-silhouetteは各表現内の幾何診断であり、化学的妥当性の共通尺度ではない。
-化学的な対応の解析手順は[可視化と解釈の仕様](design/visualization_and_interpretation.md)を参照する。
+Five-fold map evaluation with three replicates follows the [evaluation metrics](design/evaluation_metrics.md).
+Read LLA and LFR alongside occupancy, inter-replicate ARI, and other diagnostics to distinguish degeneracy such as single-cluster collapse. Uncorrected LLA is supplementary.
+Cosine silhouette is a geometric diagnostic within each representation, not a common measure of chemical validity.
+See the [visualization and interpretation specification](design/visualization_and_interpretation.md) for the chemical interpretation procedure.
 
-比較・解釈に必要な制約は次の四つである。
+The following distinctions apply to comparisons and interpretation:
 
-- **学習と利用：** MAEは学習時8 patch、利用時16 patch可視。全可視maskを明示し、`eval()`だけで切り替わるとはしない。
-- **軸の非一意性：** 直交 $`Q`$ による $`z'=Qz,\ W'=WQ^{\mathsf T}`$ は復元とcosineを変えない。Decoder列を純粋成分や分散順序付きの軸とみなさない。
-- **欠測への外挿：** 全帯域SNV後にmaskするため、未測定帯域があり同じSNVを計算できない条件への対応を実証しない。
-- **比較単位：** M00対A0は入力maskとloss領域の両方が違い、B1対NNも非線形性・正規化段階等が異なる。単一要素の効果に読み替えない。
+- **Training and use:** MAE has 8 visible patches during training and 16 during use. A fully visible mask is supplied explicitly; `eval()` alone does not switch visibility.
+- **Extrapolation to missing bands:** Masking follows full-band SNV, so applicability to unmeasured bands for which the same SNV cannot be computed is not demonstrated.
+- **Comparison scope:** M00 versus A0 differs in both input masking and the loss region. B1 versus neural networks also differs in nonlinearity, the stage of normalization, and other factors. These comparisons do not isolate a single element.
 
-## 6. 関連研究との対応
+## 6. Connections to related work
 
-[関連研究](related_work.md)は非線形PCAの用途、Denoising AEの学習原理、Raman unmixing AEの線形decoder、
-Raman SMAEのmask・クラスタリング、LeafVAEの空間マッピングを整理する。各研究の性能は本古材NIRへ外挿しない。
+[Related work](related_work.md) covers the learning principle of denoising autoencoders,
+masking and clustering in Raman SMAE, and spatial mapping in LeafVAE. Their performance is not extrapolated to historic wood NIR data.
 
-Denoising、spectral MAE、SNVの幾何には先行研究がある。本研究は既知のSNV幾何を
-摂動とmasked denoisingの設計へ結びつけ、古材の試料単位評価と空間分布の解釈に用いる。
-文献の書誌と参照版は[参考文献](related_work.md#references)、
-実装は本書のコード参照とChemoMAE v0.2.2の参照ソースに示す。
+Denoising, spectral MAE, and SNV geometry have precedents. This study connects known SNV geometry
+to perturbation and masked-denoising design, specimen-level evaluation on historic wood, and interpretation of spatial distributions.
+Bibliographic details and source versions appear in the [references](related_work.md#references);
+implementation details are provided by the code links here and the referenced ChemoMAE v0.2.2 source.
