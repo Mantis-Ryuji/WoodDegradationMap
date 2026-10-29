@@ -72,10 +72,10 @@ Q_b(x) = W_{200}(x,b) - D_{200}(x,b)
 とする。band別のreference由来SNR proxyは
 
 ```math
-\operatorname{SNR}^{\mathrm{ref}}_{200}(b)
+\mathop{\mathrm{SNR}}\nolimits^{\mathrm{ref}}_{200}(b)
 =
-\frac{\operatorname{mean}_x Q_b(x)}
-{\operatorname{std}_{x,\mathrm{ddof}=0} Q_b(x)+\varepsilon},
+\frac{\mathop{\mathrm{mean}}\nolimits_x Q_b(x)}
+{\mathop{\mathrm{std}}\nolimits_{x,\mathrm{ddof}=0} Q_b(x)+\varepsilon},
 \qquad \varepsilon=10^{-12}
 ```
 
@@ -87,7 +87,7 @@ Q_b(x) = W_{200}(x,b) - D_{200}(x,b)
 ```math
 L_b =
 \begin{cases}
-1, & \operatorname{SNR}^{\mathrm{ref}}_{200}(b) \le 10
+1, & \mathop{\mathrm{SNR}}\nolimits^{\mathrm{ref}}_{200}(b) \le 10
      \text{ or non-finite} \\
 0, & \text{otherwise}
 \end{cases}
@@ -208,7 +208,7 @@ z_p(b) = \frac{r_p(b)-\mu_p}{s_p}
 ```math
 \frac{1}{C}\sum_{b=1}^{C}z_p(b)=0,
 \qquad
-\operatorname{std}_{\mathrm{ddof}=1}\!\left(z_p\right)=1,
+\mathop{\mathrm{std}}\nolimits_{\mathrm{ddof}=1}\!\left(z_p\right)=1,
 \qquad
 \lVert z_p\rVert_2=\sqrt{255}
 ```

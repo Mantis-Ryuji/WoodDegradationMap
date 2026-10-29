@@ -25,7 +25,7 @@
 \frac{1}{s}
 \left(\sum_{j=0}^{C-1}\widetilde{R}_j-C\mu\right)
 =0
-\tag{1}
+\qquad\text{(1)}
 ```
 
 である。また、$`s^2=(C-1)^{-1}\sum_j(\widetilde{R}_j-\mu)^2`$ なので、
@@ -35,7 +35,7 @@
 =
 \frac{\sum_j(\widetilde{R}_j-\mu)^2}{s^2}
 =C-1.
-\tag{2}
+\qquad\text{(2)}
 ```
 
 したがって、SNVスペクトルのnormを $`\rho=\sqrt{C-1}`$ とすれば、SNVの平均・norm制約を満たす集合 $`\mathcal{S}_{\mathrm{SNV}}`$ を
@@ -48,7 +48,7 @@
 \boldsymbol{1}^{\mathsf T}\boldsymbol{x}=0,\ 
 \|\boldsymbol{x}\|_2=\rho
 \right\}
-\tag{3}
+\qquad\text{(3)}
 ```
 
 と書ける。SNV入力はこの集合に属する。平均ゼロの超平面は $`C-1`$ 次元であり、その中の半径 $`\rho`$ の球面は $`C-2`$ 次元である。$`C=256`$ では $`\rho=\sqrt{255}`$、球面の次元は254となる。この集合はSNVの制約を満たす点の集合であり、実在する材料スペクトルの集合そのものではない。
@@ -61,7 +61,7 @@
 P^{\mathsf T}=P,\qquad
 P^2=P,\qquad
 P\boldsymbol{1}=\boldsymbol{0}
-\tag{4}
+\qquad\text{(4)}
 ```
 
 を満たす。$`\boldsymbol{0}`$ は $`C`$ 次元ゼロベクトルである。中心化された補間反射率 $`P\widetilde{\boldsymbol{R}}`$ は平均ゼロなので、SNVは
@@ -70,7 +70,7 @@ P\boldsymbol{1}=\boldsymbol{0}
 \boldsymbol{x}
 =
 \rho\frac{P\widetilde{\boldsymbol{R}}}{\|P\widetilde{\boldsymbol{R}}\|_2}
-\tag{5}
+\qquad\text{(5)}
 ```
 
 と書き換えられる。ただし $`P\widetilde{\boldsymbol{R}}\neq\boldsymbol{0}`$ とする。
@@ -79,10 +79,10 @@ SNV前のスペクトルに、全帯域で共通する正のscale $`\kappa>0`$ �
 $`P(\kappa\widetilde{\boldsymbol{R}}+\beta\boldsymbol{1})=\kappa P\widetilde{\boldsymbol{R}}`$ である。したがって、
 
 ```math
-\operatorname{SNV}(\kappa\widetilde{\boldsymbol{R}}+\beta\boldsymbol{1})
+\mathop{\mathrm{SNV}}\nolimits(\kappa\widetilde{\boldsymbol{R}}+\beta\boldsymbol{1})
 =
-\operatorname{SNV}(\widetilde{\boldsymbol{R}})
-\tag{6}
+\mathop{\mathrm{SNV}}\nolimits(\widetilde{\boldsymbol{R}})
+\qquad\text{(6)}
 ```
 
 となる。この性質は画素内の共通offset・scaleを除くことを表し、波長依存の歪みやすべての測定変動を除くという意味ではない。
@@ -103,7 +103,7 @@ $`P(\kappa\widetilde{\boldsymbol{R}}+\beta\boldsymbol{1})=\kappa P\widetilde{\bo
 \boldsymbol{1}^{\mathsf T}\boldsymbol{q}_{\mathrm{raw}}=0,\ 
 \boldsymbol{n}^{\mathsf T}\boldsymbol{q}_{\mathrm{raw}}=0
 \right\}
-\tag{7}
+\qquad\text{(7)}
 ```
 
 である。集合を記述する $`\boldsymbol{q}_{\mathrm{raw}}`$ は未正規化の接方向ベクトルを表す。Gaussian方向候補 $`\boldsymbol{\epsilon}\sim\mathcal{N}(\boldsymbol{0},I_C)`$ を用いる。$`\mathcal{N}(\boldsymbol{0},I_C)`$ は平均ゼロ・共分散が単位行列の $`C`$ 次元正規分布、$`P`$ は式(4)の中心化行列である。この候補から
@@ -115,7 +115,7 @@ P\boldsymbol{\epsilon}
 -
 \boldsymbol{n}
 \left(\boldsymbol{n}^{\mathsf T}P\boldsymbol{\epsilon}\right)
-\tag{8}
+\qquad\text{(8)}
 ```
 
 を作ると、$`\boldsymbol{1}^{\mathsf T}P=\boldsymbol{0}^{\mathsf T}`$ と
@@ -130,7 +130,7 @@ $`\boldsymbol{1}^{\mathsf T}\boldsymbol{q}_{\mathrm{raw}}=0`$ となる。また
 (\boldsymbol{n}^{\mathsf T}\boldsymbol{n})
 \boldsymbol{n}^{\mathsf T}P\boldsymbol{\epsilon}
 =0
-\tag{9}
+\qquad\text{(9)}
 ```
 
 である。したがって、$`\|\boldsymbol{q}_{\mathrm{raw}}\|_2>0`$ のとき
@@ -160,7 +160,7 @@ $`\mathcal{T}_{\boldsymbol{n}}`$ への直交射影である。接空間の次�
 \right)\\
 &=\rho^2
 \end{aligned}
-\tag{10}
+\qquad\text{(10)}
 ```
 
 となる。したがってTGNは $`\mathcal{S}_{\mathrm{SNV}}`$ 内の変換となる。
@@ -173,7 +173,7 @@ $`\mathcal{T}_{\boldsymbol{n}}`$ への直交射影である。接空間の次�
 \frac{\boldsymbol{x}^{\mathsf T}\boldsymbol{x}_{\mathrm{TGN}}}
 {\|\boldsymbol{x}\|_2\|\boldsymbol{x}_{\mathrm{TGN}}\|_2}
 =\cos\alpha
-\tag{11}
+\qquad\text{(11)}
 ```
 
 である。採用範囲 $`0\leq\alpha\leq\pi/36`$ では両者の角度は $`\alpha`$、半径 $`\rho`$ の球面上の短い弧長は $`\rho\alpha`$ となる。一方、差ベクトルのnormは
@@ -184,7 +184,7 @@ $`\mathcal{T}_{\boldsymbol{n}}`$ への直交射影である。接空間の次�
 2\rho^2(1-\cos\alpha)
 =
 4\rho^2\sin^2(\alpha/2)
-\tag{12}
+\qquad\text{(12)}
 ```
 
 である。角度、弧長、Euclideanな残差normは異なる量であり、強度を記述する際には区別する。
@@ -204,7 +204,7 @@ SNV入力を $`\boldsymbol{x}`$、そのチャネル数を $`C=256`$、出力チ
 \iota_j^-=\lfloor\zeta_j\rfloor,\qquad
 \iota_j^+=\iota_j^-+1,\qquad
 \omega_j^{\mathrm{FS}}=\zeta_j-\lfloor\zeta_j\rfloor
-\tag{13}
+\qquad\text{(13)}
 ```
 
 と定義する。$`\lfloor\cdot\rfloor`$ は床関数であり、その値以下の最大の整数を返す。$`\iota_j^+`$ は常に左側indexに1を加えた値であり、参照位置が整数のときもこの定義を用いる。参照範囲を画像ではなくスペクトルの両端に収めたindexを
@@ -217,7 +217,7 @@ $`\bar{\iota}_j^+=\min(C-1,\max(0,\iota_j^+))`$
 =
 (1-\omega_j^{\mathrm{FS}})x_{\bar{\iota}_j^-}
 +\omega_j^{\mathrm{FS}}x_{\bar{\iota}_j^+}
-\tag{14}
+\qquad\text{(14)}
 ```
 
 である。$`x_{\bar{\iota}_j^-},x_{\bar{\iota}_j^+}`$ はそれぞれ、入力スペクトルの参照indexの値を表す。範囲外では二つの参照indexが同じ端点になるため、その端点値が延長される。正の $`\delta`$ は大きいindex側へ、負の $`\delta`$ は小さいindex側へ特徴を移す向きに対応する。
@@ -232,7 +232,7 @@ $`\bar{\iota}_j^+=\min(C-1,\max(0,\iota_j^+))`$
 \boldsymbol{x}_{\mathrm{FS}}
 =
 \rho\frac{\boldsymbol{y}}{\|\boldsymbol{y}\|_2}
-\tag{15}
+\qquad\text{(15)}
 ```
 
 と定めれば、$`P`$ の性質から $`\boldsymbol{1}^{\mathsf T}\boldsymbol{x}_{\mathrm{FS}}=0`$、
@@ -250,12 +250,12 @@ TGNと異なり、固定した $`\delta`$ から入力・出力の角度は一�
 \mathcal{L}_{\mathrm{one}}(\mathcal{A},\mathcal{H})
 =
 \frac{1}{N_{\mathrm{hide}}}\sum_{j=0}^{C-1}
-\operatorname{Ind}[j\in\mathcal{H}]\,
+\mathop{\mathrm{Ind}}\nolimits[j\in\mathcal{H}]\,
 \left(\widehat{x}_j(\mathcal{A},\mathcal{H})-x_j\right)^2
-\tag{16}
+\qquad\text{(16)}
 ```
 
-である。ここで $`C=256`$ は全チャネル数、$`j`$ はチャネル添字、$`\operatorname{Ind}[j\in\mathcal{H}]`$ は $`j`$ が不可視なら1、それ以外なら0を返す指示関数である。$`x_j`$ と $`\widehat{x}_j`$ はそれぞれ観測と再構成値の第 $`j`$ 成分を表す。
+である。ここで $`C=256`$ は全チャネル数、$`j`$ はチャネル添字、$`\mathop{\mathrm{Ind}}\nolimits[j\in\mathcal{H}]`$ は $`j`$ が不可視なら1、それ以外なら0を返す指示関数である。$`x_j`$ と $`\widehat{x}_j`$ はそれぞれ観測と再構成値の第 $`j`$ 成分を表す。
 
 等長patchを一様に選ぶため、各チャネルが不可視となる確率は $`N_{\mathrm{hide}}/C`$ である。$`\Pr`$ はmask抽選による確率、$`\mathbb{E}_{\mathcal{A},\mathcal{H}}`$ は追加摂動とmaskの抽選に関する期待値、縦線の後の $`j\in\mathcal{H}`$ はそのチャネルを不可視とした条件を表す。二乗誤差の期待値が有限である場合、
 
@@ -278,7 +278,7 @@ TGNと異なり、固定した $`\delta`$ から入力・出力の角度は一�
 \mid j\in\mathcal{H}
 \right]
 \end{aligned}
-\tag{17}
+\qquad\text{(17)}
 ```
 
 となる。この式は、すべてのチャネルについて「そのチャネルを不可視にしたときの復元誤差」が目的関数に含まれることを示す。Patch内のmask指示は相関するが、この期待値の展開にはチャネル間の独立性を必要としない。
@@ -307,7 +307,7 @@ g_{pq}
 {\|\boldsymbol{n}_p-\boldsymbol{n}_q\|_2},
 &&d_{\mathrm{in}}(p,q)>0.
 \end{aligned}
-\tag{18}
+\qquad\text{(18)}
 ```
 
 $`g_{pq}>1`$ は拡大、$`g_{pq}<1`$ は縮小を表す。これは有限な画素対の弦長比であり、微分による局所倍率ではない。入力距離が極小なら比が不安定になるため、元の二距離と併読する。
@@ -330,7 +330,7 @@ $`g_{pq}>1`$ は拡大、$`g_{pq}<1`$ は縮小を表す。これは有限な画
 -\boldsymbol{u}_{\mathrm{dec},i}^{\mathsf T}\Delta\boldsymbol{e}
 }{\sigma_{\mathrm{dec},i}}
 \quad(\sigma_{\mathrm{dec},i}>0).
-\tag{19}
+\qquad\text{(19)}
 ```
 
 共通biasは差で消え、左特異ベクトルへの射影から右側の式が得られる。入力の単位方向の尺度では、分子を $`\rho`$ で割った差に対する倍率は $`\rho/\sigma_{\mathrm{dec},i}`$ となる。ただし、小特異値だけで実際の拡大は決まらない。入力差と残差差の射影が打ち消し合えば、潜在差も小さくなる。
@@ -353,7 +353,7 @@ Rankが不足する場合、decoderのkernel内の潜在差は復元から読め
 \Delta\overline{\boldsymbol{x}}
 =W_{\mathrm{dec}}\Delta\overline{\boldsymbol{z}}
 +\Delta\overline{\boldsymbol{e}}.
-\tag{20}
+\qquad\text{(20)}
 ```
 
 したがって、群間の平均スペクトル差にも式(19)を適用できる。一般に $`F(\overline{\boldsymbol{x}}_k)\neq\overline{\boldsymbol{z}}_k`$ なので、平均スペクトルをencoderへ入力して代用しない。この線形対応に使う平均潜在は単位化しない。[可視化用の代表線](design/visualization_and_interpretation.md#representative-spectra)は試料内平均→試料間の等重み平均であり、この関係式に用いる場合も入力・潜在・残差で対象画素と重みを揃える。
@@ -366,7 +366,7 @@ Rankが不足する場合、decoderのkernel内の潜在差は復元から読め
 \qquad
 \mathbb{E}_{p\in k,q\in l}[d_{\mathrm{lat}}(p,q)]
 =1-\overline{\boldsymbol{z}}_k^{\mathsf T}\overline{\boldsymbol{z}}_l.
-\tag{21}
+\qquad\text{(21)}
 ```
 
 さらに、$`a_k=\|\overline{\boldsymbol{z}}_k\|_2`$ とし、$`a_k,a_l>0`$ の場合の平均方向を $`\boldsymbol{c}^{\mathrm{emp}}_k=\overline{\boldsymbol{z}}_k/a_k`$ とすると、
@@ -379,7 +379,7 @@ Rankが不足する場合、decoderのkernel内の潜在差は復元から読め
 \|\boldsymbol{z}_p-\overline{\boldsymbol{z}}_k\|_2^2
 &=1-a_k^2.
 \end{aligned}
-\tag{22}
+\qquad\text{(22)}
 ```
 
 入力側も $`\overline{\boldsymbol{x}}_k/\rho`$ で同様に計算できる。これにより、平均画素対距離の増加を、平均方向の分離と群内の拡散に分けて読む。平均差だけでは相殺される変動を、内部の広がりと画素対の診断で補う。
@@ -397,11 +397,11 @@ $`\boldsymbol{c}^{\mathrm{emp}}_k`$ は解析集合の平均方向であり、tr
 ```math
 2\mathbb{E}_{\mathcal{A}}\!\left[1-\boldsymbol{z}_{p,\mathcal{A}}^{\mathsf T}\boldsymbol{z}_p\right]
 =\mathbb{E}_{\mathcal{A}}\|\boldsymbol{z}_{p,\mathcal{A}}-\boldsymbol{z}_p\|_2^2
-=\operatorname{tr}(\Gamma_p)+\|\boldsymbol{\mu}_p-\boldsymbol{z}_p\|_2^2.
-\tag{23}
+=\mathop{\mathrm{tr}}\nolimits(\Gamma_p)+\|\boldsymbol{\mu}_p-\boldsymbol{z}_p\|_2^2.
+\qquad\text{(23)}
 ```
 
-潜在を平均と偏差に分けると、偏差の期待値がゼロなので交差項が消える。$`\operatorname{tr}`$ は対角和である。摂動間のばらつきが小さくても、すべての摂動でcleanから同じ方向へずれる場合があるため、二項を分ける。有限の $`D`$ drawsで恒等式を照合する場合は、分母 $`D`$ の共分散を使う。
+潜在を平均と偏差に分けると、偏差の期待値がゼロなので交差項が消える。$`\mathop{\mathrm{tr}}\nolimits`$ は対角和である。摂動間のばらつきが小さくても、すべての摂動でcleanから同じ方向へずれる場合があるため、二項を分ける。有限の $`D`$ drawsで恒等式を照合する場合は、分母 $`D`$ の共分散を使う。
 
 同じ摂動入力を各条件へ与えると、入力方向の変化、潜在のばらつきと平均のずれを対応づけられる。画素間の差と併読することは、一律の圧縮か、変動の種類に応じた応答かを検討する診断候補となる。復元を併読する場合のtargetは常に追加摂動前の $`\boldsymbol{x}_p`$ とする。潜在の移動量だけでは割当境界を横切るかは決まらず、label flipとは区別する。
 
@@ -416,9 +416,9 @@ $`\boldsymbol{c}^{\mathrm{emp}}_k`$ は解析集合の平均方向であり、tr
 =\frac{\|W_{\mathcal{H}}\boldsymbol{\mu}_{p,\mathcal{H}}
 +\boldsymbol{b}_{\mathcal{H}}-\boldsymbol{x}_{p,\mathcal{H}}\|_2^2}
 {N_{\mathrm{hide}}}
-+\frac{\operatorname{tr}(W_{\mathcal{H}}\Gamma_{p,\mathcal{H}}W_{\mathcal{H}}^{\mathsf T})}
++\frac{\mathop{\mathrm{tr}}\nolimits(W_{\mathcal{H}}\Gamma_{p,\mathcal{H}}W_{\mathcal{H}}^{\mathsf T})}
 {N_{\mathrm{hide}}}.
-\tag{24}
+\qquad\text{(24)}
 ```
 
 式(23)と同じ平均・偏差の展開で得られる。第2項は、$`W_{\mathcal{H}}`$ の各右特異方向の潜在分散に、対応する特異値の二乗を掛けた和を $`N_{\mathrm{hide}}`$ で割った量である。Lossはdecoderを通した変動を測る一方、潜在のcosine幾何はその特異値で方向を重みづけない。小特異値やkernelの方向では、潜在が動いてもlossへ現れにくい。

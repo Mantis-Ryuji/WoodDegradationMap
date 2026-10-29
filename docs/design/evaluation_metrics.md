@@ -145,11 +145,11 @@ M_m(p)=\sum_{k=1}^{K}B_{m,k}(p)
 
 ```math
 h_r(\boldsymbol{u})
-=\operatorname{Ind}\!\left[0<\|\boldsymbol{u}\|_\infty\le\frac{r-1}{2}\right],
+=\mathop{\mathrm{Ind}}\nolimits\!\left[0<\|\boldsymbol{u}\|_\infty\le\frac{r-1}{2}\right],
 \qquad \boldsymbol{u}\in\mathbb{Z}^{2}
 ```
 
-で表す。$`\operatorname{Ind}[\cdot]`$は条件が成り立つとき1、それ以外は0を返す指示関数、
+で表す。$`\mathop{\mathrm{Ind}}\nolimits[\cdot]`$は条件が成り立つとき1、それ以外は0を返す指示関数、
 $`\boldsymbol{u}`$は画素座標の差、$`\|\boldsymbol{u}\|_\infty=\max(|u_1|,|u_2|)`$である。
 $`h_r(\boldsymbol{0})=0`$により、自己一致を除く。
 

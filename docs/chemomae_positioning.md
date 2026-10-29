@@ -164,7 +164,7 @@ ChemoMAEでは非線形encoderが座標 $`z_i`$ を求め、共通の $`W`$ で�
 ### 3.2 非線形なのは座標推定であり、復元可能な範囲には強い制約がある
 
 ```math
-\hat{x}\in b+\operatorname{col}(W),\qquad \operatorname{rank}(W)\le16.
+\hat{x}\in b+\mathop{\mathrm{col}}\nolimits(W),\qquad \mathop{\mathrm{rank}}\nolimits(W)\le16.
 ```
 
 復元は高々16次元のアフィン部分空間に含まれ、bottleneck前後を非線形にする
