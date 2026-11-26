@@ -8,7 +8,7 @@
 Research code for exploring differences in chemical state in historic wood using near-infrared hyperspectral imaging (NIR-HSI).
 ChemoMAE, a self-supervised representation learning method, compresses each pixel spectrum, and clustering produces maps of regions on specimen surfaces.
 
-Associated paper: *Self-Supervised Spectral Learning Reveals Chemical Heterogeneity in Historic Wood through Near-Infrared Hyperspectral Imaging*
+The associated arXiv preprint is [ChemoMAE: Self-Supervised Spectral Representation Learning Reveals Chemical Heterogeneity in Historical Wood](https://arxiv.org/abs/2611.34581).
 
 ## Research overview
 
