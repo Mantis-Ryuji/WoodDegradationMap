@@ -21,7 +21,7 @@ The analyses cover 49 historic wood specimens:
 - **Evaluation on unseen specimens:** Specimen-level five-fold cross-validation with three replicates compares direct input, PCA, AE, denoising AE, and ChemoMAE. The main metrics are LLA, which corrects local label agreement for chance, and LFR, which measures assignment changes under specified perturbations.
 - **Mapping with a common reference:** Representations and cluster centers are fitted on all 49 specimens to compare the distributions of the six main conditions at K=8. For M11, repeated training and clustering also assess the reproducibility of regions and boundaries.
 - **Interpretation using NIR spectra:** Spatial cluster distributions and observed spectra are related to published band assignments, wood anatomy, environmental history, and specimen information. Models of degradation processes are treated as hypotheses based on observations.
-- **Supplementary experiments:** These include mask-ratio sensitivity analysis and clustering and supervised classification on Raman Bacteria-ID.
+- **Mask-ratio sensitivity.** Cross-validation compares M11 at mask ratios of 25%, 50%, and 75%. The global-fit analysis compares maps at 50% and 75%.
 
 The metrics characterize maps; they do not measure pixel-level degradation detection accuracy or amounts of chemical components.
 The evidence and scope of interpretation are described in the [research overview](docs/research_overview.md).
@@ -42,13 +42,12 @@ The project uses Python 3.11.15 and `uv`. Dependencies are pinned in [pyproject.
 PyTorch is configured to use the CUDA 13.0 distribution index.
 
 ```powershell
-uv sync --locked --dev --group bacteria-hpo
+uv sync --locked --all-groups
 uv run --no-sync pytest
 ```
 
 Run commands from the repository root. Training uses a GPU.
 See the [experiment runbook](docs/experiment_runbook.md) for input layout, preprocessing, training, evaluation, and resumption conditions.
-The Raman experiments have separate guides for [clustering](docs/bacteria_id_runbook.md) and [classification and HPO](docs/bacteria_id_hpo_runbook.md).
 
 ## Directories and data
 
@@ -63,7 +62,6 @@ outputs/                        Experiment records, numerical results, and figur
 
 This repository contains code, configuration, and documentation. Historic wood data, experiment outputs, and trained weights are not included.
 Rerunning the wood analyses requires the inputs described in the [preprocessing specification](docs/design/preprocessing.md).
-See the [supplementary experiment specification](docs/design/bacteria_id_experiment_plan.md) for the source and input layout of Raman Bacteria-ID.
 Paths under `data/` and `outputs/` in the documentation refer to files supplied or generated locally.
 
 ## License

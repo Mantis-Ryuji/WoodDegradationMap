@@ -641,9 +641,8 @@ The 3 replicates assess stochastic variation; they are not seed optimization or 
 7. Directly align labels to the common reference of M00 Cosine-KMeans using cosine similarity of observed-SNV representative spectra and Hungarian matching.
    Construct those representative spectra by averaging within-specimen cluster means with equal weights across specimens.
    Save maps, spectra, and PCA (PC1/PC2) for all 6 conditions, together with the SNV similarity matrix and inspection IoU/contingency/overlap.
-8. Follow the separate [Bacteria-ID protocol](bacteria_id_experiment_plan.md) and [HPO protocol](bacteria_id_hpo_protocol.md) for the supplementary Raman experiment.
-9. Evaluate the supplementary M11 mask-rate experiment over the same 3 replicates and create a separate OOF snapshot and mask-rate-dependence figures and tables.
-10. Add one global training run for M11-75, and prepare 3-seed diagnostics using fixed representations at K8 and a 2×7 comparison figure from the first fits of M11(-50) and M11-75 for the appendix.
+8. Evaluate the supplementary M11 mask-rate experiment over the same 3 replicates and create a separate OOF snapshot and mask-rate-dependence figures and tables.
+9. Add one global training run for M11-75, and prepare 3-seed diagnostics using fixed representations at K8 and a 2×7 comparison figure from the first fits of M11(-50) and M11-75 for the appendix.
 
 Follow the [reproducibility evaluation](spatial_map_reproducibility_plan.md) for global-fit map reproducibility,
 and the [NIR analysis](visualization_and_interpretation.md#nir-interpretation) for chemical interpretation.

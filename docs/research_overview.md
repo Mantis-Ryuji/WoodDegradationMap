@@ -37,7 +37,6 @@ See [positioning of ChemoMAE](chemomae_positioning.md) for the architectural rat
 | Global fit | Describe all 49 specimens using common representations and cluster centers, and compare regional distributions across the six main conditions at K8 |
 | Spatial map reproducibility | Examine agreement of regional partitions and boundary locations across 3 M11 encoders × 3 KMeans initializations |
 | NIR interpretation | Interpret observed spectra and second derivatives of pseudo-absorbance in light of published band assignments, spatial distributions, and specimen information |
-| Raman supplementary experiments | Train separately on Bacteria-ID to examine clustering of held-out spectra and isolate classification through supervised fine-tuning |
 
 Mask ratios of 25%, 50%, and 75% are a sensitivity analysis and are not used to reselect the main 50% condition.
 Training replicates in CV are distinguished from KMeans initialization replicates with fixed representations in global fitting.
@@ -53,9 +52,6 @@ Global fitting characterized distributions corresponding to wood anatomy and ext
 Relating NIR features and spatial distributions to previous studies and timber-member information led to two hypotheses:
 an internal degradation model involving aging and water, and a surface degradation model involving photodegradation, erosion, leaching, inward water transport, and secondary reactions.
 These are exploratory interpretations based on observations, not demonstrations of reaction processes or causal relationships.
-
-The Raman experiments show that useful discriminative representations can also be learned separately from spectra other than NIR.
-They do not transfer the model trained on historic wood to Raman data, nor do they directly validate the chemical assignments made for wood.
 
 LLA, LFR, and ARI do not measure agreement with ground-truth chemical states. Global fitting is not a performance evaluation on unseen specimens.
 Because common origin from an original timber member and relative positions during use have not been established for all specimens,

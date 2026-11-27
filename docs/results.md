@@ -89,16 +89,3 @@ Read the pairwise, specimen-level, and overall aggregates in `results/evaluation
 The [dedicated runbook](spatial_map_reproducibility_runbook.md) describes the input trained weights and maps and the relationships among reused artifacts.
 The current CLI reevaluates saved artifacts and has no training action for encoders 2 and 3.
 Execution requires trained weights and reused maps that are not included in Git.
-
-## Raman Bacteria-ID
-
-| Analysis | Output location | Main outputs |
-| --- | --- | --- |
-| Bacteria-4/6 clustering | `outputs/experiments/bacteria_id_table4_80_20_v1/` | `table4.md`, `table4_seed_scores.csv`, `table4_statistics.json`, `table4_seed_scores.png` |
-| Classification of 30 isolates and HPO | `outputs/experiments/bacteria_id_table5_hpo_cv_v1/` | `table5.md` and records of HPO, selected configurations, and per-seed evaluation |
-| Pretraining for classification | `outputs/experiments/bacteria_id_table5_reference30_pretrain_v1/` | M00/M11 reference30 pretraining records |
-
-The artifact names `table4` and `table5` come from the comparison tables in the referenced SMAE paper.
-Quoted literature values are distinguished from results rerun in this repository.
-See the [Bacteria-ID specification](design/bacteria_id_experiment_plan.md) and [HPO specification](design/bacteria_id_hpo_protocol.md)
-for differences in splits, preprocessing, and evaluation conditions, and for the scope of configuration selection.

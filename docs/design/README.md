@@ -13,8 +13,6 @@ See the [research overview](../research_overview.md) for the study's scope and t
 | [OOF diagnostic figures](oof_sanity_visualization.md) | OOF maps for B0, B1, A0, and M00, with display alignment to B0 within each fold |
 | [Global-fit visualization and interpretation](visualization_and_interpretation.md) | Display alignment to M00, representative specimens, observed spectra, PCA, and NIR interpretation |
 | [Spatial map reproducibility](spatial_map_reproducibility_plan.md) | M11/K8 encoder and KMeans replicates, and comparisons of regions and boundaries |
-| [Bacteria-ID supplementary experiments](bacteria_id_experiment_plan.md) | Raman input, pretraining, clustering, and conditions for comparison with the reference paper |
-| [Bacteria-ID classification and HPO](bacteria_id_hpo_protocol.md) | Classification of 30 isolates, configuration selection by five-fold CV, and final test evaluation |
 
 ## Analysis structure
 
@@ -25,11 +23,9 @@ See the [research overview](../research_overview.md) for the study's scope and t
 | Global fit | Six main conditions, all 49 specimens | Each representation is trained or fitted once, followed by three K8 clustering initializations; maps use the first initialization |
 | Mask-ratio sensitivity, global fit | M11 at 50% and 75% | K8 with three initializations for each fixed representation; a descriptive comparison of the specimens used for fitting |
 | Spatial map reproducibility | M11, all 49 specimens, K8 | Comparison of nine maps from 3 encoders × 3 KMeans initializations |
-| Raman clustering | Bacteria-4/6, M00 and M11 | 80% train / 20% test, five seeds, K=4/6 |
-| Raman classification | 30 isolates, M00 and M11 | A common configuration selected by five-fold CV on M11, followed by final training and evaluation with five seeds per condition |
 
 Seeds and input scope for each analysis are defined in the corresponding specification. The roles of comparisons and the provenance of configuration selection
-are documented in the [main experiment protocol](experiment_protocol.md#planned-comparisons) and the Raman specifications.
+are documented in the [main experiment protocol](experiment_protocol.md#planned-comparisons).
 
 ## Conditions and limits of interpretation
 
@@ -40,4 +36,3 @@ are documented in the [main experiment protocol](experiment_protocol.md#planned-
 CV evaluates spatial consistency and stability under specified perturbations on specimens excluded from training.
 Global fitting and NIR analysis explore and interpret chemical states within the observed specimen set.
 Cluster labels are not treated as degradation severity or chemical concentrations, and degradation models are hypotheses without causal validation.
-In the Raman experiments, "conditions specified in this study" fill in details absent from the reference paper and are distinguished from the original study's actual settings.

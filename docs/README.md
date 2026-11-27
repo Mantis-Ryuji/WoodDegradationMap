@@ -20,8 +20,6 @@ Research objectives, analysis specifications, reproduction guides, and guidance 
 | Historic wood NIR-HSI | [Research design index](design/README.md) | [Experiment runbook](experiment_runbook.md), [output guide](results.md) |
 | Mask-ratio sensitivity | [Experimental conditions](design/experiment_protocol.md), [global-fit conditions](design/visualization_and_interpretation.md#global-mask-rate) | [CV procedure](experiment_runbook.md#mask-rate-sweep), [global-fit procedure](experiment_runbook.md#global-mask-rate) |
 | Spatial map reproducibility | [Evaluation specification](design/spatial_map_reproducibility_plan.md) | [Dedicated runbook](spatial_map_reproducibility_runbook.md) |
-| Raman clustering | [Bacteria-ID specification](design/bacteria_id_experiment_plan.md) | [Runbook](bacteria_id_runbook.md) |
-| Raman classification | [HPO specification](design/bacteria_id_hpo_protocol.md) | [Runbook](bacteria_id_hpo_runbook.md), [interpretation](bacteria_id_interpretation_plan.md) |
 
 Research conditions, calculations, and data contracts are defined in `docs/design/`; operational procedures are described in the runbooks.
 Measured values and execution provenance are linked to each output's configuration, manifests, run records, and completion records.

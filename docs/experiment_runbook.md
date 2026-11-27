@@ -7,7 +7,6 @@ see the [research design](design/README.md).
 
 The clustering, evaluation, and OOF commands in this document are for the main Cosine-KMeans experiment and the supplementary mask-rate experiment.
 The supplementary mask-rate experiment separates [CV and OOF](#mask-rate-sweep) from the [global-fit comparison for the appendix](#global-mask-rate).
-For the current Bacteria-ID Table 5, see the [HPO runbook](bacteria_id_hpo_runbook.md); for existing pretraining and Table 4, see the [dedicated runbook](bacteria_id_runbook.md).
 
 Run from the repository root in PowerShell with the ChemoMAE v0.2.2 environment.
 Production examples use `uv run --no-sync` to separate environment setup and updates from run startup.

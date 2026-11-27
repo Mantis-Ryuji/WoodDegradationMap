@@ -16,9 +16,6 @@ None validates the same combination of preprocessing, architecture, and evaluati
 | [Jensen et al. (2024), Raman denoising VAE](https://www.nature.com/articles/s41598-024-56788-7) | Learns representations by reconstructing original observations from spectra with added noise and axis variations | Builds on a VAE that treats intensity and the frequency axis separately, unlike this architecture with SNV-preserving TGN and masking |
 | [Ji et al. (2026), LeafVAE](https://doi.org/10.1016/j.compag.2026.111971) | Unsupervised compression of pixel spectra, latent clustering, and spatial mapping; applies a trained model and fixed cluster centers to new data | Uses a two-dimensional VAE and nonlinear decoder, without masked reconstruction. Leaf diagnosis uses supervised random forests with cluster proportions as inputs and SHAP |
 
-The data splits and training conditions in SMAE's Raman clustering comparisons are not necessarily identical to those in this study.
-See the [Bacteria-ID protocol](design/bacteria_id_experiment_plan.md) for the supplementary experiment's comparison conditions.
-
 <a id="references"></a>
 
 ## 2. References
@@ -44,8 +41,7 @@ See the [Bacteria-ID protocol](design/bacteria_id_experiment_plan.md) for the su
 
 4. Ren, P., Zhou, R.-G. & Li, Y. (2025).
     [A Self-supervised Learning Method for Raman Spectroscopy based on Masked Autoencoders](https://arxiv.org/abs/2504.16130).
-    The descriptions of its architecture and experiments here are based on the [public v1 manuscript](https://arxiv.org/html/2504.16130v1).
-    This version is distinguished from the [published version](https://doi.org/10.1016/j.eswa.2025.128576) whose reported values are used in the supplementary experiments.
+    The architectural details cited here come from the [v1 manuscript](https://arxiv.org/html/2504.16130v1) of the [published article](https://doi.org/10.1016/j.eswa.2025.128576).
 5. Jensen, M. N. et al. (2024).
     [Identification of extracellular vesicles from their Raman spectra via self-supervised learning](https://www.nature.com/articles/s41598-024-56788-7).
     *Scientific Reports*, 14, 6791. Cited for the Introduction's description of corruption, reconstruction targets, and the VAE,
