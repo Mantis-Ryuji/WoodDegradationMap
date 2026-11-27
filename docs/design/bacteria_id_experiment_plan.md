@@ -1,1 +1,0 @@
-[View the archived protocol referenced by experiment metadata.](https://github.com/Mantis-Ryuji/WoodDegradationMap/blob/3f35e6724e92cf238d3a5aa0753abd635bcf4571/docs/design/bacteria_id_experiment_plan.md)
